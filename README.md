@@ -11,3 +11,5 @@ This function offers the following:</br>
 ## Dependancies:
 - [vsTAAmbk](https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk)
 - [fvsfunc](https://github.com/Irrational-Encoding-Wizardry/fvsfunc)
+- [mvsfunc](https://github.com/HomeOfVapourSynthEvolution/mvsfunc)
+- [havsfunc](https://github.com/HomeOfVapourSynthEvolution/havsfunc)
