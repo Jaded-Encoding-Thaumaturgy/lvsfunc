@@ -3,6 +3,7 @@ import vsTAAmbk as taa  # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
 import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
 import mvsfunc as mvf  # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
 import havsfunc as haf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
+from nnedi3_rpow2 import nnedi3_rpow2 # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
 
 core = vs.core
 
@@ -78,7 +79,6 @@ def super_aa(clip, mode=1):
     """
     if clip.format.bits_per_sample != 16:
         clip = fvf.Depth(clip, 16)
-    clip_copy = clip
     srcY = clip.std.ShufflePlanes(0, vs.GRAY)
     if mode is 1:
         def aa(srcY):
@@ -114,19 +114,19 @@ def super_aa(clip, mode=1):
     aaclip = aa(srcY)
     aaclip = csharp(aaclip, srcY).rgvs.Repair(srcY, 13)
 
-    if clip_copy.format.color_family is vs.GRAY:
+    if clip.format.color_family is vs.GRAY:
         return aaclip
-    elif clip_copy.format.color_family is not vs.GRAY:
+    elif clip.format.color_family is not vs.GRAY:
         srcU = clip.std.ShufflePlanes(1, vs.GRAY)
         srcV = clip.std.ShufflePlanes(2, vs.GRAY)
         merged = core.std.ShufflePlanes([aaclip, srcU, srcV], 0, vs.YUV)
         return merged
 
 
-def denoise(clip, mode=1, bm3d=True, sigma=4, h=1.0, tr=2, refine_motion=True, sbsize=16, sosize=12):
+def denoise(clip, mode=1, bm3d=True, sigma=3, h=1.0, refine_motion=True, sbsize=16):
     """
-    Generic denoising. Denoising is done by BM3D with other denoisers being used for ref. Will use the ref denoiser if
-    BM3D=False.
+    Generic denoising. Denoising is done by BM3D with other denoisers being used for ref. Returns the denoised clip used
+    as ref if BM3D=False.
 
     Mode 1 = KNLMeansCL
     Mode 2 = SMDegrain
@@ -134,27 +134,80 @@ def denoise(clip, mode=1, bm3d=True, sigma=4, h=1.0, tr=2, refine_motion=True, s
     """
     if clip.format.bits_per_sample != 16:
         clip = fvf.Depth(clip, 16)
-    clip_copy = clip
     clipY = core.std.ShufflePlanes(clip, 0, vs.GRAY)
 
     if mode is 1:
         denoiseY = clipY.knlm.KNLMeansCL(d=3, a=2, h=h)
     elif mode is 2:
-        denoiseY = haf.SMDegrain(clipY, tr=tr, prefilter=3, RefineMotion=refine_motion)
+        denoiseY = haf.SMDegrain(clipY, prefilter=3, RefineMotion=refine_motion)
     elif mode is 3:
-        denoiseY = clipY.dfttest.DFTTest(sigma=4.0, tbsize=1, sbsize=sbsize, sosize=sosize)
+        denoiseY = clipY.dfttest.DFTTest(sigma=4.0, tbsize=1, sbsize=sbsize, sosize=sbsize*0.75)
     else:
         raise ValueError('denoise: unknown mode')
 
     if bm3d is True:
         denoisedY = mvf.BM3D(clipY, sigma=sigma, psample=0, radius1=1, ref=denoiseY)
-    else:
-        return denoiseY
 
-    if clip_copy is vs.GRAY:
-        return denoiseY
-    else:
-        clipU = core.std.ShufflePlanes(clip, 1, colorfamily=vs.GRAY)
-        clipV = core.std.ShufflePlanes(clip, 2, colorfamily=vs.GRAY)
-        merged = core.std.ShufflePlanes(clips=[denoisedY, clipU, clipV], planes=[0, 0, 0], colorfamily=vs.YUV)
+    elif clip is vs.GRAY:
+        return denoisedY
+    elif clip.format.color_family is not vs.GRAY:
+        srcU = clip.std.ShufflePlanes(1, vs.GRAY)
+        srcV = clip.std.ShufflePlanes(2, vs.GRAY)
+        merged = core.std.ShufflePlanes([denoisedY, srcU, srcV], 0, vs.YUV)
         return merged
+
+
+
+def autoscale(clip: vs.VideoNode, width=None, height=1080, kernel='bicubic', b=1/3, c=1/3,
+                taps=4, mask_lineart=False, rfactor=None):
+    """
+    Script written by me to autoscale non-1080p videos for a friend of mine. Uses nnedi3_rpow2 for upscaling and
+    a given kernel for downscaling (default: bicubic).
+
+    Script might break when given a height value other than 1080. Will fix eventually.
+    """
+    clip_copy = clip
+    if clip.format.bits_per_sample is not 16:
+        clip = fvf.Depth(clip, 16)
+
+    if height is None:
+        height = clip.height
+    if width is None:
+        width = getw(height, ar=clip.width / clip.height)
+
+    if rfactor is None:
+        rfactor = int(round(height / clip.height))
+
+    if clip.height is height:
+        return clip
+    if clip.height < height:
+         scaled = nnedi3_rpow2(clip, rfactor)
+         scaled = core.resize.Spline36(scaled, width, height)
+    elif clip.height > height:
+         if kernel is 'bicubic':
+            scaled = core.resize.Bicubic(clip, width, height, filter_param_a=b, filter_param_b=c)
+         elif kernel is 'bilinear':
+             scaled = core.resize.Bilinear(clip, width, height)
+         elif kernel is 'spline36':
+             scaled = core.resize.Spline36(clip, width, height)
+         else:
+              raise ValueError('autoscale: Unknown kernel')
+
+    if mask_lineart:
+        mask = kgf.retinex_edgemask(clip, sigma=1)
+        maskmerge = core.std.MaskedMerge(clip, scaled, mask)
+
+    depth = clip_copy.format.bits_per_sample
+    final = fvf.Depth(scaled, depth)
+    return final
+
+
+def getw(h, ar=16 / 9, only_even=True):
+    """
+    returns width for image
+    """
+    w = h * ar
+    w = int(round(w))
+    if only_even:
+        w = w // 2 * 2
+    return w
