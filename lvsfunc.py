@@ -137,18 +137,18 @@ def denoise(clip, mode=1, bm3d=True, sigma=3, h=1.0, refine_motion=True, sbsize=
     clipY = core.std.ShufflePlanes(clip, 0, vs.GRAY)
 
     if mode is 1:
-        denoiseY = clipY.knlm.KNLMeansCL(d=3, a=2, h=h)
+        denoisedY = clipY.knlm.KNLMeansCL(d=3, a=2, h=h)
     elif mode is 2:
-        denoiseY = haf.SMDegrain(clipY, prefilter=3, RefineMotion=refine_motion)
+        denoisedY = haf.SMDegrain(clipY, prefilter=3, RefineMotion=refine_motion)
     elif mode is 3:
-        denoiseY = clipY.dfttest.DFTTest(sigma=4.0, tbsize=1, sbsize=sbsize, sosize=sbsize*0.75)
+        denoisedY = clipY.dfttest.DFTTest(sigma=4.0, tbsize=1, sbsize=sbsize, sosize=sbsize*0.75)
     else:
         raise ValueError('denoise: unknown mode')
 
     if bm3d is True:
-        denoisedY = mvf.BM3D(clipY, sigma=sigma, psample=0, radius1=1, ref=denoiseY)
+        denoisedY = mvf.BM3D(clipY, sigma=sigma, psample=0, radius1=1, ref=denoisedY)
 
-    elif clip is vs.GRAY:
+    if clip is vs.GRAY:
         return denoisedY
     elif clip.format.color_family is not vs.GRAY:
         srcU = clip.std.ShufflePlanes(1, vs.GRAY)
