@@ -136,11 +136,11 @@ def denoise(clip, mode=1, bm3d=True, sigma=3, h=1.0, refine_motion=True, sbsize=
         clip = fvf.Depth(clip, 16)
     clipY = core.std.ShufflePlanes(clip, 0, vs.GRAY)
 
-    if mode is 1:
+    if mode is 1 or knlm:
         denoisedY = clipY.knlm.KNLMeansCL(d=3, a=2, h=h)
-    elif mode is 2:
+    elif mode is 2 or SMD:
         denoisedY = haf.SMDegrain(clipY, prefilter=3, RefineMotion=refine_motion)
-    elif mode is 3:
+    elif mode is 3 or DFT:
         denoisedY = clipY.dfttest.DFTTest(sigma=4.0, tbsize=1, sbsize=sbsize, sosize=sbsize*0.75)
     else:
         raise ValueError('denoise: unknown mode')
