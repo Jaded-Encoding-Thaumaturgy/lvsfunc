@@ -7,6 +7,7 @@ This function offers the following:</br>
 - super_aa(clip, mode=1)</br>
 - denoise(clip, mode=1, bm3d=True, sigma=4, h=1.0, tr=2, refine_motion=True, sbsize=16, sosize=12)</br>
 - autoscale(clip, width=None, height=1080, kernel='bicubic', b=1/3, c=1/3, taps=4, mask_lineart=False, rfactor=None)</br>
+- Source(path_to_clip, mode=1, resample=False)</br>
 
 ## Requirements:
 

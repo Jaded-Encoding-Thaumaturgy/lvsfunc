@@ -116,7 +116,7 @@ def super_aa(clip, mode=1):
 
     if clip.format.color_family is vs.GRAY:
         return aaclip
-    elif clip.format.color_family is not vs.GRAY:
+    else:
         srcU = clip.std.ShufflePlanes(1, vs.GRAY)
         srcV = clip.std.ShufflePlanes(2, vs.GRAY)
         merged = core.std.ShufflePlanes([aaclip, srcU, srcV], 0, vs.YUV)
@@ -136,21 +136,24 @@ def denoise(clip, mode=1, bm3d=True, sigma=3, h=1.0, refine_motion=True, sbsize=
         clip = fvf.Depth(clip, 16)
     clipY = core.std.ShufflePlanes(clip, 0, vs.GRAY)
 
-    if mode is 1 or knlm:
-        denoisedY = clipY.knlm.KNLMeansCL(d=3, a=2, h=h)
-    elif mode is 2 or SMD:
-        denoisedY = haf.SMDegrain(clipY, prefilter=3, RefineMotion=refine_motion)
-    elif mode is 3 or DFT:
-        denoisedY = clipY.dfttest.DFTTest(sigma=4.0, tbsize=1, sbsize=sbsize, sosize=sbsize*0.75)
+    if mode == 1 or knlm:
+        denoiseY = clipY.knlm.KNLMeansCL(d=3, a=2, h=h)
+    elif mode == 2 or SMD:
+        denoiseY = haf.SMDegrain(clipY, prefilter=3, RefineMotion=refine_motion)
+    elif mode == 3 or DFT:
+        denoiseY = clipY.dfttest.DFTTest(sigma=4.0, tbsize=1, sbsize=sbsize, sosize=sbsize*0.75)
     else:
         raise ValueError('denoise: unknown mode')
 
-    if bm3d is True:
-        denoisedY = mvf.BM3D(clipY, sigma=sigma, psample=0, radius1=1, ref=denoisedY)
+    if bm3d:
+        denoisedY = mvf.BM3D(clipY, sigma=sigma, psample=0, radius1=1, ref=denoiseY)
 
-    if clip is vs.GRAY:
+    if bm3d is False:
+        denoisedY = denoiseY
+
+    if clip.format.color_family is vs.GRAY:
         return denoisedY
-    elif clip.format.color_family is not vs.GRAY:
+    else:
         srcU = clip.std.ShufflePlanes(1, vs.GRAY)
         srcV = clip.std.ShufflePlanes(2, vs.GRAY)
         merged = core.std.ShufflePlanes([denoisedY, srcU, srcV], 0, vs.YUV)
@@ -211,3 +214,30 @@ def getw(h, ar=16 / 9, only_even=True):
     if only_even:
         w = w // 2 * 2
     return w
+
+
+def Source(path_to_clip, mode=1, resample=False):
+    """
+    Just a stupid import script. There really is no reason to use this, but hey, it was fun to write.
+    """
+
+    if path_to_clip.startswith("file:///"):
+        path_to_clip = path_to_clip[8::]
+
+    if path_to_clip.endswith(".d2v"):
+        src = core.d2v.Source(path_to_clip)
+    else:
+        if mode == 1 or lsmas:
+            src = core.lsmas.LWLibavSource(path_to_clip)
+        elif mode == 2 or ffms2:
+            src = core.ffms2.Source(path_to_clip)
+        else:
+            raise ValueError('source: Unknown mode')
+      
+    if resample:
+        src = fvf.Depth(src, 16)
+
+    return src
+
+# Source alias (for additional autism)
+src = Source
