@@ -1,4 +1,4 @@
-Contains scripts ~~stolen from other people~~ combined into a simple function for Vapoursynth.
+Contains scripts I wrote and/or were written for me, combined into a simple function for Vapoursynth.
 
 This function offers the following:</br>
 
