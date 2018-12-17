@@ -7,18 +7,14 @@ from nnedi3_rpow2 import nnedi3_rpow2 # https://github.com/darealshinji/vapoursy
 
 core = vs.core
 
-"""
-lvsfunc = Light's Vapoursynth Functions
-Scripts I (stole) 'borrowed' from other people and modified to my own liking. If something breaks, blame them.
-"""
+# TO-DO: Write function that only masks px of a certain color/threshold of colors
+# TO-DO: Rewrite 'compare'. Should be able to handle it in a much better way than how XEL did it.
 
 
-def fix_eedi3(clip, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1):
+def fix_eedi3(clip: vs.VideoNode, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1):
     """
-    Script stolen from Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3. This should
-    fix every issue created by eedi3, like for example this: https://i.imgur.com/hYVhetS.jpg
-    
-    Tested on Uchiage no Hanabi by Zastin, should work fine for everything else. Supposedly, at least.
+    Script written by Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3. This should
+    fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
     """
 
     if clip.format.bits_per_sample != 16:
@@ -36,7 +32,7 @@ def fix_eedi3(clip, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20,
     return clip.std.MaskedMerge(aa, mask, planes=0)
 
 
-def compare(clips, frames, match_clips=True):
+def compare(clips: vs.VideoNode, frames, match_clips=True):
     """
     Script stolen from XEL8o9 and slightly modified by me. Grabs a given frame from two clips for easier comparison.
     Intended order is [src, filtered].
@@ -69,10 +65,9 @@ def compare(clips, frames, match_clips=True):
     return final
 
 
-def super_aa(clip, mode=1):
+def super_aa(clip: vs.VideoNode, width=None, Height=None, mode=1):
     """
-    Script stolen from Zastin and slightly modified by me. Was originally written to deal with Yuru Camp's odd line art,
-    but can be used for other sources with botched line art and heavy aliasing.
+    Script written by Zastin and modified by me. Useful for shows like Yuru Camp with bad lineart problems.
     
     Mode 1 = Nnedi3 
     Mode 2 = Eedi3
@@ -80,17 +75,22 @@ def super_aa(clip, mode=1):
     if clip.format.bits_per_sample != 16:
         clip = fvf.Depth(clip, 16)
     srcY = clip.std.ShufflePlanes(0, vs.GRAY)
+
+    if height is None:
+        height = srcY.height
+    if width is None:
+        width = getw(height, ar=srcY.width / srcY.height)
+
     if mode is 1:
         def aa(srcY):
-            w, h = srcY.width, srcY.height
             srcY = srcY.std.Transpose()
             srcY = srcY.nnedi3.nnedi3(0, 1, 0, 3, 3, 2)
             srcY = srcY.nnedi3.nnedi3(1, 0, 0, 3, 3, 2)
-            srcY = srcY.resize.Spline36(h, w, src_top=.5)
+            srcY = srcY.resize.Spline36(height, width, src_top=.5)
             srcY = srcY.std.Transpose()
             srcY = srcY.nnedi3.nnedi3(0, 1, 0, 3, 3, 2)
             srcY = srcY.nnedi3.nnedi3(1, 0, 0, 3, 3, 2)
-            srcY = srcY.resize.Spline36(w, h, src_top=.5)
+            srcY = srcY.resize.Spline36(width, height, src_top=.5)
             return srcY
     elif mode is 2:
         def aa(srcY):
@@ -98,11 +98,11 @@ def super_aa(clip, mode=1):
             srcY = srcY.std.Transpose()
             srcY = srcY.eedi3m.EEDI3(0, 1, 0, 0.5, 0.2)
             srcY = srcY.znedi3.nnedi3(1, 0, 0, 3, 4, 2)
-            srcY = srcY.resize.Spline36(h, w, src_top=.5)
+            srcY = srcY.resize.Spline36(height, width, src_top=.5)
             srcY = srcY.std.Transpose()
             srcY = srcY.eedi3m.EEDI3(0, 1, 0, 0.5, 0.2)
             srcY = srcY.znedi3.nnedi3(1, 0, 0, 3, 4, 2)
-            srcY = srcY.resize.Spline36(w, h, src_top=.5)
+            srcY = srcY.resize.Spline36(width, height, src_top=.5)
             return srcY
     else:
         raise ValueError('super_aa: unknown mode')
@@ -122,8 +122,17 @@ def super_aa(clip, mode=1):
         merged = core.std.ShufflePlanes([aaclip, srcU, srcV], 0, vs.YUV)
         return merged
 
+def getw(h, ar=16 / 9, only_even=True):
+    """
+    returns width for image (taken from kagefunc)
+    """
+    w = h * ar
+    w = int(round(w))
+    if only_even:
+        w = w // 2 * 2
+    return w
 
-def denoise(clip, mode=1, bm3d=True, sigma=3, h=1.0, refine_motion=True, sbsize=16):
+def denoise(clip: vs.VideoNode, mode=1, bm3d=True, sigma=3, h=1.0, refine_motion=True, sbsize=16):
     """
     Generic denoising. Denoising is done by BM3D with other denoisers being used for ref. Returns the denoised clip used
     as ref if BM3D=False.
@@ -160,63 +169,7 @@ def denoise(clip, mode=1, bm3d=True, sigma=3, h=1.0, refine_motion=True, sbsize=
         return merged
 
 
-
-def autoscale(clip: vs.VideoNode, width=None, height=1080, kernel='bicubic', b=1/3, c=1/3,
-                taps=4, mask_lineart=False, rfactor=None):
-    """
-    Script written by me to autoscale non-1080p videos for a friend of mine. Uses nnedi3_rpow2 for upscaling and
-    a given kernel for downscaling (default: bicubic).
-
-    Script might break when given a height value other than 1080. Will fix eventually.
-    """
-    clip_copy = clip
-    if clip.format.bits_per_sample is not 16:
-        clip = fvf.Depth(clip, 16)
-
-    if height is None:
-        height = clip.height
-    if width is None:
-        width = getw(height, ar=clip.width / clip.height)
-
-    if rfactor is None:
-        rfactor = int(round(height / clip.height))
-
-    if clip.height is height:
-        return clip
-    if clip.height < height:
-         scaled = nnedi3_rpow2(clip, rfactor)
-         scaled = core.resize.Spline36(scaled, width, height)
-    elif clip.height > height:
-         if kernel is 'bicubic':
-            scaled = core.resize.Bicubic(clip, width, height, filter_param_a=b, filter_param_b=c)
-         elif kernel is 'bilinear':
-             scaled = core.resize.Bilinear(clip, width, height)
-         elif kernel is 'spline36':
-             scaled = core.resize.Spline36(clip, width, height)
-         else:
-              raise ValueError('autoscale: Unknown kernel')
-
-    if mask_lineart:
-        mask = kgf.retinex_edgemask(clip, sigma=1)
-        maskmerge = core.std.MaskedMerge(clip, scaled, mask)
-
-    depth = clip_copy.format.bits_per_sample
-    final = fvf.Depth(scaled, depth)
-    return final
-
-
-def getw(h, ar=16 / 9, only_even=True):
-    """
-    returns width for image
-    """
-    w = h * ar
-    w = int(round(w))
-    if only_even:
-        w = w // 2 * 2
-    return w
-
-
-def Source(path_to_clip, mode=1, resample=False):
+def Source(path_to_clip, mode='lsmas', resample=False):
     """
     Just a stupid import script. There really is no reason to use this, but hey, it was fun to write.
     """
