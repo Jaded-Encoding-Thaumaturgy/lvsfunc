@@ -34,7 +34,7 @@ def fix_eedi3(clip: vs.VideoNode, strength=1, alpha=0.25, beta=0.5, gamma=40, nr
 
 def compare(clips: vs.VideoNode, frames, match_clips=True):
     """
-    Script stolen from XEL8o9 and slightly modified by me. Grabs a given frame from two clips for easier comparison.
+    Script written XEL8o9 and slightly modified by me. Grabs a given frame from two clips for easier comparison.
     Intended order is [src, filtered].
     
     Example use:
@@ -63,6 +63,33 @@ def compare(clips: vs.VideoNode, frames, match_clips=True):
         else:
             final += newClip
     return final
+
+
+def stack_compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, width=None, height=None, stack_vertical=False):
+    """
+    Compares two frames by stacking.
+    Best to use when trying to match two sources frame-accurately, however by setting height to the source's height (or None) it can be used for comparisons that way.
+    """
+    if clip_a.format.bits_per_sample != clip_b.format.bits_per_sample:
+        raise ValueError('stack_compare: The bitdepth of both clips must be equal')
+    if clip_a.format.id != clip_b.format.id:
+        raise ValueError('stack:compare: The subsampling of both clips must be equal')
+
+    if height is None:
+        height = clip_a.height
+    if width is None:
+        width = getw(height, ar=clip_a.width / clip_a.height)
+
+    clip_a = core.resize.Spline36(clip_a, width, height)
+    clip_b = core.resize.Spline36(clip_b, width, height)
+
+    if stack_vertical:
+        stacked = core.std.StackVertical([clip_a, clip_b])
+    else:
+        stacked = core.std.StackHorizontal([clip_a, clip_b])
+
+    return stacked
+
 
 
 def super_aa(clip: vs.VideoNode, width=None, Height=None, mode=1):
@@ -180,9 +207,9 @@ def Source(path_to_clip, mode='lsmas', resample=False):
     if path_to_clip.endswith(".d2v"):
         src = core.d2v.Source(path_to_clip)
     else:
-        if mode == 1 or lsmas:
+        if mode == 1 or 'lsmas':
             src = core.lsmas.LWLibavSource(path_to_clip)
-        elif mode == 2 or ffms2:
+        elif mode == 2 or 'ffms2':
             src = core.ffms2.Source(path_to_clip)
         else:
             raise ValueError('source: Unknown mode')
@@ -194,3 +221,72 @@ def Source(path_to_clip, mode='lsmas', resample=False):
 
 # Source alias (for additional autism)
 src = Source
+
+def creditmask(clip: vs.VideoNode, expandN=None, highpass=25) -> vs.VideoNode:
+    """
+    Modified from kagefunc.
+
+    Uses multiple techniques to mask the hardsubs in video streams like Anime on Demand or Wakanim.
+    Might (should) work for other hardsubs, too, as long as the subs are somewhat close to black/white.
+    It's kinda experimental, but I wanted to try something like this.
+    It works by finding the edge of the subtitle (where the black border and the white fill color touch),
+    and it grows these areas into a regular brightness + difference mask via hysteresis.
+    This should (in theory) reliably find all hardsubs in the image with barely any false positives (or none at all).
+    Output depth and processing precision are the same as the input
+    It is not necessary for 'clip' and 'ref' to have the same bit depth, as 'ref' will be dithered to match 'clip'
+    Most of this code was written by Zastin (https://github.com/Z4ST1N)
+    Clean code soon(tm)
+    """
+
+    clp_f = clip.format
+    bits = clp_f.bits_per_sample
+    st = clp_f.sample_type
+    peak = 1 if st == vs.FLOAT else (1 << bits) - 1
+
+    if expandN is None:
+        expandN = clip.width // 200
+
+    out_fmt = core.register_format(vs.GRAY, st, bits, 0, 0)
+    YUV_fmt = core.register_format(clp_f.color_family, vs.INTEGER, 8, clp_f.subsampling_w, clp_f.subsampling_h)
+
+    y_range = 219 << (bits - 8) if st == vs.INTEGER else 1
+    uv_range = 224 << (bits - 8) if st == vs.INTEGER else 1
+    offset = 16 << (bits - 8) if st == vs.INTEGER else 0
+
+    uv_abs = ' abs ' if st == vs.FLOAT else ' {} - abs '.format((1 << bits) // 2)
+    yexpr = 'x y - abs {thr} > 255 0 ?'.format(thr=y_range * 0.7)
+    uvexpr = 'x {uv_abs} {thr} < y {uv_abs} {thr} < and 255 0 ?'.format(uv_abs=uv_abs, thr=uv_range * 0.1)
+
+    difexpr = 'x {upper} > x {lower} < or x y - abs {mindiff} > and 255 0 ?'.format(upper=y_range * 0.8 + offset,
+                                                                                    lower=y_range * 0.2 + offset,
+                                                                                    mindiff=y_range * 0.1)
+                                                                                    
+    # right shift by 4 pixels.
+    # fmtc uses at least 16 bit internally, so it's slower for 8 bit,
+    # but its behaviour when shifting/replicating edge pixels makes it faster otherwise
+    if bits < 16:
+        right = core.resize.Point(clip, src_left=4)
+    else:
+        right = core.fmtc.resample(clip, sx=4, flt=False)
+    subedge = core.std.Expr([clip, right], [yexpr, uvexpr], YUV_fmt.id)
+    c444 = split(subedge.resize.Bicubic(format=vs.YUV444P16, filter_param_a=0, filter_param_b=0.5))
+    subedge = core.std.Expr(c444, 'x y z min min')
+
+    clip = core.std.ShufflePlanes(clip, 0, vs.GRAY)
+    clip = clip.std.Convolution([1] * 9)
+
+    mask = core.misc.Hysteresis(subedge, clip)
+    mask = iterate(mask, core.std.Maximum, expandN)
+    mask = mask.std.Inflate().std.Inflate().std.Convolution([1] * 9)
+    mask = fvf.Depth(mask, bits, range=1, range_in=1)
+    return mask
+
+def clip_to_plane_array(clip):
+    return [core.std.ShufflePlanes(clip, x, colorfamily=vs.GRAY) for x in range(clip.format.num_planes)]
+
+split = clip_to_plane_array
+
+def iterate(base, filter, count):
+    for _ in range(count):
+        base = filter(base)
+    return base
