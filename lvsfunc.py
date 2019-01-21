@@ -26,7 +26,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames):
         B = clip_b[frame]
     
         A += B
-        A if final is None else final += A
+        final = A if final is None else final + A
     return final
 
 
