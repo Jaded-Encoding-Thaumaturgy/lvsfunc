@@ -124,7 +124,7 @@ def fix_eedi3(clip: vs.VideoNode, strength=1, alpha=0.25, beta=0.5, gamma=40, nr
                                                                                                                planes=0)
     return clip.std.MaskedMerge(aa, mask, planes=0)
 
-def denoise(clip: vs.VideoNode, mode=1, bm3d=True, sigma=3, h=1.0, refine_motion=True, sbsize=16, resample=True):
+def denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, refine_motion=True, sbsize=16, resample=True):
     """
     Wrapper for generic denoising. Denoising is done by BM3D with a given denoisers being used for ref. Returns the denoised clip used
     as ref if BM3D=False.
@@ -140,11 +140,11 @@ def denoise(clip: vs.VideoNode, mode=1, bm3d=True, sigma=3, h=1.0, refine_motion
             clip = fvf.Depth(clip, 16)
     clipY = core.std.ShufflePlanes(clip, 0, vs.GRAY)
 
-    if mode == 1 or 'knlm':
+    if mode in [1, 'knlm']:
         denoiseY = clipY.knlm.KNLMeansCL(d=3, a=2, h=h)
-    elif mode == 2 or 'SMD' or 'SMDegrain':
+    elif mode in [2, 'SMD', 'SMDegrain']:
         denoiseY = haf.SMDegrain(clipY, prefilter=3, RefineMotion=refine_motion)
-    elif mode == 3 or 'DFT' or 'dfttest':
+    elif mode in [3, 'DFT', 'dfttest']:
         denoiseY = clipY.dfttest.DFTTest(sigma=4.0, tbsize=1, sbsize=sbsize, sosize=sbsize*0.75)
     else:
         raise ValueError('denoise: unknown mode')
@@ -175,9 +175,9 @@ def Source(source, mode='lsmas', resample=False):
     if source.endswith(".d2v"):
         src = core.d2v.Source(source)
     else:
-        if mode == 1 or 'lsmas':
+        if mode in [1, 'lsmas']:
             src = core.lsmas.LWLibavSource(source)
-        elif mode == 2 or 'ffms2':
+        elif mode in [2, 'ffms2']:
             src = core.ffms2.Source(source)
         else:
             raise ValueError('source: Unknown mode')
@@ -191,7 +191,7 @@ def Source(source, mode='lsmas', resample=False):
 # Aliasses
 src = Source
 comp = compare
-s_comp = stack_compare
+scomp = stack_compare
 
 # Helper functions:
 
