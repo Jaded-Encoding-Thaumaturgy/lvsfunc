@@ -17,8 +17,10 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int, mark=False,
         raise ValueError('compare: The format of both clips must be equal')
 
     if mark:
-        clip_a = core.sub.Subtitle(clip_a, mark_a, style=f'sans-serif,{fontsize},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,1,7,10,10,10,1', margins=[10, 0, 10, 0])
-        clip_b = core.sub.Subtitle(clip_b, mark_b, style=f'sans-serif,{fontsize},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,1,7,10,10,10,1', margins=[10, 0, 10, 0])
+        style = style=f'sans-serif,{fontsize},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,1,7,10,10,10,1'
+        margins = margins=[10, 0, 10, 0]
+        clip_a = core.sub.Subtitle(clip_a, mark_a, style=style, margins=margins)
+        clip_b = core.sub.Subtitle(clip_b, mark_b, style=style, margins=margins)
 
     pairs = (clip_a[frame] + clip_b[frame] for frame in frames)
     return sum(pairs, pairs.next())
@@ -40,18 +42,16 @@ def stack_compare(*clips: vs.VideoNode, width=None, height=None, stack_vertical=
     return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
 
 
-def transpose_aa(clip: vs.VideoNode, Eedi3=False):
+def transpose_aa(clip: vs.VideoNode, eedi3=False):
     """
     Script written by Zastin and modified by me. Useful for shows like Yuru Camp with bad lineart problems.
     If Eedi3=False, it will use Nnedi3 instead.
     """
     srcY = clip.std.ShufflePlanes(0, vs.GRAY)
+    height, width = clip.height, clip.width
 
-    height = clip.height; width = clip.width
-
-    if Eedi3:
+    if eedi3:
         def aa(srcY):
-            w, h = srcY.width, srcY.height
             srcY = srcY.std.Transpose()
             srcY = srcY.eedi3m.EEDI3(0, 1, 0, 0.5, 0.2)
             srcY = srcY.znedi3.nnedi3(1, 0, 0, 3, 4, 2)
@@ -80,13 +80,7 @@ def transpose_aa(clip: vs.VideoNode, Eedi3=False):
     aaclip = aa(srcY)
     aaclip = csharp(aaclip, srcY).rgvs.Repair(srcY, 13)
 
-    if clip.format.color_family is vs.GRAY:
-        return aaclip
-    else:
-        U = clip.std.ShufflePlanes(1, vs.GRAY)
-        V = clip.std.ShufflePlanes(2, vs.GRAY)
-        merged = core.std.ShufflePlanes([aaclip, U, V], 0, vs.YUV)
-        return merged
+    return aaclip if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
 
 
 def NnEedi3(clip: vs.VideoNode, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1):
