@@ -20,11 +20,8 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int, mark=False,
         clip_a = core.sub.Subtitle(clip_a, mark_a, style=f'sans-serif,{fontsize},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,1,7,10,10,10,1', margins=[10, 0, 10, 0])
         clip_b = core.sub.Subtitle(clip_b, mark_b, style=f'sans-serif,{fontsize},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,1,7,10,10,10,1', margins=[10, 0, 10, 0])
 
-    final = None
-    for frame in frames:
-        appended = clip_a[frame] + clip_b[frame]
-        final = appended if final is None else final + appended
-    return final
+    pairs = (clip_a[frame] + clip_b[frame] for frame in frames)
+    return sum(pairs, pairs.next())
 
 
 def stack_compare(*clips: vs.VideoNode, width=None, height=None, stack_vertical=False):
