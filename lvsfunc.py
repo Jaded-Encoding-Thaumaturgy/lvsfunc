@@ -10,15 +10,17 @@ core = vs.core
 # TO-DO: Write function that only masks px of a certain color/threshold of colors
 
 
-def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames):
+def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int, mark=False, mark_a=" Clip A ", mark_b=" Clip B ", fontsize=57):
     """
-    Rewrite of compare. 
-    Allows for two frames to be compared by having them play right after another.
+    Allows for two frames to be compared by putting them next to eachother in a list.
     """
-    if clip_a.format.bits_per_sample != clip_b.format.bits_per_sample:
-        raise ValueError('compare: The bitdepth of both clips must be equal')
     if clip_a.format.id != clip_b.format.id:
-        raise ValueError('compare: The subsampling of both clips must be equal')
+        raise ValueError('compare: The format of both clips must be equal')
+
+    fs = str(fontsize)
+    if mark:
+        clip_a = core.sub.Subtitle(clip_a, mark_a, style='sans-serif,'+fs+',&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,1,7,10,10,10,1', margins=[10, 0, 10, 0])
+        clip_b = core.sub.Subtitle(clip_b, mark_b, style='sans-serif,'+fs+',&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,1,7,10,10,10,1', margins=[10, 0, 10, 0])
 
     final = None
     for frame in frames:
@@ -30,29 +32,31 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames):
     return final
 
 
-def stack_compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, width=None, height=None, stack_vertical=False):
+def stack_compare(*clips: vs.VideoNode, width=None, height=None, stack_vertical=False):
     """
     Compares two frames by stacking.
     Best to use when trying to match two sources frame-accurately, however by setting height to the source's 
     height (or None), it can be used for comparing frames.
     """
-    if clip_a.format.bits_per_sample != clip_b.format.bits_per_sample:
-        raise ValueError('stack_compare: The bitdepth of both clips must be equal')
-    if clip_a.format.id != clip_b.format.id:
-        raise ValueError('stack_compare: The subsampling of both clips must be equal')
+
+    if len(set([c.format.id for c in clips])) != 1:
+        raise ValueError('stack_compare: The format of every clip must be equal')
 
     if height is None:
-        height = clip_a.height
+        height = clips[0].height
     if width is None:
-        width = getw(height, ar=clip_a.width / clip_a.height)
+        width = getw(height, ar=clips[0].width / clips[0].height)
 
-    clip_a = core.resize.Spline36(clip_a, width, height)
-    clip_b = core.resize.Spline36(clip_b, width, height)
+    if height and width is None:
+        for c in clips:
+            core.resize.Bicubic(c, width, height)
 
     if stack_vertical:
-        stacked = core.std.StackVertical([clip_a, clip_b])
+        for c in clips:
+            stacked = core.std.StackVertical([c])
     else:
-        stacked = core.std.StackHorizontal([clip_a, clip_b])
+        for c in clips:
+            stacked = core.std.StackHorizontal([c])
     return stacked
 
 
@@ -64,7 +68,9 @@ def transpose_aa(clip: vs.VideoNode, Eedi3=False):
     """
     srcY = clip.std.ShufflePlanes(0, vs.GRAY)
 
-    if eedi3:
+    height = clip.height; width = clip.width
+
+    if Eedi3:
         def aa(srcY):
             w, h = srcY.width, srcY.height
             srcY = srcY.std.Transpose()
@@ -104,7 +110,7 @@ def transpose_aa(clip: vs.VideoNode, Eedi3=False):
         return merged
 
 
-def fix_eedi3(clip: vs.VideoNode, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1):
+def NnEedi3(clip: vs.VideoNode, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1):
     """
     Script written by Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3. This should
     fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
@@ -124,7 +130,7 @@ def fix_eedi3(clip: vs.VideoNode, strength=1, alpha=0.25, beta=0.5, gamma=40, nr
                                                                                                                planes=0)
     return clip.std.MaskedMerge(aa, mask, planes=0)
 
-def denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, refine_motion=True, sbsize=16, resample=True):
+def quick_denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, refine_motion=True, sbsize=16, resample=True):
     """
     Wrapper for generic denoising. Denoising is done by BM3D with a given denoisers being used for ref. Returns the denoised clip used
     as ref if BM3D=False.
@@ -151,8 +157,7 @@ def denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, refine_m
 
     if bm3d:
         denoisedY = mvf.BM3D(clipY, sigma=sigma, psample=0, radius1=1, ref=denoiseY)
-
-    if bm3d is False:
+    elif bm3d is False:
         denoisedY = denoiseY
 
     if clip.format.color_family is vs.GRAY:
@@ -174,6 +179,11 @@ def Source(source, mode='lsmas', resample=False):
 
     if source.endswith(".d2v"):
         src = core.d2v.Source(source)
+
+    pic = [".png", ".jpg", ".jpeg", ".bmp", ".tiff",]
+
+    if source.endswith(tuple(pic)):
+        src = core.imwri.Read(source)
     else:
         if mode in [1, 'lsmas']:
             src = core.lsmas.LWLibavSource(source)
@@ -182,9 +192,12 @@ def Source(source, mode='lsmas', resample=False):
         else:
             raise ValueError('source: Unknown mode')
       
-    if resample:
-        src = fvf.Depth(src, 16)
-
+    if resample or source.endswith(tuple(pic)):
+        if source.height >= 720:
+            src = core.resize.Bicubic(source, format=vs.YUV420P16, matrix_s='709')
+        else:
+            src = core.resize.Spline36(source, format=vs.YUV420P16)
+            
     return src
 
 
