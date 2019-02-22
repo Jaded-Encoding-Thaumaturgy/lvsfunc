@@ -3,32 +3,27 @@ import vsTAAmbk as taa  # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
 import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
 import mvsfunc as mvf  # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
 import havsfunc as haf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
-from nnedi3_rpow2 import nnedi3_rpow2 # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
 
 core = vs.core
 
 # TO-DO: Write function that only masks px of a certain color/threshold of colors
 
 
-def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int, mark=False, mark_a=" Clip A ", mark_b=" Clip B ", fontsize=57):
+def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int, mark=False, mark_a=' Clip A ', mark_b=' Clip B ', fontsize=57):
     """
-    Allows for two frames to be compared by putting them next to eachother in a list.
+    Allows for two frames to be compared by putting them next to each other in a list.
     """
     if clip_a.format.id != clip_b.format.id:
         raise ValueError('compare: The format of both clips must be equal')
 
-    fs = str(fontsize)
     if mark:
-        clip_a = core.sub.Subtitle(clip_a, mark_a, style='sans-serif,'+fs+',&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,1,7,10,10,10,1', margins=[10, 0, 10, 0])
-        clip_b = core.sub.Subtitle(clip_b, mark_b, style='sans-serif,'+fs+',&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,1,7,10,10,10,1', margins=[10, 0, 10, 0])
+        clip_a = core.sub.Subtitle(clip_a, mark_a, style=f'sans-serif,{fontsize},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,1,7,10,10,10,1', margins=[10, 0, 10, 0])
+        clip_b = core.sub.Subtitle(clip_b, mark_b, style=f'sans-serif,{fontsize},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,1,7,10,10,10,1', margins=[10, 0, 10, 0])
 
     final = None
     for frame in frames:
-        A = clip_a[frame]
-        B = clip_b[frame]
-    
-        A += B
-        final = A if final is None else final + A
+        appended = clip_a[frame] + clip_b[frame]
+        final = appended if final is None else final + appended
     return final
 
 
