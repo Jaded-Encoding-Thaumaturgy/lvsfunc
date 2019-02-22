@@ -33,27 +33,14 @@ def stack_compare(*clips: vs.VideoNode, width=None, height=None, stack_vertical=
     Best to use when trying to match two sources frame-accurately, however by setting height to the source's 
     height (or None), it can be used for comparing frames.
     """
-
     if len(set([c.format.id for c in clips])) != 1:
         raise ValueError('stack_compare: The format of every clip must be equal')
 
-    if height is None:
-        height = clips[0].height
-    if width is None:
-        width = getw(height, ar=clips[0].width / clips[0].height)
+    height = fallback(height, clips[0].height)
+    width = fallback(width, clips[0].width)
 
-    if height and width is None:
-        for c in clips:
-            core.resize.Bicubic(c, width, height)
-
-    if stack_vertical:
-        for c in clips:
-            stacked = core.std.StackVertical([c])
-    else:
-        for c in clips:
-            stacked = core.std.StackHorizontal([c])
-    return stacked
-
+    clips = [c.resize.Bicubic(width, height) for c in clips]
+    return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
 
 
 def transpose_aa(clip: vs.VideoNode, Eedi3=False):
@@ -215,3 +202,7 @@ def getw(h, ar=16 / 9, only_even=True): # Credit to kageru for writing this
     if only_even:
         w = w // 2 * 2
     return w
+
+
+def fallback(value, fallback_value):
+    return fallback_value if value is None else value
