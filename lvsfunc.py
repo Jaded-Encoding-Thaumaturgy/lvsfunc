@@ -162,12 +162,8 @@ def source(src: str, mode='lsmas', resample=False) -> vs.VideoNode:
         else:
             raise ValueError('src: Unknown mode')
 
-    # light, pls fix
-    if resample or is_image(src):
-        if clip.height >= 720:
-            clip = core.resize.Bicubic(src, format=vs.YUV420P16, matrix_s='709')
-        else:
-            clip = core.resize.Spline36(src, format=vs.YUV420P16)
+    if resample:
+        clip = fvf.Depth(clip, 16)
     return clip
 
 
