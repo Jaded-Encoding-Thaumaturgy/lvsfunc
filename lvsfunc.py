@@ -3,6 +3,7 @@ import vsTAAmbk as taa  # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
 import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
 import mvsfunc as mvf  # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
 import havsfunc as haf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
+import re
 
 core = vs.core
 
@@ -141,48 +142,41 @@ def quick_denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, re
         return merged
 
 
-def Source(source, mode='lsmas', resample=False):
+def source(src: str, mode='lsmas', resample=False) -> vs.VideoNode:
     """
     Just a stupid import script. There really is no reason to use this, but hey, it was fun to write.
     """
+    if src.startswith("file:///"):
+        src = src[8::]
 
-    if source.startswith("file:///"):
-        source = source[8::]
+    if src.endswith(".d2v"):
+        clip = core.d2v.Source(src)
 
-    if source.endswith(".d2v"):
-        src = core.d2v.Source(source)
-
-    pic = [".png", ".jpg", ".jpeg", ".bmp", ".tiff",]
-
-    if source.endswith(tuple(pic)):
-        src = core.imwri.Read(source)
+    if is_image(src):
+        clip = core.imwri.Read(src)
     else:
-        if mode in [1, 'lsmas']:
-            src = core.lsmas.LWLibavSource(source)
-        elif mode in [2, 'ffms2']:
-            src = core.ffms2.Source(source)
+        if mode in ['lsmas']:
+            clip = core.lsmas.LWLibavSource(src)
+        elif mode in ['ffms2']:
+            clip = core.ffms2.Source(src)
         else:
-            raise ValueError('source: Unknown mode')
-      
-    if resample or source.endswith(tuple(pic)):
-        if source.height >= 720:
-            src = core.resize.Bicubic(source, format=vs.YUV420P16, matrix_s='709')
+            raise ValueError('src: Unknown mode')
+
+    # light, pls fix
+    if resample or is_image(src):
+        if clip.height >= 720:
+            clip = core.resize.Bicubic(src, format=vs.YUV420P16, matrix_s='709')
         else:
-            src = core.resize.Spline36(source, format=vs.YUV420P16)
-            
-    return src
+            clip = core.resize.Spline36(src, format=vs.YUV420P16)
+    return clip
 
 
 # Aliasses
-src = Source
+src = source
 comp = compare
 scomp = stack_compare
 
-# Helper functions:
-
-
 # Helper functions written by other people:
-
 def getw(h, ar=16 / 9, only_even=True): # Credit to kageru for writing this
     """
     returns width for image (taken from kagefunc)
@@ -195,8 +189,21 @@ def getw(h, ar=16 / 9, only_even=True): # Credit to kageru for writing this
 
 
 def fallback(value, fallback_value):
+    """
+    Returns a value or the fallback if the value is None.haf
+    """
     return fallback_value if value is None else value
 
 
 def get_y(clip: vs.VideoNode) -> vs.VideoNode:
+    """
+    Returns the first plane of a video clip.
+    """
     return clip.std.ShufflePlanes(0, vs.GRAY)
+
+
+def is_image(filename: str) -> bool:
+    """
+    Returns true if a filename refers to an image.
+    """
+    return bool(re.search(r'\.(png|jpe?g|bmp|tiff?)$', filename))
