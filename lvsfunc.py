@@ -102,7 +102,7 @@ def NnEedi3(src: vs.VideoNode, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=
     aa = core.std.Expr([strong, weak, clip], expr)
     mask = clip.std.Prewitt().std.Binarize(50 >> 8).std.Maximum().std.Convolution([1] * 9)
     merged = core.std.MaskedMerge(clip, aa, mask)
-    return clip if src.color_family == vs.GRAY else core.std.ShufflePlanes([clip, src], [0, 1, 2], vs.YUV)
+    return clip if src.format.color_family == vs.GRAY else core.std.ShufflePlanes([clip, src], [0, 1, 2], vs.YUV)
 
 
 def quick_denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, refine_motion=True, sbsize=16, resample=True):
