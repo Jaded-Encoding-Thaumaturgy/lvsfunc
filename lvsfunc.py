@@ -3,6 +3,7 @@ import vsTAAmbk as taa  # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
 import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
 import mvsfunc as mvf  # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
 import havsfunc as haf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
+import re
 
 core = vs.core
 
@@ -17,57 +18,41 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int, mark=False,
         raise ValueError('compare: The format of both clips must be equal')
 
     if mark:
-        clip_a = core.sub.Subtitle(clip_a, mark_a, style=f'sans-serif,{fontsize},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,1,7,10,10,10,1', margins=[10, 0, 10, 0])
-        clip_b = core.sub.Subtitle(clip_b, mark_b, style=f'sans-serif,{fontsize},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,1,7,10,10,10,1', margins=[10, 0, 10, 0])
+        style = f'sans-serif,{fontsize},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,1,7,10,10,10,1'
+        margins = [10, 0, 10, 0]
+        clip_a = core.sub.Subtitle(clip_a, mark_a, style=style, margins=margins)
+        clip_b = core.sub.Subtitle(clip_b, mark_b, style=style, margins=margins)
 
-    final = None
-    for frame in frames:
-        appended = clip_a[frame] + clip_b[frame]
-        final = appended if final is None else final + appended
-    return final
+    pairs = (clip_a[frame] + clip_b[frame] for frame in frames)
+    return sum(pairs, pairs.next())
 
 
 def stack_compare(*clips: vs.VideoNode, width=None, height=None, stack_vertical=False):
     """
     Compares two frames by stacking.
-    Best to use when trying to match two sources frame-accurately, however by setting height to the source's 
+    Best to use when trying to match two sources frame-accurately, however by setting height to the source's
     height (or None), it can be used for comparing frames.
     """
-
     if len(set([c.format.id for c in clips])) != 1:
         raise ValueError('stack_compare: The format of every clip must be equal')
 
-    if height is None:
-        height = clips[0].height
-    if width is None:
-        width = getw(height, ar=clips[0].width / clips[0].height)
+    height = fallback(height, clips[0].height)
+    width = fallback(width, clips[0].width)
 
-    if height and width is None:
-        for c in clips:
-            core.resize.Bicubic(c, width, height)
-
-    if stack_vertical:
-        for c in clips:
-            stacked = core.std.StackVertical([c])
-    else:
-        for c in clips:
-            stacked = core.std.StackHorizontal([c])
-    return stacked
+    clips = [c.resize.Bicubic(width, height) for c in clips]
+    return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
 
 
-
-def transpose_aa(clip: vs.VideoNode, Eedi3=False):
+def transpose_aa(clip: vs.VideoNode, eedi3=False):
     """
     Script written by Zastin and modified by me. Useful for shows like Yuru Camp with bad lineart problems.
     If Eedi3=False, it will use Nnedi3 instead.
     """
-    srcY = clip.std.ShufflePlanes(0, vs.GRAY)
+    srcY = get_y(clip)
+    height, width = clip.height, clip.width
 
-    height = clip.height; width = clip.width
-
-    if Eedi3:
+    if eedi3:
         def aa(srcY):
-            w, h = srcY.width, srcY.height
             srcY = srcY.std.Transpose()
             srcY = srcY.eedi3m.EEDI3(0, 1, 0, 0.5, 0.2)
             srcY = srcY.znedi3.nnedi3(1, 0, 0, 3, 4, 2)
@@ -96,34 +81,27 @@ def transpose_aa(clip: vs.VideoNode, Eedi3=False):
     aaclip = aa(srcY)
     aaclip = csharp(aaclip, srcY).rgvs.Repair(srcY, 13)
 
-    if clip.format.color_family is vs.GRAY:
-        return aaclip
-    else:
-        U = clip.std.ShufflePlanes(1, vs.GRAY)
-        V = clip.std.ShufflePlanes(2, vs.GRAY)
-        merged = core.std.ShufflePlanes([aaclip, U, V], 0, vs.YUV)
-        return merged
+    return aaclip if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
 
 
-def NnEedi3(clip: vs.VideoNode, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1):
+def NnEedi3(src: vs.VideoNode, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1):
     """
     Script written by Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3. This should
     fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
     """
-
+    clip = get_y(src)
     if clip.format.bits_per_sample != 16:
         clip = fvf.Depth(clip, 16)
-    bits = clip.format.bits_per_sample - 8
-    thr = strength * (1 >> bits)
+    thr = strength * 256
+
     strong = taa.TAAmbk(clip, aatype='Eedi3', alpha=alpha, beta=beta, gamma=gamma, nrad=nrad, mdis=mdis, mtype=0)
     weak = taa.TAAmbk(clip, aatype='Nnedi3', nsize=nsize, nns=nns, qual=qual, mtype=0)
     expr = 'x z - y z - * 0 < y x y {l} + min y {l} - max ?'.format(l=thr)
-    if clip.format.num_planes > 1:
-        expr = [expr, '']
     aa = core.std.Expr([strong, weak, clip], expr)
-    mask = clip.std.Prewitt(planes=0).std.Binarize(50 >> bits, planes=0).std.Maximum(planes=0).std.Convolution([1] * 9,
-                                                                                                               planes=0)
-    return clip.std.MaskedMerge(aa, mask, planes=0)
+    mask = clip.std.Prewitt().std.Binarize(50 >> 8).std.Maximum().std.Convolution([1] * 9)
+    merged = core.std.MaskedMerge(clip, aa, mask)
+    return clip if src.color_family == vs.GRAY else core.std.ShufflePlanes([clip, src], [0, 1, 2], vs.YUV)
+
 
 def quick_denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, refine_motion=True, sbsize=16, resample=True):
     """
@@ -164,48 +142,37 @@ def quick_denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, re
         return merged
 
 
-def Source(source, mode='lsmas', resample=False):
+def source(src: str, mode='lsmas', resample=False) -> vs.VideoNode:
     """
     Just a stupid import script. There really is no reason to use this, but hey, it was fun to write.
     """
+    if src.startswith("file:///"):
+        src = src[8::]
 
-    if source.startswith("file:///"):
-        source = source[8::]
+    if src.endswith(".d2v"):
+        clip = core.d2v.Source(src)
 
-    if source.endswith(".d2v"):
-        src = core.d2v.Source(source)
-
-    pic = [".png", ".jpg", ".jpeg", ".bmp", ".tiff",]
-
-    if source.endswith(tuple(pic)):
-        src = core.imwri.Read(source)
+    if is_image(src):
+        clip = core.imwri.Read(src)
     else:
-        if mode in [1, 'lsmas']:
-            src = core.lsmas.LWLibavSource(source)
-        elif mode in [2, 'ffms2']:
-            src = core.ffms2.Source(source)
+        if mode in ['lsmas']:
+            clip = core.lsmas.LWLibavSource(src)
+        elif mode in ['ffms2']:
+            clip = core.ffms2.Source(src)
         else:
-            raise ValueError('source: Unknown mode')
-      
-    if resample or source.endswith(tuple(pic)):
-        if source.height >= 720:
-            src = core.resize.Bicubic(source, format=vs.YUV420P16, matrix_s='709')
-        else:
-            src = core.resize.Spline36(source, format=vs.YUV420P16)
-            
-    return src
+            raise ValueError('src: Unknown mode')
+
+    if resample:
+        clip = fvf.Depth(clip, 16)
+    return clip
 
 
 # Aliasses
-src = Source
+src = source
 comp = compare
 scomp = stack_compare
 
-# Helper functions:
-
-
 # Helper functions written by other people:
-
 def getw(h, ar=16 / 9, only_even=True): # Credit to kageru for writing this
     """
     returns width for image (taken from kagefunc)
@@ -215,3 +182,24 @@ def getw(h, ar=16 / 9, only_even=True): # Credit to kageru for writing this
     if only_even:
         w = w // 2 * 2
     return w
+
+
+def fallback(value, fallback_value):
+    """
+    Returns a value or the fallback if the value is None.haf
+    """
+    return fallback_value if value is None else value
+
+
+def get_y(clip: vs.VideoNode) -> vs.VideoNode:
+    """
+    Returns the first plane of a video clip.
+    """
+    return clip.std.ShufflePlanes(0, vs.GRAY)
+
+
+def is_image(filename: str) -> bool:
+    """
+    Returns true if a filename refers to an image.
+    """
+    return bool(re.search(r'\.(png|jpe?g|bmp|tiff?)$', filename))
