@@ -36,8 +36,10 @@ def stack_compare(*clips: vs.VideoNode, width=None, height=None, stack_vertical=
     if len(set([c.format.id for c in clips])) != 1:
         raise ValueError('stack_compare: The format of every clip must be equal')
 
-    height = fallback(height, clips[0].height)
-    width = fallback(width, clips[0].width)
+    if height is None:
+        height = fallback(height, clips[0].height)
+    if width is None:
+        width = getw(height, ar=clips[0].width / clips[0].height)
 
     clips = [c.resize.Bicubic(width, height) for c in clips]
     return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
