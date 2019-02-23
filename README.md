@@ -14,7 +14,7 @@ For more information, check the docstrings in the func.
 
 - Vapoursynth R28 or newer</br>
 
-## Dependancies:
+## Dependencies:
 
 - [vsTAAmbk](https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk)
 - [fvsfunc](https://github.com/Irrational-Encoding-Wizardry/fvsfunc)
