@@ -144,38 +144,38 @@ def quick_denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, re
         return merged
 
 
-def source(src: str, mode='lsmas', resample=False) -> vs.VideoNode:
+def source(file: str, resample=False) -> vs.VideoNode:
     """
     Just a stupid import script. There really is no reason to use this, but hey, it was fun to write.
     """
-    if src.startswith("file:///"):
-        src = src[8::]
+    if file.startswith("file:///"):
+        file = file[8::]
 
-    if src.endswith(".d2v"):
-        clip = core.d2v.Source(src)
+    if file.endswith(".d2v"):
+        clip = core.d2v.Source(file)
 
-    if is_image(src):
-        clip = core.imwri.Read(src)
+    if is_image(file):
+        clip = core.imwri.Read(file)
     else:
-        if mode in ['lsmas']:
-            clip = core.lsmas.LWLibavSource(src)
-        elif mode in ['ffms2']:
-            clip = core.ffms2.Source(src)
+        if file.endswith(".m2ts"):
+            clip = core.lsmas.LWLibavSource(file)
         else:
-            raise ValueError('src: Unknown mode')
+            clip = core.ffms2.Source(file)
 
     if resample:
         clip = fvf.Depth(clip, 16)
     return clip
 
 
+
 # Aliasses
 src = source
 comp = compare
 scomp = stack_compare
+qden = quick_denoise
 
 # Helper functions written by other people:
-def getw(h, ar=16 / 9, only_even=True): # Credit to kageru for writing this
+def getw(h, ar=16 / 9, only_even=True):
     """
     returns width for image (taken from kagefunc)
     """
