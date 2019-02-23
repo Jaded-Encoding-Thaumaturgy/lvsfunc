@@ -17,8 +17,8 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int, mark=False,
         raise ValueError('compare: The format of both clips must be equal')
 
     if mark:
-        style = style=f'sans-serif,{fontsize},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,1,7,10,10,10,1'
-        margins = margins=[10, 0, 10, 0]
+        style = f'sans-serif,{fontsize},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,1,7,10,10,10,1'
+        margins = [10, 0, 10, 0]
         clip_a = core.sub.Subtitle(clip_a, mark_a, style=style, margins=margins)
         clip_b = core.sub.Subtitle(clip_b, mark_b, style=style, margins=margins)
 
@@ -29,7 +29,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int, mark=False,
 def stack_compare(*clips: vs.VideoNode, width=None, height=None, stack_vertical=False):
     """
     Compares two frames by stacking.
-    Best to use when trying to match two sources frame-accurately, however by setting height to the source's 
+    Best to use when trying to match two sources frame-accurately, however by setting height to the source's
     height (or None), it can be used for comparing frames.
     """
     if len(set([c.format.id for c in clips])) != 1:
@@ -47,7 +47,7 @@ def transpose_aa(clip: vs.VideoNode, eedi3=False):
     Script written by Zastin and modified by me. Useful for shows like Yuru Camp with bad lineart problems.
     If Eedi3=False, it will use Nnedi3 instead.
     """
-    srcY = clip.std.ShufflePlanes(0, vs.GRAY)
+    srcY = get_y(clip)
     height, width = clip.height, clip.width
 
     if eedi3:
@@ -83,25 +83,24 @@ def transpose_aa(clip: vs.VideoNode, eedi3=False):
     return aaclip if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
 
 
-def NnEedi3(clip: vs.VideoNode, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1):
+def NnEedi3(src: vs.VideoNode, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1):
     """
     Script written by Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3. This should
     fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
     """
-
+    clip = get_y(src)
     if clip.format.bits_per_sample != 16:
         clip = fvf.Depth(clip, 16)
-    bits = clip.format.bits_per_sample - 8
-    thr = strength * (1 >> bits)
+    thr = strength * 256
+
     strong = taa.TAAmbk(clip, aatype='Eedi3', alpha=alpha, beta=beta, gamma=gamma, nrad=nrad, mdis=mdis, mtype=0)
     weak = taa.TAAmbk(clip, aatype='Nnedi3', nsize=nsize, nns=nns, qual=qual, mtype=0)
     expr = 'x z - y z - * 0 < y x y {l} + min y {l} - max ?'.format(l=thr)
-    if clip.format.num_planes > 1:
-        expr = [expr, '']
     aa = core.std.Expr([strong, weak, clip], expr)
-    mask = clip.std.Prewitt(planes=0).std.Binarize(50 >> bits, planes=0).std.Maximum(planes=0).std.Convolution([1] * 9,
-                                                                                                               planes=0)
-    return clip.std.MaskedMerge(aa, mask, planes=0)
+    mask = clip.std.Prewitt().std.Binarize(50 >> 8).std.Maximum().std.Convolution([1] * 9)
+    merged = core.std.MaskedMerge(clip, aa, mask)
+    return clip if src.color_family == vs.GRAY else core.std.ShufflePlanes([clip, src], [0, 1, 2], vs.YUV)
+
 
 def quick_denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, refine_motion=True, sbsize=16, resample=True):
     """
@@ -197,3 +196,7 @@ def getw(h, ar=16 / 9, only_even=True): # Credit to kageru for writing this
 
 def fallback(value, fallback_value):
     return fallback_value if value is None else value
+
+
+def get_y(clip: vs.VideoNode) -> vs.VideoNode:
+    return clip.std.ShufflePlanes(0, vs.GRAY)
