@@ -24,7 +24,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int, mark=False,
         clip_b = core.sub.Subtitle(clip_b, mark_b, style=style, margins=margins)
 
     pairs = (clip_a[frame] + clip_b[frame] for frame in frames)
-    return sum(pairs, pairs.next())
+    return sum(pairs, next(pairs))
 
 
 def stack_compare(*clips: vs.VideoNode, width=None, height=None, stack_vertical=False):
