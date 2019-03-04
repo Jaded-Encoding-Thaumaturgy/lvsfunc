@@ -144,27 +144,30 @@ def quick_denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, re
         return merged
 
 
-def source(file: str, resample=False) -> vs.VideoNode:
+def source(file: str, resample=False, force_lsmas=False) -> vs.VideoNode:
     """
     Just a stupid import script. There really is no reason to use this, but hey, it was fun to write.
     """
     if file.startswith("file:///"):
         file = file[8::]
 
-    if file.endswith(".d2v"):
-        clip = core.d2v.Source(file)
-
-    if is_image(file):
-        clip = core.imwri.Read(file)
+    if force_lsmas:
+        clip = core.lsmas.LWLibavSource(file)
     else:
-        if file.endswith(".m2ts"):
-            clip = core.lsmas.LWLibavSource(file)
-        else:
-            clip = core.ffms2.Source(file)
+        if file.endswith(".d2v"):
+            clip = core.d2v.Source(file)
 
-    if resample:
-        clip = fvf.Depth(clip, 16)
-    return clip
+        if is_image(file):
+            clip = core.imwri.Read(file)
+        else:
+            if file.endswith(".m2ts"):
+                clip = core.lsmas.LWLibavSource(file)
+            else:
+                clip = core.ffms2.Source(file)
+
+        if resample:
+            clip = fvf.Depth(clip, 16)
+        return clip
 
 
 
