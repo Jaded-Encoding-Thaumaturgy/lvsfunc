@@ -5,7 +5,7 @@ This function offers the following:</br>
 - compare(clip_a, clip_b, frames: int, mark=False, mark_a=' Clip A ', mark_b=' Clip B ', fontsize=57)
 - stack_compare(clips, width=None, height=None, stack_vertical=False):
 - transpose_aa(clip, eedi3=False)
-- NnEedi3(clip, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1)
+- NnEedi3(clip, mask, strong_mask, show_mask, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1)
 - quick_denoise(clip, mode='knlm', bm3d=True, sigma=3, h=1.0, refine_motion=True, sbsize=16, resample=True)
  
 For more information, check the docstrings in the func.

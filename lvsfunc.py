@@ -95,6 +95,9 @@ def NnEedi3(clip: vs.VideoNode, mask=None, strong_mask=False, show_mask=False, s
     """
     Script written by Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3. This should
     fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
+
+    mask allows for you to use your own mask. 
+    strong_mask uses a binarized retinex_edgemask to replace more lineart with nnedi3.
     """
     bits = clip.format.bits_per_sample - 8
     thr = strength * (1 >> bits)
