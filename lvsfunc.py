@@ -44,7 +44,7 @@ def stack_compare(*clips: vs.VideoNode, width=None, height=None, stack_vertical=
     if height is None:
         height = fallback(height, clips[0].height)
     if width is None:
-        width = getw(height, ar=clips[0].width / clips[0].height)
+        width = get_w(height, ar=clips[0].width / clips[0].height)
 
     clips = [c.resize.Bicubic(width, height) for c in clips]
     return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
