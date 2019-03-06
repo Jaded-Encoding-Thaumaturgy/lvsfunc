@@ -20,4 +20,5 @@ For more information, check the docstrings in the func.
 - [fvsfunc](https://github.com/Irrational-Encoding-Wizardry/fvsfunc)
 - [mvsfunc](https://github.com/HomeOfVapourSynthEvolution/mvsfunc)
 - [havsfunc](https://github.com/HomeOfVapourSynthEvolution/havsfunc)
-- [nnedi3_rpow2](https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py)
+- [kagefunc](https://github.com/Irrational-Encoding-Wizardry/kagefunc)
+- [vsutil](https://github.com/Irrational-Encoding-Wizardry/vsutil)
