@@ -7,7 +7,8 @@ import vsTAAmbk as taa  # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
 import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
 import mvsfunc as mvf  # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
 import havsfunc as haf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
-from vsutil import is_image, get_y, get_w, split # https://github.com/Irrational-Encoding-Wizardry/vsutil
+from kagefunc import retinex_edgemask # https://github.com/Irrational-Encoding-Wizardry/kagefunc
+from vsutil import is_image, get_y, get_w, split, fallback # https://github.com/Irrational-Encoding-Wizardry/vsutil
 
 core = vs.core
 
@@ -90,23 +91,34 @@ def transpose_aa(clip: vs.VideoNode, eedi3=False):
     return aaclip if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
 
 
-def NnEedi3(src: vs.VideoNode, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1):
+def NnEedi3(clip: vs.VideoNode, mask=None, strong_mask=False, show_mask=False, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1):
     """
     Script written by Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3. This should
     fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
     """
-    clip = get_y(src)
-    if clip.format.bits_per_sample != 16:
-        clip = fvf.Depth(clip, 16)
-    thr = strength * 256
-
+    bits = clip.format.bits_per_sample - 8
+    thr = strength * (1 >> bits)
     strong = taa.TAAmbk(clip, aatype='Eedi3', alpha=alpha, beta=beta, gamma=gamma, nrad=nrad, mdis=mdis, mtype=0)
     weak = taa.TAAmbk(clip, aatype='Nnedi3', nsize=nsize, nns=nns, qual=qual, mtype=0)
     expr = 'x z - y z - * 0 < y x y {l} + min y {l} - max ?'.format(l=thr)
+    if clip.format.num_planes > 1:
+        expr = [expr, '']
     aa = core.std.Expr([strong, weak, clip], expr)
-    mask = clip.std.Prewitt().std.Binarize(50 >> 8).std.Maximum().std.Convolution([1] * 9)
-    merged = core.std.MaskedMerge(clip, aa, mask)
-    return clip if src.format.color_family == vs.GRAY else core.std.ShufflePlanes([clip, src], [0, 1, 2], vs.YUV)
+    
+    if mask is not None:
+        merged = clip.std.MaskedMerge(aa, mask, planes=0)
+    elif strong_mask:
+        mask = retinex_edgemask(clip, 1).std.Binarize()
+        merged = clip.std.MaskedMerge(aa, mask, planes=0)
+    else:    
+        mask = clip.std.Prewitt(planes=0).std.Binarize(planes=0).std.Maximum(planes=0).std.Convolution([1]*9, planes=0)
+        mask = get_y(mask)
+        merged = clip.std.MaskedMerge(aa, mask, planes=0)
+
+    if show_mask:
+        return mask
+    
+    return merged if clip.format.color_family == vs.GRAY else core.std.ShufflePlanes([merged, clip], [0, 1, 2], vs.YUV)
 
 
 def quick_denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, refine_motion=True, sbsize=16, resample=True):
