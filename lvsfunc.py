@@ -1,11 +1,13 @@
+"""
+    Various functions I make use of often and other people might be able to use too. Suggestions and fixes are always appreciated!
+"""
+
 import vapoursynth as vs
 import vsTAAmbk as taa  # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
 import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
 import mvsfunc as mvf  # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
 import havsfunc as haf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
-import mimetypes
-import os
-import re
+from vsutil import is_image, get_y, get_w, split # https://github.com/Irrational-Encoding-Wizardry/vsutil
 
 core = vs.core
 
@@ -176,34 +178,3 @@ scomp = stack_compare
 qden = quick_denoise
 denoise = quick_denoise # (backwards compatibility, will be removed later)
 
-# Helper functions written by other people (aka kageru lol):
-def getw(h, ar=16 / 9, only_even=True):
-    """
-    returns width for image (taken from kagefunc)
-    """
-    w = h * ar
-    w = int(round(w))
-    if only_even:
-        w = w // 2 * 2
-    return w
-
-
-def fallback(value, fallback_value):
-    """
-    Returns a value or the fallback if the value is None.haf
-    """
-    return fallback_value if value is None else value
-
-
-def get_y(clip: vs.VideoNode) -> vs.VideoNode:
-    """
-    Returns the first plane of a video clip.
-    """
-    return clip.std.ShufflePlanes(0, vs.GRAY)
-
-
-def is_image(filename: str) -> bool:
-    """
-    Returns true if a filename refers to an image.
-    """
-    return mimetypes.types_map.get(os.path.splitext(filename)[-1], "").startswith("image/")
