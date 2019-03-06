@@ -148,7 +148,7 @@ def quick_denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, re
 
 def source(file: str, force_lsmas=False) -> vs.VideoNode:
     """
-    Just a stupid import script. There really is no reason to use this, but hey, it was fun to write.
+    Quick general import wrapper that automatically matches various sources with an appropriate indexing filter.
     """
     if file.startswith("file:///"):
         file = file[8::]
@@ -206,4 +206,4 @@ def is_image(filename: str) -> bool:
     """
     Returns true if a filename refers to an image.
     """
-    return mimetypes.types_map[os.path.splitext(filename)[-1]].startswith("image/")
+    return mimetypes.types_map.get(os.path.splitext(filename)[-1], "").startswith("image/")
