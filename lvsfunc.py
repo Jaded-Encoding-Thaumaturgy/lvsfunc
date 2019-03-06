@@ -3,6 +3,8 @@ import vsTAAmbk as taa  # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
 import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
 import mvsfunc as mvf  # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
 import havsfunc as haf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
+import mimetypes
+import os
 import re
 
 core = vs.core
@@ -144,7 +146,7 @@ def quick_denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, re
         return merged
 
 
-def source(file: str, resample=False, force_lsmas=False) -> vs.VideoNode:
+def source(file: str, force_lsmas=False) -> vs.VideoNode:
     """
     Just a stupid import script. There really is no reason to use this, but hey, it was fun to write.
     """
@@ -152,23 +154,19 @@ def source(file: str, resample=False, force_lsmas=False) -> vs.VideoNode:
         file = file[8::]
 
     if force_lsmas:
-        clip = core.lsmas.LWLibavSource(file)
+        return core.lsmas.LWLibavSource(file)
+
+    if file.endswith(".d2v"):
+        clip = core.d2v.Source(file)
+    elif is_image(file):
+        clip = core.imwri.Read(file)
     else:
-        if file.endswith(".d2v"):
-            clip = core.d2v.Source(file)
-
-        if is_image(file):
-            clip = core.imwri.Read(file)
+        if file.endswith(".m2ts"):
+            clip = core.lsmas.LWLibavSource(file)
         else:
-            if file.endswith(".m2ts"):
-                clip = core.lsmas.LWLibavSource(file)
-            else:
-                clip = core.ffms2.Source(file)
+            clip = core.ffms2.Source(file)
 
-        if resample:
-            clip = fvf.Depth(clip, 16)
-        return clip
-
+    return clip
 
 
 # Aliasses
@@ -176,8 +174,9 @@ src = source
 comp = compare
 scomp = stack_compare
 qden = quick_denoise
+denoise = quick_denoise # (backwards compatibility, will be removed later)
 
-# Helper functions written by other people:
+# Helper functions written by other people (aka kageru lol):
 def getw(h, ar=16 / 9, only_even=True):
     """
     returns width for image (taken from kagefunc)
@@ -207,4 +206,4 @@ def is_image(filename: str) -> bool:
     """
     Returns true if a filename refers to an image.
     """
-    return bool(re.search(r'\.(png|jpe?g|bmp|tiff?)$', filename))
+    return mimetypes.types_map[os.path.splitext(filename)[-1]].startswith("image/")
