@@ -163,7 +163,7 @@ def quick_denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, re
         return merged
 
 
-def source(file: str, force_lsmas=False) -> vs.VideoNode:
+def source(file: str, force_lsmas=False, src=None, fpsnum=None, fpsden=None) -> vs.VideoNode:
     """
     Quick general import wrapper that automatically matches various sources with an appropriate indexing filter.
     """
@@ -177,6 +177,10 @@ def source(file: str, force_lsmas=False) -> vs.VideoNode:
         clip = core.d2v.Source(file)
     elif is_image(file):
         clip = core.imwri.Read(file)
+        if src is not None:
+            clip = core.std.AssumeFPS(clip, fpsnum=src.fps.numerator, fpsden=src.fps.denominator)
+        elif None not in [fpsnum, fpsden]:
+            clip = core.std.AssumeFPS(clip, fpsnum=fpsnum, fpsden=fpsden)
     else:
         if file.endswith(".m2ts"):
             clip = core.lsmas.LWLibavSource(file)
