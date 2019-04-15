@@ -163,7 +163,7 @@ def quick_denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, re
         return merged
 
 
-def stackPlanes(src, stack_vertical=False):
+def stack_planes(src, stack_vertical=False):
     """
     Splits and stacks planes for comparison
     """
