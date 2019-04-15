@@ -91,36 +91,36 @@ def transpose_aa(clip: vs.VideoNode, eedi3=False):
     return aaclip if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
 
 
-def NnEedi3(clip: vs.VideoNode, mask=None, strong_mask=False, show_mask=False, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1):
+def NnEedi3(clip: vs.VideoNode, mask=None, strong_mask=False, show_mask=False, opencl=False, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1):
     """
     Script written by Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3. This should
     fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
 
-    mask allows for you to use your own mask. 
+    mask allows for you to use your own mask.
     strong_mask uses a binarized retinex_edgemask to replace more lineart with nnedi3.
     """
     bits = clip.format.bits_per_sample - 8
     thr = strength * (1 >> bits)
-    strong = taa.TAAmbk(clip, aatype='Eedi3', alpha=alpha, beta=beta, gamma=gamma, nrad=nrad, mdis=mdis, mtype=0)
-    weak = taa.TAAmbk(clip, aatype='Nnedi3', nsize=nsize, nns=nns, qual=qual, mtype=0)
+    strong = taa.TAAmbk(clip, aatype='Eedi3', alpha=alpha, beta=beta, gamma=gamma, nrad=nrad, mdis=mdis, mtype=0, opencl=opencl)
+    weak = taa.TAAmbk(clip, aatype='Nnedi3', nsize=nsize, nns=nns, qual=qual, mtype=0, opencl=opencl)
     expr = 'x z - y z - * 0 < y x y {l} + min y {l} - max ?'.format(l=thr)
     if clip.format.num_planes > 1:
         expr = [expr, '']
     aa = core.std.Expr([strong, weak, clip], expr)
-    
+
     if mask is not None:
         merged = clip.std.MaskedMerge(aa, mask, planes=0)
     elif strong_mask:
         mask = retinex_edgemask(clip, 1).std.Binarize()
         merged = clip.std.MaskedMerge(aa, mask, planes=0)
-    else:    
+    else:
         mask = clip.std.Prewitt(planes=0).std.Binarize(planes=0).std.Maximum(planes=0).std.Convolution([1]*9, planes=0)
         mask = get_y(mask)
         merged = clip.std.MaskedMerge(aa, mask, planes=0)
 
     if show_mask:
         return mask
-    
+
     return merged if clip.format.color_family == vs.GRAY else core.std.ShufflePlanes([merged, clip], [0, 1, 2], vs.YUV)
 
 
