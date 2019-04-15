@@ -8,7 +8,7 @@ import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
 import mvsfunc as mvf  # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
 import havsfunc as haf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
 from kagefunc import retinex_edgemask # https://github.com/Irrational-Encoding-Wizardry/kagefunc
-from vsutil import is_image, get_y, get_w, split, fallback # https://github.com/Irrational-Encoding-Wizardry/vsutil
+from vsutil import is_image, get_y, get_w, split, fallback, get_subsampling # https://github.com/Irrational-Encoding-Wizardry/vsutil
 
 core = vs.core
 
@@ -161,6 +161,24 @@ def quick_denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, re
         srcV = clip.std.ShufflePlanes(2, vs.GRAY)
         merged = core.std.ShufflePlanes([denoisedY, srcU, srcV], 0, vs.YUV)
         return merged
+
+
+def stackPlanes(src, stack_vertical=False):
+    """
+    Splits and stacks planes for comparison
+    """
+    Y, U, V = kgf.split(src)
+    subsampling = get_subsampling(src)
+
+    if subsampling is "420":
+        if stack_vertical:
+            UV = core.std.StackHorizontal([U, V])
+            return core.std.StackVertical([Y, UV])
+        else:
+            UV = core.std.StackVertical([U, V])
+            return core.std.StackHorizontal([Y, UV])
+    elif subsampling is "444":
+         return core.std.StackVertical([Y, U, V]) if stack_vertical else core.std.StackHorizontal([Y, U, V])
 
 
 def source(file: str, force_lsmas=False, src=None, fpsnum=None, fpsden=None) -> vs.VideoNode:
