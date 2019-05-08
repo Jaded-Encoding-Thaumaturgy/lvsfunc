@@ -8,7 +8,7 @@ import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
 import mvsfunc as mvf  # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
 import havsfunc as haf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
 from kagefunc import retinex_edgemask, split # https://github.com/Irrational-Encoding-Wizardry/kagefunc
-from vsutil import is_image, get_y, get_w, split, fallback, get_subsampling # https://github.com/Irrational-Encoding-Wizardry/vsutil
+from vsutil import is_image, get_y, get_w, fallback, get_subsampling # https://github.com/Irrational-Encoding-Wizardry/vsutil
 
 core = vs.core
 
