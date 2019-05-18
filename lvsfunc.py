@@ -148,6 +148,8 @@ def quick_denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, re
         denoiseY = haf.SMDegrain(clipY, prefilter=3, RefineMotion=refine_motion)
     elif mode in [3, 'DFT', 'dfttest']:
         denoiseY = clipY.dfttest.DFTTest(sigma=4.0, tbsize=1, sbsize=sbsize, sosize=sbsize*0.75)
+    elif mode in [4, 'tnlm']:
+        denoiseY = clipY.tnlm.TNLMeans(ax=2, ay=2, az=2, h=h)
     else:
         raise ValueError('denoise: unknown mode')
 
