@@ -140,7 +140,9 @@ def quick_denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, re
             clip = fvf.Depth(clip, 16)
     clipY = core.std.ShufflePlanes(clip, 0, vs.GRAY)
 
-    if mode in [1, 'knlm']:
+    if mode in [0, 'None']:
+        denoiseY = clipY
+    elif mode in [1, 'knlm']:
         denoiseY = clipY.knlm.KNLMeansCL(d=3, a=2, h=h)
     elif mode in [2, 'SMD', 'SMDegrain']:
         denoiseY = haf.SMDegrain(clipY, prefilter=3, RefineMotion=refine_motion)
