@@ -8,7 +8,7 @@ import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
 import mvsfunc as mvf  # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
 import havsfunc as haf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
 from kagefunc import retinex_edgemask, split # https://github.com/Irrational-Encoding-Wizardry/kagefunc
-from vsutil import is_image, get_y, get_w, fallback, get_subsampling # https://github.com/Irrational-Encoding-Wizardry/vsutil
+from vsutil import is_image, get_y, get_w, fallback, get_subsampling, get_depth # https://github.com/Irrational-Encoding-Wizardry/vsutil
 
 core = vs.core
 
@@ -124,47 +124,42 @@ def NnEedi3(clip: vs.VideoNode, mask=None, strong_mask=False, show_mask=False, o
     return merged if clip.format.color_family == vs.GRAY else core.std.ShufflePlanes([merged, clip], [0, 1, 2], vs.YUV)
 
 
-def quick_denoise(clip: vs.VideoNode, mode='knlm', bm3d=True, sigma=3, h=1.0, refine_motion=True, sbsize=16, resample=True):
+def quick_denoise(src: vs.VideoNode, sigma=4, cmode='knlm', ref=None, **kwargs):
     """
-    Wrapper for generic denoising. Denoising is done by BM3D with a given denoisers being used for ref. Returns the denoised clip used
-    as ref if BM3D=False.
+        A rewrite of my old 'quick_denoise'. I still hate it, but whatever.
 
-    Mode 1 = KNLMeansCL
-    Mode 2 = SMDegrain
-    Mode 3 = DFTTest
+        This wrapper is used to denoise both the luma and chroma using various denoisers of your choosing.
+        If you wish to use just one denoiser, you're probably better off using that specific filter rather than this wrapper.
 
-    Will be removed eventuallyTM.
+        Chroma Modes (cmode):
+            1 - Use knlmeans for denoising the chroma
+            2 - Use tnlmeans for denoising the chroma
+            3 - Use dfttest for denoising the chroma
+            4 - Use SMDegrain for denoising the chroma
+
+        BM3D is used for denoising the luma. Denoising strenght is set with "sigma".
+
+        Special thanks to kageru for helping me out with some ideas and pointers.
     """
-    if resample:
-        if clip.format.bits_per_sample != 16:
-            clip = fvf.Depth(clip, 16)
-    clipY = core.std.ShufflePlanes(clip, 0, vs.GRAY)
+    Y, U, V = split(src)
 
-    if mode in [0, 'None']:
-        denoiseY = clipY
-    elif mode in [1, 'knlm']:
-        denoiseY = clipY.knlm.KNLMeansCL(d=3, a=2, h=h)
-    elif mode in [2, 'SMD', 'SMDegrain']:
-        denoiseY = haf.SMDegrain(clipY, prefilter=3, RefineMotion=refine_motion)
-    elif mode in [3, 'DFT', 'dfttest']:
-        denoiseY = clipY.dfttest.DFTTest(sigma=4.0, tbsize=1, sbsize=sbsize, sosize=sbsize*0.75)
-    elif mode in [4, 'tnlm']:
-        denoiseY = clipY.tnlm.TNLMeans(ax=2, ay=2, az=2, h=h)
+    if cmode in [1, 'knlm']:
+        denU = U.knlm.KNLMeansCL(d=3, a=2, **kwargs)
+        denV = V.knlm.KNLMeansCL(d=3, a=2, **kwargs)
+    elif cmode in [2, 'tnlm']:
+        denU = U.tnlm.TNLMeans(ax=2, ay=2, az=2, **kwargs)
+        denV = V.tnlm.TNLMeans(ax=2, ay=2, az=2, **kwargs)
+    elif cmode in [3, 'dft']:
+        denU = U.dfttest.DFTTest(sosize=sbsize*0.75, **kwargs)
+        denV = V.dfttest.DFTTest(sosize=sbsize*0.75, **kwargs)
+    elif cmode in [4, 'smd']:
+        denU = haf.SMDegrain(U, prefilter=3, **kwargs)
+        denV = haf.SMDegrain(V, prefilter=3, **kwargs)
     else:
-        raise ValueError('denoise: unknown mode')
+        raise ValueError('quick_denoise: unknown mode')
 
-    if bm3d:
-        denoisedY = mvf.BM3D(clipY, sigma=sigma, psample=0, radius1=1, ref=denoiseY)
-    elif bm3d is False:
-        denoisedY = denoiseY
-
-    if clip.format.color_family is vs.GRAY:
-        return denoisedY
-    else:
-        srcU = clip.std.ShufflePlanes(1, vs.GRAY)
-        srcV = clip.std.ShufflePlanes(2, vs.GRAY)
-        merged = core.std.ShufflePlanes([denoisedY, srcU, srcV], 0, vs.YUV)
-        return merged
+    denY = mvf.BM3D(Y, sigma=sigma, psample=0, radius1=1, ref=ref)
+    return core.std.ShufflePlanes([denY, denU, denV], 0, vs.YUV)
 
 
 def stack_planes(src, stack_vertical=False):
