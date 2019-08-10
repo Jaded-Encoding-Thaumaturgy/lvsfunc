@@ -3,16 +3,8 @@
 """
 
 import vapoursynth as vs
-import vsTAAmbk as taa  # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
-import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
-import mvsfunc as mvf  # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
-import havsfunc as haf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
-from kagefunc import retinex_edgemask, split, join, generate_keyframes # https://github.com/Irrational-Encoding-Wizardry/kagefunc
+import kagefunc as kgf # https://github.com/Irrational-Encoding-Wizardry/kagefunc
 import vsutil # https://github.com/Irrational-Encoding-Wizardry/vsutil
-from nnedi3_rpow2 import nnedi3_rpow2 # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
-import functools
-import sys
-import os
 core = vs.core
 
 # TO-DO: Write function that only masks px of a certain color/threshold of colors
@@ -73,12 +65,15 @@ def conditional_descale(src, height, b=1/3, c=1/3, threshold=0.003, w2x=False):
         The code for _get_error was mostly taken from kageru's Made in Abyss script.
         Special thanks to Lypheo for holding my hand as this was written.
     """
+    import functools
+    import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
+
     if vsutil.get_depth(src) != 32:
         src = fvf.Depth(src, 32)
-    y, u, v = split(src)
+    y, u, v = kgf.split(src)
     descale = _get_error(y, height=height, b=b, c=c)
     eval = core.std.FrameEval(src, functools.partial(_diff, src=src, descaled=descale[0], threshold=threshold, w2x=w2x), descale[1])
-    return join([eval, u, v])
+    return kgf.join([eval, u, v])
 
 
 def _get_error(src, height, b, c):
@@ -89,6 +84,8 @@ def _get_error(src, height, b, c):
 
 
 def _diff(n, f, src, descaled, threshold=0.003, w2x=False):
+    from nnedi3_rpow2 import nnedi3_rpow2 # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
+
     if f.props.PlaneStatsDiff > threshold:
         return src
     else:
@@ -149,8 +146,10 @@ def NnEedi3(clip: vs.VideoNode, mask=None, strong_mask=False, show_mask=False, o
     This should fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
 
     "mask" allows for you to use your own mask.
-    "strong_mask" uses a binarized retinex_edgemask to replace more lineart with nnedi3.
+    "strong_mask" uses a binarized kgf.retinex_edgemask to replace more lineart with nnedi3.
     """
+    import vsTAAmbk as taa  # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
+
     bits = clip.format.bits_per_sample - 8
     thr = strength * (1 >> bits)
     strong = taa.TAAmbk(clip, aatype='Eedi3', alpha=alpha, beta=beta, gamma=gamma, nrad=nrad, mdis=mdis, mtype=0, opencl=opencl)
@@ -163,7 +162,7 @@ def NnEedi3(clip: vs.VideoNode, mask=None, strong_mask=False, show_mask=False, o
     if mask is not None:
         merged = clip.std.MaskedMerge(aa, mask, planes=0)
     elif strong_mask:
-        mask = retinex_edgemask(clip, 1).std.Binarize()
+        mask = kgf.retinex_edgemask(clip, 1).std.Binarize()
         merged = clip.std.MaskedMerge(aa, mask, planes=0)
     else:
         mask = clip.std.Prewitt(planes=0).std.Binarize(planes=0).std.Maximum(planes=0).std.Convolution([1]*9, planes=0)
@@ -194,7 +193,10 @@ def quick_denoise(src: vs.VideoNode, sigma=4, cmode='knlm', ref=None, **kwargs):
 
         Special thanks to kageru for helping me out with some ideas and pointers.
     """
-    Y, U, V = split(src)
+    import havsfunc as hvf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
+    import mvsfunc as mvf  # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
+
+    Y, U, V = kgf.split(src)
 
     if cmode in [1, 'knlm']:
         denU = U.knlm.KNLMeansCL(d=3, a=2, **kwargs)
@@ -206,8 +208,8 @@ def quick_denoise(src: vs.VideoNode, sigma=4, cmode='knlm', ref=None, **kwargs):
         denU = U.dfttest.DFTTest(sosize=sbsize*0.75, **kwargs)
         denV = V.dfttest.DFTTest(sosize=sbsize*0.75, **kwargs)
     elif cmode in [4, 'smd']:
-        denU = haf.SMDegrain(U, prefilter=3, **kwargs)
-        denV = haf.SMDegrain(V, prefilter=3, **kwargs)
+        denU = hvf.SMDegrain(U, prefilter=3, **kwargs)
+        denV = hvf.SMDegrain(V, prefilter=3, **kwargs)
     else:
         raise ValueError('quick_denoise: unknown mode')
 
@@ -219,7 +221,7 @@ def stack_planes(src, stack_vertical=False):
     """
     Stacks the planes of a clip.
     """
-    Y, U, V = split(src)
+    Y, U, V = kgf.split(src)
     subsampling = vsutil.get_subsampling(src)
 
     if subsampling is "420":
