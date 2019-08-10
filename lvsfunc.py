@@ -20,7 +20,9 @@ core = vs.core
 
 def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int, mark=False, mark_a=' Clip A ', mark_b=' Clip B ', fontsize=57):
     """
-    Allows for two frames to be compared by putting them next to each other in a list.
+    Allows for the same frames from two different clips to be compared by putting them next to each other in a list.
+
+    Shorthand for this function is "comp".
     """
     if clip_a.format.id != clip_b.format.id:
         raise ValueError('compare: The format of both clips must be equal')
@@ -37,9 +39,13 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int, mark=False,
 
 def stack_compare(*clips: vs.VideoNode, width=None, height=None, stack_vertical=False):
     """
-    Compares two frames by stacking.
+    A simple wrapper that allows you to compare two clips by stacking them.
+    You can stack an infinite amount of clips.
+
     Best to use when trying to match two sources frame-accurately, however by setting height to the source's
     height (or None), it can be used for comparing frames.
+
+    Shorthand for this function is "scomp".
     """
     if len(set([c.format.id for c in clips])) != 1:
         raise ValueError('stack_compare: The format of every clip must be equal')
@@ -55,15 +61,17 @@ def stack_compare(*clips: vs.VideoNode, width=None, height=None, stack_vertical=
 
 def conditional_descale(src, height, b=1/3, c=1/3, threshold=0.003, w2x=False):
     """
-        Compares a descaled and reupscaled clip with the src and descales + reupscales if frame difference does not exceed the threshold.
-        If the frame difference does exceed the threshold, it will remain unchanged.
+
+        Descales and reupscales a clip. If the difference exceeds the threshold, the frame will not be descaled.
+        If it does not exceed the threshold, the frame will upscaled using either nnedi3_rpow2 or waifu2x-caffe.
+
         Useful for bad BDs that have additional post-processing done on some scenes, rather than all of them.
 
         Currently only works with bicubic, and has no native 1080p masking.
         Consider scenefiltering OP/EDs with a different descale function instead.
 
         The code for _get_error was mostly taken from kageru's Made in Abyss script.
-        Special thanks to Lypheo for holding my hand as we wrote this.
+        Special thanks to Lypheo for holding my hand as this was written.
     """
     if vsutil.get_depth(src) != 32:
         src = fvf.Depth(src, 32)
@@ -92,7 +100,11 @@ def _diff(n, f, src, descaled, threshold=0.003, w2x=False):
 
 def transpose_aa(clip: vs.VideoNode, eedi3=False):
     """
-    Script written by Zastin and modified by me. Useful for shows like Yuru Camp with bad lineart problems.
+    Function written by Zastin and modified by me.
+    Performs anti-aliasing over a clip by using nnedi3, transposing, using nnedi3 again, and transposing a final time.
+    This results in overall stronger aliasing.
+    Useful for shows like Yuru Camp with bad lineart problems.
+
     If Eedi3=False, it will use Nnedi3 instead.
     """
     srcY = vsutil.get_y(clip)
@@ -133,11 +145,11 @@ def transpose_aa(clip: vs.VideoNode, eedi3=False):
 
 def NnEedi3(clip: vs.VideoNode, mask=None, strong_mask=False, show_mask=False, opencl=False, strength=1, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1):
     """
-    Script written by Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3. This should
-    fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
+    Script written by Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3.
+    This should fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
 
-    mask allows for you to use your own mask.
-    strong_mask uses a binarized retinex_edgemask to replace more lineart with nnedi3.
+    "mask" allows for you to use your own mask.
+    "strong_mask" uses a binarized retinex_edgemask to replace more lineart with nnedi3.
     """
     bits = clip.format.bits_per_sample - 8
     thr = strength * (1 >> bits)
@@ -167,6 +179,7 @@ def NnEedi3(clip: vs.VideoNode, mask=None, strong_mask=False, show_mask=False, o
 def quick_denoise(src: vs.VideoNode, sigma=4, cmode='knlm', ref=None, **kwargs):
     """
         A rewrite of my old 'quick_denoise'. I still hate it, but whatever.
+        This will probably be removed in a future commit.
 
         This wrapper is used to denoise both the luma and chroma using various denoisers of your choosing.
         If you wish to use just one denoiser, you're probably better off using that specific filter rather than this wrapper.
@@ -204,7 +217,7 @@ def quick_denoise(src: vs.VideoNode, sigma=4, cmode='knlm', ref=None, **kwargs):
 
 def stack_planes(src, stack_vertical=False):
     """
-    Splits and stacks planes for comparison
+    Stacks the planes of a clip.
     """
     Y, U, V = split(src)
     subsampling = vsutil.get_subsampling(src)
@@ -222,7 +235,9 @@ def stack_planes(src, stack_vertical=False):
 
 def source(file: str, force_lsmas=False, src=None, fpsnum=None, fpsden=None) -> vs.VideoNode:
     """
-    Quick general import wrapper that automatically matches various sources with an appropriate indexing filter.
+    Generic clip import function.
+    Automatically determines if ffms2 or L-SMASH should be used to import a clip, but L-SMASH can be forced.
+    It also automatically determines if an image has been imported. You can set its fps using "fpsnum" and "fpsden", or using a reference clip with "src".
     """
     if file.startswith("file:///"):
         file = file[8::]
