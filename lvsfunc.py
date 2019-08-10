@@ -7,9 +7,12 @@ import vsTAAmbk as taa  # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
 import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
 import mvsfunc as mvf  # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
 import havsfunc as haf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
-from kagefunc import retinex_edgemask, split # https://github.com/Irrational-Encoding-Wizardry/kagefunc
-from vsutil import is_image, get_y, get_w, fallback, get_subsampling, get_depth # https://github.com/Irrational-Encoding-Wizardry/vsutil
-
+from kagefunc import retinex_edgemask, split, join, generate_keyframes # https://github.com/Irrational-Encoding-Wizardry/kagefunc
+import vsutil # https://github.com/Irrational-Encoding-Wizardry/vsutil
+from nnedi3_rpow2 import nnedi3_rpow2 # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
+import functools
+import sys
+import os
 core = vs.core
 
 # TO-DO: Write function that only masks px of a certain color/threshold of colors
@@ -42,12 +45,49 @@ def stack_compare(*clips: vs.VideoNode, width=None, height=None, stack_vertical=
         raise ValueError('stack_compare: The format of every clip must be equal')
 
     if height is None:
-        height = fallback(height, clips[0].height)
+        height = vsutil.fallback(height, clips[0].height)
     if width is None:
-        width = get_w(height, aspect_ratio=clips[0].width / clips[0].height)
+        width = vsutil.get_w(height, aspect_ratio=clips[0].width / clips[0].height)
 
     clips = [c.resize.Bicubic(width, height) for c in clips]
     return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
+
+
+def conditional_descale(src, height, b=1/3, c=1/3, threshold=0.003, w2x=False):
+    """
+        Compares a descaled and reupscaled clip with the src and descales + reupscales if frame difference does not exceed the threshold.
+        If the frame difference does exceed the threshold, it will remain unchanged.
+        Useful for bad BDs that have additional post-processing done on some scenes, rather than all of them.
+
+        Currently only works with bicubic, and has no native 1080p masking.
+        Consider scenefiltering OP/EDs with a different descale function instead.
+
+        The code for _get_error was mostly taken from kageru's Made in Abyss script.
+        Special thanks to Lypheo for holding my hand as we wrote this.
+    """
+    if vsutil.get_depth(src) != 32:
+        src = fvf.Depth(src, 32)
+    y, u, v = split(src)
+    descale = _get_error(y, height=height, b=b, c=c)
+    eval = core.std.FrameEval(src, functools.partial(_diff, src=src, descaled=descale[0], threshold=threshold, w2x=w2x), descale[1])
+    return join([eval, u, v])
+
+
+def _get_error(src, height, b, c):
+    descale = core.descale.Debicubic(src, vsutil.get_w(height), height, b=b, c=c)
+    upscale = core.resize.Bicubic(descale, src.width, src.height, filter_param_a=b, filter_param_b=c)
+    diff = core.std.PlaneStats(upscale, src)
+    return descale, diff
+
+
+def _diff(n, f, src, descaled, threshold=0.003, w2x=False):
+    if f.props.PlaneStatsDiff > threshold:
+        return src
+    else:
+        if w2x:
+            return core.caffe.Waifu2x(descaled, noise=-1, scale=2, model=6, cudnn=True, processor=0, tta=False).resize.Bicubic(src.width, src.height, format=src.format)
+        else:
+            return nnedi3_rpow2(descaled).resize.Bicubic(src.width, src.height, format=src.format)
 
 
 def transpose_aa(clip: vs.VideoNode, eedi3=False):
@@ -55,7 +95,7 @@ def transpose_aa(clip: vs.VideoNode, eedi3=False):
     Script written by Zastin and modified by me. Useful for shows like Yuru Camp with bad lineart problems.
     If Eedi3=False, it will use Nnedi3 instead.
     """
-    srcY = get_y(clip)
+    srcY = vsutil.get_y(clip)
     height, width = clip.height, clip.width
 
     if eedi3:
@@ -115,7 +155,7 @@ def NnEedi3(clip: vs.VideoNode, mask=None, strong_mask=False, show_mask=False, o
         merged = clip.std.MaskedMerge(aa, mask, planes=0)
     else:
         mask = clip.std.Prewitt(planes=0).std.Binarize(planes=0).std.Maximum(planes=0).std.Convolution([1]*9, planes=0)
-        mask = get_y(mask)
+        mask = vsutil.get_y(mask)
         merged = clip.std.MaskedMerge(aa, mask, planes=0)
 
     if show_mask:
@@ -167,7 +207,7 @@ def stack_planes(src, stack_vertical=False):
     Splits and stacks planes for comparison
     """
     Y, U, V = split(src)
-    subsampling = get_subsampling(src)
+    subsampling = vsutil.get_subsampling(src)
 
     if subsampling is "420":
         if stack_vertical:
@@ -192,7 +232,7 @@ def source(file: str, force_lsmas=False, src=None, fpsnum=None, fpsden=None) -> 
 
     if file.endswith(".d2v"):
         clip = core.d2v.Source(file)
-    elif is_image(file):
+    elif vsutil.is_image(file):
         clip = core.imwri.Read(file)
         if src is not None:
             clip = core.std.AssumeFPS(clip, fpsnum=src.fps.numerator, fpsden=src.fps.denominator)
