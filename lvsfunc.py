@@ -235,6 +235,36 @@ def stack_planes(src, stack_vertical=False):
          return core.std.StackVertical([Y, U, V]) if stack_vertical else core.std.StackHorizontal([Y, U, V])
 
 
+def test_descale(src, height, kernel='bicubic', b=1/3, c=1/3, taps=4):
+    """
+    Generic function to test descales with.
+    Descales and reupscales a given clip, allowing you to compare the two easily.
+
+    When comparing, it is recommended to do atleast a 4x zoom using Nearest Neighbor.
+    I also suggest using "compare", as that will make comparison a lot easier.
+    """
+    y, u, v = kgf.split(src)
+    if kernel is 'bicubic':
+        descaled = core.descale.Debicubic(y, vsutil.get_w(height), height, b=b, c=c)
+        upscaled = core.resize.Bicubic(descaled, y.width, y.height, filter_param_a=b, filter_param_b=c)
+    elif kernel is 'bilinear':
+        descaled = core.descale.Debilinear(y, vsutil.get_w(height), height)
+        upscaled = core.resize.Bilinear(descaled, vsutil.get_w(height), height)
+    elif kernel is 'lanczos':
+        descaled = core.descale.Delanczos(y, vsutil.get_w(height), height, taps=taps)
+        upscaled = core.resize.Lanczos(descaled, y.width, y.height, filter_param_a=taps)
+    elif kernel is 'spline16':
+        descaled = core.descale.Despline16(y, width, height)
+        upscaled = core.resize.Spline16(descaled, vsutil.get_w(height), height)
+    elif kernel is 'spline36':
+        descaled = core.descale.Despline36(y, width, height)
+        upscaled = core.resize.Spline36(descaled, vsutil.get_w(height), height)
+    else:
+        raise ValueError('test_descale: unknown kernel')
+
+    return kgf.join([upscaled, u, v])
+
+
 def source(file: str, force_lsmas=False, src=None, fpsnum=None, fpsden=None) -> vs.VideoNode:
     """
     Generic clip import function.
