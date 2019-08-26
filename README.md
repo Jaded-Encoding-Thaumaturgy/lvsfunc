@@ -4,11 +4,11 @@ This function offers the following:</br>
 
 - compare(clip_a, clip_b, frames: int, mark: bool, mark_a: str, mark_b: str, fontsize: int)
 - stack_compare(clips, width: int, height: int, stack_vertical: bool)
-- conditional_descale(src, height: int, b: float, c: float, threshold: float, w2x: bool)
+- conditional_descale(clip, height: int, b: float, c: float, threshold: float, w2x: bool)
 - transpose_aa(clip, eedi3: bool)
 - nneedi3_clamp(clip, mask, strong_mask: bool, show_mask: bool, opencl: bool, strength=1, alpha: float, beta: float, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1)
-- quick_denoise(src, sigma=4, cmode='knlm', ref, **kwargs)
-- stack_planes(src, stack_vertical: bool)
+- quick_denoise(clip, sigma=4, cmode='knlm', ref, **kwargs)
+- stack_planes(clip, stack_vertical: bool)
 - source(file, force_lsmas: bool, ref, fpsnum: int, fpsden: int)
 
 ## Requirements:
@@ -43,7 +43,7 @@ Shorthand for this function is `comp`.
 ```py
 import lvsfunc as lvf
 
-comp = lvf.compare(src_a, src_b, frames=[100,200,300])
+comp = lvf.compare(clip_a, clip_b, frames=[100,200,300])
 ```
 
 ### stack_compare
@@ -55,7 +55,7 @@ Shorthand for this function is `scomp`.
 ```py
 import lvsfunc as lvf
 
-scomp = lvf.stack_compare(src_a, src_b, src_c, height=480)
+scomp = lvf.stack_compare(clip_a, clip_b, clip_c, height=480)
 ```
 
 ### conditional_descale
@@ -72,7 +72,7 @@ Standard usage
 ```py
 import lvsfunc as lvf
 
-descaled = lvf.conditional_descale(src, height=540, b=0, c=1)
+descaled = lvf.conditional_descale(clip, height=540, b=0, c=1)
 ```
 
 Scenefiltering the Opening and Ending of an anime
@@ -82,9 +82,9 @@ import fvsfunc as fvf
 import kagefunc as kgf
 from nnedi3_rpow2 import nnedi3_rpow2
 
-descaled_a = lvf.conditional_descale(src, height=540, b=0, c=1, w2x=True)
-descaled_b = kgf.inverse_scale(src, height=540, kernel='bicubic', b=0, c=1, mask_detail=True)
-descaled_b = nnedi3_rpow2(descaled_b).resize.Spline36(src.width, src.height)
+descaled_a = lvf.conditional_descale(clip, height=540, b=0, c=1, w2x=True)
+descaled_b = kgf.inverse_scale(clip, height=540, kernel='bicubic', b=0, c=1, mask_detail=True)
+descaled_b = nnedi3_rpow2(descaled_b).resize.Spline36(clip.width, clip.height)
 
 descaled = fvf.rfs(descaled_a, descaled_b, mappings=f"[{opstart} {opstart+2159}] [{edstart} {edstart+2157}]")
 ```
@@ -123,7 +123,7 @@ Importing a standard clip
 ```py
 import lvsfunc as lvf
 
-src = lvf.src("BDMV/STREAM/00000.m2ts")
+bluray = lvf.src("BDMV/STREAM/00000.m2ts")
 ```
 
 Importing a custom mask, converting it to GRAY, binarizing it, and making is 2156 frames long.

@@ -70,7 +70,7 @@ def stack_compare(*clips: vs.VideoNode, width: int = None, height: int = None,
     return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
 
 
-def conditional_descale(src: vs.VideoNode, height: int, b: float = 1 / 3, c: float = 1 / 3, threshold: float = 0.003,
+def conditional_descale(clip: vs.VideoNode, height: int, b: float = 1 / 3, c: float = 1 / 3, threshold: float = 0.003,
                         w2x: bool = False) -> vs.VideoNode:
     """
     Descales and reupscales a clip. If the difference exceeds the threshold, the frame will not be descaled.
@@ -88,27 +88,27 @@ def conditional_descale(src: vs.VideoNode, height: int, b: float = 1 / 3, c: flo
     :param w2x: bool:  Whether or not to use waifu2x-caffe upscaling. (Default value = False)
 
     """
-    def _get_error(src, height, b, c):
-        descale = core.descale.Debicubic(src, get_w(height), height, b=b, c=c)
-        upscale = core.resize.Bicubic(descale, src.width, src.height, filter_param_a=b, filter_param_b=c)
-        diff = core.std.PlaneStats(upscale, src)
+    def _get_error(clip, height, b, c):
+        descale = core.descale.Debicubic(clip, get_w(height), height, b=b, c=c)
+        upscale = core.resize.Bicubic(descale, clip.width, clip.height, filter_param_a=b, filter_param_b=c)
+        diff = core.std.PlaneStats(upscale, clip)
         return descale, diff
 
-    def _diff(n, f, src, descaled, threshold, w2x):
+    def _diff(n, f, clip, descaled, threshold, w2x):
         if f.props.PlaneStatsDiff > threshold:
-            return src
+            return clip
         if w2x:
             return core.caffe.Waifu2x(descaled, noise=-1, scale=2, model=6, cudnn=True, processor=0,
-                                      tta=False).resize.Bicubic(src.width, src.height, format=src.format)
+                                      tta=False).resize.Bicubic(clip.width, clip.height, format=clip.format)
 
-        return nnedi3_rpow2(descaled).resize.Bicubic(src.width, src.height, format=src.format)
+        return nnedi3_rpow2(descaled).resize.Bicubic(clip.width, clip.height, format=clip.format)
 
-    if get_depth(src) != 32:
-        src = fvf.Depth(src, 32, dither_type='none')
+    if get_depth(clip) != 32:
+        clip = fvf.Depth(clip, 32, dither_type='none')
 
-    y, u, v = kgf.split(src)
+    y, u, v = kgf.split(clip)
     descale = _get_error(y, height=height, b=b, c=c)
-    f_eval = core.std.FrameEval(src, partial(_diff, src=src, descaled=descale[0], threshold=threshold, w2x=w2x),
+    f_eval = core.std.FrameEval(clip, partial(_diff, clip=clip, descaled=descale[0], threshold=threshold, w2x=w2x),
                                 descale[1])
 
     return kgf.join([f_eval, u, v])
@@ -125,29 +125,28 @@ def transpose_aa(clip: vs.VideoNode, eedi3: bool = False) -> vs.VideoNode:
 
     """
     src_y = get_y(clip)
-    height, width = clip.height, clip.width
 
     if eedi3:
         def _aa(src_y):
             src_y = src_y.std.Transpose()
             src_y = src_y.eedi3m.EEDI3(0, 1, 0, 0.5, 0.2)
             src_y = src_y.znedi3.nnedi3(1, 0, 0, 3, 4, 2)
-            src_y = src_y.resize.Spline36(height, width, src_top=.5)
+            src_y = src_y.resize.Spline36(clip.height, clip.width, src_top=.5)
             src_y = src_y.std.Transpose()
             src_y = src_y.eedi3m.EEDI3(0, 1, 0, 0.5, 0.2)
             src_y = src_y.znedi3.nnedi3(1, 0, 0, 3, 4, 2)
-            src_y = src_y.resize.Spline36(width, height, src_top=.5)
+            src_y = src_y.resize.Spline36(clip.width, clip.height, src_top=.5)
             return src_y
     else:
         def _aa(src_y):
             src_y = src_y.std.Transpose()
             src_y = src_y.nnedi3.nnedi3(0, 1, 0, 3, 3, 2)
             src_y = src_y.nnedi3.nnedi3(1, 0, 0, 3, 3, 2)
-            src_y = src_y.resize.Spline36(height, width, src_top=.5)
+            src_y = src_y.resize.Spline36(clip.height, clip.width, src_top=.5)
             src_y = src_y.std.Transpose()
             src_y = src_y.nnedi3.nnedi3(0, 1, 0, 3, 3, 2)
             src_y = src_y.nnedi3.nnedi3(1, 0, 0, 3, 3, 2)
-            src_y = src_y.resize.Spline36(width, height, src_top=.5)
+            src_y = src_y.resize.Spline36(clip.width, clip.height, src_top=.5)
             return src_y
 
     def _csharp(flt, src):
@@ -211,7 +210,7 @@ def nneedi3_clamp(clip: vs.VideoNode, mask: vs.VideoNode=None, strong_mask: bool
     return merged if clip.format.color_family == vs.GRAY else core.std.ShufflePlanes([merged, clip], [0, 1, 2], vs.YUV)
 
 
-def quick_denoise(src: vs.VideoNode, sigma=4, cmode='knlm', ref: vs.VideoNode = None, **kwargs) -> vs.VideoNode:
+def quick_denoise(clip: vs.VideoNode, sigma=4, cmode='knlm', ref: vs.VideoNode = None, **kwargs) -> vs.VideoNode:
     """
     A rewrite of my old 'quick_denoise'. I still hate it, but whatever.
     This will probably be removed in a future commit.
@@ -233,7 +232,7 @@ def quick_denoise(src: vs.VideoNode, sigma=4, cmode='knlm', ref: vs.VideoNode = 
     :param ref: vs.VideoNode:  Optional reference clip to replace BM3D's basic estimate. (Default value = None)
 
     """
-    y, u, v = kgf.split(src)
+    y, u, v = kgf.split(clip)
     if cmode in [1, 'knlm']:
         den_u = u.knlm.KNLMeansCL(d=3, a=2, **kwargs)
         den_v = v.knlm.KNLMeansCL(d=3, a=2, **kwargs)
@@ -256,11 +255,11 @@ def quick_denoise(src: vs.VideoNode, sigma=4, cmode='knlm', ref: vs.VideoNode = 
     return core.std.ShufflePlanes([den_y, den_u, den_v], 0, vs.YUV)
 
 
-def stack_planes(src: vs.VideoNode, stack_vertical: bool = False) -> vs.VideoNode:
+def stack_planes(clip: vs.VideoNode, stack_vertical: bool = False) -> vs.VideoNode:
     """Stacks the planes of a clip."""
 
-    y, u, v = kgf.split(src)
-    subsampling = get_subsampling(src)
+    y, u, v = kgf.split(clip)
+    subsampling = get_subsampling(clip)
 
     if subsampling is '420':
         if stack_vertical:
@@ -277,7 +276,7 @@ def stack_planes(src: vs.VideoNode, stack_vertical: bool = False) -> vs.VideoNod
 
 # TODO: fix test_descale ?
 
-def test_descale(src: vs.VideoNode, height: int, kernel: str = 'bicubic', b: float = 1 / 3, c: float = 1 / 3,
+def test_descale(clip: vs.VideoNode, height: int, kernel: str = 'bicubic', b: float = 1 / 3, c: float = 1 / 3,
                  taps: int = 4) -> vs.VideoNode:
     """
     Generic function to test descales with.
@@ -293,7 +292,7 @@ def test_descale(src: vs.VideoNode, height: int, kernel: str = 'bicubic', b: flo
     :param taps: int:  Taps param for lanczos kernel. (Default value = 4)
 
     """
-    y, u, v = kgf.split(src)
+    y, u, v = kgf.split(clip)
     if kernel is 'bicubic':
         descaled = core.descale.Debicubic(y, get_w(height), height, b=b, c=c)
         upscaled = core.resize.Bicubic(descaled, y.width, y.height, filter_param_a=b, filter_param_b=c)
