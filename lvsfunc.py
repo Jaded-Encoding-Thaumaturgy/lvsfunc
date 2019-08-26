@@ -160,7 +160,7 @@ def transpose_aa(clip: vs.VideoNode, eedi3: bool = False) -> vs.VideoNode:
     return aaclip if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
 
 
-def nneedi3_clamp(clip: vs.VideoNode, mask=None, strong_mask: bool = False, show_mask: bool = False,
+def nneedi3_clamp(clip: vs.VideoNode, mask: vs.VideoNode=None, strong_mask: bool = False, show_mask: bool = False,
                   opencl: bool = False, strength=1, alpha: float = 0.25, beta: float = 0.5, gamma=40, nrad=2, mdis=20,
                   nsize=3, nns=3, qual=1) -> vs.VideoNode:
     """
