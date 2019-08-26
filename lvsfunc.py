@@ -228,7 +228,7 @@ def quick_denoise(src: vs.VideoNode, sigma=4, cmode='knlm', ref: vs.VideoNode = 
     :param cmode:  Chroma modes:
                      1 - Use knlmeans for denoising the chroma (default)
                      2 - Use tnlmeans for denoising the chroma
-                     3 - Use dfttest for denoising the chroma
+                     3 - Use dfttest for denoising the chroma (requires setting 'sbsize' in kwargs)
                      4 - Use SMDegrain for denoising the chroma
     :param ref: vs.VideoNode:  Optional reference clip to replace BM3D's basic estimate. (Default value = None)
 
