@@ -9,24 +9,24 @@ import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
 import havsfunc as hvf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
 import kagefunc as kgf  # https://github.com/Irrational-Encoding-Wizardry/kagefunc
 import mvsfunc as mvf  # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
+from nnedi3_rpow2 import \
+    nnedi3_rpow2  # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
 from vsTAAmbk import TAAmbk  # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
 from vsutil import *  # https://github.com/Irrational-Encoding-Wizardry/vsutil
 
-from nnedi3_rpow2 import \
-    nnedi3_rpow2  # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
-
 core = vs.core
+
 # optional dependencies: (http://www.vapoursynth.com/doc/pluginlist.html)
-#   waifu2x-caffe
-#   L-SMASH Source
-#   d2vsource
-#   FFMS2
+#     waifu2x-caffe
+#     L-SMASH Source
+#     d2vsource
+#     FFMS2
 
 # TODO: Write function that only masks px of a certain color/threshold of colors
 
+
 def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, *frames: int, mark: bool = False, mark_a: str = ' Clip A ',
-            mark_b: str = ' Clip B ',
-            fontsize: int = 57) -> vs.VideoNode:
+            mark_b: str = ' Clip B ', fontsize: int = 57) -> vs.VideoNode:
     """
     Allows for the same frames from two different clips to be compared by putting them next to each other in a list.
 
@@ -65,8 +65,8 @@ def stack_compare(*clips: vs.VideoNode, width: int = None, height: int = None,
 
     height = fallback(height, clips[0].height)
     width = fallback(width, (get_w(height, aspect_ratio=clips[0].width / clips[0].height)))
-
     clips = [c.resize.Bicubic(width, height) for c in clips]
+
     return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
 
 
@@ -88,7 +88,6 @@ def conditional_descale(src: vs.VideoNode, height: int, b: float = 1 / 3, c: flo
     :param w2x: bool:  Whether or not to use waifu2x-caffe upscaling. (Default value = False)
 
     """
-
     def _get_error(src, height, b, c):
         descale = core.descale.Debicubic(src, get_w(height), height, b=b, c=c)
         upscale = core.resize.Bicubic(descale, src.width, src.height, filter_param_a=b, filter_param_b=c)
@@ -101,15 +100,17 @@ def conditional_descale(src: vs.VideoNode, height: int, b: float = 1 / 3, c: flo
         if w2x:
             return core.caffe.Waifu2x(descaled, noise=-1, scale=2, model=6, cudnn=True, processor=0,
                                       tta=False).resize.Bicubic(src.width, src.height, format=src.format)
+
         return nnedi3_rpow2(descaled).resize.Bicubic(src.width, src.height, format=src.format)
 
     if get_depth(src) != 32:
         src = fvf.Depth(src, 32, dither_type='none')
+
     y, u, v = kgf.split(src)
     descale = _get_error(y, height=height, b=b, c=c)
-    f_eval = core.std.FrameEval(src,
-                                partial(_diff, src=src, descaled=descale[0], threshold=threshold, w2x=w2x),
+    f_eval = core.std.FrameEval(src, partial(_diff, src=src, descaled=descale[0], threshold=threshold, w2x=w2x),
                                 descale[1])
+
     return kgf.join([f_eval, u, v])
 
 
@@ -160,8 +161,8 @@ def transpose_aa(clip: vs.VideoNode, eedi3: bool = False) -> vs.VideoNode:
 
 
 def nneedi3_clamp(clip: vs.VideoNode, mask=None, strong_mask: bool = False, show_mask: bool = False,
-                  opencl: bool = False, strength=1, alpha: float = 0.25,
-                  beta: float = 0.5, gamma=40, nrad=2, mdis=20, nsize=3, nns=3, qual=1) -> vs.VideoNode:
+                  opencl: bool = False, strength=1, alpha: float = 0.25, beta: float = 0.5, gamma=40, nrad=2, mdis=20,
+                  nsize=3, nns=3, qual=1) -> vs.VideoNode:
     """
     Script written by Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3.
     This should fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
@@ -188,6 +189,7 @@ def nneedi3_clamp(clip: vs.VideoNode, mask=None, strong_mask: bool = False, show
                     opencl=opencl)
     weak = TAAmbk(clip, aatype='Nnedi3', nsize=nsize, nns=nns, qual=qual, mtype=0, opencl=opencl)
     expr = 'x z - y z - * 0 < y x y {0} + min y {0} - max ?'.format(thr)
+
     if clip.format.num_planes > 1:
         expr = [expr, '']
     aa = core.std.Expr([strong, weak, clip], expr)
@@ -231,9 +233,7 @@ def quick_denoise(src: vs.VideoNode, sigma=4, cmode='knlm', ref: vs.VideoNode = 
     :param ref: vs.VideoNode:  Optional reference clip to replace BM3D's basic estimate. (Default value = None)
 
     """
-
     y, u, v = kgf.split(src)
-
     if cmode in [1, 'knlm']:
         den_u = u.knlm.KNLMeansCL(d=3, a=2, **kwargs)
         den_v = v.knlm.KNLMeansCL(d=3, a=2, **kwargs)
@@ -273,6 +273,7 @@ def stack_planes(src: vs.VideoNode, stack_vertical: bool = False) -> vs.VideoNod
         return core.std.StackVertical([y, u, v]) if stack_vertical else core.std.StackHorizontal([y, u, v])
     else:
         raise TypeError('stack_planes: input clip must be in YUV format with 444 or 420 chroma subsampling')
+
 
 # TODO: fix test_descale ?
 
