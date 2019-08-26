@@ -16,7 +16,7 @@ from nnedi3_rpow2 import \
     nnedi3_rpow2  # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
 
 core = vs.core
-# optional requires: (http://www.vapoursynth.com/doc/pluginlist.html)
+# optional dependencies: (http://www.vapoursynth.com/doc/pluginlist.html)
 #   waifu2x-caffe
 #   L-SMASH Source
 #   d2vsource
@@ -63,10 +63,8 @@ def stack_compare(*clips: vs.VideoNode, width: int = None, height: int = None,
     if len(set([c.format.id for c in clips])) != 1:
         raise ValueError('stack_compare: The format of every clip must be equal')
 
-    if height is None:
-        height = fallback(height, clips[0].height)
-    if width is None:
-        width = get_w(height, aspect_ratio=clips[0].width / clips[0].height)
+    height = fallback(height, clips[0].height)
+    width = fallback(width, (get_w(height, aspect_ratio=clips[0].width / clips[0].height)))
 
     clips = [c.resize.Bicubic(width, height) for c in clips]
     return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
@@ -100,12 +98,10 @@ def conditional_descale(src: vs.VideoNode, height: int, b: float = 1 / 3, c: flo
     def _diff(n, f, src, descaled, threshold, w2x):
         if f.props.PlaneStatsDiff > threshold:
             return src
-        else:
-            if w2x:
-                return core.caffe.Waifu2x(descaled, noise=-1, scale=2, model=6, cudnn=True, processor=0,
-                                          tta=False).resize.Bicubic(src.width, src.height, format=src.format)
-            else:
-                return nnedi3_rpow2(descaled).resize.Bicubic(src.width, src.height, format=src.format)
+        if w2x:
+            return core.caffe.Waifu2x(descaled, noise=-1, scale=2, model=6, cudnn=True, processor=0,
+                                      tta=False).resize.Bicubic(src.width, src.height, format=src.format)
+        return nnedi3_rpow2(descaled).resize.Bicubic(src.width, src.height, format=src.format)
 
     if get_depth(src) != 32:
         src = fvf.Depth(src, 32, dither_type='none')
@@ -266,16 +262,17 @@ def stack_planes(src: vs.VideoNode, stack_vertical: bool = False) -> vs.VideoNod
     y, u, v = kgf.split(src)
     subsampling = get_subsampling(src)
 
-    if subsampling is "420":
+    if subsampling is '420':
         if stack_vertical:
             u_v = core.std.StackHorizontal([u, v])
             return core.std.StackVertical([y, u_v])
         else:
             u_v = core.std.StackVertical([u, v])
             return core.std.StackHorizontal([y, u_v])
-    elif subsampling is "444":
+    elif subsampling is '444':
         return core.std.StackVertical([y, u, v]) if stack_vertical else core.std.StackHorizontal([y, u, v])
-
+    else:
+        raise TypeError('stack_planes: input clip must be in YUV format with 444 or 420 chroma subsampling')
 
 # TODO: fix test_descale ?
 
@@ -317,32 +314,32 @@ def test_descale(src: vs.VideoNode, height: int, kernel: str = 'bicubic', b: flo
     return kgf.join([upscaled, u, v])
 
 
-def source(file: str, force_lsmas: bool = False, src=None, fpsnum: int = None, fpsden: int = None) -> vs.VideoNode:
+def source(file: str, force_lsmas: bool = False, ref=None, fpsnum: int = None, fpsden: int = None) -> vs.VideoNode:
     """
     Generic clip import function.
     Automatically determines if ffms2 or L-SMASH should be used to import a clip, but L-SMASH can be forced.
     It also automatically determines if an image has been imported.
-    You can set its fps using "fpsnum" and "fpsden", or using a reference clip with "src".
+    You can set its fps using 'fpsnum' and 'fpsden', or using a reference clip with 'ref'.
 
     :param file: str:  OS absolute file location.
 
     """
-    if file.startswith("file:///"):
+    if file.startswith('file:///'):
         file = file[8::]
 
     if force_lsmas:
         return core.lsmas.LWLibavSource(file)
 
-    if file.endswith(".d2v"):
+    if file.endswith('.d2v'):
         clip = core.d2v.Source(file)
     elif is_image(file):
         clip = core.imwri.Read(file)
-        if src is not None:
-            clip = core.std.AssumeFPS(clip, fpsnum=src.fps.numerator, fpsden=src.fps.denominator)
+        if ref is not None:
+            clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
         elif None not in [fpsnum, fpsden]:
             clip = core.std.AssumeFPS(clip, fpsnum=fpsnum, fpsden=fpsden)
     else:
-        if file.endswith(".m2ts"):
+        if file.endswith('.m2ts'):
             clip = core.lsmas.LWLibavSource(file)
         else:
             clip = core.ffms2.Source(file)
