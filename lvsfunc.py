@@ -24,23 +24,15 @@ core = vs.core
 
 # TODO: Write function that only masks px of a certain color/threshold of colors
 
-
 def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, *frames: int, mark: bool = False, mark_a: str = ' Clip A ',
             mark_b: str = ' Clip B ',
             fontsize: int = 57) -> vs.VideoNode:
     """
     Allows for the same frames from two different clips to be compared by putting them next to each other in a list.
-    
+
     Shorthand for this function is "comp".
 
-    :param clip_a: vs.VideoNode: 
-    :param clip_b: vs.VideoNode: 
-    :param frames: int:
-    :param mark: bool:  (Default value = False)
-    :param mark_a: str:  (Default value = ' Clip A ')
-    :param mark_b: str:  (Default value = ' Clip B ')
-    :param fontsize: int:  (Default value = 57)
-    :returns: vs.VideoNode clip
+    :param mark: bool:  Whether or not to label the clips in top left. (Default value = False)
 
     """
     if clip_a.format.id != clip_b.format.id:
@@ -61,17 +53,11 @@ def stack_compare(*clips: vs.VideoNode, width: int = None, height: int = None,
     """
     A simple wrapper that allows you to compare two clips by stacking them.
     You can stack an infinite amount of clips.
-    
+
     Best to use when trying to match two sources frame-accurately, however by setting height to the source's
     height (or None), it can be used for comparing frames.
-    
-    Shorthand for this function is 'scomp'.
 
-    :param clips: vs.VideoNode:
-    :param width: int:  (Default value = None)
-    :param height: int:  (Default value = None)
-    :param stack_vertical: bool:  (Default value = False)
-    :returns: vs.VideoNode clip
+    Shorthand for this function is 'scomp'.
 
     """
     if len(set([c.format.id for c in clips])) != 1:
@@ -90,23 +76,18 @@ def conditional_descale(src: vs.VideoNode, height: int, b: float = 1 / 3, c: flo
                         w2x: bool = False) -> vs.VideoNode:
     """
     Descales and reupscales a clip. If the difference exceeds the threshold, the frame will not be descaled.
-        If it does not exceed the threshold, the frame will upscaled using either nnedi3_rpow2 or waifu2x-caffe.
-    
-        Useful for bad BDs that have additional post-processing done on some scenes, rather than all of them.
-    
-        Currently only works with bicubic, and has no native 1080p masking.
-        Consider scenefiltering OP/EDs with a different descale function instead.
-    
-        The code for _get_error was mostly taken from kageru's Made in Abyss script.
-        Special thanks to Lypheo for holding my hand as this was written.
+    If it does not exceed the threshold, the frame will upscaled using either nnedi3_rpow2 or waifu2x-caffe.
 
-    :param src: vs.VideoNode: 
-    :param height: int: 
-    :param b: float:  (Default value = 1 / 3)
-    :param c: float:  (Default value = 1 / 3)
-    :param threshold: float:  (Default value = 0.003)
-    :param w2x: bool:  (Default value = False)
-    :returns: vs.VideoNode clip
+    Useful for bad BDs that have additional post-processing done on some scenes, rather than all of them.
+
+    Currently only works with bicubic, and has no native 1080p masking.
+    Consider scenefiltering OP/EDs with a different descale function instead.
+
+    The code for _get_error was mostly taken from kageru's Made in Abyss script.
+    Special thanks to Lypheo for holding my hand as this was written.
+
+    :param height: int:  Target descaled height.
+    :param w2x: bool:  Whether or not to use waifu2x-caffe upscaling. (Default value = False)
 
     """
 
@@ -139,15 +120,11 @@ def conditional_descale(src: vs.VideoNode, height: int, b: float = 1 / 3, c: flo
 def transpose_aa(clip: vs.VideoNode, eedi3: bool = False) -> vs.VideoNode:
     """
     Function written by Zastin and modified by me.
-    Performs anti-aliasing over a clip by using nnedi3, transposing, using nnedi3 again, and transposing a final time.
-    This results in overall stronger aliasing.
+    Performs anti-aliasing over a clip by using Nnedi3, transposing, using Nnedi3 again, and transposing a final time.
+    This results in overall stronger anti-aliasing.
     Useful for shows like Yuru Camp with bad lineart problems.
-    
-    If eedi3=False, it will use Nnedi3 instead.
 
-    :param clip: vs.VideoNode: 
-    :param eedi3: bool:  (Default value = False)
-    :returns: vs.VideoNode clip
+    :param eedi3: bool:  When true, uses eedi3 instead. (Default value = False)
 
     """
     src_y = get_y(clip)
@@ -192,15 +169,12 @@ def nneedi3_clamp(clip: vs.VideoNode, mask=None, strong_mask: bool = False, show
     """
     Script written by Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3.
     This should fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
-    
-    "mask" allows for you to use your own mask.
-    "strong_mask" uses a binarized kgf.retinex_edgemask to replace more lineart with nnedi3.
 
-    :param clip: vs.VideoNode: 
-    :param mask:  (Default value = None)
-    :param strong_mask: bool:  (Default value = False)
-    :param show_mask: bool:  (Default value = False)
-    :param opencl: bool:  (Default value = False)
+    :param mask:  Allows for user to use their own mask. (Default value = None)
+    :param strong_mask: bool:  Whether or not to use a binarized kgf.retinex_edgemask
+                               to replace more lineart with nnedi3. (Default value = False)
+    :param show_mask: bool:  Whether or not to return the mask instead of the processed clip. (Default value = False)
+    :param opencl: bool:  Allows TAAmbk to use opencl acceleration when anti-aliasing. (Default value = False)
     :param strength:  (Default value = 1)
     :param alpha: float:  (Default value = 0.25)
     :param beta: float:  (Default value = 0.5)
@@ -210,7 +184,6 @@ def nneedi3_clamp(clip: vs.VideoNode, mask=None, strong_mask: bool = False, show
     :param nsize:  (Default value = 3)
     :param nns:  (Default value = 3)
     :param qual:  (Default value = 1)
-    :returns: vs.VideoNode clip
 
     """
     bits = clip.format.bits_per_sample - 8
@@ -243,28 +216,23 @@ def nneedi3_clamp(clip: vs.VideoNode, mask=None, strong_mask: bool = False, show
 def quick_denoise(src: vs.VideoNode, sigma=4, cmode='knlm', ref: vs.VideoNode = None, **kwargs) -> vs.VideoNode:
     """
     A rewrite of my old 'quick_denoise'. I still hate it, but whatever.
-        This will probably be removed in a future commit.
-    
-        This wrapper is used to denoise both the luma and chroma using various denoisers of your choosing.
-        If you wish to use just one denoiser,
-        you're probably better off using that specific filter rather than this wrapper.
-    
-        Chroma Modes (cmode):
-            1 - Use knlmeans for denoising the chroma
-            2 - Use tnlmeans for denoising the chroma
-            3 - Use dfttest for denoising the chroma
-            4 - Use SMDegrain for denoising the chroma
-    
-        BM3D is used for denoising the luma. Denoising strenght is set with "sigma".
-    
-        Special thanks to kageru for helping me out with some ideas and pointers.
+    This will probably be removed in a future commit.
 
-    :param src: vs.VideoNode: 
-    :param sigma:  (Default value = 4)
-    :param cmode:  (Default value = 'knlm')
-    :param ref: vs.VideoNode:  (Default value = None)
-    :param kwargs:
-    :returns: vs.VideoNode clip
+    This wrapper is used to denoise both the luma and chroma using various denoisers of your choosing.
+    If you wish to use just one denoiser,
+    you're probably better off using that specific filter rather than this wrapper.
+
+    BM3D is used for denoising the luma.
+
+    Special thanks to kageru for helping me out with some ideas and pointers.
+
+    :param sigma:  Denoising strength for BM3D. (Default value = 4)
+    :param cmode:  Chroma modes:
+                     1 - Use knlmeans for denoising the chroma (default)
+                     2 - Use tnlmeans for denoising the chroma
+                     3 - Use dfttest for denoising the chroma
+                     4 - Use SMDegrain for denoising the chroma
+    :param ref: vs.VideoNode:  Optional reference clip to replace BM3D's basic estimate. (Default value = None)
 
     """
 
@@ -293,14 +261,8 @@ def quick_denoise(src: vs.VideoNode, sigma=4, cmode='knlm', ref: vs.VideoNode = 
 
 
 def stack_planes(src: vs.VideoNode, stack_vertical: bool = False) -> vs.VideoNode:
-    """
-    Stacks the planes of a clip.
+    """Stacks the planes of a clip."""
 
-    :param src: vs.VideoNode: 
-    :param stack_vertical: bool:  (Default value = False)
-    :returns: vs.VideoNode clip
-
-    """
     y, u, v = kgf.split(src)
     subsampling = get_subsampling(src)
 
@@ -322,17 +284,15 @@ def test_descale(src: vs.VideoNode, height: int, kernel: str = 'bicubic', b: flo
     """
     Generic function to test descales with.
     Descales and reupscales a given clip, allowing you to compare the two easily.
-    
+
     When comparing, it is recommended to do atleast a 4x zoom using Nearest Neighbor.
     I also suggest using 'compare', as that will make comparison a lot easier.
 
-    :param src: vs.VideoNode: 
-    :param height: int: 
-    :param kernel: str:  (Default value = 'bicubic')
-    :param b: float:  (Default value = 1 / 3)
-    :param c: float:  (Default value = 1 / 3)
-    :param taps: int:  (Default value = 4)
-    :returns: vs.VideoNode clip
+    :param height: int:  Target descaled height.
+    :param kernel: str:  Descale kernel - 'bicubic'(default), 'bilinear', 'lanczos', 'spline16', or 'spline36'
+    :param b: float:  B-param for bicubic kernel. (Default value = 1 / 3)
+    :param c: float:  C-param for bicubic kernel. (Default value = 1 / 3)
+    :param taps: int:  Taps param for lanczos kernel. (Default value = 4)
 
     """
     y, u, v = kgf.split(src)
@@ -364,12 +324,7 @@ def source(file: str, force_lsmas: bool = False, src=None, fpsnum: int = None, f
     It also automatically determines if an image has been imported.
     You can set its fps using "fpsnum" and "fpsden", or using a reference clip with "src".
 
-    :param file: str: 
-    :param force_lsmas: bool:  (Default value = False)
-    :param src:  (Default value = None)
-    :param fpsnum: int:  (Default value = None)
-    :param fpsden: int:  (Default value = None)
-    :returns: vs.VideoNode clip
+    :param file: str:  OS absolute file location.
 
     """
     if file.startswith("file:///"):
