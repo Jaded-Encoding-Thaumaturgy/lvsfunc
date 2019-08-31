@@ -98,7 +98,7 @@ Useful for shows like Yuru Camp with bad lineart problems.
 
 If eedi3=False, it will use Nnedi3 instead.
 
-### nneedi3
+### nneedi3_clamp
 
 Function written by Zastin. <br>
 What it does is clamp the "change" done by Eedi3 to the "change" of Nnedi3. <br>
