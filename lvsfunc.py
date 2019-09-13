@@ -25,24 +25,19 @@ core = vs.core
 # TODO: Write function that only masks px of a certain color/threshold of colors
 
 
-def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, *frames: int, mark: bool = False, mark_a: str = ' Clip A ',
-            mark_b: str = ' Clip B ', fontsize: int = 57) -> vs.VideoNode:
+def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int,
+            force_resample: bool = False) -> vs.VideoNode:
     """
     Allows for the same frames from two different clips to be compared by putting them next to each other in a list.
-
     Shorthand for this function is "comp".
 
-    :param mark: bool:  Whether or not to label the clips in top left. (Default value = False)
+    :param force_resample: bool: Force resample the second clip to match the first.
 
     """
-    if clip_a.format.id != clip_b.format.id:
+    if force_resample:
+        clip_b = clip_b.resize.Bicubic(clip_a.width, clip_a.height, format=clip_a.format)
+    elif clip_a.format.id != clip_b.format.id:
         raise ValueError('compare: The format of both clips must be equal')
-
-    if mark:
-        style = f'sans-serif,{fontsize},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,1,7,10,10,10,1'
-        margins = [10, 0, 10, 0]
-        clip_a = core.sub.Subtitle(clip_a, mark_a, style=style, margins=margins)
-        clip_b = core.sub.Subtitle(clip_b, mark_b, style=style, margins=margins)
 
     pairs = (clip_a[frame] + clip_b[frame] for frame in frames)
     return sum(pairs, next(pairs))
