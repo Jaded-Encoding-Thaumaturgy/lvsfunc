@@ -4,6 +4,7 @@
 """
 
 from functools import partial
+import random
 
 import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
 import havsfunc as hvf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
@@ -25,19 +26,27 @@ core = vs.core
 # TODO: Write function that only masks px of a certain color/threshold of colors
 
 
-def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int,
-            force_resample: bool = False) -> vs.VideoNode:
+def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int = None,
+            force_resample: bool = False,
+            rand_frames: bool = False, rand_total: int = 10) -> vs.VideoNode:
     """
     Allows for the same frames from two different clips to be compared by putting them next to each other in a list.
     Shorthand for this function is "comp".
 
     :param force_resample: bool: Force resample the second clip to match the first.
+    :rand_frames: bool: Pick random frames from the given clips
+    :rand_total: int: Amount of random frames to pick
 
     """
     if force_resample:
         clip_b = clip_b.resize.Bicubic(clip_a.width, clip_a.height, format=clip_a.format)
     elif clip_a.format.id != clip_b.format.id:
         raise ValueError('compare: The format of both clips must be equal')
+
+    if rand_frames:
+        frames = sorted(random.sample(range(1, clip_a.num_frames-1), rand_total))
+    elif frames is None:
+        raise ValueError('compare: No frames given')
 
     pairs = (clip_a[frame] + clip_b[frame] for frame in frames)
     return sum(pairs, next(pairs))
