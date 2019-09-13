@@ -2,7 +2,7 @@ Contains functions I've written (and rewritten from others) for use in VapourSyn
 
 This function offers the following:</br>
 
-- compare(clip_a, clip_b, frames: int, mark: bool, mark_a: str, mark_b: str, fontsize: int)
+- compare(clip_a, clip_b, frames: int, force_resample: bool, rand_frames: bool, rand_total: int)
 - stack_compare(clips, width: int, height: int, stack_vertical: bool)
 - conditional_descale(clip, height: int, b: float, c: float, threshold: float, w2x: bool)
 - transpose_aa(clip, eedi3: bool)
@@ -40,10 +40,19 @@ Allows for the same frames from two different clips to be compared by putting th
 Shorthand for this function is `comp`.
 
 **Example usage:**
+
+Standard usage
 ```py
 import lvsfunc as lvf
 
 comp = lvf.compare(clip_a, clip_b, frames=[100,200,300])
+```
+
+Randomly pick 15 frames and force clips to match
+```py
+import lvsfunc as lvf
+
+comp = lvf.compare(clip_a, clip_b, force_resample=True, rand_frames=True, rand_total=15)
 ```
 
 ### stack_compare
