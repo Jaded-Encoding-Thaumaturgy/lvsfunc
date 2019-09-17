@@ -45,7 +45,8 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int = None,
 
     if rand_frames:
         if rand_total is None:
-            rand_total = clip_a.num_frames/1000
+            # More comparisons for shorter clips so you can compare stuff like NCs more conveniently
+            rand_total = int(clip_a.num_frames/1000) if clip_a.num_frames > 5000 else int(clip_a.num_frames/100)
         frames = sorted(random.sample(range(1, clip_a.num_frames-1), rand_total))
     elif frames is None:
         raise ValueError('compare: No frames given')
