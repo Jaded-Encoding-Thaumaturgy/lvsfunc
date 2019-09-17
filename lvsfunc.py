@@ -33,9 +33,9 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int = None,
     Allows for the same frames from two different clips to be compared by putting them next to each other in a list.
     Shorthand for this function is "comp".
 
-    :param force_resample: bool: Force resample the second clip to match the first.
     :rand_frames: bool: Pick random frames from the given clips
     :rand_total: int: Amount of random frames to pick
+    :param force_resample: bool: Force resample the second clip to match the first.
 
     """
     if force_resample:
@@ -76,7 +76,12 @@ def stack_compare(*clips: vs.VideoNode, width: int = None, height: int = None,
     return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
 
 
-def conditional_descale(clip: vs.VideoNode, height: int, b: float = 1 / 3, c: float = 1 / 3, threshold: float = 0.003,
+# TO-DO: Apply descale based on average error in a frame range rather than on a per-frame basis
+#        in order to prevent visible differences. Chances are if a couple of frames in a cut can't
+#        be descaled, all of them are no good.
+def conditional_descale(clip: vs.VideoNode, height: int,
+                        b: float = 1 / 3, c: float = 1 / 3,
+                        threshold: float = 0.003,
                         w2x: bool = False) -> vs.VideoNode:
     """
     Descales and reupscales a clip. If the difference exceeds the threshold, the frame will not be descaled.
@@ -100,22 +105,29 @@ def conditional_descale(clip: vs.VideoNode, height: int, b: float = 1 / 3, c: fl
         diff = core.std.PlaneStats(upscale, clip)
         return descale, diff
 
-    def _diff(n, f, clip, descaled, threshold, w2x):
+    def _diff(n, f, clip, descaled, threshold):
         if f.props.PlaneStatsDiff > threshold:
             return clip
-        if w2x:
-            return core.caffe.Waifu2x(descaled, noise=-1, scale=2, model=6, cudnn=True, processor=0,
-                                      tta=False).resize.Bicubic(clip.width, clip.height, format=clip.format)
-
-        return nnedi3_rpow2(descaled).resize.Bicubic(clip.width, clip.height, format=clip.format)
+        else:
+            return descaled
 
     if get_depth(clip) != 32:
         clip = fvf.Depth(clip, 32, dither_type='none')
 
     y, u, v = kgf.split(clip)
-    descale = _get_error(y, height=height, b=b, c=c)
-    f_eval = core.std.FrameEval(clip, partial(_diff, clip=clip, descaled=descale[0], threshold=threshold, w2x=w2x),
-                                descale[1])
+    descaled, diff = _get_error(y, height=height, b=b, c=c)
+
+    if w2x:
+        descaled = core.caffe.Waifu2x(descaled, noise=-1, scale=2, model=6, cudnn=True, processor=0,  tta=False)
+    else:
+        descaled = nnedi3_rpow2(descaled)
+
+    descaled = descaled.resize.Bicubic(clip.width, clip.height, format=clip.format)
+
+    descaled = descaled.std.SetFrameProp("_descaled", intval=1)
+    clip = clip.std.SetFrameProp("_descaled", intval=0)
+
+    f_eval = core.std.FrameEval(clip, partial(_diff, clip=clip, descaled=descaled, threshold=threshold),  diff)
 
     return kgf.join([f_eval, u, v])
 
@@ -358,5 +370,6 @@ src = source
 comp = compare
 scomp = stack_compare
 qden = quick_denoise
-denoise = quick_denoise  # (backwards compatibility, will be removed later)
+denoise = quick_denoise  # for backwards compatibility
 NnEedi3 = nneedi3_clamp  # for backwards compatibility
+cond_desc = conditional_descale
