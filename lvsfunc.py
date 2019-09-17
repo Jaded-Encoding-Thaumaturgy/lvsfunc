@@ -27,8 +27,8 @@ core = vs.core
 
 
 def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int = None,
-            force_resample: bool = False,
-            rand_frames: bool = False, rand_total: int = 10) -> vs.VideoNode:
+            rand_frames: bool = False, rand_total: int = None,
+            force_resample: bool = False) -> vs.VideoNode:
     """
     Allows for the same frames from two different clips to be compared by putting them next to each other in a list.
     Shorthand for this function is "comp".
@@ -44,6 +44,8 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int = None,
         raise ValueError('compare: The format of both clips must be equal')
 
     if rand_frames:
+        if rand_total is None:
+            rand_total = clip_a.num_frames/1000
         frames = sorted(random.sample(range(1, clip_a.num_frames-1), rand_total))
     elif frames is None:
         raise ValueError('compare: No frames given')
