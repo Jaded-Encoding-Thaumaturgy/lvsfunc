@@ -366,6 +366,38 @@ def source(file: str, force_lsmas: bool = False, ref=None, fpsnum: int = None, f
     return clip
 
 
+def deblend(clip, rep: int = 12):
+    """
+    A simple filter to fix deblending for interlaced video with an AABBA blending pattern, where A is a normal frame and B is a blended frame.
+    Assuming there's a constant pattern of frames (labeled A, B, C, CD, and DA), blending can be fixed by calculating the C frame and fix CD. DA can then be dropped due to it being an interlaced frame.
+
+    However, doing this will result in some of the artifacting being added to the deblended frame. We can mitigate this by repairing the frame with the non-blended frame before it.
+    For simplicity, repair=12 is used for now, however this can be changed by the user.
+
+    For more information, please refer to this blogpost by torchlight:
+    https://mechaweaponsvidya.wordpress.com/2012/09/13/adventures-in-deblending/
+    """
+
+    blends_a = range(2, clip.num_frames-1, 5)
+    blends_b = range(3, clip.num_frames-1, 5)
+    expr = ["z a 2 / - y x 2 / - +"]
+
+    def deblend(n, clip, rep):
+    # Thanks Myaa, motbob and kageru!
+        if n%5 in [0, 1, 4]:
+            return clip
+        else:
+            if n in blends_a:
+                c, cd, da, a = clip[n-1], clip[n], clip[n+1], clip[n+2]
+                debl = core.std.Expr([c, cd, da, a], expr)
+                return core.rgvs.Repair(debl, c, rep)
+            else:
+                return clip
+
+    debl = core.std.FrameEval(clip, partial(deblend, clip=clip, rep=rep))
+    return core.std.DeleteFrames(debl, blends_b).std.AssumeFPS(fpsnum=24000, fpsden=1001)
+
+
 # Aliases
 src = source
 comp = compare

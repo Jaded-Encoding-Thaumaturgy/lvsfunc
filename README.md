@@ -10,6 +10,7 @@ This function offers the following:</br>
 - quick_denoise(clip, sigma=4, cmode='knlm', ref, **kwargs)
 - stack_planes(clip, stack_vertical: bool)
 - source(file, force_lsmas: bool, ref, fpsnum: int, fpsden: int)
+- deblend(clip, repair: int)
 
 ## Requirements:
 
@@ -140,4 +141,25 @@ Importing a custom mask, converting it to GRAY, binarizing it, and making is 215
 import lvsfunc as lvf
 
 mask = lvf.src(r'mask.png', ref=clip_a).resize.Point(format=vs.GRAY8, matrix_s='709').std.Binarize()*2156
+```
+
+### deblend
+
+A simple filter to fix deblending for interlaced video with an AABBA blending pattern, where A is a normal frame and B is a blended frame.
+
+Assuming there's a constant pattern of frames (labeled A, B, C, CD, and DA), blending can be fixed by calculating the C frame and fix CD.
+DA can then be dropped due to it being an interlaced frame.
+
+For more information, please refer to this blogpost by torchlight:
+https://mechaweaponsvidya.wordpress.com/2012/09/13/adventures-in-deblending/
+
+**Example usage:**
+
+Deblending a clip
+```py
+import lvsfunc as lvf
+
+clip = lvf.src("BDMV/STREAM/00000.m2ts")
+
+deblended = lvf.deblend(clip)
 ```
