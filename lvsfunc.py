@@ -373,7 +373,6 @@ def deblend(clip, rep: int = None):
     DA can then be dropped due to it being an interlaced frame.
 
     However, doing this will result in some of the artifacting being added to the deblended frame. We can mitigate this by repairing the frame with the non-blended frame before it.
-    For simplicity, repair=12 is used for now, however this can be changed by the user.
 
     For more information, please refer to this blogpost by torchlight:
     https://mechaweaponsvidya.wordpress.com/2012/09/13/adventures-in-deblending/
