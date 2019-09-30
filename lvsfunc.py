@@ -366,10 +366,11 @@ def source(file: str, force_lsmas: bool = False, ref=None, fpsnum: int = None, f
     return clip
 
 
-def deblend(clip, rep: int = 12):
+def deblend(clip, rep: int = None):
     """
-    A simple filter to fix deblending for interlaced video with an AABBA blending pattern, where A is a normal frame and B is a blended frame.
-    Assuming there's a constant pattern of frames (labeled A, B, C, CD, and DA), blending can be fixed by calculating the C frame and fix CD. DA can then be dropped due to it being an interlaced frame.
+    A simple function to fix deblending for interlaced video with an AABBA blending pattern, where A is a normal frame and B is a blended frame.
+    Assuming there's a constant pattern of frames (labeled A, B, C, CD, and DA in this function), blending can be fixed by calculating the C frame by getting halves of CD and DA, and using that to fix up CD. 
+    DA can then be dropped due to it being an interlaced frame.
 
     However, doing this will result in some of the artifacting being added to the deblended frame. We can mitigate this by repairing the frame with the non-blended frame before it.
     For simplicity, repair=12 is used for now, however this can be changed by the user.
@@ -380,7 +381,7 @@ def deblend(clip, rep: int = 12):
 
     blends_a = range(2, clip.num_frames-1, 5)
     blends_b = range(3, clip.num_frames-1, 5)
-    expr = ["z a 2 / - y x 2 / - +"]
+    expr_cd = ["z a 2 / - y x 2 / - +"]
 
     def deblend(n, clip, rep):
     # Thanks Myaa, motbob and kageru!
@@ -389,8 +390,9 @@ def deblend(clip, rep: int = 12):
         else:
             if n in blends_a:
                 c, cd, da, a = clip[n-1], clip[n], clip[n+1], clip[n+2]
-                debl = core.std.Expr([c, cd, da, a], expr)
-                return core.rgvs.Repair(debl, c, rep)
+                debl = core.std.Expr([c, cd, da, a], expr_cd)
+                return core.rgvs.Repair(debl, c, rep) if rep else debl
+                # To-DO: Add decimation bool and proper DA frame deblending
             else:
                 return clip
 
