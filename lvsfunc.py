@@ -187,11 +187,6 @@ def upscaled_sraa(clip: vs.VideoNode, rfactor: float = 1.5) -> vs.VideoNode:
     :param rfactor: float:  Image enlargement factor. 1.5..2 makes it comparable to vsTAAmbk.
                             It is not recommended to go below 1.5.
     """
-    if clip is vs.GRAY:
-        y = clip
-    else:
-        y, u, v = kgf.split(clip)
-
     nnargs = dict(nsize=0, nns=4, qual=2)
     eeargs = dict(alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20) #taa defaults are 0.5, 0.2, 20, 3, 30
 
@@ -211,12 +206,7 @@ def upscaled_sraa(clip: vs.VideoNode, rfactor: float = 1.5) -> vs.VideoNode:
     aa_y = core.eedi3m.EEDI3(aa_y, 0, 0, 0, **eeargs, sclip=core.nnedi3.nnedi3(aa_y, 0, 0, 0, **nnargs))
 
     #Back to source clip height
-    scaled_y = core.resize.Spline36(aa_y, clip.width, clip.height)
-
-    if clip is vs.GRAY:
-        return scaled_y
-    else:
-        return join([scaled_y, u, v])
+    return core.resize.Spline36(aa_y, clip.width, clip.height)
 
 
 def nneedi3_clamp(clip: vs.VideoNode, mask: vs.VideoNode=None, strong_mask: bool = False, show_mask: bool = False,
