@@ -164,7 +164,7 @@ def transpose_aa(clip: vs.VideoNode, eedi3: bool = False) -> vs.VideoNode:
             clip_y = clip_y.std.Transpose()
             clip_y = clip_y.nnedi3.nnedi3(0, 1, 0, 3, 3, 2)
             clip_y = clip_y.nnedi3.nnedi3(1, 0, 0, 3, 3, 2)
-            return = clip_y.resize.Spline36(clip.width, clip.height, src_top=.5)
+            return clip_y.resize.Spline36(clip.width, clip.height, src_top=.5)
 
     def _csharp(flt, clip):
         blur = core.std.Convolution(flt, [1] * 9)
