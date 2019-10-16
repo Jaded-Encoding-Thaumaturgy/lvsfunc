@@ -194,7 +194,7 @@ def upscaled_sraa(clip: vs.VideoNode, rfactor: float = 1.5) -> vs.VideoNode:
     ssh = round( clip.height * rfactor )
 
     #Nnedi3 upscale from source height to source height * rounding (Default 1.5)
-    up_y = core.nnedi3.nnedi3(y, 0, 1, 0, **nnargs)
+    up_y = core.nnedi3.nnedi3(clip, 0, 1, 0, **nnargs)
     up_y = core.resize.Spline36(up_y, height=ssh, src_top=.5)
     up_y = core.std.Transpose(up_y)
     up_y = core.nnedi3.nnedi3(up_y, 0, 1, 0, **nnargs)
