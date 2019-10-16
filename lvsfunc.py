@@ -143,39 +143,80 @@ def transpose_aa(clip: vs.VideoNode, eedi3: bool = False) -> vs.VideoNode:
     :param eedi3: bool:  When true, uses eedi3 instead. (Default value = False)
 
     """
-    src_y = get_y(clip)
+    clip_y = get_y(clip)
 
     if eedi3:
-        def _aa(src_y):
-            src_y = src_y.std.Transpose()
-            src_y = src_y.eedi3m.EEDI3(0, 1, 0, 0.5, 0.2)
-            src_y = src_y.znedi3.nnedi3(1, 0, 0, 3, 4, 2)
-            src_y = src_y.resize.Spline36(clip.height, clip.width, src_top=.5)
-            src_y = src_y.std.Transpose()
-            src_y = src_y.eedi3m.EEDI3(0, 1, 0, 0.5, 0.2)
-            src_y = src_y.znedi3.nnedi3(1, 0, 0, 3, 4, 2)
-            src_y = src_y.resize.Spline36(clip.width, clip.height, src_top=.5)
-            return src_y
+        def _aa(clip_y):
+            clip_y = clip_y.std.Transpose()
+            clip_y = clip_y.eedi3m.EEDI3(0, 1, 0, 0.5, 0.2)
+            clip_y = clip_y.znedi3.nnedi3(1, 0, 0, 3, 4, 2)
+            clip_y = clip_y.resize.Spline36(clip.height, clip.width, src_top=.5)
+            clip_y = clip_y.std.Transpose()
+            clip_y = clip_y.eedi3m.EEDI3(0, 1, 0, 0.5, 0.2)
+            clip_y = clip_y.znedi3.nnedi3(1, 0, 0, 3, 4, 2)
+            return clip_y.resize.Spline36(clip.width, clip.height, src_top=.5)
     else:
-        def _aa(src_y):
-            src_y = src_y.std.Transpose()
-            src_y = src_y.nnedi3.nnedi3(0, 1, 0, 3, 3, 2)
-            src_y = src_y.nnedi3.nnedi3(1, 0, 0, 3, 3, 2)
-            src_y = src_y.resize.Spline36(clip.height, clip.width, src_top=.5)
-            src_y = src_y.std.Transpose()
-            src_y = src_y.nnedi3.nnedi3(0, 1, 0, 3, 3, 2)
-            src_y = src_y.nnedi3.nnedi3(1, 0, 0, 3, 3, 2)
-            src_y = src_y.resize.Spline36(clip.width, clip.height, src_top=.5)
-            return src_y
+        def _aa(clip_y):
+            clip_y = clip_y.std.Transpose()
+            clip_y = clip_y.nnedi3.nnedi3(0, 1, 0, 3, 3, 2)
+            clip_y = clip_y.nnedi3.nnedi3(1, 0, 0, 3, 3, 2)
+            clip_y = clip_y.resize.Spline36(clip.height, clip.width, src_top=.5)
+            clip_y = clip_y.std.Transpose()
+            clip_y = clip_y.nnedi3.nnedi3(0, 1, 0, 3, 3, 2)
+            clip_y = clip_y.nnedi3.nnedi3(1, 0, 0, 3, 3, 2)
+            return = clip_y.resize.Spline36(clip.width, clip.height, src_top=.5)
 
-    def _csharp(flt, src):
+    def _csharp(flt, clip):
         blur = core.std.Convolution(flt, [1] * 9)
-        return core.std.Expr([flt, src, blur], 'x y < x x + z - x max y min x x + z - x min y max ?')
+        return core.std.Expr([flt, clip, blur], 'x y < x x + z - x max y min x x + z - x min y max ?')
 
-    aaclip = _aa(src_y)
-    aaclip = _csharp(aaclip, src_y).rgvs.Repair(src_y, 13)
+    aaclip = _aa(clip_y)
+    aaclip = _csharp(aaclip, clip_y).rgvs.Repair(clip_y, 13)
 
     return aaclip if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
+
+
+def upscaled_sraa(clip: vs.VideoNode, rfactor: float = 1.5) -> vs.VideoNode:
+    """
+    Another AA written by Zastin and slightly modified by me.
+    Performs an upscaled single-rate AA to deal with aliasing.
+
+    Useful for Web rips, where the source quality is not good enough to descale,
+    but you still want to deal with some bad aliasing and lineart.
+
+    :param rfactor: float:  Image enlargement factor. 1.5..2 makes it comparable to vsTAAmbk.
+                            It is not recommended to go below 1.5.
+    """
+    if clip is vs.GRAY:
+        y = clip
+    else:
+        y, u, v = kgf.split(clip)
+
+    nnargs = dict(nsize=0, nns=4, qual=2)
+    eeargs = dict(alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20) #taa defaults are 0.5, 0.2, 20, 3, 30
+
+    ssw = round( clip.width * rfactor )
+    ssh = round( clip.height * rfactor )
+
+    #Nnedi3 upscale from source height to source height * rounding (Default 1.5)
+    up_y = core.nnedi3.nnedi3(y, 0, 1, 0, **nnargs)
+    up_y = core.resize.Spline36(up_y, height=ssh, src_top=.5)
+    up_y = core.std.Transpose(up_y)
+    up_y = core.nnedi3.nnedi3(up_y, 0, 1, 0, **nnargs)
+    up_y = core.resize.Spline36(up_y, height=ssw, src_top=.5)
+
+    #Single-rate AA
+    aa_y = core.eedi3m.EEDI3(up_y, 0, 0, 0, **eeargs, sclip=core.nnedi3.nnedi3(up_y, 0, 0, 0, **nnargs))
+    aa_y = core.std.Transpose(aa_y)
+    aa_y = core.eedi3m.EEDI3(aa_y, 0, 0, 0, **eeargs, sclip=core.nnedi3.nnedi3(aa_y, 0, 0, 0, **nnargs))
+
+    #Back to source clip height
+    scaled_y = core.resize.Spline36(aa_y, clip.width, clip.height)
+
+    if clip is vs.GRAY:
+        return scaled_y
+    else:
+        return join([scaled_y, u, v])
 
 
 def nneedi3_clamp(clip: vs.VideoNode, mask: vs.VideoNode=None, strong_mask: bool = False, show_mask: bool = False,
@@ -293,7 +334,7 @@ def stack_planes(clip: vs.VideoNode, stack_vertical: bool = False) -> vs.VideoNo
         raise TypeError('stack_planes: input clip must be in YUV format with 444 or 420 chroma subsampling')
 
 
-# TODO: fix test_descale ?
+# TO-DO: Improve test_descale. Get rid of all the if/else statements and replace with a faster, more robust setup if possible.
 
 def test_descale(clip: vs.VideoNode, height: int, kernel: str = 'bicubic', b: float = 1 / 3, c: float = 1 / 3,
                  taps: int = 4) -> vs.VideoNode:
@@ -311,26 +352,32 @@ def test_descale(clip: vs.VideoNode, height: int, kernel: str = 'bicubic', b: fl
     :param taps: int:  Taps param for lanczos kernel. (Default value = 4)
 
     """
+    if clip is vs.GRAY:
+        y = clip
+
     y, u, v = kgf.split(clip)
     if kernel is 'bicubic':
         descaled = core.descale.Debicubic(y, get_w(height), height, b=b, c=c)
         upscaled = core.resize.Bicubic(descaled, y.width, y.height, filter_param_a=b, filter_param_b=c)
     elif kernel is 'bilinear':
         descaled = core.descale.Debilinear(y, get_w(height), height)
-        upscaled = core.resize.Bilinear(descaled, get_w(height), height)
+        upscaled = core.resize.Bilinear(descaled, get_w(y.height), y.height)
     elif kernel is 'lanczos':
         descaled = core.descale.Delanczos(y, get_w(height), height, taps=taps)
         upscaled = core.resize.Lanczos(descaled, y.width, y.height, filter_param_a=taps)
     elif kernel is 'spline16':
         descaled = core.descale.Despline16(y, get_w(height), height)
-        upscaled = core.resize.Spline16(descaled, get_w(height), height)
+        upscaled = core.resize.Spline16(descaled, get_w(y.height), y.height)
     elif kernel is 'spline36':
         descaled = core.descale.Despline36(y, get_w(height), height)
-        upscaled = core.resize.Spline36(descaled, get_w(height), height)
+        upscaled = core.resize.Spline36(descaled, get_w(y.height), y.height)
     else:
         raise ValueError('test_descale: unknown kernel')
 
-    return kgf.join([upscaled, u, v])
+    if clip is vs.GRAY:
+        return upscaled
+    else:
+        return kgf.join([upscaled, u, v])
 
 
 def source(file: str, force_lsmas: bool = False, ref=None, fpsnum: int = None, fpsden: int = None) -> vs.VideoNode:
@@ -369,7 +416,7 @@ def source(file: str, force_lsmas: bool = False, ref=None, fpsnum: int = None, f
 def deblend(clip, rep: int = None):
     """
     A simple function to fix deblending for interlaced video with an AABBA blending pattern, where A is a normal frame and B is a blended frame.
-    Assuming there's a constant pattern of frames (labeled A, B, C, CD, and DA in this function), blending can be fixed by calculating the C frame by getting halves of CD and DA, and using that to fix up CD. 
+    Assuming there's a constant pattern of frames (labeled A, B, C, CD, and DA in this function), blending can be fixed by calculating the C frame by getting halves of CD and DA, and using that to fix up CD.
     DA can then be dropped due to it being an interlaced frame.
 
     However, doing this will result in some of the artifacting being added to the deblended frame. We can mitigate this by repairing the frame with the non-blended frame before it.
@@ -397,6 +444,22 @@ def deblend(clip, rep: int = None):
 
     debl = core.std.FrameEval(clip, partial(deblend, clip=clip, rep=rep))
     return core.std.DeleteFrames(debl, blends_b).std.AssumeFPS(fpsnum=24000, fpsden=1001)
+
+
+# Helper funcs
+
+def check_y(clip):
+    """
+    Checks if the source clip is a GRAY clip.
+
+    Not ideal for general checking if the source is just the Y plane,
+    but good enough for most functions that rely on it in this func.
+
+    Currently does not work as intended, as I need to figure out a way
+    to reliably get it to grab the correct plane in case of the given clip
+    being GRAY already without it breaking.
+    """
+    return clip if clip is vs.GRAY else split(clip)
 
 
 # Aliases
