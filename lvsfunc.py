@@ -438,18 +438,11 @@ def deblend(clip, rep: int = None):
 
 # Helper funcs
 
-def check_y(clip):
+def one_plane(clip):
     """
-    Checks if the source clip is a GRAY clip.
-
-    Not ideal for general checking if the source is just the Y plane,
-    but good enough for most functions that rely on it in this func.
-
-    Currently does not work as intended, as I need to figure out a way
-    to reliably get it to grab the correct plane in case of the given clip
-    being GRAY already without it breaking.
+    Checks if the source clip is a single plane.
     """
-    return clip if clip is vs.GRAY else split(clip)
+    return clip.format.num_planes == 1
 
 
 # Aliases
