@@ -436,6 +436,23 @@ def deblend(clip, rep: int = None):
     return core.std.DeleteFrames(debl, blends_b).std.AssumeFPS(fpsnum=24000, fpsden=1001)
 
 
+def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
+               threshold: int=.25) -> vs.VideoNode:
+    """
+    Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold.
+    This way you can run lighter (or heavier) filtering on scenes that are almost entirely dark.
+
+    There is one caveat, however: You can get scenes where every other frame is filtered
+    rather than the entire scene. Please do take care to avoid that if possible.
+    """
+    def _diff(n, f, clip, filtered, threshold):
+        return clip if f.props.PlaneStatsAverage > threshold else filtered
+
+    avg = core.std.PlaneStats(clip)
+    f_eval = core.std.FrameEval(clip, partial(_diff, clip=clip, filtered=filtered, threshold=threshold), avg)
+    return f_eval
+
+
 # Helper funcs
 
 def one_plane(clip):
