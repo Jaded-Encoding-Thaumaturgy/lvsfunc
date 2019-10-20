@@ -176,7 +176,7 @@ def transpose_aa(clip: vs.VideoNode, eedi3: bool = False) -> vs.VideoNode:
     return aaclip if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
 
 
-def upscaled_sraa(clip: vs.VideoNode, rfactor: float = 1.5) -> vs.VideoNode:
+def upscaled_sraa(clip: vs.VideoNode, rfactor: float = 1.5, rep: int = None) -> vs.VideoNode:
     """
     Another AA written by Zastin and slightly modified by me.
     Performs an upscaled single-rate AA to deal with aliasing.
@@ -206,7 +206,7 @@ def upscaled_sraa(clip: vs.VideoNode, rfactor: float = 1.5) -> vs.VideoNode:
     aa_y = core.eedi3m.EEDI3(aa_y, 0, 0, 0, **eeargs, sclip=core.nnedi3.nnedi3(aa_y, 0, 0, 0, **nnargs))
 
     #Back to source clip height
-    return core.resize.Spline36(aa_y, clip.width, clip.height)
+    return core.resize.Spline36(aa_y, clip.width, clip.height) if rep is None else core.resize.Spline36(aa_y, clip.width, clip.height).rgvs.Repair(clip, rep)
 
 
 def nneedi3_clamp(clip: vs.VideoNode, mask: vs.VideoNode=None, strong_mask: bool = False, show_mask: bool = False,
@@ -451,6 +451,13 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
     avg = core.std.PlaneStats(clip)
     f_eval = core.std.FrameEval(clip, partial(_diff, clip=clip, filtered=filtered, threshold=threshold), avg)
     return f_eval
+
+
+def fix_cr_tint(clip: vs.VideoNode, value: int=128) -> vs.VideoNode:
+    if get_depth(clip) != 16:
+        clip = fvf.Depth(clip, 16)
+
+    return core.std.Expr(clip, f'x {value} +, x {value} +, x {value} +')
 
 
 # Helper funcs
