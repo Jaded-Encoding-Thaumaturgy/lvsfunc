@@ -525,6 +525,4 @@ src = source
 comp = compare
 scomp = stack_compare
 qden = quick_denoise
-denoise = quick_denoise  # for backwards compatibility
-NnEedi3 = nneedi3_clamp  # for backwards compatibility
 cond_desc = conditional_descale
