@@ -90,8 +90,10 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int = None,
     return sum(pairs, next(pairs))
 
 
-def stack_compare(*clips: vs.VideoNode, width: int = None, height: int = None,
-                  stack_vertical: bool = False) -> vs.VideoNode:
+def stack_compare(*clips: vs.VideoNode,
+                  width: int = None, height: int = None,
+                  stack_vertical: bool = False,
+                  make_diff: bool = False) -> vs.VideoNode:
     """
     A simple wrapper that allows you to compare two clips by stacking them.
     You can stack an infinite amount of clips.
@@ -101,15 +103,24 @@ def stack_compare(*clips: vs.VideoNode, width: int = None, height: int = None,
 
     Shorthand for this function is 'scomp'.
 
+    :stack_vertical: bool: Stack frames vertically
+    :diff: bool: Create and stack a diff (only works if two clips are given)
     """
     if len(set([c.format.id for c in clips])) != 1:
         raise ValueError('stack_compare: The format of every clip must be equal')
 
+    if len(clips) != 2 and make_diff:
+        raise ValueError('stack_compare: You need to compare two clips for diff!')
+
     height = fallback(height, clips[0].height)
     width = fallback(width, (get_w(height, aspect_ratio=clips[0].width / clips[0].height)))
     clips = [c.resize.Bicubic(width, height) for c in clips]
-
-    return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
+    if make_diff:
+        diff = core.std.MakeDiff(get_y(clips[0]), get_y(clips[1])).resize.Bilinear(format=clips[0].format)
+        clips.append(diff)
+        return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
+    else:
+        return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
 
 
 def stack_planes(clip: vs.VideoNode, stack_vertical: bool = False) -> vs.VideoNode:
