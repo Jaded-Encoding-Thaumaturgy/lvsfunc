@@ -118,9 +118,7 @@ def stack_compare(*clips: vs.VideoNode,
     if make_diff:
         diff = core.std.MakeDiff(get_y(clips[0]), get_y(clips[1])).resize.Bilinear(format=clips[0].format)
         clips.append(diff)
-        return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
-    else:
-        return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
+    return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
 
 
 def stack_planes(clip: vs.VideoNode, stack_vertical: bool = False) -> vs.VideoNode:
