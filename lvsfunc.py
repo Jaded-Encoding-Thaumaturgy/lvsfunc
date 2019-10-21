@@ -17,13 +17,48 @@ from vsutil import *  # https://github.com/Irrational-Encoding-Wizardry/vsutil
 
 core = vs.core
 
-# optional dependencies: (http://www.vapoursynth.com/doc/pluginlist.html)
-#     waifu2x-caffe
-#     L-SMASH Source
-#     d2vsource
-#     FFMS2
+"""
+    optional dependencies: (http://www.vapoursynth.com/doc/pluginlist.html)
+        * waifu2x-caffe
+        * L-SMASH Source
+        * d2vsource
+        * FFMS2
+"""
+
+"""
+    List of functions sorted by category:
+
+    Comparison and Analysis:
+        - compare (comp)
+        - stack_compare (scomp)
+        - stack_planes
+
+    Scaling and Resizing:
+        - conditional_descale (cond_desc)
+        - test_descale
+
+    Antialiasing:
+        - transpose_aa
+        - upscaled_sraa
+        - nneedi3_clamp
+
+    Deinterlacing:
+        - deblend
+
+    Denoising and Debanding:
+        - quick_denoise (qden)
+
+    Masking, Limiting, and Colors:
+        - limit_dark
+        - fix_cr_tint
+
+    Miscellaneous:
+        - source (src)
+"""
 
 # TODO: Write function that only masks px of a certain color/threshold of colors
+
+#### Comparison and Analysis Functions
 
 
 def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int = None,
@@ -76,6 +111,27 @@ def stack_compare(*clips: vs.VideoNode, width: int = None, height: int = None,
 
     return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
 
+
+def stack_planes(clip: vs.VideoNode, stack_vertical: bool = False) -> vs.VideoNode:
+    """Stacks the planes of a clip."""
+
+    y, u, v = kgf.split(clip)
+    subsampling = get_subsampling(clip)
+
+    if subsampling is '420':
+        if stack_vertical:
+            u_v = core.std.StackHorizontal([u, v])
+            return core.std.StackVertical([y, u_v])
+        else:
+            u_v = core.std.StackVertical([u, v])
+            return core.std.StackHorizontal([y, u_v])
+    elif subsampling is '444':
+        return core.std.StackVertical([y, u, v]) if stack_vertical else core.std.StackHorizontal([y, u, v])
+    else:
+        raise TypeError('stack_planes: input clip must be in YUV format with 444 or 420 chroma subsampling')
+
+
+#### Scaling and Resizing Functions
 
 # TO-DO: Apply descale based on average error in a frame range rather than on a per-frame basis
 #        in order to prevent visible differences. Chances are if a couple of frames in a cut can't
@@ -132,6 +188,54 @@ def conditional_descale(clip: vs.VideoNode, height: int,
 
     return kgf.join([f_eval, u, v])
 
+
+# TO-DO: Improve test_descale. Get rid of all the if/else statements and replace with a faster, more robust setup if possible.
+
+def test_descale(clip: vs.VideoNode, height: int, kernel: str = 'bicubic', b: float = 1 / 3, c: float = 1 / 3,
+                 taps: int = 4) -> vs.VideoNode:
+    """
+    Generic function to test descales with.
+    Descales and reupscales a given clip, allowing you to compare the two easily.
+
+    When comparing, it is recommended to do atleast a 4x zoom using Nearest Neighbor.
+    I also suggest using 'compare', as that will make comparison a lot easier.
+
+    :param height: int:  Target descaled height.
+    :param kernel: str:  Descale kernel - 'bicubic'(default), 'bilinear', 'lanczos', 'spline16', or 'spline36'
+    :param b: float:  B-param for bicubic kernel. (Default value = 1 / 3)
+    :param c: float:  C-param for bicubic kernel. (Default value = 1 / 3)
+    :param taps: int:  Taps param for lanczos kernel. (Default value = 4)
+
+    """
+    if clip is vs.GRAY:
+        y = clip
+
+    y, u, v = kgf.split(clip)
+    if kernel is 'bicubic':
+        descaled = core.descale.Debicubic(y, get_w(height), height, b=b, c=c)
+        upscaled = core.resize.Bicubic(descaled, y.width, y.height, filter_param_a=b, filter_param_b=c)
+    elif kernel is 'bilinear':
+        descaled = core.descale.Debilinear(y, get_w(height), height)
+        upscaled = core.resize.Bilinear(descaled, get_w(y.height), y.height)
+    elif kernel is 'lanczos':
+        descaled = core.descale.Delanczos(y, get_w(height), height, taps=taps)
+        upscaled = core.resize.Lanczos(descaled, y.width, y.height, filter_param_a=taps)
+    elif kernel is 'spline16':
+        descaled = core.descale.Despline16(y, get_w(height), height)
+        upscaled = core.resize.Spline16(descaled, get_w(y.height), y.height)
+    elif kernel is 'spline36':
+        descaled = core.descale.Despline36(y, get_w(height), height)
+        upscaled = core.resize.Spline36(descaled, get_w(y.height), y.height)
+    else:
+        raise ValueError('test_descale: unknown kernel')
+
+    if clip is vs.GRAY:
+        return upscaled
+    else:
+        return kgf.join([upscaled, u, v])
+
+
+#### Antialiasing functions
 
 def transpose_aa(clip: vs.VideoNode, eedi3: bool = False) -> vs.VideoNode:
     """
@@ -260,6 +364,45 @@ def nneedi3_clamp(clip: vs.VideoNode, mask: vs.VideoNode=None, strong_mask: bool
     return merged if clip.format.color_family == vs.GRAY else core.std.ShufflePlanes([merged, clip], [0, 1, 2], vs.YUV)
 
 
+#### Deinterlacing
+
+
+def deblend(clip, rep: int = None):
+    """
+    A simple function to fix deblending for interlaced video with an AABBA blending pattern, where A is a normal frame and B is a blended frame.
+    Assuming there's a constant pattern of frames (labeled A, B, C, CD, and DA in this function), blending can be fixed by calculating the C frame by getting halves of CD and DA, and using that to fix up CD.
+    DA can then be dropped due to it being an interlaced frame.
+
+    However, doing this will result in some of the artifacting being added to the deblended frame. We can mitigate this by repairing the frame with the non-blended frame before it.
+
+    For more information, please refer to this blogpost by torchlight:
+    https://mechaweaponsvidya.wordpress.com/2012/09/13/adventures-in-deblending/
+    """
+
+    blends_a = range(2, clip.num_frames-1, 5)
+    blends_b = range(3, clip.num_frames-1, 5)
+    expr_cd = ["z a 2 / - y x 2 / - +"]
+
+    def deblend(n, clip, rep):
+    # Thanks Myaa, motbob and kageru!
+        if n%5 in [0, 1, 4]:
+            return clip
+        else:
+            if n in blends_a:
+                c, cd, da, a = clip[n-1], clip[n], clip[n+1], clip[n+2]
+                debl = core.std.Expr([c, cd, da, a], expr_cd)
+                return core.rgvs.Repair(debl, c, rep) if rep else debl
+                # To-DO: Add decimation bool and proper DA frame deblending
+            else:
+                return clip
+
+    debl = core.std.FrameEval(clip, partial(deblend, clip=clip, rep=rep))
+    return core.std.DeleteFrames(debl, blends_b).std.AssumeFPS(fpsnum=24000, fpsden=1001)
+
+
+#### Denoising and Debanding
+
+
 def quick_denoise(clip: vs.VideoNode, sigma=4, cmode='knlm', ref: vs.VideoNode = None, **kwargs) -> vs.VideoNode:
     """
     A rewrite of my old 'quick_denoise'. I still hate it, but whatever.
@@ -305,69 +448,34 @@ def quick_denoise(clip: vs.VideoNode, sigma=4, cmode='knlm', ref: vs.VideoNode =
     return core.std.ShufflePlanes([den_y, den_u, den_v], 0, vs.YUV)
 
 
-def stack_planes(clip: vs.VideoNode, stack_vertical: bool = False) -> vs.VideoNode:
-    """Stacks the planes of a clip."""
-
-    y, u, v = kgf.split(clip)
-    subsampling = get_subsampling(clip)
-
-    if subsampling is '420':
-        if stack_vertical:
-            u_v = core.std.StackHorizontal([u, v])
-            return core.std.StackVertical([y, u_v])
-        else:
-            u_v = core.std.StackVertical([u, v])
-            return core.std.StackHorizontal([y, u_v])
-    elif subsampling is '444':
-        return core.std.StackVertical([y, u, v]) if stack_vertical else core.std.StackHorizontal([y, u, v])
-    else:
-        raise TypeError('stack_planes: input clip must be in YUV format with 444 or 420 chroma subsampling')
+#### Masking, Limiting, and Colors
 
 
-# TO-DO: Improve test_descale. Get rid of all the if/else statements and replace with a faster, more robust setup if possible.
-
-def test_descale(clip: vs.VideoNode, height: int, kernel: str = 'bicubic', b: float = 1 / 3, c: float = 1 / 3,
-                 taps: int = 4) -> vs.VideoNode:
+def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
+               threshold: int=.25) -> vs.VideoNode:
     """
-    Generic function to test descales with.
-    Descales and reupscales a given clip, allowing you to compare the two easily.
+    Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold.
+    This way you can run lighter (or heavier) filtering on scenes that are almost entirely dark.
 
-    When comparing, it is recommended to do atleast a 4x zoom using Nearest Neighbor.
-    I also suggest using 'compare', as that will make comparison a lot easier.
-
-    :param height: int:  Target descaled height.
-    :param kernel: str:  Descale kernel - 'bicubic'(default), 'bilinear', 'lanczos', 'spline16', or 'spline36'
-    :param b: float:  B-param for bicubic kernel. (Default value = 1 / 3)
-    :param c: float:  C-param for bicubic kernel. (Default value = 1 / 3)
-    :param taps: int:  Taps param for lanczos kernel. (Default value = 4)
-
+    There is one caveat, however: You can get scenes where every other frame is filtered
+    rather than the entire scene. Please do take care to avoid that if possible.
     """
-    if clip is vs.GRAY:
-        y = clip
+    def _diff(n, f, clip, filtered, threshold):
+        return clip if f.props.PlaneStatsAverage > threshold else filtered
 
-    y, u, v = kgf.split(clip)
-    if kernel is 'bicubic':
-        descaled = core.descale.Debicubic(y, get_w(height), height, b=b, c=c)
-        upscaled = core.resize.Bicubic(descaled, y.width, y.height, filter_param_a=b, filter_param_b=c)
-    elif kernel is 'bilinear':
-        descaled = core.descale.Debilinear(y, get_w(height), height)
-        upscaled = core.resize.Bilinear(descaled, get_w(y.height), y.height)
-    elif kernel is 'lanczos':
-        descaled = core.descale.Delanczos(y, get_w(height), height, taps=taps)
-        upscaled = core.resize.Lanczos(descaled, y.width, y.height, filter_param_a=taps)
-    elif kernel is 'spline16':
-        descaled = core.descale.Despline16(y, get_w(height), height)
-        upscaled = core.resize.Spline16(descaled, get_w(y.height), y.height)
-    elif kernel is 'spline36':
-        descaled = core.descale.Despline36(y, get_w(height), height)
-        upscaled = core.resize.Spline36(descaled, get_w(y.height), y.height)
-    else:
-        raise ValueError('test_descale: unknown kernel')
+    avg = core.std.PlaneStats(clip)
+    f_eval = core.std.FrameEval(clip, partial(_diff, clip=clip, filtered=filtered, threshold=threshold), avg)
+    return f_eval
 
-    if clip is vs.GRAY:
-        return upscaled
-    else:
-        return kgf.join([upscaled, u, v])
+
+def fix_cr_tint(clip: vs.VideoNode, value: int=128) -> vs.VideoNode:
+    if get_depth(clip) != 16:
+        clip = fvf.Depth(clip, 16)
+
+    return core.std.Expr(clip, f'x {value} +, x {value} +, x {value} +')
+
+
+#### Miscellaneous
 
 
 def source(file: str, force_lsmas: bool = False, ref=None, fpsnum: int = None, fpsden: int = None) -> vs.VideoNode:
@@ -401,63 +509,6 @@ def source(file: str, force_lsmas: bool = False, ref=None, fpsnum: int = None, f
             clip = core.ffms2.Source(file)
 
     return clip
-
-
-def deblend(clip, rep: int = None):
-    """
-    A simple function to fix deblending for interlaced video with an AABBA blending pattern, where A is a normal frame and B is a blended frame.
-    Assuming there's a constant pattern of frames (labeled A, B, C, CD, and DA in this function), blending can be fixed by calculating the C frame by getting halves of CD and DA, and using that to fix up CD.
-    DA can then be dropped due to it being an interlaced frame.
-
-    However, doing this will result in some of the artifacting being added to the deblended frame. We can mitigate this by repairing the frame with the non-blended frame before it.
-
-    For more information, please refer to this blogpost by torchlight:
-    https://mechaweaponsvidya.wordpress.com/2012/09/13/adventures-in-deblending/
-    """
-
-    blends_a = range(2, clip.num_frames-1, 5)
-    blends_b = range(3, clip.num_frames-1, 5)
-    expr_cd = ["z a 2 / - y x 2 / - +"]
-
-    def deblend(n, clip, rep):
-    # Thanks Myaa, motbob and kageru!
-        if n%5 in [0, 1, 4]:
-            return clip
-        else:
-            if n in blends_a:
-                c, cd, da, a = clip[n-1], clip[n], clip[n+1], clip[n+2]
-                debl = core.std.Expr([c, cd, da, a], expr_cd)
-                return core.rgvs.Repair(debl, c, rep) if rep else debl
-                # To-DO: Add decimation bool and proper DA frame deblending
-            else:
-                return clip
-
-    debl = core.std.FrameEval(clip, partial(deblend, clip=clip, rep=rep))
-    return core.std.DeleteFrames(debl, blends_b).std.AssumeFPS(fpsnum=24000, fpsden=1001)
-
-
-def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
-               threshold: int=.25) -> vs.VideoNode:
-    """
-    Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold.
-    This way you can run lighter (or heavier) filtering on scenes that are almost entirely dark.
-
-    There is one caveat, however: You can get scenes where every other frame is filtered
-    rather than the entire scene. Please do take care to avoid that if possible.
-    """
-    def _diff(n, f, clip, filtered, threshold):
-        return clip if f.props.PlaneStatsAverage > threshold else filtered
-
-    avg = core.std.PlaneStats(clip)
-    f_eval = core.std.FrameEval(clip, partial(_diff, clip=clip, filtered=filtered, threshold=threshold), avg)
-    return f_eval
-
-
-def fix_cr_tint(clip: vs.VideoNode, value: int=128) -> vs.VideoNode:
-    if get_depth(clip) != 16:
-        clip = fvf.Depth(clip, 16)
-
-    return core.std.Expr(clip, f'x {value} +, x {value} +, x {value} +')
 
 
 # Helper funcs
