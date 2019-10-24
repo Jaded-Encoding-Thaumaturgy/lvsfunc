@@ -32,6 +32,7 @@ core = vs.core
         - compare (comp)
         - stack_compare (scomp)
         - stack_planes
+        - tvbd_diff
 
     Scaling and Resizing:
         - conditional_descale (cond_desc)
@@ -139,6 +140,16 @@ def stack_planes(clip: vs.VideoNode, stack_vertical: bool = False) -> vs.VideoNo
     else:
         raise TypeError('stack_planes: input clip must be in YUV format with 444 or 420 chroma subsampling')
 
+
+def tvbd_diff(tv, bd):
+    """
+    Creates a standard `compare` between frames from two clips that have differences.
+    Useful for making comparisons between TV and BD encodes.
+    """
+    diff = core.std.MakeDiff(get_y(tv), get_y(bd)).resize.Point(format=tv.format)
+    diff = core.std.PlaneStats(diff)
+    frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] == 0]
+    return compare(tv, bd, frames)
 
 #### Scaling and Resizing Functions
 
