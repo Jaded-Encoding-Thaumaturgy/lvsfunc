@@ -300,7 +300,7 @@ def transpose_aa(clip: vs.VideoNode, eedi3: bool = False) -> vs.VideoNode:
     return aaclip if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
 
 
-def upscaled_sraa(clip: vs.VideoNode, rfactor: float = 1.5, rep: int = None) -> vs.VideoNode:
+def upscaled_sraa(clip: vs.VideoNode, rfactor: float = 1.5, rep: int = None, h: int = None) -> vs.VideoNode:
     """
     Another AA written by Zastin and slightly modified by me.
     Performs an upscaled single-rate AA to deal with aliasing.
@@ -310,12 +310,19 @@ def upscaled_sraa(clip: vs.VideoNode, rfactor: float = 1.5, rep: int = None) -> 
 
     :param rfactor: float:  Image enlargement factor. 1.5..2 makes it comparable to vsTAAmbk.
                             It is not recommended to go below 1.5.
+    :param h: int:          Set custom height. Width and aspect ratio are auto-calculated.
     """
     nnargs = dict(nsize=0, nns=4, qual=2)
     eeargs = dict(alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20) #taa defaults are 0.5, 0.2, 20, 3, 30
 
     ssw = round( clip.width * rfactor )
     ssh = round( clip.height * rfactor )
+
+    if h:
+        w = get_w(h, aspect_ratio=clip.width / clip.height)
+    else:
+        h = clip.height
+        w = clip.width
 
     #Nnedi3 upscale from source height to source height * rounding (Default 1.5)
     up_y = core.nnedi3.nnedi3(clip, 0, 1, 0, **nnargs)
@@ -329,8 +336,8 @@ def upscaled_sraa(clip: vs.VideoNode, rfactor: float = 1.5, rep: int = None) -> 
     aa_y = core.std.Transpose(aa_y)
     aa_y = core.eedi3m.EEDI3(aa_y, 0, 0, 0, **eeargs, sclip=core.nnedi3.nnedi3(aa_y, 0, 0, 0, **nnargs))
 
-    #Back to source clip height
-    return core.resize.Spline36(aa_y, clip.width, clip.height) if rep is None else core.resize.Spline36(aa_y, clip.width, clip.height).rgvs.Repair(clip, rep)
+    #Back to source clip height or given height
+    return core.resize.Spline36(aa_y, w, h) if rep is None else core.resize.Spline36(aa_y, w, h).rgvs.Repair(clip, rep)
 
 
 def nneedi3_clamp(clip: vs.VideoNode, mask: vs.VideoNode=None, strong_mask: bool = False, show_mask: bool = False,
