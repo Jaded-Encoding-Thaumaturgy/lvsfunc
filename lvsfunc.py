@@ -62,16 +62,17 @@ core = vs.core
 #### Comparison and Analysis Functions
 
 
-def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int = None,
+def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: List[int] = None,
             rand_frames: bool = False, rand_total: int = None,
             force_resample: bool = False) -> vs.VideoNode:
     """
     Allows for the same frames from two different clips to be compared by putting them next to each other in a list.
     Shorthand for this function is "comp".
 
-    :rand_frames: bool: Pick random frames from the given clips
-    :rand_total: int: Amount of random frames to pick
-    :param force_resample: bool: Force resample the second clip to match the first.
+    :frames: int:                   List of frames to compare.
+    :rand_frames: bool:             Pick random frames from the given clips.
+    :rand_total: int:               Amount of random frames to pick.
+    :param force_resample: bool:    Force resample the second clip to match the first.
 
     """
     if force_resample:
@@ -79,13 +80,14 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: int = None,
     elif clip_a.format.id != clip_b.format.id:
         raise ValueError('compare: The format of both clips must be equal')
 
+    if frames is None:
+        rand_frames = True
+
     if rand_frames:
         if rand_total is None:
             # More comparisons for shorter clips so you can compare stuff like NCs more conveniently
             rand_total = int(clip_a.num_frames/1000) if clip_a.num_frames > 5000 else int(clip_a.num_frames/100)
         frames = sorted(random.sample(range(1, clip_a.num_frames-1), rand_total))
-    elif frames is None:
-        raise ValueError('compare: No frames given')
 
     pairs = (clip_a[frame] + clip_b[frame] for frame in frames)
     return sum(pairs, next(pairs))
