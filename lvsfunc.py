@@ -349,7 +349,7 @@ def upscaled_sraa(clip: vs.VideoNode,
     #Back to source clip height or given height
     scaled = core.resize.Spline36(aa_y, w, h)
     if rep and h:
-        scaled_y = core.rgvs.Repair(scaled, planes[0].resize.Spline36(w, h), rep)
+        scaled = core.rgvs.Repair(scaled, planes[0].resize.Spline36(w, h), rep)
 
     if one_plane(clip):
         return scaled
