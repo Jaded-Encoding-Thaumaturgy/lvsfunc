@@ -153,11 +153,14 @@ def tvbd_diff(tv, bd):
     frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] == 0]
     return compare(tv, bd, frames)
 
+
 #### Scaling and Resizing Functions
 
 # TO-DO: Apply descale based on average error in a frame range rather than on a per-frame basis
 #        in order to prevent visible differences. Chances are if a couple of frames in a cut can't
 #        be descaled, all of them are no good.
+
+
 def conditional_descale(clip: vs.VideoNode, height: int,
                         b: float = 1 / 3, c: float = 1 / 3,
                         threshold: float = 0.003,
@@ -302,18 +305,24 @@ def transpose_aa(clip: vs.VideoNode, eedi3: bool = False) -> vs.VideoNode:
     return aaclip if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
 
 
-def upscaled_sraa(clip: vs.VideoNode, rfactor: float = 1.5, rep: int = None, h: int = None) -> vs.VideoNode:
+def upscaled_sraa(clip: vs.VideoNode,
+                  rfactor: float = 1.5,
+                  rep: int = None,
+                  h: int = None) -> vs.VideoNode:
     """
     Another AA written by Zastin and slightly modified by me.
-    Performs an upscaled single-rate AA to deal with aliasing.
+    Performs an upscaled single-rate AA to deal with heavy aliasing.
 
     Useful for Web rips, where the source quality is not good enough to descale,
     but you still want to deal with some bad aliasing and lineart.
 
     :param rfactor: float:  Image enlargement factor. 1.5..2 makes it comparable to vsTAAmbk.
                             It is not recommended to go below 1.5.
+    :param rep: int:        Repair mode.
     :param h: int:          Set custom height. Width and aspect ratio are auto-calculated.
     """
+    planes = split(clip) if one_plane(clip) else split(clip)
+
     nnargs = dict(nsize=0, nns=4, qual=2)
     eeargs = dict(alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20) #taa defaults are 0.5, 0.2, 20, 3, 30
 
@@ -323,11 +332,10 @@ def upscaled_sraa(clip: vs.VideoNode, rfactor: float = 1.5, rep: int = None, h: 
     if h:
         w = get_w(h, aspect_ratio=clip.width / clip.height)
     else:
-        h = clip.height
-        w = clip.width
+        h, w = clip.height, clip.width
 
     #Nnedi3 upscale from source height to source height * rounding (Default 1.5)
-    up_y = core.nnedi3.nnedi3(clip, 0, 1, 0, **nnargs)
+    up_y = core.nnedi3.nnedi3(planes[0], 0, 1, 0, **nnargs)
     up_y = core.resize.Spline36(up_y, height=ssh, src_top=.5)
     up_y = core.std.Transpose(up_y)
     up_y = core.nnedi3.nnedi3(up_y, 0, 1, 0, **nnargs)
@@ -339,7 +347,24 @@ def upscaled_sraa(clip: vs.VideoNode, rfactor: float = 1.5, rep: int = None, h: 
     aa_y = core.eedi3m.EEDI3(aa_y, 0, 0, 0, **eeargs, sclip=core.nnedi3.nnedi3(aa_y, 0, 0, 0, **nnargs))
 
     #Back to source clip height or given height
-    return core.resize.Spline36(aa_y, w, h) if rep is None else core.resize.Spline36(aa_y, w, h).rgvs.Repair(clip, rep)
+    scaled = core.resize.Spline36(aa_y, w, h)
+    if rep and h:
+        scaled_y = core.rgvs.Repair(scaled, planes[0].resize.Spline36(w, h), rep)
+
+    if one_plane(clip):
+        return scaled
+    else:
+        try:
+            return join([scaled, planes[1], planes[2]])
+        except:
+            if get_subsampling(clip) is "420":
+                planes[1], planes[2] = [core.resize.Bicubic(p, scaled.width / 2, scaled.height / 2) for p in planes[1:]]
+                return join([scaled, planes[1], planes[2]])
+            elif get_subsampling(clip) is "444":
+                planes[1], planes[2] = [core.resize.Bicubic(p, scaled.width, scaled.height) for p in planes[1:]]
+                return join([scaled, planes[1], planes[2]])
+            else:
+                raise ValueError(f'upscaled_sraa: Failed to return a \'{get_subsampling(clip)}\' clip. Please use either a 420, 444, or GRAY clip!')
 
 
 def nneedi3_clamp(clip: vs.VideoNode, mask: vs.VideoNode=None, strong_mask: bool = False, show_mask: bool = False,
