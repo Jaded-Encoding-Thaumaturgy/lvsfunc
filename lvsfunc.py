@@ -143,14 +143,16 @@ def stack_planes(clip: vs.VideoNode, stack_vertical: bool = False) -> vs.VideoNo
         raise TypeError('stack_planes: input clip must be in YUV format with 444 or 420 chroma subsampling')
 
 
-def tvbd_diff(tv, bd):
+def tvbd_diff(tv, bd, threshold=0):
     """
     Creates a standard `compare` between frames from two clips that have differences.
     Useful for making comparisons between TV and BD encodes.
+
+    :param threshold: int:  Threshold for PlaneStatsMin.
     """
     diff = core.std.MakeDiff(get_y(tv), get_y(bd)).resize.Point(format=tv.format)
     diff = core.std.PlaneStats(diff)
-    frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] == 0]
+    frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] == threshold]
     return compare(tv, bd, frames)
 
 
