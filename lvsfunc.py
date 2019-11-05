@@ -62,23 +62,36 @@ core = vs.core
 #### Comparison and Analysis Functions
 
 
-def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode, frames: List[int] = None,
+def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
+            frames: List[int] = None,
             rand_frames: bool = False, rand_total: int = None,
-            force_resample: bool = False) -> vs.VideoNode:
+            disable_resample: bool = False) -> vs.VideoNode:
     """
     Allows for the same frames from two different clips to be compared by putting them next to each other in a list.
+    Clips are automatically resampled to 8bit YUV -> RGB24 to emulate how a monitor shows the frame.
+    This can be disabled by setting `disable_resample` to True.
+
     Shorthand for this function is "comp".
 
-    :frames: int:                   List of frames to compare.
-    :rand_frames: bool:             Pick random frames from the given clips.
-    :rand_total: int:               Amount of random frames to pick.
-    :param force_resample: bool:    Force resample the second clip to match the first.
-
+    :frames: int:               List of frames to compare.
+    :rand_frames: bool:         Pick random frames from the given clips.
+    :rand_total: int:           Amount of random frames to pick.
+    :disable_resample: bool:    Disable forcibly resampling clips from 8bit YUV -> RGB24.
     """
-    if force_resample:
-        clip_b = clip_b.resize.Bicubic(clip_a.width, clip_a.height, format=clip_a.format)
-    elif clip_a.format.id != clip_b.format.id:
-        raise ValueError('compare: The format of both clips must be equal')
+    def resample(clip):
+        # Resampling to 8bit and RGB to properly display how it appears on your screen
+        return mvf.ToRGB(fvf.Depth(clip, 8))
+
+    # Error handling
+    if frames is not None:
+        if len(frames) > clip_a.num_frames:
+            raise ValueError('compare: More comparisons asked for than frames available')
+
+    if disable_resample is False:
+        clip_a, clip_b = resample(clip_a), resample(clip_b)
+    else:
+        if clip_a.format.id != clip_b.format.id:
+            raise ValueError('compare: The format of both clips must be equal')
 
     if frames is None:
         rand_frames = True
@@ -143,18 +156,22 @@ def stack_planes(clip: vs.VideoNode, stack_vertical: bool = False) -> vs.VideoNo
         raise TypeError('stack_planes: input clip must be in YUV format with 444 or 420 chroma subsampling')
 
 
-def tvbd_diff(tv, bd, threshold=0):
+def tvbd_diff(tv, bd, threshold=51):
     """
     Creates a standard `compare` between frames from two clips that have differences.
     Useful for making comparisons between TV and BD encodes.
+
+    Note that this might catch artifacting as differences! Use your eyes.
 
     :param threshold: int:  Threshold for PlaneStatsMin.
     """
     diff = core.std.MakeDiff(get_y(tv), get_y(bd)).resize.Point(format=tv.format)
     diff = core.std.PlaneStats(diff)
-    frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] == threshold]
-    return compare(tv, bd, frames)
-
+    try:
+        frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] <= threshold]
+        return compare(tv, bd, frames)
+    except StopIteration:
+        raise ValueError('tvbd_diff: No frames with differences returned')
 
 #### Scaling and Resizing Functions
 
@@ -508,19 +525,28 @@ def quick_denoise(clip: vs.VideoNode, sigma=4, cmode='knlm', ref: vs.VideoNode =
 
 
 def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
-               threshold: int=.25) -> vs.VideoNode:
+               threshold: int = .25, threshold_range: int = None) -> vs.VideoNode:
     """
     Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold.
     This way you can run lighter (or heavier) filtering on scenes that are almost entirely dark.
 
     There is one caveat, however: You can get scenes where every other frame is filtered
     rather than the entire scene. Please do take care to avoid that if possible.
+
+    threshold: int:         Threshold for frame averages to be filtered
+    threshold_range: int:   Threshold for a range of frame averages to be filtered
     """
-    def _diff(n, f, clip, filtered, threshold):
-        return clip if f.props.PlaneStatsAverage > threshold else filtered
+    def _diff(n, f, clip, filtered, threshold, threshold_range):
+        if threshold_range:
+            return filtered if threshold_range <= f.props.PlaneStatsAverage <= threshold else clip
+        else:
+            return clip if f.props.PlaneStatsAverage > threshold else filtered
+
+    if threshold_range and threshold_range > threshold:
+        raise ValueError('limit_dark: "threshold_range" must be a lower value than "threshold"!')
 
     avg = core.std.PlaneStats(clip)
-    f_eval = core.std.FrameEval(clip, partial(_diff, clip=clip, filtered=filtered, threshold=threshold), avg)
+    f_eval = core.std.FrameEval(clip, partial(_diff, clip=clip, filtered=filtered, threshold=threshold, threshold_range=threshold_range), avg)
     return f_eval
 
 
