@@ -49,7 +49,7 @@ core = vs.core
     Denoising and Debanding:
         - quick_denoise (qden)
 
-    Masking, Limiting, and Colors:
+    Masking, Limiting, and Color Handling:
         - limit_dark
         - fix_cr_tint
 

@@ -17,7 +17,7 @@ This function offers the following (sorted by category):</br>
 | 11 | **Denoising and Debanding** | quick_denoise | qden | Quick denoising function, allowing for different denoisers to be set for the chroma | clip, sigma, cmode, ref, **kwargs |
 | 12 | **Masking, Limiting, and Color Handling** | limit_dark | | Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold | clip, filtered, threshold, threshold_range |
 | 13 | **Masking, Limiting, and Color Handling** | fix_cr_tint | | Does a rough fix to the green tint present in Crunchyroll encodes | clip, value |
-| 14 | **Miscellaneous:** | source | src | Automatically determines how a clip or image should be imported | scr, force_lsmas, ref, fpsnum, fpsden
+| 14 | **Miscellaneous** | source | src | Automatically determines how a clip or image should be imported | scr, force_lsmas, ref, fpsnum, fpsden
 
 
 ## Requirements:
