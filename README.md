@@ -15,7 +15,7 @@ This function offers the following (sorted by category):</br>
 | 9 | **Antialiasing** | nneedi3_clamp | | Clamps the change between nnedi3 and eedi3, fixing the artifacting caused by eedi3 | clip, mask, strong_mask, show_mask, opencl, strength, alpha, beta, gamma, nrad, mdis, nsize, nns, qual |
 | 10 | **Deinterlacing** | deblend | | Deblends a clip in an AABBA pattern and returns a decimated clip | clip, rep |
 | 11 | **Denoising and Debanding** | quick_denoise | qden | Quick denoising function, allowing for different denoisers to be set for the chroma | clip, sigma, cmode, ref, **kwargs |
-| 12 | **Masking, Limiting, and Color Handling** | limit_darl | | Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold | clip, filtered, threshold, threshold_range |
+| 12 | **Masking, Limiting, and Color Handling** | limit_dark | | Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold | clip, filtered, threshold, threshold_range |
 | 13 | **Masking, Limiting, and Color Handling** | fix_cr_tint | | Does a rough fix to the green tint present in Crunchyroll encodes | clip, value |
 | 14 | **Miscellaneous:** | source | src | Automatically determines how a clip or image should be imported | scr, force_lsmas, ref, fpsnum, fpsden
 
