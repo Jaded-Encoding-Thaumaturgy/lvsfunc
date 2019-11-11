@@ -36,6 +36,7 @@ core = vs.core
 
     Scaling and Resizing:
         - conditional_descale (cond_desc)
+        - smart_descale
         - test_descale
 
     Antialiasing:
