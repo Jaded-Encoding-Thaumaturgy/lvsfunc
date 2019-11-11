@@ -9,15 +9,16 @@ This function offers the following (sorted by category):</br>
 | 3 | **Comparison and Analysis** | stack_planes| | Split and stack the planes of a given clip | clip, stack_vertical |
 | 4 | **Comparison and Analysis** | tvbd_diff | | Return frames with differences between the tv and bd clips | tv, bd, threshold |
 | 5 | **Scaling and Resizing** | conditional_descale | cond_desc | Descale a frame if the error doesn't exceed the given threshold | clip, height, b, c, threshold, w2x
-| 6 | **Scaling and Resizing** | test_descale | | Descales and reupscales the given clip for comparison | clip, height, kernel, b, c, taps |
-| 7 | **Antialiasing** | transpose_aa | | AA's a clip by transposing it | clip, eedi3 |
-| 8 | **Antialiasing** | upscaled_sraa | | AA's through a upscaled single-rate AA | clip, rfactor, rep, h |
-| 9 | **Antialiasing** | nneedi3_clamp | | Clamps the change between nnedi3 and eedi3, fixing the artifacting caused by eedi3 | clip, mask, strong_mask, show_mask, opencl, strength, alpha, beta, gamma, nrad, mdis, nsize, nns, qual |
-| 10 | **Deinterlacing** | deblend | | Deblends a clip in an AABBA pattern and returns a decimated clip | clip, rep |
-| 11 | **Denoising and Debanding** | quick_denoise | qden | Quick denoising function, allowing for different denoisers to be set for the chroma | clip, sigma, cmode, ref, **kwargs |
-| 12 | **Masking, Limiting, and Color Handling** | limit_dark | | Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold | clip, filtered, threshold, threshold_range |
-| 13 | **Masking, Limiting, and Color Handling** | fix_cr_tint | | Does a rough fix to the green tint present in Crunchyroll encodes | clip, value |
-| 14 | **Miscellaneous** | source | src | Automatically determines how a clip or image should be imported | scr, force_lsmas, ref, fpsnum, fpsden
+| 6 | **Scaling and Resizing** | smart_descale | | A descaling function that compares relative errors between multiple resolutions and descales accordingly | clip, res, b, c, thresh1, thresh2, show_mask, show_dmask, single_rate_upscale, rfactor |
+| 7 | **Scaling and Resizing** | test_descale | | Descales and reupscales the given clip for comparison | clip, height, kernel, b, c, taps |
+| 8 | **Antialiasing** | transpose_aa | | AA's a clip by transposing it | clip, eedi3 |
+| 9 | **Antialiasing** | upscaled_sraa | | AA's through a upscaled single-rate AA | clip, rfactor, rep, h |
+| 10 | **Antialiasing** | nneedi3_clamp | | Clamps the change between nnedi3 and eedi3, fixing the artifacting caused by eedi3 | clip, mask, strong_mask, show_mask, opencl, strength, alpha, beta, gamma, nrad, mdis, nsize, nns, qual |
+| 11 | **Deinterlacing** | deblend | | Deblends a clip in an AABBA pattern and returns a decimated clip | clip, rep |
+| 12 | **Denoising and Debanding** | quick_denoise | qden | Quick denoising function, allowing for different denoisers to be set for the chroma | clip, sigma, cmode, ref, **kwargs |
+| 13 | **Masking, Limiting, and Color Handling** | limit_dark | | Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold | clip, filtered, threshold, threshold_range |
+| 14 | **Masking, Limiting, and Color Handling** | fix_cr_tint | | Does a rough fix to the green tint present in Crunchyroll encodes | clip, value |
+| 15 | **Miscellaneous** | source | src | Automatically determines how a clip or image should be imported | scr, force_lsmas, ref, fpsnum, fpsden
 
 
 ## Requirements:
