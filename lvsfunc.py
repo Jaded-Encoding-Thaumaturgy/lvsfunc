@@ -327,7 +327,8 @@ def transpose_aa(clip: vs.VideoNode, eedi3: bool = False) -> vs.VideoNode:
 def upscaled_sraa(clip: vs.VideoNode,
                   rfactor: float = 1.5,
                   rep: int = None,
-                  h: int = None) -> vs.VideoNode:
+                  h: int = None,
+                  sharp_downscale: bool = True) -> vs.VideoNode:
     """
     Another AA written by Zastin and slightly modified by me.
     Performs an upscaled single-rate AA to deal with heavy aliasing.
@@ -340,18 +341,23 @@ def upscaled_sraa(clip: vs.VideoNode,
     :param rep: int:        Repair mode.
     :param h: int:          Set custom height. Width and aspect ratio are auto-calculated.
     """
-    planes = split(clip) if one_plane(clip) else split(clip)
+    planes = split(clip)
 
     nnargs = dict(nsize=0, nns=4, qual=2)
     eeargs = dict(alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20) #taa defaults are 0.5, 0.2, 20, 3, 30
 
-    ssw = round( clip.width * rfactor )
+    ssw = round( clip.width  * rfactor )
     ssh = round( clip.height * rfactor )
+
+    while ssw % 2:
+        ssw += 1
+    while ssh % 2:
+        ssh += 1
 
     if h:
         w = get_w(h, aspect_ratio=clip.width / clip.height)
     else:
-        h, w = clip.height, clip.width
+        w, h = clip.width, clip.height
 
     #Nnedi3 upscale from source height to source height * rounding (Default 1.5)
     up_y = core.nnedi3.nnedi3(planes[0], 0, 1, 0, **nnargs)
@@ -366,8 +372,9 @@ def upscaled_sraa(clip: vs.VideoNode,
     aa_y = core.eedi3m.EEDI3(aa_y, 0, 0, 0, **eeargs, sclip=core.nnedi3.nnedi3(aa_y, 0, 0, 0, **nnargs))
 
     #Back to source clip height or given height
-    scaled = core.resize.Spline36(aa_y, w, h)
-    if rep and h:
+    scaled = core.fmtc.resample(aa_y, w, h, kernel='gauss', invks=True, invkstaps=2, taps=1, a1=32) if sharp_downscale else core.resize.Spline36(aa_y, w, h)
+
+    if rep:
         scaled = core.rgvs.Repair(scaled, planes[0].resize.Spline36(w, h), rep)
 
     if one_plane(clip):
@@ -377,10 +384,10 @@ def upscaled_sraa(clip: vs.VideoNode,
             return join([scaled, planes[1], planes[2]])
         except:
             if get_subsampling(clip) is "420":
-                planes[1], planes[2] = [core.resize.Bicubic(p, scaled.width / 2, scaled.height / 2) for p in planes[1:]]
+                planes[1], planes[2] = [core.resize.Bicubic(p, w / 2, h / 2, src_left=.25 * (1 - clip.width / w )) for p in planes[1:]]
                 return join([scaled, planes[1], planes[2]])
             elif get_subsampling(clip) is "444":
-                planes[1], planes[2] = [core.resize.Bicubic(p, scaled.width, scaled.height) for p in planes[1:]]
+                planes[1], planes[2] = [core.resize.Bicubic(p, w, h) for p in planes[1:]]
                 return join([scaled, planes[1], planes[2]])
             else:
                 raise ValueError(f'upscaled_sraa: Failed to return a \'{get_subsampling(clip)}\' clip. Please use either a 420, 444, or GRAY clip!')
