@@ -233,6 +233,102 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     return kgf.join([f_eval, u, v])
 
 
+def smart_descale(clip: vs.VideoNode,
+                   res: List[int],
+                   b: float = 1/3, c: float = 1/3,
+                   thresh1: float = 0.03, thresh2: float = 0.7,
+                   show_mask: bool = False, show_dmask: bool = False,
+                   single_rate_upscale: bool = False, rfactor: float = 1.5):
+    """
+    A descaling function that compares relative errors between multiple resolutions and descales accordingly.
+    Most of this code was leveraged from kageru's Made in Abyss script.
+    As this is an incredibly complex function, I will offer only minimal support.
+    For more information and comments I suggest you check out the original script:
+        https://git.kageru.moe/kageru/vs-scripts/src/branch/master/abyss1.py
+
+
+    res: List[int]:             A list of resolutions to descale to. For example: [900, 871, 872, 877]
+    thresh1: float:             Threshold for when a frame will be descaled.
+    thresh2: float:             Threshold for when a frame will not be descaled.
+    single_rate_upscale: bool:  Use upscaled_sraa to upscale the frames
+    rfactor: float:             rfactor for upscaled_sraa
+    """
+    def _descaling(clip: vs.VideoNode, h: int, b: float, c: float):
+        """Descale and return a tuple of descaled clip and diff mask between that and the original."""
+        down = clip.descale.Debicubic(get_w(h), h, b, c)
+        up = down.resize.Bicubic(clip.width, clip.height, filter_param_a=b, filter_param_b=c)
+        diff = core.std.Expr([clip, up], 'x y - abs').std.PlaneStats()
+        return down.std.SetFrameProp("_descaled_resolution", intval=h), diff
+
+    def _select(n, y, debic_list, single_rate_upscale, rfactor, f):
+        """This simply descales to each of those and selects the most appropriate for each frame."""
+        errors = [x.props.PlaneStatsAverage for x in f]
+        y_deb = debic_list[errors.index(min(errors))]
+        dmask = core.std.Expr([y, y_deb.resize.Bicubic(clip.width, clip.height)], 'x y - abs 0.025 > 1 0 ?').std.Maximum()
+
+        if single_rate_upscale is True:
+            up = upscaled_sraa(y_deb, rfactor, h=clip.height)
+        else:
+            up = fvf.Depth(nnedi3_rpow2(fvf.Depth(y_deb, 16), nns=4, correct_shift=True, width=clip.width, height=clip.height), 32)
+        return core.std.ClipToProp(up, dmask)
+
+    def _square():
+        top = core.std.BlankClip(length=len(y), format=vs.GRAYS, height=4, width=10, color=[1])
+        side = core.std.BlankClip(length=len(y), format=vs.GRAYS, height=2, width=4, color=[1])
+        center = core.std.BlankClip(length=len(y), format=vs.GRAYS, height=2, width=2, color=[0])
+        t1 = core.std.StackHorizontal([side, center, side])
+        return core.std.StackVertical([top, t1, top])
+
+    def _restore_original(n, f, clip: vs.VideoNode, orig: vs.VideoNode, thresh_a: float, thresh_b: float):
+        """Just revert the entire scaling if the difference is too big. This should catch the 1080p scenes (like the entire ED)."""
+        if f.props.PlaneStatsAverage < thresh_a:
+            return clip.std.SetFrameProp("_descaled", intval=1)
+        elif f.props.PlaneStatsAverage > thresh_b:
+            return orig.std.SetFrameProp("_descaled", intval=0)
+        return core.std.Merge(clip, orig, (f.props.PlaneStatsAverage - thresh_a) * 20).std.SetFrameProp("_descaled", intval=2)
+
+    og = clip
+    clip32 = fvf.Depth(clip, 32)
+    if one_plane(clip32):
+        y = get_y(clip32)
+    else:
+        y, u, v = split(clip32)
+
+    # TO-DO: Allow arbitrary integers to be tested rather than enforce a range
+    debic_listp = [_descaling(y, h, b, c) for h in res]
+    debic_list = [a[0] for a in debic_listp]
+    debic_props = [a[1] for a in debic_listp]
+
+    y_deb = core.std.FrameEval(y, partial(_select, y=y, debic_list=debic_list,
+                                                  single_rate_upscale=single_rate_upscale, rfactor=rfactor), prop_src=debic_props)
+
+    dmask = core.std.PropToClip(y_deb)
+    if show_dmask:
+        return dmask
+    # TO-DO: Figure out how to make it properly round depending on resolution (although this would usually be 1080p anyway)
+    line = core.std.StackHorizontal([_square()]*192)
+    full_squares = core.std.StackVertical([line]*108)
+
+    artifacts = core.misc.Hysteresis(dmask.resize.Bicubic(clip32.width, clip32.height, _format=vs.GRAYS),
+                                     core.std.Expr([get_y(clip32).tcanny.TCanny(sigma=3), full_squares], 'x y min'))
+
+    ret_raw = kgf.retinex_edgemask(fvf.Depth(clip, 16))
+    ret = ret_raw.std.Binarize(30).rgvs.RemoveGrain(3)
+
+    mask = core.std.Expr([ret.resize.Point(_format=vs.GRAYS), kgf.iterate(artifacts, core.std.Maximum, 3)], 'x y -').std.Binarize(0.4)
+
+    mask = mask.std.Inflate().std.Convolution(matrix=[1]*9).std.Convolution(matrix=[1]*9)
+    if show_mask:
+        return mask
+
+    y = core.std.MaskedMerge(y, y_deb, mask)
+    merged = join([y, u, v]) if not one_plane(og) else y
+    merged = fvf.Depth(merged, get_depth(og))
+
+    dmask = dmask.std.PlaneStats()
+    return merged.std.FrameEval(partial(_restore_original, clip=merged, orig=og, thresh_a=thresh1, thresh_b=thresh2), prop_src=dmask)
+
+
 # TO-DO: Improve test_descale. Get rid of all the if/else statements and replace with a faster, more robust setup if possible.
 
 def test_descale(clip: vs.VideoNode, height: int, kernel: str = 'bicubic', b: float = 1 / 3, c: float = 1 / 3,
