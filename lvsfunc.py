@@ -302,7 +302,7 @@ def smart_descale(clip: vs.VideoNode,
 
     y_deb = core.std.FrameEval(y, partial(_select, y=y, debic_list=debic_list,
                                                   single_rate_upscale=single_rate_upscale, rfactor=rfactor), prop_src=debic_props)
-
+    # TO-DO: It returns a frame size error here for whatever reason. Need to figure out what causes it and fix it
     dmask = core.std.PropToClip(y_deb)
     if show_dmask:
         return dmask
@@ -326,13 +326,16 @@ def smart_descale(clip: vs.VideoNode,
     merged = join([y, u, v]) if not one_plane(og) else y
     merged = fvf.Depth(merged, get_depth(og))
 
-    dmask = dmask.std.PlaneStats()
+    dmask = dmask.std.PlaneStats() # TO-DO: It returns a frame size error here for whatever reason. Need to figure out what causes it and fix it
     return merged.std.FrameEval(partial(_restore_original, clip=merged, orig=og, thresh_a=thresh1, thresh_b=thresh2), prop_src=dmask)
 
 
 # TO-DO: Improve test_descale. Get rid of all the if/else statements and replace with a faster, more robust setup if possible.
 
-def test_descale(clip: vs.VideoNode, height: int, kernel: str = 'bicubic', b: float = 1 / 3, c: float = 1 / 3,
+def test_descale(clip: vs.VideoNode,
+                 height: int,
+                 kernel: str = 'bicubic',
+                 b: float = 1 / 3, c: float = 1 / 3,
                  taps: int = 4) -> vs.VideoNode:
     """
     Generic function to test descales with.
@@ -490,9 +493,14 @@ def upscaled_sraa(clip: vs.VideoNode,
                 raise ValueError(f'upscaled_sraa: Failed to return a \'{get_subsampling(clip)}\' clip. Please use either a 420, 444, or GRAY clip!')
 
 
-def nneedi3_clamp(clip: vs.VideoNode, mask: vs.VideoNode=None, strong_mask: bool = False, show_mask: bool = False,
-                  opencl: bool = False, strength=1, alpha: float = 0.25, beta: float = 0.5, gamma=40, nrad=2, mdis=20,
-                  nsize=3, nns=3, qual=1) -> vs.VideoNode:
+def nneedi3_clamp(clip: vs.VideoNode,
+                  mask: vs.VideoNode=None, strong_mask: bool = False, show_mask: bool = False,
+                  opencl: bool = False,
+                  strength=1,
+                  alpha: float = 0.25, beta: float = 0.5, gamma=40,
+                  nrad=2, mdis=20,
+                  nsize=3, nns=3,
+                  qual=1) -> vs.VideoNode:
     """
     Script written by Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3.
     This should fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
@@ -664,7 +672,10 @@ def fix_cr_tint(clip: vs.VideoNode, value: int=128) -> vs.VideoNode:
 #### Miscellaneous
 
 
-def source(file: str, force_lsmas: bool = False, ref=None, fpsnum: int = None, fpsden: int = None) -> vs.VideoNode:
+def source(file: str,
+           force_lsmas: bool = False,
+           ref=None,
+           fpsnum: int = None, fpsden: int = None) -> vs.VideoNode:
     """
     Generic clip import function.
     Automatically determines if ffms2 or L-SMASH should be used to import a clip, but L-SMASH can be forced.
