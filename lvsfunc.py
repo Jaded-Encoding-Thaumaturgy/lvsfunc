@@ -682,7 +682,7 @@ def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode=None,
     if width2    is not None and \
        height2   is not None and \
        offset_x2 is not None and \
-       offset_y2 is not None):
+       offset_y2 is not None:
         sqmask2 = kgf.squaremask(clip, width2, height2, offset_x2, offset_y2)
         sqmask = core.std.Expr([sqmask, sqmask2], "x y +")
 
