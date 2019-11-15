@@ -238,6 +238,7 @@ def smart_descale(clip: vs.VideoNode,
                    res: List[int],
                    b: float = 1/3, c: float = 1/3,
                    thresh1: float = 0.03, thresh2: float = 0.7,
+                   no_mask: float = False,
                    show_mask: bool = False, show_dmask: bool = False,
                    single_rate_upscale: bool = False, rfactor: float = 1.5):
     """
@@ -259,16 +260,16 @@ def smart_descale(clip: vs.VideoNode,
         down = clip.descale.Debicubic(get_w(h), h, b, c)
         up = down.resize.Bicubic(clip.width, clip.height, filter_param_a=b, filter_param_b=c)
         diff = core.std.Expr([clip, up], 'x y - abs').std.PlaneStats()
-        return down.std.SetFrameProp("_descaled_resolution", intval=h), diff
+        return down, diff
 
     def _select(n, y, debic_list, single_rate_upscale, rfactor, f):
         """This simply descales to each of those and selects the most appropriate for each frame."""
         errors = [x.props.PlaneStatsAverage for x in f]
         y_deb = debic_list[errors.index(min(errors))]
-        dmask = core.std.Expr([y, y_deb.resize.Bicubic(clip.width, clip.height)], 'x y - abs 0.025 > 1 0 ?').std.Maximum()
+        dmask = core.std.Expr([y, y_deb.resize.Bicubic(clip.width, clip.height)], 'x y - abs 0.025 > 1 0 ?').std.Maximum().std.SetFrameProp("_descaled_resolution", intval=y_deb.height)
 
         if single_rate_upscale is True:
-            up = upscaled_sraa(y_deb, rfactor, h=clip.height)
+            up = upscaled_sraa(y_deb, rfactor, h=clip.height).resize.Bicubic(clip.width, clip.height)
         else:
             up = fvf.Depth(nnedi3_rpow2(fvf.Depth(y_deb, 16), nns=4, correct_shift=True, width=clip.width, height=clip.height), 32)
         return core.std.ClipToProp(up, dmask)
@@ -325,9 +326,11 @@ def smart_descale(clip: vs.VideoNode,
     y = core.std.MaskedMerge(y, y_deb, mask)
     merged = join([y, u, v]) if not one_plane(og) else y
     merged = fvf.Depth(merged, get_depth(og))
+    if no_mask:
+        return merged
 
     dmask = dmask.std.PlaneStats() # TO-DO: It returns a frame size error here for whatever reason. Need to figure out what causes it and fix it
-    return merged.std.FrameEval(partial(_restore_original, clip=merged, orig=og, thresh_a=thresh1, thresh_b=thresh2), prop_src=dmask)
+    return merged.std.FrameEval(partial(_restore_original, clip=merged, orig=og, thresh_a=thresh1, thresh_b=thresh2), prop_src=dmask)#.std.SetFrameProp("_descaled_resolution", intval=y_deb.height)
 
 
 # TO-DO: Improve test_descale. Get rid of all the if/else statements and replace with a faster, more robust setup if possible.
@@ -336,7 +339,7 @@ def test_descale(clip: vs.VideoNode,
                  height: int,
                  kernel: str = 'bicubic',
                  b: float = 1 / 3, c: float = 1 / 3,
-                 taps: int = 4) -> vs.VideoNode:
+                 taps: int = 3) -> vs.VideoNode:
     """
     Generic function to test descales with.
     Descales and reupscales a given clip, allowing you to compare the two easily.
@@ -344,39 +347,26 @@ def test_descale(clip: vs.VideoNode,
     When comparing, it is recommended to do atleast a 4x zoom using Nearest Neighbor.
     I also suggest using 'compare', as that will make comparison a lot easier.
 
+    Some of this code was leveraged from DescaleAA, and it also uses functions
+    available in fvsfunc.
+
     :param height: int:  Target descaled height.
     :param kernel: str:  Descale kernel - 'bicubic'(default), 'bilinear', 'lanczos', 'spline16', or 'spline36'
     :param b: float:  B-param for bicubic kernel. (Default value = 1 / 3)
     :param c: float:  C-param for bicubic kernel. (Default value = 1 / 3)
-    :param taps: int:  Taps param for lanczos kernel. (Default value = 4)
+    :param taps: int:  Taps param for lanczos kernel. (Default value = 43)
 
     """
-    if clip is vs.GRAY:
-        y = clip
 
-    y, u, v = kgf.split(clip)
-    if kernel is 'bicubic':
-        descaled = core.descale.Debicubic(y, get_w(height), height, b=b, c=c)
-        upscaled = core.resize.Bicubic(descaled, y.width, y.height, filter_param_a=b, filter_param_b=c)
-    elif kernel is 'bilinear':
-        descaled = core.descale.Debilinear(y, get_w(height), height)
-        upscaled = core.resize.Bilinear(descaled, get_w(y.height), y.height)
-    elif kernel is 'lanczos':
-        descaled = core.descale.Delanczos(y, get_w(height), height, taps=taps)
-        upscaled = core.resize.Lanczos(descaled, y.width, y.height, filter_param_a=taps)
-    elif kernel is 'spline16':
-        descaled = core.descale.Despline16(y, get_w(height), height)
-        upscaled = core.resize.Spline16(descaled, get_w(y.height), y.height)
-    elif kernel is 'spline36':
-        descaled = core.descale.Despline36(y, get_w(height), height)
-        upscaled = core.resize.Spline36(descaled, get_w(y.height), y.height)
-    else:
-        raise ValueError('test_descale: unknown kernel')
+    clip_y = get_y(clip)
 
-    if clip is vs.GRAY:
-        return upscaled
-    else:
-        return kgf.join([upscaled, u, v])
+    desc = fvf.Resize(clip_y, get_w(height), height,
+                      kernel=kernel, a1=b, a2=c, taps=taps,
+                      invks=True)
+    upsc = fvf.Resize(desc, clip.width, clip.height,
+                      kernel=kernel, a1=b, a2=c, taps=taps)
+
+    return upsc if clip is vs.GRAY else core.std.ShufflePlanes([upsc, clip], planes=[0, 1, 2], colorfamily=vs.YUV)
 
 
 #### Antialiasing functions
