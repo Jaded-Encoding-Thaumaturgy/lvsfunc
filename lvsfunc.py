@@ -663,23 +663,30 @@ def fix_cr_tint(clip: vs.VideoNode, value: int=128) -> vs.VideoNode:
 def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode=None,
              width: int=None, height: int=None,
              offset_x: int=None, offset_y: int=None,
+             width2: int=None, height2: int=None,
+             offset_x2: int=None, offset_y2: int=None,
              show_mask: bool=False) -> vs.VideoNode:
     """
     Simple function to wipe a row with a blank clip.
     You can also give it a different clip to replace a row with.
+
+    if width2, height2, etc. are given, it will merge the two masks.
     """
-    if secondary is None:
-        secondary = core.std.BlankClip(clip)
-    if width is None:
-        width = clip.width
-    if height is None:
-        height = 1
-    if offset_x is None:
-        offset_x = 0
-    if offset_y is None:
-        offset_y = 1
+    secondary   = core.std.BlankClip(clip)  if secondary is None else secondary
+    width       = clip.width                if width     is None else width
+    height      = 1                         if height    is None else height
+    offset_x    = 0                         if offset_x  is None else offset_x
+    offset_y    = 0                         if offset_y  is None else offset_y
+
 
     sqmask = kgf.squaremask(clip, width, height, offset_x, offset_y)
+    if (width2    is not None and
+        height2   is not None and
+        offset_x2 is not None and
+        offset_y2 is not None):
+        sqmask2 = kgf.squaremask(clip, width2, height2, offset_x2, offset_y2)
+        sqmask = core.std.Expr([sqmask, sqmask2], "x y +")
+
     if show_mask:
         return sqmask
     return core.std.MaskedMerge(clip, secondary, sqmask)
