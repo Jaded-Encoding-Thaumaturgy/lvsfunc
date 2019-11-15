@@ -661,10 +661,10 @@ def fix_cr_tint(clip: vs.VideoNode, value: int=128) -> vs.VideoNode:
 
 
 def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode=None,
-             width: int=None, height: int=None,
-             offset_x: int=None, offset_y: int=None,
-             width2: int=None, height2: int=None,
-             offset_x2: int=None, offset_y2: int=None,
+             width: Optional[int]=None, height: Optional[int]=None,
+             offset_x: Optional[int]=None, offset_y: Optional[int]=None,
+             width2: Optional[int]=None, height2: Optional[int]=None,
+             offset_x2: Optional[int]=None, offset_y2: Optional[int]=None,
              show_mask: bool=False) -> vs.VideoNode:
     """
     Simple function to wipe a row with a blank clip.
@@ -672,18 +672,17 @@ def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode=None,
 
     if width2, height2, etc. are given, it will merge the two masks.
     """
-    secondary   = core.std.BlankClip(clip)  if secondary is None else secondary
-    width       = clip.width                if width     is None else width
-    height      = 1                         if height    is None else height
-    offset_x    = 0                         if offset_x  is None else offset_x
-    offset_y    = 0                         if offset_y  is None else offset_y
-
+    secondary   = fallback(secondary, core.std.BlankClip(clip))
+    width       = fallback(width, clip.width)
+    height      = fallback(height, 1)
+    offset_x    = fallback(offset_x, 0)
+    offset_y    = fallback(offset_y, 0)
 
     sqmask = kgf.squaremask(clip, width, height, offset_x, offset_y)
-    if (width2    is not None and
-        height2   is not None and
-        offset_x2 is not None and
-        offset_y2 is not None):
+    if width2    is not None and \
+       height2   is not None and \
+       offset_x2 is not None and \
+       offset_y2 is not None):
         sqmask2 = kgf.squaremask(clip, width2, height2, offset_x2, offset_y2)
         sqmask = core.std.Expr([sqmask, sqmask2], "x y +")
 
