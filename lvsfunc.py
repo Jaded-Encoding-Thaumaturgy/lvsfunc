@@ -661,8 +661,8 @@ def fix_cr_tint(clip: vs.VideoNode, value: int=128) -> vs.VideoNode:
 
 
 def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode=None,
-             width: Optional[int]=None, height: Optional[int]=None,
-             offset_x: Optional[int]=None, offset_y: Optional[int]=None,
+             width: int=1, height: int=1,
+             offset_x: int=0, offset_y: int=0,
              width2: Optional[int]=None, height2: Optional[int]=None,
              offset_x2: Optional[int]=None, offset_y2: Optional[int]=None,
              show_mask: bool=False) -> vs.VideoNode:
@@ -672,11 +672,7 @@ def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode=None,
 
     if width2, height2, etc. are given, it will merge the two masks.
     """
-    secondary   = fallback(secondary, core.std.BlankClip(clip))
-    width       = fallback(width, clip.width)
-    height      = fallback(height, 1)
-    offset_x    = fallback(offset_x, 0)
-    offset_y    = fallback(offset_y, 0)
+    secondary = fallback(secondary, core.std.BlankClip(clip))
 
     sqmask = kgf.squaremask(clip, width, height, offset_x, offset_y)
     if width2    is not None and \
