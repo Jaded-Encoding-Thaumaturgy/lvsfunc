@@ -53,6 +53,7 @@ core = vs.core
     Masking, Limiting, and Color Handling:
         - limit_dark
         - fix_cr_tint
+        - wipe_row
 
     Miscellaneous:
         - source (src)
@@ -657,6 +658,31 @@ def fix_cr_tint(clip: vs.VideoNode, value: int=128) -> vs.VideoNode:
         clip = fvf.Depth(clip, 16)
 
     return core.std.Expr(clip, f'x {value} +, x {value} +, x {value} +')
+
+
+def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode=None,
+             width: int=None, height: int=None,
+             offset_x: int=None, offset_y: int=None,
+             show_mask: bool=False) -> vs.VideoNode:
+    """
+    Simple function to wipe a row with a blank clip.
+    You can also give it a different clip to replace a row with.
+    """
+    if secondary is None:
+        secondary = core.std.BlankClip(clip)
+    if width is None:
+        width = clip.width
+    if height is None:
+        height = 1
+    if offset_x is None:
+        offset_x = 0
+    if offset_y is None:
+        offset_y = 1
+
+    sqmask = kgf.squaremask(clip, width, height, offset_x, offset_y)
+    if show_mask:
+        return sqmask
+    return core.std.MaskedMerge(clip, secondary, sqmask)
 
 
 #### Miscellaneous
