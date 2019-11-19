@@ -145,14 +145,14 @@ def stack_planes(clip: vs.VideoNode, stack_vertical: bool = False) -> vs.VideoNo
     y, u, v = kgf.split(clip)
     subsampling = get_subsampling(clip)
 
-    if subsampling is '420':
+    if subsampling == '420':
         if stack_vertical:
             u_v = core.std.StackHorizontal([u, v])
             return core.std.StackVertical([y, u_v])
         else:
             u_v = core.std.StackVertical([u, v])
             return core.std.StackHorizontal([y, u_v])
-    elif subsampling is '444':
+    elif subsampling == '444':
         return core.std.StackVertical([y, u, v]) if stack_vertical else core.std.StackHorizontal([y, u, v])
     else:
         raise TypeError('stack_planes: input clip must be in YUV format with 444 or 420 chroma subsampling')
@@ -474,10 +474,10 @@ def upscaled_sraa(clip: vs.VideoNode,
         try:
             return join([scaled, planes[1], planes[2]])
         except:
-            if get_subsampling(clip) is "420":
+            if get_subsampling(clip) == "420":
                 planes[1], planes[2] = [core.resize.Bicubic(p, w / 2, h / 2, src_left=.25 * (1 - clip.width / w )) for p in planes[1:]]
                 return join([scaled, planes[1], planes[2]])
-            elif get_subsampling(clip) is "444":
+            elif get_subsampling(clip) == "444":
                 planes[1], planes[2] = [core.resize.Bicubic(p, w, h) for p in planes[1:]]
                 return join([scaled, planes[1], planes[2]])
             else:
