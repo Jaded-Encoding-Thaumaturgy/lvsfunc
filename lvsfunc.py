@@ -710,20 +710,20 @@ def source(file: str,
         return core.lsmas.LWLibavSource(file)
 
     if file.endswith('.d2v'):
-        clip = core.d2v.Source(file)
+        return core.d2v.Source(file)
     elif is_image(file):
         clip = core.imwri.Read(file)
         if ref is not None:
             clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
-        elif None not in [fpsnum, fpsden]:
-            clip = core.std.AssumeFPS(clip, fpsnum=fpsnum, fpsden=fpsden)
+            clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height, format=ref.format)
+            return clip*(int(ref.num_frames)-1)
+        if None not in [fpsnum, fpsden]:
+            return core.std.AssumeFPS(clip, fpsnum=fpsnum, fpsden=fpsden)
     else:
         if file.endswith('.m2ts'):
-            clip = core.lsmas.LWLibavSource(file)
+            return core.lsmas.LWLibavSource(file)
         else:
-            clip = core.ffms2.Source(file)
-
-    return clip
+            return core.ffms2.Source(file)
 
 
 # Helper funcs
