@@ -692,7 +692,7 @@ def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode=None,
 
 def source(file: str,
            force_lsmas: bool = False,
-           ref=None,
+           ref: vs.VideoNode = None,
            fpsnum: int = None, fpsden: int = None) -> vs.VideoNode:
     """
     Generic clip import function.
