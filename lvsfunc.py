@@ -59,8 +59,6 @@ core = vs.core
         - source (src)
 """
 
-# TODO: Write function that only masks px of a certain color/threshold of colors
-
 #### Comparison and Analysis Functions
 
 
@@ -68,6 +66,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
             frames: List[int] = None,
             rand_frames: bool = False, rand_total: int = None,
             disable_resample: bool = False) -> vs.VideoNode:
+    funcname = "compare"
     """
     Allows for the same frames from two different clips to be compared by putting them next to each other in a list.
     Clips are automatically resampled to 8bit YUV -> RGB24 to emulate how a monitor shows the frame.
@@ -75,10 +74,10 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     Shorthand for this function is "comp".
 
-    :frames: int:               List of frames to compare.
-    :rand_frames: bool:         Pick random frames from the given clips.
-    :rand_total: int:           Amount of random frames to pick.
-    :disable_resample: bool:    Disable forcibly resampling clips from 8bit YUV -> RGB24.
+    :param frames: int:               List of frames to compare.
+    :param rand_frames: bool:         Pick random frames from the given clips.
+    :param rand_total: int:           Amount of random frames to pick.
+    :param disable_resample: bool:    Disable forcibly resampling clips from 8bit YUV -> RGB24.
     """
     def resample(clip):
         # Resampling to 8bit and RGB to properly display how it appears on your screen
@@ -86,14 +85,17 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     # Error handling
     if frames is not None:
+        if frames is not list:
+            frames = [frames]
+
         if len(frames) > clip_a.num_frames:
-            raise ValueError('compare: More comparisons asked for than frames available')
+            return error(funcname, 'More comparisons asked for than frames available')
 
     if disable_resample is False:
         clip_a, clip_b = resample(clip_a), resample(clip_b)
     else:
         if clip_a.format.id != clip_b.format.id:
-            raise ValueError('compare: The format of both clips must be equal')
+            return error(funcname, 'The format of both clips must be equal')
 
     if frames is None:
         rand_frames = True
@@ -112,6 +114,7 @@ def stack_compare(*clips: vs.VideoNode,
                   width: int = None, height: int = None,
                   stack_vertical: bool = False,
                   make_diff: bool = False) -> vs.VideoNode:
+    funcname = "stack_compare"
     """
     A simple wrapper that allows you to compare two clips by stacking them.
     You can stack an infinite amount of clips.
@@ -121,14 +124,17 @@ def stack_compare(*clips: vs.VideoNode,
 
     Shorthand for this function is 'scomp'.
 
-    :stack_vertical: bool: Stack frames vertically
-    :diff: bool: Create and stack a diff (only works if two clips are given)
+    :param stack_vertical: bool:    Stack frames vertically
+    :param make_diff: bool:         Create and stack a diff (only works if two clips are given)
     """
+    if len(clips) < 2:
+        return error(funcname, 'Please select two or more clips to compare')
+
     if len(set([c.format.id for c in clips])) != 1:
-        raise ValueError('stack_compare: The format of every clip must be equal')
+        return error(funcname, 'The format of every clip must be equal')
 
     if len(clips) != 2 and make_diff:
-        raise ValueError('stack_compare: You need to compare two clips for diff!')
+        return error(funcname, 'You can only create a diff for two clips')
 
     height = fallback(height, clips[0].height)
     width = fallback(width, (get_w(height, aspect_ratio=clips[0].width / clips[0].height)))
@@ -139,8 +145,14 @@ def stack_compare(*clips: vs.VideoNode,
     return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
 
 
-def stack_planes(clip: vs.VideoNode, stack_vertical: bool = False) -> vs.VideoNode:
-    """Stacks the planes of a clip."""
+def stack_planes(clip: vs.VideoNode,
+                 stack_vertical: bool = False) -> vs.VideoNode:
+    funcname = "stack_planes"
+    """
+    Stacks the planes of a clip.
+
+    :param stack_vertical: bool:    Stack the planes vertically
+    """
 
     y, u, v = kgf.split(clip)
     subsampling = get_subsampling(clip)
@@ -155,10 +167,12 @@ def stack_planes(clip: vs.VideoNode, stack_vertical: bool = False) -> vs.VideoNo
     elif subsampling == '444':
         return core.std.StackVertical([y, u, v]) if stack_vertical else core.std.StackHorizontal([y, u, v])
     else:
-        raise TypeError('stack_planes: input clip must be in YUV format with 444 or 420 chroma subsampling')
+        return error(funcname, 'input clip must be in YUV format with 444 or 420 chroma subsampling')
 
 
-def tvbd_diff(tv, bd, threshold=51):
+def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
+              threshold: int = 51) -> vs.VideoNode:
+    funcname = "tvbd_diff"
     """
     Creates a standard `compare` between frames from two clips that have differences.
     Useful for making comparisons between TV and BD encodes.
@@ -173,19 +187,17 @@ def tvbd_diff(tv, bd, threshold=51):
         frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] <= threshold]
         return compare(tv, bd, frames)
     except StopIteration:
-        raise ValueError('tvbd_diff: No frames with differences returned')
+        return error(funcname, 'No frames with differences returned')
+
 
 #### Scaling and Resizing Functions
-
-# TO-DO: Apply descale based on average error in a frame range rather than on a per-frame basis
-#        in order to prevent visible differences. Chances are if a couple of frames in a cut can't
-#        be descaled, all of them are no good.
 
 
 def conditional_descale(clip: vs.VideoNode, height: int,
                         b: float = 1 / 3, c: float = 1 / 3,
                         threshold: float = 0.003,
                         w2x: bool = False) -> vs.VideoNode:
+    funcname = "conditional_descale"
     """
     Descales and reupscales a clip. If the difference exceeds the threshold, the frame will not be descaled.
     If it does not exceed the threshold, the frame will upscaled using either nnedi3_rpow2 or waifu2x-caffe.
@@ -198,9 +210,9 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     The code for _get_error was mostly taken from kageru's Made in Abyss script.
     Special thanks to Lypheo for holding my hand as this was written.
 
-    :param height: int:  Target descaled height.
-    :param w2x: bool:  Whether or not to use waifu2x-caffe upscaling. (Default value = False)
-
+    :param height: int:         Target descaled height.
+    :param threshold: float:    Threshold for deciding to descale or leave the original frame
+    :param w2x: bool:           Whether or not to use waifu2x-caffe upscaling. (Default value = False)
     """
     def _get_error(clip, height, b, c):
         descale = core.descale.Debicubic(clip, get_w(height), height, b=b, c=c)
@@ -235,36 +247,41 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     return kgf.join([f_eval, u, v])
 
 
+# TO-DO: Fix smart_descale failing on specific resolutions for unknown reasons
+#        Fix smart_descale not returning the frameprop with the height it was descaled to
+
 def smart_descale(clip: vs.VideoNode,
-                   res: List[int],
-                   b: float = 1/3, c: float = 1/3,
-                   thresh1: float = 0.03, thresh2: float = 0.7,
-                   no_mask: float = False,
-                   show_mask: bool = False, show_dmask: bool = False,
-                   single_rate_upscale: bool = False, rfactor: float = 1.5):
+                  res: List[int],
+                  b: float = 1/3, c: float = 1/3,
+                  thresh1: float = 0.03, thresh2: float = 0.7,
+                  no_mask: float = False,
+                  show_mask: bool = False, show_dmask: bool = False,
+                  single_rate_upscale: bool = False, rfactor: float = 1.5):
+    funcname = "smart_descale"
     """
-    A descaling function that compares relative errors between multiple resolutions and descales accordingly.
-    Most of this code was leveraged from kageru's Made in Abyss script.
-    As this is an incredibly complex function, I will offer only minimal support.
+    Original function written by kageru and modified into a general function by me.
     For more information and comments I suggest you check out the original script:
         https://git.kageru.moe/kageru/vs-scripts/src/branch/master/abyss1.py
 
+    A descaling function that compares relative errors between multiple resolutions and descales accordingly.
+    Most of this code was leveraged from kageru's Made in Abyss script.
+    As this is an incredibly complex function, I will offer only minimal support.
 
-    res: List[int]:             A list of resolutions to descale to. For example: [900, 871, 872, 877]
-    thresh1: float:             Threshold for when a frame will be descaled.
-    thresh2: float:             Threshold for when a frame will not be descaled.
-    single_rate_upscale: bool:  Use upscaled_sraa to upscale the frames
-    rfactor: float:             rfactor for upscaled_sraa
+    :param res: List[int]:             A list of resolutions to descale to. For example: [900, 871, 872, 877]
+    :param thresh1: float:             Threshold for when a frame will be descaled.
+    :param thresh2: float:             Threshold for when a frame will not be descaled.
+    :param single_rate_upscale: bool:  Use upscaled_sraa to upscale the frames (warning: very slow!)
+    :param rfactor: float:             Image enlargement factor for upscaled_sraa
     """
     def _descaling(clip: vs.VideoNode, h: int, b: float, c: float):
-        """Descale and return a tuple of descaled clip and diff mask between that and the original."""
+        # Descale and return a tuple of descaled clip and diff mask between that and the original.
         down = clip.descale.Debicubic(get_w(h), h, b, c)
         up = down.resize.Bicubic(clip.width, clip.height, filter_param_a=b, filter_param_b=c)
         diff = core.std.Expr([clip, up], 'x y - abs').std.PlaneStats()
         return down, diff
 
     def _select(n, y, debic_list, single_rate_upscale, rfactor, f):
-        """This simply descales to each of those and selects the most appropriate for each frame."""
+        # This simply descales to each of those and selects the most appropriate for each frame.
         errors = [x.props.PlaneStatsAverage for x in f]
         y_deb = debic_list[errors.index(min(errors))]
         dmask = core.std.Expr([y, y_deb.resize.Bicubic(clip.width, clip.height)], 'x y - abs 0.025 > 1 0 ?').std.Maximum().std.SetFrameProp("_descaled_resolution", intval=y_deb.height)
@@ -283,12 +300,17 @@ def smart_descale(clip: vs.VideoNode,
         return core.std.StackVertical([top, t1, top])
 
     def _restore_original(n, f, clip: vs.VideoNode, orig: vs.VideoNode, thresh_a: float, thresh_b: float):
-        """Just revert the entire scaling if the difference is too big. This should catch the 1080p scenes (like the entire ED)."""
+        # Just revert the entire scaling if the difference is too big. This should catch the 1080p scenes.
         if f.props.PlaneStatsAverage < thresh_a:
             return clip.std.SetFrameProp("_descaled", intval=1)
         elif f.props.PlaneStatsAverage > thresh_b:
             return orig.std.SetFrameProp("_descaled", intval=0)
         return core.std.Merge(clip, orig, (f.props.PlaneStatsAverage - thresh_a) * 20).std.SetFrameProp("_descaled", intval=2)
+
+    # Error handling
+    if len(res) < 2:
+        return error(funcname, 'This function requires more than two resolutions to descale to')
+
 
     og = clip
     clip32 = fvf.Depth(clip, 32)
@@ -297,7 +319,6 @@ def smart_descale(clip: vs.VideoNode,
     else:
         y, u, v = split(clip32)
 
-    # TO-DO: Allow arbitrary integers to be tested rather than enforce a range
     debic_listp = [_descaling(y, h, b, c) for h in res]
     debic_list = [a[0] for a in debic_listp]
     debic_props = [a[1] for a in debic_listp]
@@ -308,7 +329,7 @@ def smart_descale(clip: vs.VideoNode,
     dmask = core.std.PropToClip(y_deb)
     if show_dmask:
         return dmask
-    # TO-DO: Figure out how to make it properly round depending on resolution (although this would usually be 1080p anyway)
+    # TO-DO: Figure out how to make it properly round depending on resolution (although this should usually be 1080p anyway)
     line = core.std.StackHorizontal([_square()]*192)
     full_squares = core.std.StackVertical([line]*108)
 
@@ -340,6 +361,7 @@ def test_descale(clip: vs.VideoNode,
                  b: float = 1 / 3, c: float = 1 / 3,
                  taps: int = 3,
                  show_error: bool = False) -> vs.VideoNode:
+    funcname = "test_descale"
     """
     Generic function to test descales with.
     Descales and reupscales a given clip, allowing you to compare the two easily.
@@ -350,12 +372,12 @@ def test_descale(clip: vs.VideoNode,
     Some of this code was leveraged from DescaleAA, and it also uses functions
     available in fvsfunc.
 
-    :param height: int:  Target descaled height.
-    :param kernel: str:  Descale kernel - 'bicubic'(default), 'bilinear', 'lanczos', 'spline16', or 'spline36'
-    :param b: float:  B-param for bicubic kernel. (Default value = 1 / 3)
-    :param c: float:  C-param for bicubic kernel. (Default value = 1 / 3)
-    :param taps: int:  Taps param for lanczos kernel. (Default value = 43)
-
+    :param height: int:         Target descaled height.
+    :param kernel: str:         Descale kernel - 'bicubic'(default), 'bilinear', 'lanczos', 'spline16', or 'spline36'
+    :param b: float:            B-param for bicubic kernel. (Default value = 1 / 3)
+    :param c: float:            C-param for bicubic kernel. (Default value = 1 / 3)
+    :param taps: int:           Taps param for lanczos kernel. (Default value = 43)
+    :param show_error: bool:    Show diff between the original clip and the reupscaled clip
     """
 
     clip_y = get_y(clip)
@@ -372,17 +394,33 @@ def test_descale(clip: vs.VideoNode,
     merge = core.std.ShufflePlanes([upsc, clip], planes=[0, 1, 2], colorfamily=vs.YUV)
     return core.text.FrameProps(merge, "PlaneStatsDiff") if show_error else merge
 
+# TO-DO: Apply descale based on average error in a frame range rather than on a per-frame basis
+#        in order to prevent visible differences. Chances are if a couple of frames in a cut can't
+#        be descaled, all of them are no good.
+
+
+# TO-DO: Write a function that checks every possible combination of B and C in bicubic
+#        and returns a list of the results. Possibly return all the frames in order of
+#        smallest difference to biggest. Not reliable, but maybe useful as starting point.
+
+
+# TO-DO: Write "multi_descale", a function that allows you to descale a frame twice,
+#        like for example when the CGI in a show is handled in a different resolution
+#        than the drawn animation.
+
 
 #### Antialiasing functions
 
-def transpose_aa(clip: vs.VideoNode, eedi3: bool = False) -> vs.VideoNode:
+def transpose_aa(clip: vs.VideoNode,
+                 eedi3: bool = False) -> vs.VideoNode:
+    funcname = "transpose_aa"
     """
     Function written by Zastin and modified by me.
     Performs anti-aliasing over a clip by using Nnedi3, transposing, using Nnedi3 again, and transposing a final time.
     This results in overall stronger anti-aliasing.
     Useful for shows like Yuru Camp with bad lineart problems.
 
-    :param eedi3: bool:  When true, uses eedi3 instead. (Default value = False)
+    :param eedi3: bool:  Use eedi3 for the interpolation instead
 
     """
     clip_y = get_y(clip)
@@ -423,17 +461,18 @@ def upscaled_sraa(clip: vs.VideoNode,
                   rep: int = None,
                   h: int = None,
                   sharp_downscale: bool = True) -> vs.VideoNode:
+    funcname = "upscaled_sraa"
     """
-    Another AA written by Zastin and slightly modified by me.
+    Another AA written by Zastin and modified by me.
     Performs an upscaled single-rate AA to deal with heavy aliasing.
 
     Useful for Web rips, where the source quality is not good enough to descale,
     but you still want to deal with some bad aliasing and lineart.
 
-    :param rfactor: float:  Image enlargement factor. 1.5..2 makes it comparable to vsTAAmbk.
-                            It is not recommended to go below 1.5.
-    :param rep: int:        Repair mode.
-    :param h: int:          Set custom height. Width and aspect ratio are auto-calculated.
+    :param rfactor: float:  Image enlargement factor. 1.3..2 makes it comparable in strength to vsTAAmbk
+                            It is not recommended to go below 1.3
+    :param rep: int:        Repair mode
+    :param h: int:          Set custom height. Width and aspect ratio are auto-calculated
     """
     planes = split(clip)
 
@@ -484,36 +523,37 @@ def upscaled_sraa(clip: vs.VideoNode,
                 planes[1], planes[2] = [core.resize.Bicubic(p, w, h) for p in planes[1:]]
                 return join([scaled, planes[1], planes[2]])
             else:
-                raise ValueError(f'upscaled_sraa: Failed to return a \'{get_subsampling(clip)}\' clip. Please use either a 420, 444, or GRAY clip!')
+                return error(funcname, f'Please use either a 420, 444, or GRAY clip rather than a \'{get_subsampling(clip)}\' clip')
 
 
 def nneedi3_clamp(clip: vs.VideoNode,
-                  mask: vs.VideoNode=None, strong_mask: bool = False, show_mask: bool = False,
+                  mask: vs.VideoNode = None,
+                  ret_mask: bool = False, show_mask: bool = False,
                   opencl: bool = False,
-                  strength=1,
-                  alpha: float = 0.25, beta: float = 0.5, gamma=40,
-                  nrad=2, mdis=20,
-                  nsize=3, nns=3,
-                  qual=1) -> vs.VideoNode:
+                  strength: int = 1,
+                  alpha: float = 0.25, beta: float = 0.5, gamma: int = 40,
+                  nrad: int = 2, mdis: int = 20,
+                  nsize: int = 3, nns: int = 3,
+                  qual: int = 1) -> vs.VideoNode:
+    funcname = "nneedi3_clamp"
     """
     Script written by Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3.
     This should fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
 
-    :param mask:  Allows for user to use their own mask. (Default value = None)
-    :param strong_mask: bool:  Whether or not to use a binarized kgf.retinex_edgemask
-                               to replace more lineart with nnedi3. (Default value = False)
-    :param show_mask: bool:  Whether or not to return the mask instead of the processed clip. (Default value = False)
-    :param opencl: bool:  Allows TAAmbk to use opencl acceleration when anti-aliasing. (Default value = False)
-    :param strength:  (Default value = 1)
-    :param alpha: float:  (Default value = 0.25)
-    :param beta: float:  (Default value = 0.5)
-    :param gamma:  (Default value = 40)
-    :param nrad:  (Default value = 2)
-    :param mdis:  (Default value = 20)
-    :param nsize:  (Default value = 3)
-    :param nns:  (Default value = 3)
-    :param qual:  (Default value = 1)
-
+    :param mask:                Allows for user to use their own mask
+    :param ret_mask: bool:   Whether or not to use a binarized kgf.retinex_edgemask
+                                to replace more lineart with nnedi3
+    :param show_mask: bool:     Whether or not to return the mask instead of the processed clip
+    :param opencl: bool:        Allows TAAmbk to use opencl acceleration when anti-aliasing
+    :param strength:            (Default value = 1)
+    :param alpha: float:        (Default value = 0.25)
+    :param beta: float:         (Default value = 0.5)
+    :param gamma:               (Default value = 40)
+    :param nrad:                (Default value = 2)
+    :param mdis:                (Default value = 20)
+    :param nsize:               (Default value = 3)
+    :param nns:                 (Default value = 3)
+    :param qual:                (Default value = 1)
     """
     bits = clip.format.bits_per_sample - 8
     thr = strength * (1 >> bits)
@@ -528,34 +568,39 @@ def nneedi3_clamp(clip: vs.VideoNode,
 
     if mask is not None:
         merged = clip.std.MaskedMerge(aa, mask, planes=0)
-    elif strong_mask:
+    elif ret_mask:
         mask = kgf.retinex_edgemask(clip, 1).std.Binarize()
         merged = clip.std.MaskedMerge(aa, mask, planes=0)
     else:
-        mask = clip.std.Prewitt(planes=0).std.Binarize(planes=0).std.Maximum(planes=0).std.Convolution([1] * 9,
-                                                                                                       planes=0)
+        mask = clip.std.Prewitt(planes=0).std.Binarize(planes=0).std.Maximum(planes=0).std.Convolution([1] * 9, planes=0)
         mask = get_y(mask)
         merged = clip.std.MaskedMerge(aa, mask, planes=0)
 
     if show_mask:
         return mask
-
     return merged if clip.format.color_family == vs.GRAY else core.std.ShufflePlanes([merged, clip], [0, 1, 2], vs.YUV)
 
 
 #### Deinterlacing
 
 
-def deblend(clip, rep: int = None):
+def deblend(clip: vs.VideoNode, rep: int = None) -> vs.VideoNode:
+    funcname = "deblend"
     """
-    A simple function to fix deblending for interlaced video with an AABBA blending pattern, where A is a normal frame and B is a blended frame.
-    Assuming there's a constant pattern of frames (labeled A, B, C, CD, and DA in this function), blending can be fixed by calculating the C frame by getting halves of CD and DA, and using that to fix up CD.
-    DA can then be dropped due to it being an interlaced frame.
+    A simple function to fix deblending for interlaced video with an AABBA blending pattern,
+    where A is a normal frame and B is a blended frame.
 
-    However, doing this will result in some of the artifacting being added to the deblended frame. We can mitigate this by repairing the frame with the non-blended frame before it.
+    Assuming there's a constant pattern of frames (labeled A, B, C, CD, and DA in this function),
+    blending can be fixed by calculating the C frame by getting halves of CD and DA, and using that
+    to fix up CD. DA can then be dropped due to it being an interlaced frame.
+
+    However, doing this will result in some of the artifacting being added to the deblended frame.
+    We can mitigate this by repairing the frame with the non-blended frame before it.
 
     For more information, please refer to this blogpost by torchlight:
     https://mechaweaponsvidya.wordpress.com/2012/09/13/adventures-in-deblending/
+
+    :param rep: int: Repair mode for the deblended frames
     """
 
     blends_a = range(2, clip.num_frames-1, 5)
@@ -582,7 +627,12 @@ def deblend(clip, rep: int = None):
 #### Denoising and Debanding
 
 
-def quick_denoise(clip: vs.VideoNode, sigma=4, cmode='knlm', ref: vs.VideoNode = None, **kwargs) -> vs.VideoNode:
+def quick_denoise(clip: vs.VideoNode,
+                  ref: vs.VideoNode = None,
+                  cmode: str = 'knlm',
+                  sigma: float = 2,
+                  **kwargs) -> vs.VideoNode:
+    funcname = "quick_denoise"
     """
     A rewrite of my old 'quick_denoise'. I still hate it, but whatever.
     This will probably be removed in a future commit.
@@ -595,33 +645,35 @@ def quick_denoise(clip: vs.VideoNode, sigma=4, cmode='knlm', ref: vs.VideoNode =
 
     Special thanks to kageru for helping me out with some ideas and pointers.
 
-    :param sigma:  Denoising strength for BM3D. (Default value = 4)
-    :param cmode:  Chroma modes:
-                     1 - Use knlmeans for denoising the chroma (default)
-                     2 - Use tnlmeans for denoising the chroma
-                     3 - Use dfttest for denoising the chroma (requires setting 'sbsize' in kwargs)
-                     4 - Use SMDegrain for denoising the chroma
-    :param ref: vs.VideoNode:  Optional reference clip to replace BM3D's basic estimate. (Default value = None)
+    :param sigma:               Denoising strength for BM3D
+    :param cmode:               Chroma denoising modes:
+                                 1 - Use knlmeans for denoising the chroma
+                                 2 - Use tnlmeans for denoising the chroma
+                                 3 - Use dfttest for denoising the chroma (requires setting 'sbsize' in kwargs)
+                                 4 - Use SMDegrain for denoising the chroma
+    :param ref: vs.VideoNode:  Optional reference clip to replace BM3D's basic estimate
 
     """
     y, u, v = kgf.split(clip)
-    if cmode in [1, 'knlm']:
+    cmode = cmode.lower()
+
+    if cmode in [1, 'knlm', 'knlmeanscl']:
         den_u = u.knlm.KNLMeansCL(d=3, a=2, **kwargs)
         den_v = v.knlm.KNLMeansCL(d=3, a=2, **kwargs)
-    elif cmode in [2, 'tnlm']:
+    elif cmode in [2, 'tnlm', 'tnlmeans']:
         den_u = u.tnlm.TNLMeans(ax=2, ay=2, az=2, **kwargs)
         den_v = v.tnlm.TNLMeans(ax=2, ay=2, az=2, **kwargs)
-    elif cmode in [3, 'dft']:
+    elif cmode in [3, 'dft', 'dfttest']:
         if 'sbsize' in kwargs:
             den_u = u.dfttest.DFTTest(sosize=kwargs['sbsize'] * 0.75, **kwargs)
             den_v = v.dfttest.DFTTest(sosize=kwargs['sbsize'] * 0.75, **kwargs)
         else:
-            raise ValueError('quick_denoise: \'sbsize\' not specified')
-    elif cmode in [4, 'smd']:
+            return error(funcname, '\'sbsize\' not specified')
+    elif cmode in [4, 'smd', 'smdegrain']:
         den_u = hvf.SMDegrain(u, prefilter=3, **kwargs)
         den_v = hvf.SMDegrain(v, prefilter=3, **kwargs)
     else:
-        raise ValueError('quick_denoise: unknown mode')
+        return error(funcname, 'unknown cmode')
 
     den_y = mvf.BM3D(y, sigma=sigma, psample=0, radius1=1, ref=ref)
     return core.std.ShufflePlanes([den_y, den_u, den_v], 0, vs.YUV)
@@ -631,7 +683,8 @@ def quick_denoise(clip: vs.VideoNode, sigma=4, cmode='knlm', ref: vs.VideoNode =
 
 
 def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
-               threshold: int = .25, threshold_range: int = None) -> vs.VideoNode:
+               threshold: float = .25, threshold_range: int = None) -> vs.VideoNode:
+    funcname = "limit_dark"
     """
     Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold.
     This way you can run lighter (or heavier) filtering on scenes that are almost entirely dark.
@@ -639,7 +692,7 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
     There is one caveat, however: You can get scenes where every other frame is filtered
     rather than the entire scene. Please do take care to avoid that if possible.
 
-    threshold: int:         Threshold for frame averages to be filtered
+    threshold: float:       Threshold for frame averages to be filtered
     threshold_range: int:   Threshold for a range of frame averages to be filtered
     """
     def _diff(n, f, clip, filtered, threshold, threshold_range):
@@ -649,31 +702,38 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
             return clip if f.props.PlaneStatsAverage > threshold else filtered
 
     if threshold_range and threshold_range > threshold:
-        raise ValueError('limit_dark: "threshold_range" must be a lower value than "threshold"!')
+        return error(funcname, f'"threshold_range" ({threshold_range}) must be a lower value than "threshold" ({threshold})')
 
     avg = core.std.PlaneStats(clip)
-    f_eval = core.std.FrameEval(clip, partial(_diff, clip=clip, filtered=filtered, threshold=threshold, threshold_range=threshold_range), avg)
-    return f_eval
+    return core.std.FrameEval(clip, partial(_diff, clip=clip, filtered=filtered, threshold=threshold, threshold_range=threshold_range), avg)
 
 
-def fix_cr_tint(clip: vs.VideoNode, value: int=128) -> vs.VideoNode:
+def fix_cr_tint(clip: vs.VideoNode, value: int = 128) -> vs.VideoNode:
+    funcname = "fix_cr_tint"
+    """
+    Tries to forcibly fix Crunchyroll's green tint by adding pixel values
+
+    :param value: int:  Values added to every pixel
+    """
     if get_depth(clip) != 16:
         clip = fvf.Depth(clip, 16)
-
     return core.std.Expr(clip, f'x {value} +, x {value} +, x {value} +')
 
 
-def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode=None,
-             width: int=1, height: int=1,
-             offset_x: int=0, offset_y: int=0,
-             width2: Optional[int]=None, height2: Optional[int]=None,
-             offset_x2: Optional[int]=None, offset_y2: Optional[int]=None,
-             show_mask: bool=False) -> vs.VideoNode:
+def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode = None,
+             width: int = 1, height: int = 1,
+             offset_x: int = 0, offset_y: int = 0,
+             width2: Optional[int] = None, height2: Optional[int] = None,
+             offset_x2: Optional[int] = None, offset_y2: Optional[int] = None,
+             show_mask: bool = False) -> vs.VideoNode:
+    funcname = "wipe_row"
     """
     Simple function to wipe a row with a blank clip.
     You can also give it a different clip to replace a row with.
 
     if width2, height2, etc. are given, it will merge the two masks.
+
+    :param secondary: vs.VideoNode:     Appoint a different clip to replace wiped rows with
     """
     secondary = core.std.BlankClip(clip) if secondary is None else secondary
 
@@ -690,21 +750,29 @@ def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode=None,
     return core.std.MaskedMerge(clip, secondary, sqmask)
 
 
+# TODO: Write function that only masks px of a certain color/threshold of colors.
+#       Think the magic wand tool in various image-editing programs.
+
+
 #### Miscellaneous
 
 
 def source(file: str,
-           force_lsmas: bool = False,
            ref: vs.VideoNode = None,
+           force_lsmas: bool = False,
            fpsnum: int = None, fpsden: int = None) -> vs.VideoNode:
+    funcname = "source"
     """
     Generic clip import function.
     Automatically determines if ffms2 or L-SMASH should be used to import a clip, but L-SMASH can be forced.
     It also automatically determines if an image has been imported.
     You can set its fps using 'fpsnum' and 'fpsden', or using a reference clip with 'ref'.
 
-    :param file: str:  OS absolute file location.
-
+    :param file: str:           OS absolute file location
+    :param ref: vs.VideoNode:   Use another clip as reference for the clip's format, resolution, and framerate
+    :param force_lsmas: bool:   Force files to be imported with L-SMASH
+    :param fpsnum: int:         Give file a specific frame numerator
+    :param fpsden: int:         Give file a specific frame denominator
     """
     if file.startswith('file:///'):
         file = file[8::]
@@ -731,11 +799,16 @@ def source(file: str,
 
 # Helper funcs
 
-def one_plane(clip):
-    """
-    Checks if the source clip is a single plane.
-    """
+def one_plane(clip: vs.VideoNode) -> bool:
+    # Checks if the source clip is a single plane.
     return clip.format.num_planes == 1
+
+
+def error(funcname: str, error_msg: str):
+    # return errors in a slightly nicer way
+    if error_msg is None:
+        error_msg = "An unknown error occured"
+    raise ValueError(f"{funcname}: {error_msg}")
 
 
 # Aliases
