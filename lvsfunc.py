@@ -334,13 +334,12 @@ def smart_descale(clip: vs.VideoNode,
     return merged.std.FrameEval(partial(_restore_original, clip=merged, orig=og, thresh_a=thresh1, thresh_b=thresh2), prop_src=dmask)#.std.SetFrameProp("_descaled_resolution", intval=y_deb.height)
 
 
-# TO-DO: Improve test_descale. Get rid of all the if/else statements and replace with a faster, more robust setup if possible.
-
 def test_descale(clip: vs.VideoNode,
                  height: int,
                  kernel: str = 'bicubic',
                  b: float = 1 / 3, c: float = 1 / 3,
-                 taps: int = 3) -> vs.VideoNode:
+                 taps: int = 3,
+                 show_error: bool = False) -> vs.VideoNode:
     """
     Generic function to test descales with.
     Descales and reupscales a given clip, allowing you to compare the two easily.
@@ -366,8 +365,12 @@ def test_descale(clip: vs.VideoNode,
                       invks=True)
     upsc = fvf.Resize(desc, clip.width, clip.height,
                       kernel=kernel, a1=b, a2=c, taps=taps)
+    upsc = core.std.PlaneStats(clip_y, upsc)
 
-    return upsc if clip is vs.GRAY else core.std.ShufflePlanes([upsc, clip], planes=[0, 1, 2], colorfamily=vs.YUV)
+    if clip is vs.GRAY:
+        return core.text.FrameProps(upsc, "PlaneStatsDiff") if show_error else upsc
+    merge = core.std.ShufflePlanes([upsc, clip], planes=[0, 1, 2], colorfamily=vs.YUV)
+    return core.text.FrameProps(merge, "PlaneStatsDiff") if show_error else merge
 
 
 #### Antialiasing functions

@@ -10,7 +10,7 @@ This function offers the following (sorted by category):</br>
 | 4 | **Comparison and Analysis** | tvbd_diff | | Return frames with differences between the tv and bd clips | tv, bd, threshold |
 | 5 | **Scaling and Resizing** | conditional_descale | cond_desc | Descale a frame if the error doesn't exceed the given threshold | clip, height, b, c, threshold, w2x
 | 6 | **Scaling and Resizing** | smart_descale | | A descaling function that compares relative errors between multiple resolutions and descales accordingly | clip, res, b, c, thresh1, thresh2, show_mask, show_dmask, single_rate_upscale, rfactor |
-| 7 | **Scaling and Resizing** | test_descale | | Descales and reupscales the given clip for comparison | clip, height, kernel, b, c, taps |
+| 7 | **Scaling and Resizing** | test_descale | | Descales and reupscales the given clip for comparison | clip, height, kernel, b, c, taps, show_error |
 | 8 | **Antialiasing** | transpose_aa | | AA's a clip by transposing it | clip, eedi3 |
 | 9 | **Antialiasing** | upscaled_sraa | | AA's through a upscaled single-rate AA | clip, rfactor, rep, h |
 | 10 | **Antialiasing** | nneedi3_clamp | | Clamps the change between nnedi3 and eedi3, fixing the artifacting caused by eedi3 | clip, mask, strong_mask, show_mask, opencl, strength, alpha, beta, gamma, nrad, mdis, nsize, nns, qual |
