@@ -85,9 +85,6 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     # Error handling
     if frames is not None:
-        if frames is not list:
-            frames = [frames]
-
         if len(frames) > clip_a.num_frames:
             return error(funcname, 'More comparisons asked for than frames available')
 
