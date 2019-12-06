@@ -193,7 +193,7 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
 def conditional_descale(clip: vs.VideoNode, height: int,
                         b: float = 1 / 3, c: float = 1 / 3,
                         threshold: float = 0.003,
-                        w2x: bool = False) -> vs.VideoNode:
+                        upscaler: str = None,) -> vs.VideoNode:
     funcname = "conditional_descale"
     """
     Descales and reupscales a clip. If the difference exceeds the threshold, the frame will not be descaled.
@@ -207,9 +207,10 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     The code for _get_error was mostly taken from kageru's Made in Abyss script.
     Special thanks to Lypheo for holding my hand as this was written.
 
-    :param height: int:         Target descaled height.
-    :param threshold: float:    Threshold for deciding to descale or leave the original frame
-    :param w2x: bool:           Whether or not to use waifu2x-caffe upscaling. (Default value = False)
+    :param height: int:             Target descale height
+    :param threshold: float:        Threshold for deciding to descale or leave the original frame
+    :param upscaler: str:           What scaler is used to upscale (options: nnedi3_rpow2 (default), upscaled_sraa, waifu2x)
+    :replacement_clip: videoNode    A clip to replace frames that were not descaled with.
     """
     def _get_error(clip, height, b, c):
         descale = core.descale.Debicubic(clip, get_w(height), height, b=b, c=c)
@@ -217,11 +218,8 @@ def conditional_descale(clip: vs.VideoNode, height: int,
         diff = core.std.PlaneStats(upscale, clip)
         return descale, diff
 
-    def _diff(n, f, clip, descaled, threshold):
-        if f.props.PlaneStatsDiff > threshold:
-            return clip
-        else:
-            return descaled
+    def _diff(n, f, clip_a, clip_b, threshold):
+        return clip_a if f.props.PlaneStatsDiff > threshold else clip_b
 
     if get_depth(clip) != 32:
         clip = fvf.Depth(clip, 32, dither_type='none')
@@ -229,19 +227,22 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     y, u, v = kgf.split(clip)
     descaled, diff = _get_error(y, height=height, b=b, c=c)
 
-    if w2x:
+    upscaler = "nnedi3_rpow2" if upscaler is None else upscaler
+    if upscaler in ['nnedi3_rpow2', 'nnedi3', 'nn3_rp2']:
+        descaled = nnedi3_rpow2(descaled)
+        descaled = core.caffe.Waifu2x(descaled, noise=-1, scale=2, model=6, cudnn=True, processor=0,  tta=False)
+    elif upscaler in ['upscaled_sraa', 'up_sraa', 'sraa']:
+        descaled = upscaled_sraa(descaled, h=clip.height)
+    elif upscaler in ['waifu2x', 'w2x']:
         descaled = core.caffe.Waifu2x(descaled, noise=-1, scale=2, model=6, cudnn=True, processor=0,  tta=False)
     else:
-        descaled = nnedi3_rpow2(descaled)
+        raise error(funcname, f'\"{upscaler}\" is not a valid option for \"upscaler\". Please pick either \"nnedi3_rpow2\", \"upscaled_sraa\", or \"waifu2x\"')
 
-    descaled = descaled.resize.Bicubic(clip.width, clip.height, format=clip.format)
-
+    descaled = kgf.join([descaled, u, v])
     descaled = descaled.std.SetFrameProp("_descaled", intval=1)
     clip = clip.std.SetFrameProp("_descaled", intval=0)
 
-    f_eval = core.std.FrameEval(clip, partial(_diff, clip=clip, descaled=descaled, threshold=threshold),  diff)
-
-    return kgf.join([f_eval, u, v])
+    return core.std.FrameEval(clip, partial(_diff, clip_a=clip, clip_b=descaled, threshold=threshold),  diff)
 
 
 # TO-DO: Fix smart_descale failing on specific resolutions for unknown reasons
@@ -456,7 +457,7 @@ def transpose_aa(clip: vs.VideoNode,
 def upscaled_sraa(clip: vs.VideoNode,
                   rfactor: float = 1.5,
                   rep: int = None,
-                  h: int = None,
+                  h: int = None, ar = None,
                   sharp_downscale: bool = True) -> vs.VideoNode:
     funcname = "upscaled_sraa"
     """
@@ -485,7 +486,9 @@ def upscaled_sraa(clip: vs.VideoNode,
         ssh += 1
 
     if h:
-        w = get_w(h, aspect_ratio=clip.width / clip.height)
+        if ar is None:
+            ar = clip.width / clip.height
+        w = get_w(h, aspect_ratio=ar)
     else:
         w, h = clip.width, clip.height
 
