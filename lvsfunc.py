@@ -7,7 +7,7 @@ from functools import partial
 import random
 
 import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
-import havsfunc as hvf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
+import havsfunc as haf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
 import kagefunc as kgf  # https://github.com/Irrational-Encoding-Wizardry/kagefunc
 import mvsfunc as mvf  # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
 from nnedi3_rpow2 import \
@@ -624,6 +624,38 @@ def deblend(clip: vs.VideoNode, rep: int = None) -> vs.VideoNode:
     return core.std.DeleteFrames(debl, blends_b).std.AssumeFPS(fpsnum=24000, fpsden=1001)
 
 
+def decomb(src, TFF: Optional[bool]=None, decimate: bool =True):
+    funcname = "decomb"
+    """
+    Function written by Midlifecrisis from the WEEB AUTISM server, and slightly modified by me.
+
+    This function gets rid of the combing on an interlaced/telecined source.
+    You can also allow it to decimate the clip, or keep it disabled if you wish to handle the decimating yourself.
+
+    :param TFF: bool:       Top-Field-First. Mandatory to set. Set to either "True" or False"
+    :param decimate: bool:  Decimate the video after deinterlacing
+    """
+    if TFF is None:
+        return error(funcname, "TFF has to be set to either \"True\" or \"False\"!")
+
+    def pp(n, f, clip, pp):
+        return pp if f.props._Combed == 1 else clip
+
+    src = core.vivtc.VFM(src, order=0, mode=1)
+    combmask = core.comb.CombMask(src, cthresh=1, mthresh=3)
+    combmask = core.std.Maximum(combmask, threshold=250).std.Maximum(threshold=250).std.Maximum(threshold=250).std.Maximum(threshold=250)
+    combmask = core.std.BoxBlur(combmask, hradius=2, vradius=2)
+
+    qtgmc = haf.QTGMC(src, TFF=TFF, SourceMatch=3, Lossless=2, TR0=1, TR1=2, TR2=3, FPSDivisor=2)
+    qtgmc_merged = core.std.MaskedMerge(src, qtgmc, combmask, first_plane=True)
+
+    src = core.std.FrameEval(src, partial(pp, clip=src, pp=qtgmc_merged), src)
+    vin = src.vinverse.Vinverse()
+    if decimate is True:
+        return core.vivtc.VDecimate(vin)
+    return vin
+
+
 #### Denoising and Debanding
 
 
@@ -670,8 +702,8 @@ def quick_denoise(clip: vs.VideoNode,
         else:
             return error(funcname, '\'sbsize\' not specified')
     elif cmode in [4, 'smd', 'smdegrain']:
-        den_u = hvf.SMDegrain(u, prefilter=3, **kwargs)
-        den_v = hvf.SMDegrain(v, prefilter=3, **kwargs)
+        den_u = haf.SMDegrain(u, prefilter=3, **kwargs)
+        den_v = haf.SMDegrain(v, prefilter=3, **kwargs)
     else:
         return error(funcname, 'unknown cmode')
 
