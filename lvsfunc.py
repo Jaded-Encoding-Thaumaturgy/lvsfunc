@@ -46,6 +46,7 @@ core = vs.core
 
     Deinterlacing:
         - deblend
+        - decomb
 
     Denoising and Debanding:
         - quick_denoise (qden)
@@ -178,13 +179,14 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
 
     :param threshold: int:  Threshold for PlaneStatsMin.
     """
-    diff = core.std.MakeDiff(get_y(tv), get_y(bd)).resize.Point(format=tv.format)
+    bd = core.resize.Bicubic(bd, format=tv.format) if tv.format != bd.format else bd
+    diff = core.std.MakeDiff(get_y(tv), get_y(bd))
     diff = core.std.PlaneStats(diff)
     try:
         frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] <= threshold]
         return compare(tv, bd, frames)
     except StopIteration:
-        return error(funcname, 'No frames with differences returned')
+        return error(funcname, 'No differences found')
 
 
 #### Scaling and Resizing Functions
