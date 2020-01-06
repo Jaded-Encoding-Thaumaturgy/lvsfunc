@@ -626,24 +626,32 @@ def deblend(clip: vs.VideoNode, rep: int = None) -> vs.VideoNode:
     return core.std.DeleteFrames(debl, blends_b).std.AssumeFPS(fpsnum=24000, fpsden=1001)
 
 
-def decomb(src, TFF: Optional[bool]=None, decimate: bool =True):
+def decomb(src: vs.VideoNode,
+           TFF: Optional[bool]= None,
+           decimate: bool = True,
+           vinv: bool = True,
+           rep: Optional[int] = None):
     funcname = "decomb"
     """
     Function written by Midlifecrisis from the WEEB AUTISM server, and slightly modified by me.
 
-    This function gets rid of the combing on an interlaced/telecined source.
+    This function does some aggressive filtering to get rid of the combing on a interlaced/telecined source.
     You can also allow it to decimate the clip, or keep it disabled if you wish to handle the decimating yourself.
+    Vinverse can also be disabled, allowing for less aggressive decombing. Note that this means far more combing will be left over!
 
     :param TFF: bool:       Top-Field-First. Mandatory to set. Set to either "True" or False"
     :param decimate: bool:  Decimate the video after deinterlacing
+    :param vinv: bool:      Use vinverse to get rid of additional combing
+    :param rep: int:        Repair mode for repairing the decombed frame using the original src frame
     """
     if TFF is None:
         return error(funcname, "TFF has to be set to either \"True\" or \"False\"!")
+    VFM_TFF = 1 if TFF is True else 0
 
     def pp(n, f, clip, pp):
         return pp if f.props._Combed == 1 else clip
 
-    src = core.vivtc.VFM(src, order=0, mode=1)
+    src = core.vivtc.VFM(src, order=VFM_TFF, mode=1)
     combmask = core.comb.CombMask(src, cthresh=1, mthresh=3)
     combmask = core.std.Maximum(combmask, threshold=250).std.Maximum(threshold=250).std.Maximum(threshold=250).std.Maximum(threshold=250)
     combmask = core.std.BoxBlur(combmask, hradius=2, vradius=2)
@@ -651,11 +659,17 @@ def decomb(src, TFF: Optional[bool]=None, decimate: bool =True):
     qtgmc = haf.QTGMC(src, TFF=TFF, SourceMatch=3, Lossless=2, TR0=1, TR1=2, TR2=3, FPSDivisor=2)
     qtgmc_merged = core.std.MaskedMerge(src, qtgmc, combmask, first_plane=True)
 
-    src = core.std.FrameEval(src, partial(pp, clip=src, pp=qtgmc_merged), src)
-    vin = src.vinverse.Vinverse()
+    decombed = core.std.FrameEval(src, partial(pp, clip=src, pp=qtgmc_merged), src)
+
+    if vinv is True:
+        decombed = decombed.vinverse.Vinverse()
+
+    if rep is not None:
+        decombed = core.rgvs.Repair(decombed, src, rep)
+
     if decimate is True:
-        return core.vivtc.VDecimate(vin)
-    return vin
+        return core.vivtc.VDecimate(decombed)
+    return decombed
 
 
 #### Denoising and Debanding
