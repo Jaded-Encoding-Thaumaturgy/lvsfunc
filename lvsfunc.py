@@ -11,7 +11,7 @@ import havsfunc as haf # https://github.com/HomeOfVapourSynthEvolution/havsfunc
 import kagefunc as kgf # https://github.com/Irrational-Encoding-Wizardry/kagefunc
 import mvsfunc as mvf # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
 from nnedi3_rpow2 import * # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
-from vsTAAmbk import * # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
+from vsTAAmbk import TAAmbk # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
 from vsutil import * # https://github.com/Irrational-Encoding-Wizardry/vsutil
 
 core = vs.core
