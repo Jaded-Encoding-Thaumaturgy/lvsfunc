@@ -6,14 +6,13 @@
 from functools import partial
 import random
 
-import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
-import havsfunc as haf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
-import kagefunc as kgf  # https://github.com/Irrational-Encoding-Wizardry/kagefunc
-import mvsfunc as mvf  # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
-from nnedi3_rpow2 import \
-    nnedi3_rpow2  # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
-from vsTAAmbk import TAAmbk  # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
-from vsutil import *  # https://github.com/Irrational-Encoding-Wizardry/vsutil
+import fvsfunc as fvf # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
+import havsfunc as haf # https://github.com/HomeOfVapourSynthEvolution/havsfunc
+import kagefunc as kgf # https://github.com/Irrational-Encoding-Wizardry/kagefunc
+import mvsfunc as mvf # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
+from nnedi3_rpow2 import nnedi3_rpow2 # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
+from vsTAAmbk import TAAmbk # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
+from vsutil import * # https://github.com/Irrational-Encoding-Wizardry/vsutil
 
 core = vs.core
 
@@ -85,11 +84,10 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
         return mvf.ToRGB(fvf.Depth(clip, 8))
 
     # Error handling
-    if frames is not None:
-        if len(frames) > clip_a.num_frames:
-            return error(funcname, 'More comparisons asked for than frames available')
+    if frames and len(frames) > clip_a.num_frames:
+        return error(funcname, 'More comparisons asked for than frames available')
 
-    if disable_resample is False:
+    if not disable_resample:
         clip_a, clip_b = resample(clip_a), resample(clip_b)
     else:
         if clip_a.format.id != clip_b.format.id:
@@ -99,7 +97,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
         rand_frames = True
 
     if rand_frames:
-        if rand_total is None:
+        if not rand_total:
             # More comparisons for shorter clips so you can compare stuff like NCs more conveniently
             rand_total = int(clip_a.num_frames/1000) if clip_a.num_frames > 5000 else int(clip_a.num_frames/100)
         frames = sorted(random.sample(range(1, clip_a.num_frames-1), rand_total))
@@ -229,7 +227,7 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     y, u, v = kgf.split(clip)
     descaled, diff = _get_error(y, height=height, b=b, c=c)
 
-    upscaler = "nnedi3_rpow2" if upscaler is None else upscaler
+    upscaler = upscaler or "nnedi3_rpow2"
     if upscaler in ['nnedi3_rpow2', 'nnedi3', 'nn3_rp2']:
         descaled = nnedi3_rpow2(descaled)
         descaled = core.caffe.Waifu2x(descaled, noise=-1, scale=2, model=6, cudnn=True, processor=0,  tta=False)
@@ -238,7 +236,7 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     elif upscaler in ['waifu2x', 'w2x']:
         descaled = core.caffe.Waifu2x(descaled, noise=-1, scale=2, model=6, cudnn=True, processor=0,  tta=False)
     else:
-        raise error(funcname, f'\"{upscaler}\" is not a valid option for \"upscaler\". Please pick either \"nnedi3_rpow2\", \"upscaled_sraa\", or \"waifu2x\"')
+        raise error(funcname, f'"{upscaler}" is not a valid option for "upscaler". Please pick either "nnedi3_rpow2", "upscaled_sraa", or "waifu2x"')
 
     descaled = kgf.join([descaled, u, v])
     descaled = descaled.std.SetFrameProp("_descaled", intval=1)
@@ -286,7 +284,7 @@ def smart_descale(clip: vs.VideoNode,
         y_deb = debic_list[errors.index(min(errors))]
         dmask = core.std.Expr([y, y_deb.resize.Bicubic(clip.width, clip.height)], 'x y - abs 0.025 > 1 0 ?').std.Maximum().std.SetFrameProp("_descaled_resolution", intval=y_deb.height)
 
-        if single_rate_upscale is True:
+        if single_rate_upscale:
             up = upscaled_sraa(y_deb, rfactor, h=clip.height).resize.Bicubic(clip.width, clip.height)
         else:
             up = fvf.Depth(nnedi3_rpow2(fvf.Depth(y_deb, 16), nns=4, correct_shift=True, width=clip.width, height=clip.height), 32)
@@ -488,7 +486,7 @@ def upscaled_sraa(clip: vs.VideoNode,
         ssh += 1
 
     if h:
-        if ar is None:
+        if not ar:
             ar = clip.width / clip.height
         w = get_w(h, aspect_ratio=ar)
     else:
@@ -525,7 +523,7 @@ def upscaled_sraa(clip: vs.VideoNode,
                 planes[1], planes[2] = [core.resize.Bicubic(p, w, h) for p in planes[1:]]
                 return join([scaled, planes[1], planes[2]])
             else:
-                return error(funcname, f'Please use either a 420, 444, or GRAY clip rather than a \'{get_subsampling(clip)}\' clip')
+                return error(funcname, f"Please use either a 420, 444, or GRAY clip rather than a '{get_subsampling(clip)}' clip")
 
 
 def nneedi3_clamp(clip: vs.VideoNode,
@@ -568,7 +566,7 @@ def nneedi3_clamp(clip: vs.VideoNode,
         expr = [expr, '']
     aa = core.std.Expr([strong, weak, clip], expr)
 
-    if mask is not None:
+    if mask:
         merged = clip.std.MaskedMerge(aa, mask, planes=0)
     elif ret_mask:
         mask = kgf.retinex_edgemask(clip, 1).std.Binarize()
@@ -627,10 +625,10 @@ def deblend(clip: vs.VideoNode, rep: int = None) -> vs.VideoNode:
 
 
 def decomb(src: vs.VideoNode,
-           TFF: Optional[bool]= None,
+           TFF: bool = None,
            decimate: bool = True,
            vinv: bool = True,
-           rep: Optional[int] = None):
+           rep: int = None):
     funcname = "decomb"
     """
     Function written by Midlifecrisis from the WEEB AUTISM server, and slightly modified by me.
@@ -645,8 +643,8 @@ def decomb(src: vs.VideoNode,
     :param rep: int:        Repair mode for repairing the decombed frame using the original src frame
     """
     if TFF is None:
-        return error(funcname, "TFF has to be set to either \"True\" or \"False\"!")
-    VFM_TFF = 1 if TFF is True else 0
+        return error(funcname, 'TFF has to be set to either "True" or "False"!')
+    VFM_TFF = int(TFF)
 
     def pp(n, f, clip, pp):
         return pp if f.props._Combed == 1 else clip
@@ -661,13 +659,13 @@ def decomb(src: vs.VideoNode,
 
     decombed = core.std.FrameEval(src, partial(pp, clip=src, pp=qtgmc_merged), src)
 
-    if vinv is True:
+    if vinv:
         decombed = decombed.vinverse.Vinverse()
 
-    if rep is not None:
+    if rep:
         decombed = core.rgvs.Repair(decombed, src, rep)
 
-    if decimate is True:
+    if decimate:
         return core.vivtc.VDecimate(decombed)
     return decombed
 
@@ -716,7 +714,7 @@ def quick_denoise(clip: vs.VideoNode,
             den_u = u.dfttest.DFTTest(sosize=kwargs['sbsize'] * 0.75, **kwargs)
             den_v = v.dfttest.DFTTest(sosize=kwargs['sbsize'] * 0.75, **kwargs)
         else:
-            return error(funcname, '\'sbsize\' not specified')
+            return error(funcname, "'sbsize' not specified")
     elif cmode in [4, 'smd', 'smdegrain']:
         den_u = haf.SMDegrain(u, prefilter=3, **kwargs)
         den_v = haf.SMDegrain(v, prefilter=3, **kwargs)
@@ -771,8 +769,8 @@ def fix_cr_tint(clip: vs.VideoNode, value: int = 128) -> vs.VideoNode:
 def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode = None,
              width: int = 1, height: int = 1,
              offset_x: int = 0, offset_y: int = 0,
-             width2: Optional[int] = None, height2: Optional[int] = None,
-             offset_x2: Optional[int] = None, offset_y2: Optional[int] = None,
+             width2: int = None, height2: int = None,
+             offset_x2: int = 0, offset_y2: int = None,
              show_mask: bool = False) -> vs.VideoNode:
     funcname = "wipe_row"
     """
@@ -783,14 +781,11 @@ def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode = None,
 
     :param secondary: vs.VideoNode:     Appoint a different clip to replace wiped rows with
     """
-    secondary = core.std.BlankClip(clip) if secondary is None else secondary
+    secondary = secondary or core.std.BlankClip(clip)
 
     sqmask = kgf.squaremask(clip, width, height, offset_x, offset_y)
-    if (width2    is not None and
-        height2   is not None and
-        offset_x2 is not None and
-        offset_y2 is not None):
-        sqmask2 = kgf.squaremask(clip, width2, height2, offset_x2, offset_y2)
+    if width2 and height2:
+        sqmask2 = kgf.squaremask(clip, width2, height2, offset_x2, offset_y - 1 if offset_y2 is None else offset_y2)
         sqmask = core.std.Expr([sqmask, sqmask2], "x y +")
 
     if show_mask:
@@ -832,7 +827,7 @@ def source(file: str,
         return core.d2v.Source(file)
     elif is_image(file):
         clip = core.imwri.Read(file)
-        if ref is not None:
+        if not ref:
             clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
             clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height, format=ref.format)
             return clip*(int(ref.num_frames)-1)
@@ -848,15 +843,12 @@ def source(file: str,
 # Helper funcs
 
 def one_plane(clip: vs.VideoNode) -> bool:
-    # Checks if the source clip is a single plane.
     return clip.format.num_planes == 1
 
 
 def error(funcname: str, error_msg: str):
     # return errors in a slightly nicer way
-    if error_msg is None:
-        error_msg = "An unknown error occured"
-    raise ValueError(f"{funcname}: {error_msg}")
+    raise ValueError(f"{funcname}: {error_msg or 'An unknown error occured"'}")
 
 
 # Aliases
