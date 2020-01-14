@@ -10,8 +10,8 @@ import fvsfunc as fvf # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
 import havsfunc as haf # https://github.com/HomeOfVapourSynthEvolution/havsfunc
 import kagefunc as kgf # https://github.com/Irrational-Encoding-Wizardry/kagefunc
 import mvsfunc as mvf # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
-from nnedi3_rpow2 import nnedi3_rpow2 # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
-from vsTAAmbk import TAAmbk # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
+from nnedi3_rpow2 import * # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
+from vsTAAmbk import * # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
 from vsutil import * # https://github.com/Irrational-Encoding-Wizardry/vsutil
 
 core = vs.core
@@ -167,7 +167,8 @@ def stack_planes(clip: vs.VideoNode,
 
 
 def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
-              threshold: int = 51) -> vs.VideoNode:
+              threshold: int = 51,
+              print_frame: bool = True) -> vs.VideoNode:
     funcname = "tvbd_diff"
     """
     Creates a standard `compare` between frames from two clips that have differences.
@@ -175,10 +176,13 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
 
     Note that this might catch artifacting as differences! Use your eyes.
 
-    :param threshold: int:  Threshold for PlaneStatsMin.
+    :param threshold: int:      Threshold for PlaneStatsMin
+    :param print_frame: bool:   Print frame numbers
     """
     bd = core.resize.Bicubic(bd, format=tv.format) if tv.format != bd.format else bd
-    diff = core.std.MakeDiff(get_y(tv), get_y(bd))
+    if print_frame:
+        tv, bd = tv.text.FrameNum(), bd.text.FrameNum()
+    diff = core.std.MakeDiff(tv, bd)
     diff = core.std.PlaneStats(diff)
     try:
         frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] <= threshold]
@@ -193,7 +197,7 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
 def conditional_descale(clip: vs.VideoNode, height: int,
                         b: float = 1 / 3, c: float = 1 / 3,
                         threshold: float = 0.003,
-                        upscaler: str = None,) -> vs.VideoNode:
+                        upscaler: str = None) -> vs.VideoNode:
     funcname = "conditional_descale"
     """
     Descales and reupscales a clip. If the difference exceeds the threshold, the frame will not be descaled.
@@ -232,7 +236,7 @@ def conditional_descale(clip: vs.VideoNode, height: int,
         descaled = nnedi3_rpow2(descaled)
         descaled = core.caffe.Waifu2x(descaled, noise=-1, scale=2, model=6, cudnn=True, processor=0,  tta=False)
     elif upscaler in ['upscaled_sraa', 'up_sraa', 'sraa']:
-        descaled = upscaled_sraa(descaled, h=clip.height)
+        descaled = upscaled_sraa(descaled, h=clip.height, sharp_downscale=False)
     elif upscaler in ['waifu2x', 'w2x']:
         descaled = core.caffe.Waifu2x(descaled, noise=-1, scale=2, model=6, cudnn=True, processor=0,  tta=False)
     else:
@@ -254,7 +258,8 @@ def smart_descale(clip: vs.VideoNode,
                   thresh1: float = 0.03, thresh2: float = 0.7,
                   no_mask: float = False,
                   show_mask: bool = False, show_dmask: bool = False,
-                  single_rate_upscale: bool = False, rfactor: float = 1.5):
+                  sraa_upscale: bool = False, rfactor: float = 1.5,
+                  sraa_sharp: bool = False) -> vs.VideoNode:
     funcname = "smart_descale"
     """
     Original function written by kageru and modified into a general function by me.
@@ -268,7 +273,7 @@ def smart_descale(clip: vs.VideoNode,
     :param res: List[int]:             A list of resolutions to descale to. For example: [900, 871, 872, 877]
     :param thresh1: float:             Threshold for when a frame will be descaled.
     :param thresh2: float:             Threshold for when a frame will not be descaled.
-    :param single_rate_upscale: bool:  Use upscaled_sraa to upscale the frames (warning: very slow!)
+    :param sraa_upscale: bool:         Use upscaled_sraa to upscale the frames (warning: very slow!)
     :param rfactor: float:             Image enlargement factor for upscaled_sraa
     """
     def _descaling(clip: vs.VideoNode, h: int, b: float, c: float):
@@ -278,13 +283,13 @@ def smart_descale(clip: vs.VideoNode,
         diff = core.std.Expr([clip, up], 'x y - abs').std.PlaneStats()
         return down, diff
 
-    def _select(n, y, debic_list, single_rate_upscale, rfactor, f):
+    def _select(n, y, debic_list, sraa_upscale, rfactor, f):
         # This simply descales to each of those and selects the most appropriate for each frame.
         errors = [x.props.PlaneStatsAverage for x in f]
         y_deb = debic_list[errors.index(min(errors))]
         dmask = core.std.Expr([y, y_deb.resize.Bicubic(clip.width, clip.height)], 'x y - abs 0.025 > 1 0 ?').std.Maximum().std.SetFrameProp("_descaled_resolution", intval=y_deb.height)
 
-        if single_rate_upscale:
+        if sraa_upscale:
             up = upscaled_sraa(y_deb, rfactor, h=clip.height).resize.Bicubic(clip.width, clip.height)
         else:
             up = fvf.Depth(nnedi3_rpow2(fvf.Depth(y_deb, 16), nns=4, correct_shift=True, width=clip.width, height=clip.height), 32)
@@ -322,7 +327,7 @@ def smart_descale(clip: vs.VideoNode,
     debic_props = [a[1] for a in debic_listp]
 
     y_deb = core.std.FrameEval(y, partial(_select, y=y, debic_list=debic_list,
-                                                  single_rate_upscale=single_rate_upscale, rfactor=rfactor), prop_src=debic_props)
+                                                  single_rate_upscale=sraa_upscale, rfactor=rfactor), prop_src=debic_props)
     # TO-DO: It returns a frame size error here for whatever reason. Need to figure out what causes it and fix it
     dmask = core.std.PropToClip(y_deb)
     if show_dmask:
@@ -627,8 +632,8 @@ def deblend(clip: vs.VideoNode, rep: int = None) -> vs.VideoNode:
 def decomb(src: vs.VideoNode,
            TFF: bool = None,
            decimate: bool = True,
-           vinv: bool = True,
-           rep: int = None):
+           vinv: bool = False,
+           rep: Optional[int] = None):
     funcname = "decomb"
     """
     Function written by Midlifecrisis from the WEEB AUTISM server, and slightly modified by me.
@@ -769,8 +774,8 @@ def fix_cr_tint(clip: vs.VideoNode, value: int = 128) -> vs.VideoNode:
 def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode = None,
              width: int = 1, height: int = 1,
              offset_x: int = 0, offset_y: int = 0,
-             width2: int = None, height2: int = None,
-             offset_x2: int = 0, offset_y2: int = None,
+             width2: Optional[int] = None, height2: Optional[int] = None,
+             offset_x2: int = 0, offset_y2: Optional[int] = None,
              show_mask: bool = False) -> vs.VideoNode:
     funcname = "wipe_row"
     """
@@ -848,7 +853,7 @@ def one_plane(clip: vs.VideoNode) -> bool:
 
 def error(funcname: str, error_msg: str):
     # return errors in a slightly nicer way
-    raise ValueError(f"{funcname}: {error_msg or 'An unknown error occured"'}")
+    raise ValueError(f"{funcname}: {error_msg or 'An unknown error occured'}")
 
 
 # Aliases
