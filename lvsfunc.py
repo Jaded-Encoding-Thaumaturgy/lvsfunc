@@ -3,25 +3,25 @@
     Suggestions and fixes are always appreciated!
 """
 
-from functools import partial
 import random
+from functools import partial
 
-import fvsfunc as fvf # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
-import havsfunc as haf # https://github.com/HomeOfVapourSynthEvolution/havsfunc
-import kagefunc as kgf # https://github.com/Irrational-Encoding-Wizardry/kagefunc
-import mvsfunc as mvf # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
-from nnedi3_rpow2 import * # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
-from vsTAAmbk import TAAmbk # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
-from vsutil import * # https://github.com/Irrational-Encoding-Wizardry/vsutil
+import fvsfunc as fvf  # https://github.com/Irrational-Encoding-Wizardry/fvsfunc
+import havsfunc as haf  # https://github.com/HomeOfVapourSynthEvolution/havsfunc
+import kagefunc as kgf  # https://github.com/Irrational-Encoding-Wizardry/kagefunc
+import mvsfunc as mvf  # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
+from nnedi3_rpow2 import *  # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
+from vsTAAmbk import TAAmbk  # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
+from vsutil import *  # https://github.com/Irrational-Encoding-Wizardry/vsutil
 
 core = vs.core
 
 """
     optional dependencies: (http://www.vapoursynth.com/doc/pluginlist.html)
-        * waifu2x-caffe
+        * FFMS2
         * L-SMASH Source
         * d2vsource
-        * FFMS2
+        * waifu2x-caffe
 """
 
 """
