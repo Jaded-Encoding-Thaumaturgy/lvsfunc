@@ -39,9 +39,9 @@ core = vs.core
         - test_descale
 
     Antialiasing:
+        - nneedi3_clamp
         - transpose_aa
         - upscaled_sraa
-        - nneedi3_clamp
 
     Deinterlacing:
         - deblend
@@ -60,7 +60,6 @@ core = vs.core
 """
 
 #### Comparison and Analysis Functions
-
 
 def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
             frames: List[int] = None,
@@ -192,7 +191,6 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
 
 
 #### Scaling and Resizing Functions
-
 
 def conditional_descale(clip: vs.VideoNode, height: int,
                         b: float = 1 / 3, c: float = 1 / 3,
@@ -414,6 +412,61 @@ def test_descale(clip: vs.VideoNode,
 
 #### Antialiasing functions
 
+def nneedi3_clamp(clip: vs.VideoNode,
+                  mask: vs.VideoNode = None,
+                  ret_mask: bool = False, show_mask: bool = False,
+                  opencl: bool = False,
+                  strength: int = 1,
+                  alpha: float = 0.25, beta: float = 0.5, gamma: int = 40,
+                  nrad: int = 2, mdis: int = 20,
+                  nsize: int = 3, nns: int = 3,
+                  qual: int = 1) -> vs.VideoNode:
+    funcname = "nneedi3_clamp"
+    """
+    Script written by Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3.
+    This should fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
+
+    :param mask:                Allows for user to use their own mask
+    :param ret_mask: bool:   Whether or not to use a binarized kgf.retinex_edgemask
+                                to replace more lineart with nnedi3
+    :param show_mask: bool:     Whether or not to return the mask instead of the processed clip
+    :param opencl: bool:        Allows TAAmbk to use opencl acceleration when anti-aliasing
+    :param strength:            (Default value = 1)
+    :param alpha: float:        (Default value = 0.25)
+    :param beta: float:         (Default value = 0.5)
+    :param gamma:               (Default value = 40)
+    :param nrad:                (Default value = 2)
+    :param mdis:                (Default value = 20)
+    :param nsize:               (Default value = 3)
+    :param nns:                 (Default value = 3)
+    :param qual:                (Default value = 1)
+    """
+    bits = clip.format.bits_per_sample - 8
+    thr = strength * (1 >> bits)
+    strong = TAAmbk(clip, aatype='Eedi3', alpha=alpha, beta=beta, gamma=gamma, nrad=nrad, mdis=mdis, mtype=0,
+                    opencl=opencl)
+    weak = TAAmbk(clip, aatype='Nnedi3', nsize=nsize, nns=nns, qual=qual, mtype=0, opencl=opencl)
+    expr = 'x z - y z - * 0 < y x y {0} + min y {0} - max ?'.format(thr)
+
+    if clip.format.num_planes > 1:
+        expr = [expr, '']
+    aa = core.std.Expr([strong, weak, clip], expr)
+
+    if mask:
+        merged = clip.std.MaskedMerge(aa, mask, planes=0)
+    elif ret_mask:
+        mask = kgf.retinex_edgemask(clip, 1).std.Binarize()
+        merged = clip.std.MaskedMerge(aa, mask, planes=0)
+    else:
+        mask = clip.std.Prewitt(planes=0).std.Binarize(planes=0).std.Maximum(planes=0).std.Convolution([1] * 9, planes=0)
+        mask = get_y(mask)
+        merged = clip.std.MaskedMerge(aa, mask, planes=0)
+
+    if show_mask:
+        return mask
+    return merged if clip.format.color_family == vs.GRAY else core.std.ShufflePlanes([merged, clip], [0, 1, 2], vs.YUV)
+
+
 def transpose_aa(clip: vs.VideoNode,
                  eedi3: bool = False) -> vs.VideoNode:
     funcname = "transpose_aa"
@@ -531,63 +584,7 @@ def upscaled_sraa(clip: vs.VideoNode,
                 return error(funcname, f"Please use either a 420, 444, or GRAY clip rather than a '{get_subsampling(clip)}' clip")
 
 
-def nneedi3_clamp(clip: vs.VideoNode,
-                  mask: vs.VideoNode = None,
-                  ret_mask: bool = False, show_mask: bool = False,
-                  opencl: bool = False,
-                  strength: int = 1,
-                  alpha: float = 0.25, beta: float = 0.5, gamma: int = 40,
-                  nrad: int = 2, mdis: int = 20,
-                  nsize: int = 3, nns: int = 3,
-                  qual: int = 1) -> vs.VideoNode:
-    funcname = "nneedi3_clamp"
-    """
-    Script written by Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3.
-    This should fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
-
-    :param mask:                Allows for user to use their own mask
-    :param ret_mask: bool:   Whether or not to use a binarized kgf.retinex_edgemask
-                                to replace more lineart with nnedi3
-    :param show_mask: bool:     Whether or not to return the mask instead of the processed clip
-    :param opencl: bool:        Allows TAAmbk to use opencl acceleration when anti-aliasing
-    :param strength:            (Default value = 1)
-    :param alpha: float:        (Default value = 0.25)
-    :param beta: float:         (Default value = 0.5)
-    :param gamma:               (Default value = 40)
-    :param nrad:                (Default value = 2)
-    :param mdis:                (Default value = 20)
-    :param nsize:               (Default value = 3)
-    :param nns:                 (Default value = 3)
-    :param qual:                (Default value = 1)
-    """
-    bits = clip.format.bits_per_sample - 8
-    thr = strength * (1 >> bits)
-    strong = TAAmbk(clip, aatype='Eedi3', alpha=alpha, beta=beta, gamma=gamma, nrad=nrad, mdis=mdis, mtype=0,
-                    opencl=opencl)
-    weak = TAAmbk(clip, aatype='Nnedi3', nsize=nsize, nns=nns, qual=qual, mtype=0, opencl=opencl)
-    expr = 'x z - y z - * 0 < y x y {0} + min y {0} - max ?'.format(thr)
-
-    if clip.format.num_planes > 1:
-        expr = [expr, '']
-    aa = core.std.Expr([strong, weak, clip], expr)
-
-    if mask:
-        merged = clip.std.MaskedMerge(aa, mask, planes=0)
-    elif ret_mask:
-        mask = kgf.retinex_edgemask(clip, 1).std.Binarize()
-        merged = clip.std.MaskedMerge(aa, mask, planes=0)
-    else:
-        mask = clip.std.Prewitt(planes=0).std.Binarize(planes=0).std.Maximum(planes=0).std.Convolution([1] * 9, planes=0)
-        mask = get_y(mask)
-        merged = clip.std.MaskedMerge(aa, mask, planes=0)
-
-    if show_mask:
-        return mask
-    return merged if clip.format.color_family == vs.GRAY else core.std.ShufflePlanes([merged, clip], [0, 1, 2], vs.YUV)
-
-
 #### Deinterlacing
-
 
 def deblend(clip: vs.VideoNode, rep: int = None) -> vs.VideoNode:
     funcname = "deblend"
@@ -677,7 +674,6 @@ def decomb(src: vs.VideoNode,
 
 #### Denoising and Debanding
 
-
 def quick_denoise(clip: vs.VideoNode,
                   ref: vs.VideoNode = None,
                   cmode: str = 'knlm',
@@ -730,7 +726,18 @@ def quick_denoise(clip: vs.VideoNode,
     return core.std.ShufflePlanes([den_y, den_u, den_v], 0, vs.YUV)
 
 
-#### Masking, Limiting, and Colors
+#### Masking, Limiting, and Color Handling
+
+def fix_cr_tint(clip: vs.VideoNode, value: int = 128) -> vs.VideoNode:
+    funcname = "fix_cr_tint"
+    """
+    Tries to forcibly fix Crunchyroll's green tint by adding pixel values
+
+    :param value: int:  Values added to every pixel
+    """
+    if get_depth(clip) != 16:
+        clip = fvf.Depth(clip, 16)
+    return core.std.Expr(clip, f'x {value} +')
 
 
 def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
@@ -757,18 +764,6 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
 
     avg = core.std.PlaneStats(clip)
     return core.std.FrameEval(clip, partial(_diff, clip=clip, filtered=filtered, threshold=threshold, threshold_range=threshold_range), avg)
-
-
-def fix_cr_tint(clip: vs.VideoNode, value: int = 128) -> vs.VideoNode:
-    funcname = "fix_cr_tint"
-    """
-    Tries to forcibly fix Crunchyroll's green tint by adding pixel values
-
-    :param value: int:  Values added to every pixel
-    """
-    if get_depth(clip) != 16:
-        clip = fvf.Depth(clip, 16)
-    return core.std.Expr(clip, f'x {value} +')
 
 
 def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode = None,
@@ -803,7 +798,6 @@ def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode = None,
 
 
 #### Miscellaneous
-
 
 def source(file: str,
            ref: vs.VideoNode = None,
