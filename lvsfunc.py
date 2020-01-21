@@ -327,7 +327,7 @@ def smart_descale(clip: vs.VideoNode,
     debic_props = [a[1] for a in debic_listp]
 
     y_deb = core.std.FrameEval(y, partial(_select, y=y, debic_list=debic_list,
-                                                  single_rate_upscale=sraa_upscale, rfactor=rfactor), prop_src=debic_props)
+                                                  sraa_upscale=sraa_upscale, rfactor=rfactor), prop_src=debic_props)
     # TO-DO: It returns a frame size error here for whatever reason. Need to figure out what causes it and fix it
     dmask = core.std.PropToClip(y_deb)
     if show_dmask:
@@ -768,7 +768,7 @@ def fix_cr_tint(clip: vs.VideoNode, value: int = 128) -> vs.VideoNode:
     """
     if get_depth(clip) != 16:
         clip = fvf.Depth(clip, 16)
-    return core.std.Expr(clip, f'x {value} +, x {value} +, x {value} +')
+    return core.std.Expr(clip, f'x {value} +')
 
 
 def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode = None,
