@@ -828,7 +828,7 @@ def source(file: str,
         clip = core.imwri.Read(file)
         if not ref:
             clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
-            clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height, format=ref.format)
+            clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height, format=ref.format, matrix_s=mvf.GetMatrix(ref))
             return clip*(int(ref.num_frames)-1)
         if None not in [fpsnum, fpsden]:
             return core.std.AssumeFPS(clip, fpsnum=fpsnum, fpsden=fpsden)
