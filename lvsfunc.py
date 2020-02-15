@@ -521,10 +521,8 @@ def upscaled_sraa(clip: vs.VideoNode,
     """
     Another AA written by Zastin and modified by me.
     Performs an upscaled single-rate AA to deal with heavy aliasing.
-
     Useful for Web rips, where the source quality is not good enough to descale,
     but you still want to deal with some bad aliasing and lineart.
-
     :param rfactor: float:  Image enlargement factor. 1.3..2 makes it comparable in strength to vsTAAmbk
                             It is not recommended to go below 1.3
     :param rep: int:        Repair mode
@@ -802,7 +800,8 @@ def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode = None,
 def source(file: str,
            ref: vs.VideoNode = None,
            force_lsmas: bool = False,
-           fpsnum: int = None, fpsden: int = None) -> vs.VideoNode:
+           fpsnum: int = None, fpsden: int = None,
+           mpls: bool = False,  mpls_playlist: int = 0, mpls_angle: int = 0) -> vs.VideoNode:
     funcname = "source"
     """
     Generic clip import function.
@@ -810,28 +809,41 @@ def source(file: str,
     It also automatically determines if an image has been imported.
     You can set its fps using 'fpsnum' and 'fpsden', or using a reference clip with 'ref'.
 
-    :param file: str:           OS absolute file location
-    :param ref: vs.VideoNode:   Use another clip as reference for the clip's format, resolution, and framerate
-    :param force_lsmas: bool:   Force files to be imported with L-SMASH
-    :param fpsnum: int:         Give file a specific frame numerator
-    :param fpsden: int:         Give file a specific frame denominator
+    :param file: str:               OS absolute file location
+    :param mpls: bool:              Load in a mpls file
+    :param: mpls_playlist: int:     Playlist number, which is the number in mpls file name
+    :param: mpls_angle: int:        Angle number to select in the mpls playlist
+    :param ref: vs.VideoNode:       Use another clip as reference for the clip's format, resolution, and framerate
+    :param force_lsmas: bool:       Force files to be imported with L-SMASH
+    :param fpsnum: int:             Give file a specific frame numerator
+    :param fpsden: int:             Give file a specific frame denominator
     """
+    # TODO: Refine ref, consider adding kwargs for additional options.
     if file.startswith('file:///'):
         file = file[8::]
 
     if force_lsmas:
         return core.lsmas.LWLibavSource(file)
 
+    if file.endswith('.mpls'):
+        return error(funcname, 'Please set \'mpls = True\' and give a path to the base Blu-ray directory when trying to load in mpls files')
+    elif mpls:
+        mpls = core.mpls.Read(file, mpls_playlist)
+        return core.std.Splice([core.lsmas.LWLibavSource(mpls['clip'][i]) for i in range(mpls['count'])])
+
     if file.endswith('.d2v'):
         return core.d2v.Source(file)
+    elif file.endswith('.dgi'):
+        return core.dgdecodenv.DGSource(file)
     elif is_image(file):
         clip = core.imwri.Read(file)
-        if not ref:
+        if ref:
             clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
             clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height, format=ref.format)
             return clip*(int(ref.num_frames)-1)
         if None not in [fpsnum, fpsden]:
             return core.std.AssumeFPS(clip, fpsnum=fpsnum, fpsden=fpsden)
+        return clip
     else:
         if file.endswith('.m2ts'):
             return core.lsmas.LWLibavSource(file)
