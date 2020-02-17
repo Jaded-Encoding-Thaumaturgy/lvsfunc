@@ -64,7 +64,7 @@ core = vs.core
 def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
             frames: List[int] = None,
             rand_frames: bool = False, rand_total: int = None,
-            disable_resample: bool = False) -> vs.VideoNode:
+            force_resample: bool = True) -> vs.VideoNode:
     funcname = "compare"
     """
     Allows for the same frames from two different clips to be compared by putting them next to each other in a list.
@@ -76,17 +76,17 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     :param frames: int:               List of frames to compare.
     :param rand_frames: bool:         Pick random frames from the given clips.
     :param rand_total: int:           Amount of random frames to pick.
-    :param disable_resample: bool:    Disable forcibly resampling clips from 8bit YUV -> RGB24.
+    :param force_resample: bool:      Forcibly resamples the clip to RGB24.
     """
     def resample(clip):
         # Resampling to 8bit and RGB to properly display how it appears on your screen
-        return mvf.ToRGB(fvf.Depth(clip, 8))
+        return fvf.Depth(mvf.ToRGB(clip), 8)
 
     # Error handling
     if frames and len(frames) > clip_a.num_frames:
         return error(funcname, 'More comparisons asked for than frames available')
 
-    if not disable_resample:
+    if force_resample:
         clip_a, clip_b = resample(clip_a), resample(clip_b)
     else:
         if clip_a.format.id != clip_b.format.id:
