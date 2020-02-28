@@ -36,6 +36,7 @@ This function offers the following (sorted by category):</br>
 - [nnedi3_rpow2](https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py)
 - [vsTAAmbk](https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk)
 - [vsutil](https://github.com/Irrational-Encoding-Wizardry/vsutil)
+- [combmask](https://mega.nz/#!whtkTShS!JsDhi-_QGs-kZkzWqgcXHX2MQII4Bl9Y4Ft0zHnXDvk)
 
 ### Optional dependencies:
 - waifu2x-caffe
