@@ -731,6 +731,36 @@ def quick_denoise(clip: vs.VideoNode,
 
 #### Masking, Limiting, and Color Handling
 
+
+def edgefixer(clip: vs.VideoNode,
+              left: Optional[List[int]] = None, right: Optional[List[int]] = None,
+              top: Optional[List[int]] = None, bottom: Optional[List[int]] = None,
+              radius: Optional[List[int]] = None,
+              full_range: bool = False) -> vs.VideoNode:
+    """
+    A wrapper for edgefixer.ContinuityFixer (https://github.com/MonoS/VS-ContinuityFixer).
+
+    Fixes the issues with over- and undershoot that it may create when fixing the edges,
+    and adds what are in my opinion "more sane" ways of handling the parameters and given values.
+
+    :param: left: List[int]:        Amount of pixels to fix. Same for right, top, bottom
+    :param: radius: List[int]:      Radius for edgefixing
+    :param: full_range: bool:       Does not run the expression over the clip to fix over/undershoot
+    """
+
+    if left is None:
+        left = 0
+    if right is None:
+        right = left
+    if top is None:
+        top = left
+    if bottom is None:
+        bottom = top
+
+    ef = core.edgefixer.ContinuityFixer(clip, left, top, right, bottom, radius)
+    return ef if full_range else core.std.Expr(ef, "x 16 max 235 min")
+
+
 def fix_cr_tint(clip: vs.VideoNode, value: int = 128) -> vs.VideoNode:
     funcname = "fix_cr_tint"
     """
