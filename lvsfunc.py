@@ -65,7 +65,7 @@ core = vs.core
 def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
             frames: List[int] = None,
             rand_frames: bool = False, rand_total: int = None,
-            force_resample: bool = True) -> vs.VideoNode:
+            force_resample: bool = True, print_frame: bool = True) -> vs.VideoNode:
     funcname = "compare"
     """
     Allows for the same frames from two different clips to be compared by putting them next to each other in a list.
@@ -74,10 +74,11 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     Shorthand for this function is "comp".
 
-    :param frames: int:               List of frames to compare.
-    :param rand_frames: bool:         Pick random frames from the given clips.
-    :param rand_total: int:           Amount of random frames to pick.
-    :param force_resample: bool:      Forcibly resamples the clip to RGB24.
+    :param frames: int:               List of frames to compare
+    :param rand_frames: bool:         Pick random frames from the given clips
+    :param rand_total: int:           Amount of random frames to pick
+    :param force_resample: bool:      Forcibly resamples the clip to RGB24
+    :param print_frame: bool:         Print frame numbers
     """
     def resample(clip):
         # Resampling to 8bit and RGB to properly display how it appears on your screen
@@ -93,6 +94,9 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
         if clip_a.format.id != clip_b.format.id:
             return error(funcname, 'The format of both clips must be equal')
 
+    if print_frame:
+        clip_a, clip_b = clip_a.text.FrameNum(), clip_b.text.FrameNum()
+
     if frames is None:
         rand_frames = True
 
@@ -107,9 +111,10 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
 
 def stack_compare(*clips: vs.VideoNode,
-                  width: int = None, height: int = None,
+                  width: int = None, height: int = 360,
                   stack_vertical: bool = False,
-                  make_diff: bool = False) -> vs.VideoNode:
+                  make_diff: bool = True,
+                  warn: bool = True) -> vs.VideoNode:
     funcname = "stack_compare"
     """
     A simple wrapper that allows you to compare two clips by stacking them.
@@ -122,6 +127,7 @@ def stack_compare(*clips: vs.VideoNode,
 
     :param stack_vertical: bool:    Stack frames vertically
     :param make_diff: bool:         Create and stack a diff (only works if two clips are given)
+    :param warn: bool:              Prints the lengths of every given clip if lengths don't match
     """
     if len(clips) < 2:
         return error(funcname, 'Please select two or more clips to compare')
@@ -138,7 +144,14 @@ def stack_compare(*clips: vs.VideoNode,
     if make_diff:
         diff = core.std.MakeDiff(get_y(clips[0]), get_y(clips[1])).resize.Bilinear(format=clips[0].format)
         clips.append(diff)
-    return core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
+
+    stack = core.std.StackVertical(clips) if stack_vertical else core.std.StackHorizontal(clips)
+
+    if warn:
+        if len(set([c.num_frames for c in clips])) != 1:
+            frame_counts = [c.num_frames for c in clips[:-1]] if make_diff else [c.num_frames for c in clips]
+            stack = core.text.Text(stack, f"Lengths per clip (in given order): \n{frame_counts}")
+    return stack
 
 
 def stack_planes(clip: vs.VideoNode,
@@ -212,10 +225,10 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     The code for _get_error was mostly taken from kageru's Made in Abyss script.
     Special thanks to Lypheo for holding my hand as this was written.
 
-    :param height: int:             Target descale height
-    :param threshold: float:        Threshold for deciding to descale or leave the original frame
-    :param upscaler: str:           What scaler is used to upscale (options: nnedi3_rpow2 (default), upscaled_sraa, waifu2x)
-    :replacement_clip: videoNode    A clip to replace frames that were not descaled with.
+    :param height: int:                   Target descale height
+    :param threshold: float:              Threshold for deciding to descale or leave the original frame
+    :param upscaler: str:                 What scaler is used to upscale (options: nnedi3_rpow2 (default), upscaled_sraa, waifu2x)
+    :param replacement_clip: videoNode    A clip to replace frames that were not descaled with.
     """
     def _get_error(clip, height, kernel, b, c, taps):
         descale = fvf.Resize(clip, get_w(height), height,  kernel=kernel, a1=b, a2=c, taps=taps, invks=True)
@@ -417,40 +430,26 @@ def test_descale(clip: vs.VideoNode,
 
 #### Antialiasing functions
 
-def nneedi3_clamp(clip: vs.VideoNode,
+def nneedi3_clamp(clip: vs.VideoNode, strength: int = 1,
                   mask: vs.VideoNode = None,
                   ret_mask: bool = False, show_mask: bool = False,
-                  opencl: bool = False,
-                  strength: int = 1,
-                  alpha: float = 0.25, beta: float = 0.5, gamma: int = 40,
-                  nrad: int = 2, mdis: int = 20,
-                  nsize: int = 3, nns: int = 3,
-                  qual: int = 1) -> vs.VideoNode:
+                  opencl: bool = False) -> vs.VideoNode:
     funcname = "nneedi3_clamp"
     """
     Script written by Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3.
     This should fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
 
+    :param strength:            Set threshold strength
     :param mask:                Allows for user to use their own mask
-    :param ret_mask: bool:   Whether or not to use a binarized kgf.retinex_edgemask
-                                to replace more lineart with nnedi3
-    :param show_mask: bool:     Whether or not to return the mask instead of the processed clip
-    :param opencl: bool:        Allows TAAmbk to use opencl acceleration when anti-aliasing
-    :param strength:            (Default value = 1)
-    :param alpha: float:        (Default value = 0.25)
-    :param beta: float:         (Default value = 0.5)
-    :param gamma:               (Default value = 40)
-    :param nrad:                (Default value = 2)
-    :param mdis:                (Default value = 20)
-    :param nsize:               (Default value = 3)
-    :param nns:                 (Default value = 3)
-    :param qual:                (Default value = 1)
+    :param ret_mask: bool:      Replace default mask with a retinex edgemask
+    :param show_mask: bool:     Return mask
+    :param opencl: bool:        Opencl acceleration
     """
     bits = clip.format.bits_per_sample - 8
     thr = strength * (1 >> bits)
-    strong = TAAmbk(clip, aatype='Eedi3', alpha=alpha, beta=beta, gamma=gamma, nrad=nrad, mdis=mdis, mtype=0,
+    strong = TAAmbk(clip, aatype='Eedi3', alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, mtype=0,
                     opencl=opencl)
-    weak = TAAmbk(clip, aatype='Nnedi3', nsize=nsize, nns=nns, qual=qual, mtype=0, opencl=opencl)
+    weak = TAAmbk(clip, aatype='Nnedi3', nsize=3, nns=3, qual=1, mtype=0, opencl=opencl)
     expr = 'x z - y z - * 0 < y x y {0} + min y {0} - max ?'.format(thr)
 
     if clip.format.num_planes > 1:
@@ -472,8 +471,7 @@ def nneedi3_clamp(clip: vs.VideoNode,
     return merged if clip.format.color_family == vs.GRAY else core.std.ShufflePlanes([merged, clip], [0, 1, 2], vs.YUV)
 
 
-def transpose_aa(clip: vs.VideoNode,
-                 eedi3: bool = False) -> vs.VideoNode:
+def transpose_aa(clip: vs.VideoNode, eedi3: bool = False) -> vs.VideoNode:
     funcname = "transpose_aa"
     """
     Function written by Zastin and modified by me.
@@ -481,7 +479,7 @@ def transpose_aa(clip: vs.VideoNode,
     This results in overall stronger anti-aliasing.
     Useful for shows like Yuru Camp with bad lineart problems.
 
-    :param eedi3: bool:  Use eedi3 for the interpolation instead
+    :param eedi3: bool:     Use eedi3 for the interpolation instead
 
     """
     clip_y = get_y(clip)
@@ -630,7 +628,7 @@ def deblend(clip: vs.VideoNode, rep: int = None) -> vs.VideoNode:
 
 
 def decomb(src: vs.VideoNode,
-           TFF: bool = None,
+           TFF: Optional[bool] = None,
            decimate: bool = True,
            vinv: bool = False,
            rep: Optional[int] = None):
@@ -738,14 +736,14 @@ def edgefixer(clip: vs.VideoNode,
               radius: Optional[List[int]] = None,
               full_range: bool = False) -> vs.VideoNode:
     """
-    A wrapper for edgefixer.ContinuityFixer (https://github.com/MonoS/VS-ContinuityFixer).
+    A wrapper for ContinuityFixer (https://github.com/MonoS/VS-ContinuityFixer).
 
     Fixes the issues with over- and undershoot that it may create when fixing the edges,
     and adds what are in my opinion "more sane" ways of handling the parameters and given values.
 
-    :param: left: List[int]:        Amount of pixels to fix. Same for right, top, bottom
-    :param: radius: List[int]:      Radius for edgefixing
-    :param: full_range: bool:       Does not run the expression over the clip to fix over/undershoot
+    :param left: List[int]:        Amount of pixels to fix. Extends to right, top, and bottom
+    :param radius: List[int]:      Radius for edgefixing
+    :param full_range: bool:       Does not run the expression over the clip to fix over/undershoot
     """
 
     if left is None:
@@ -846,8 +844,8 @@ def source(file: str, ref: vs.VideoNode = None,
     :param ref: vs.VideoNode:       Use another clip as reference for the clip's format, resolution, and framerate
     :param force_lsmas: bool:       Force files to be imported with L-SMASH
     :param mpls: bool:              Load in a mpls file
-    :param: mpls_playlist: int:     Playlist number, which is the number in mpls file name
-    :param: mpls_angle: int:        Angle number to select in the mpls playlist
+    :param mpls_playlist: int:     Playlist number, which is the number in mpls file name
+    :param mpls_angle: int:        Angle number to select in the mpls playlist
     """
     # TODO: Consider adding kwargs for additional options,
     #       find a way to NOT have to rely on a million elif's
@@ -913,14 +911,14 @@ def smarter_descale(src: vs.VideoNode,
         scaled = lvf.smarter_descale(src, range(840,849), functools.partial(core.descale.Debicubic, b=0, c=1/2), functools.partial(core.resize.Spline36))
         scaled.set_output()
 
-    :param: resolutions: List[int]:     A list of the resolutions to attempt to descale to. For example: "resolutions=[720, 810]"
+    :param resolutions: List[int]:     A list of the resolutions to attempt to descale to. For example: "resolutions=[720, 810]"
                                         Range can help with easily getting a range of resolutions
-    :param: descaler:                   Descaler used. Default is descale.Bicubic
-    :param: rescaler:                   Rescaler used. Default is resize.Bicubic
-    :param: upscaler:                   Upscaler used. Default is resize.Bicubi.
-    :param: thr: float:                 Threshold for the descaling. Corrosponds directly to the same error rate as getscaler
-    :param: rescale: bool:              To rescale to the highest-given height and handle conversion for x264 fuckery. Default is True
-    :param: to_src: bool:               To upscale back to the src resolution with nnedi3_resample (inverse gauss)
+    :param descaler:                   Descaler used. Default is descale.Bicubic
+    :param rescaler:                   Rescaler used. Default is resize.Bicubic
+    :param upscaler:                   Upscaler used. Default is resize.Bicubi.
+    :param thr: float:                 Threshold for the descaling. Corrosponds directly to the same error rate as getscaler
+    :param rescale: bool:              To rescale to the highest-given height and handle conversion for x264 fuckery. Default is True
+    :param to_src: bool:               To upscale back to the src resolution with nnedi3_resample (inverse gauss)
     """
 
     descaler = descaler or core.descale.Debicubic
