@@ -255,7 +255,7 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     elif upscaler in ['waifu2x', 'w2x']:
         planes[0] = core.caffe.Waifu2x(descaled, noise=-1, scale=2, model=6, cudnn=True, processor=0,  tta=False).resize.Spline36(clip.width, clip.height)
     else:
-        raise error(funcname, f'"{upscaler}" is not a valid option for "upscaler". Please pick either "nnedi3_rpow2", "nnedi3_resample", "upscaled_sraa", or "waifu2x"')
+        return error(funcname, f'"{upscaler}" is not a valid option for "upscaler". Please pick either "nnedi3_rpow2", "nnedi3_resample", "upscaled_sraa", or "waifu2x"')
 
     descaled = kgf.join(planes).resize.Spline36(format=clip.format)
     descaled = descaled.std.SetFrameProp("_descaled", intval=1)
@@ -631,6 +631,7 @@ def decomb(src: vs.VideoNode,
            TFF: Optional[bool] = None,
            decimate: bool = True,
            vinv: bool = False,
+           sharpen: bool = False, dir: str = 'v',
            rep: Optional[int] = None):
     funcname = "decomb"
     """
@@ -640,13 +641,15 @@ def decomb(src: vs.VideoNode,
     You can also allow it to decimate the clip, or keep it disabled if you wish to handle the decimating yourself.
     Vinverse can also be disabled, allowing for less aggressive decombing. Note that this means far more combing will be left over!
 
-    :param TFF: bool:       Top-Field-First. Mandatory to set. Set to either "True" or False"
-    :param decimate: bool:  Decimate the video after deinterlacing
-    :param vinv: bool:      Use vinverse to get rid of additional combing
-    :param rep: int:        Repair mode for repairing the decombed frame using the original src frame
+    :param TFF: bool:           Top-Field-First. Mandatory to set. Set to either "True" or False"
+    :param decimate: bool:      Decimate the video after deinterlacing
+    :param vinv: bool:          Use vinverse to get rid of additional combing
+    :param sharpen: bool:       Unsharpen after deinterlacing
+    :param dir: str:            Directional vector. 'v' = Vertical, 'h' = Horizontal
+    :param rep: int:            Repair mode for repairing the decombed frame using the original src frame
     """
     if TFF is None:
-        return error(funcname, 'TFF has to be set to either "True" or "False"!')
+        return error(funcname, '"TFF" has to be set to either "True" or "False"!')
     VFM_TFF = int(TFF)
 
     def pp(n, f, clip, pp):
@@ -662,15 +665,64 @@ def decomb(src: vs.VideoNode,
 
     decombed = core.std.FrameEval(src, partial(pp, clip=src, pp=qtgmc_merged), src)
 
-    if vinv:
-        decombed = decombed.vinverse.Vinverse()
+    decombed = decombed.vinverse.Vinverse() if vinv else decombed
+    decombed = dir_unsharp(decombed, dir=dir) if sharpen else decombed
+    decombed = core.rgvs.Repair(decombed, src, rep) if rep else decombed
+    return core.vivtc.VDecimate(decombed) if decimate else decombed
 
-    if rep:
-        decombed = core.rgvs.Repair(decombed, src, rep)
 
-    if decimate:
-        return core.vivtc.VDecimate(decombed)
-    return decombed
+def dir_deshimmer(clip: vs.VideoNode, TFF: bool = True,
+                  dh: bool = False,
+                  transpose: bool = True,
+                  show_mask: bool = False) -> vs.VideoNode:
+    funcname = "dir_deshimmer"
+    """
+    Directional deshimmering function
+
+    Only works (in the few instances it does, anyway) for obvious horizontal and vertical shimmering.
+    Odds of success are low. But if you're desperate, it's worth a shot.
+
+    :param dh: bool:           Interpolate to double the height of given clip beforehand
+    :param TFF: bool:          Top Field First. Set to False if TFF doesn't work
+    :param transpose: bool:    Transpose the clip before attempting to deshimmer
+    :param show_mask: bool:    Show nnedi3's mask
+    """
+    clip = core.std.Transpose(clip) if transpose else clip
+    deshim = core.nnedi3.nnedi3(clip, field=TFF, dh=dh, show_mask=show_mask)
+    return core.std.Transpose(deshim) if transpose else deshim
+
+
+def dir_unsharp(clip: vs.VideoNode,
+                strength: float = 1.0,
+                dir: str = 'v',
+                h: float = 3.4) -> vs.VideoNode:
+    funcname = "dir_unsharp"
+    """
+    A diff'd directional unsharpening function.
+        Special thanks to thebombzen and kageru.
+
+    Performs one-dimensional sharpening as such:
+        "Original + (Original - blurred) * Strength"
+
+    This particular function is recommended for SD content,
+    specifically after deinterlacing.
+
+    :param strength: float:        Amount to multiply blurred clip with original clip by
+    :param dir: str:               Directional vector. 'v' = Vertical, 'h' = Horizontal
+    :param h: float:               Sigma for knlmeans, to prevent noise from getting sharpened
+    """
+
+    dir = dir.lower()
+    if dir not in ['v', 'h']:
+        return error(funcname, f'"dir" must be either "v" or "h", not {dir}')
+
+    den = core.knlm.KNLMeansCL(clip, d=3, a=3, h=h)
+    diff = core.std.MakeDiff(clip, den)
+
+    blur_matrix = [1, 2, 1]
+    blurred_clip = core.std.Convolution(den, matrix=blur_matrix, mode=dir)
+    unsharp = core.std.Expr(clips=[den, blurred_clip], expr=['x y - ' + str(strength) + ' * x +', "", ""])
+    return core.std.MergeDiff(unsharp, diff)
 
 
 #### Denoising and Debanding
