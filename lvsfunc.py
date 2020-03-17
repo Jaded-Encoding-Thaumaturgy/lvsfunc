@@ -896,9 +896,9 @@ import math
 Resolution = namedtuple('Resolution', ['width', 'height'])
 def smarter_descale(src: vs.VideoNode,
                     resolutions: List[int],
-                    descaler: Callable[[vs.VideoNode, int, int], vs.VideoNode] = core.descale.Debicubic,
-                    rescaler: Callable[[vs.VideoNode, int, int], vs.VideoNode] = core.resize.Bicubic,
-                    upscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode] = core.resize.Spline36,
+                    descaler: Optional[Callable[[vs.VideoNode, int, int], vs.VideoNode]] = None,
+                    rescaler: Optional[Callable[[vs.VideoNode, int, int], vs.VideoNode]] = None,
+                    upscaler: Optional[Callable[[vs.VideoNode, int, int], vs.VideoNode]] = None,
                     thr: float = 0.05,
                     rescale: bool = True, to_src: bool = False) -> vs.VideoNode:
     """
@@ -922,6 +922,10 @@ def smarter_descale(src: vs.VideoNode,
     :param: rescale: bool:              To rescale to the highest-given height and handle conversion for x264 fuckery. Default is True
     :param: to_src: bool:               To upscale back to the src resolution with nnedi3_resample (inverse gauss)
     """
+
+    descaler = descaler or core.descale.Debicubic
+    rescaler = rescaler or core.resize.Bicubic
+    upscaler = upscaler or core.resize.Spline36
 
     ScaleAttempt = namedtuple('ScaleAttempt', ['descaled', 'rescaled', 'resolution', 'diff'])
     src = fvf.Depth((get_y(src) if src.format.num_planes != 1 else src), 32) \
