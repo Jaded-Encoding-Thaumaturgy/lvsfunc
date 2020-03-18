@@ -7,7 +7,7 @@ This function offers the following (sorted by category):</br>
 | 1 | **Comparison and Analysis** | compare  | comp | Compare two clips by putting them side-by-side in a list | clip_a, clip_b, frames, rand_frames, rand_total, disable_resample |
 | 2 | **Comparison and Analysis** | stack_compare | scomp | Compare two clips by stacking | clips, width, height, stack_vertical, make_diff, warn |
 | 3 | **Comparison and Analysis** | stack_planes| | Split and stack the planes of a given clip | clip, stack_vertical |
-| 4 | **Comparison and Analysis** | tvbd_diff | | Return frames with differences between the tv and bd clips | tv, bd, threshold, print_frame |
+| 4 | **Comparison and Analysis** | tvbd_diff | | Return frames with differences between the tv and bd clips | tv, bd, thr, print_frame |
 | 5 | **Scaling and Resizing** | conditional_descale | cond_desc | Descale a frame if the error doesn't exceed the given threshold | clip, height, b, c, threshold, upscaler |
 | 6 | **Scaling and Resizing** | smart_descale | sraa | A descaling function that compares relative errors between multiple resolutions and descales accordingly | clip, res, b, c, thresh1, thresh2, show_mask, show_dmask, sraa_upscale, rfactor, sraa_sharp |
 | 7 | **Scaling and Resizing** | test_descale | | Descales and reupscales the given clip for comparison | clip, height, kernel, b, c, taps, show_error |
