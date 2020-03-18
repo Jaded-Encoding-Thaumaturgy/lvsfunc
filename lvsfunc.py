@@ -180,25 +180,26 @@ def stack_planes(clip: vs.VideoNode,
 
 
 def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
-              threshold: int = 51,
+              thr: int = 72,
               print_frame: bool = True) -> vs.VideoNode:
     funcname = "tvbd_diff"
     """
     Creates a standard `compare` between frames from two clips that have differences.
-    Useful for making comparisons between TV and BD encodes.
+    Useful for making comparisons between TV and BD encodes, as well as clean and hardsubbed sources.
 
     Note that this might catch artifacting as differences! Use your eyes.
 
-    :param threshold: int:      Threshold for PlaneStatsMin
+    :param thr: int:            Threshold for PlaneStatsMin
     :param print_frame: bool:   Print frame numbers
     """
     bd = core.resize.Bicubic(bd, format=tv.format) if tv.format != bd.format else bd
+
     if print_frame:
         tv, bd = tv.text.FrameNum(), bd.text.FrameNum()
-    diff = core.std.MakeDiff(tv, bd)
-    diff = core.std.PlaneStats(diff)
+    diff = core.std.MakeDiff(tv, bd).std.PlaneStats()
+
     try:
-        frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] <= threshold]
+        frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] <= thr or f.props["PlaneStatsMax"] >= 255 - thr]
         return compare(tv, bd, frames)
     except StopIteration:
         return error(funcname, 'No differences found')
@@ -699,13 +700,11 @@ def dir_unsharp(clip: vs.VideoNode,
     funcname = "dir_unsharp"
     """
     A diff'd directional unsharpening function.
-        Special thanks to thebombzen and kageru.
+    Special thanks to thebombzen and kageru for essentially writing the bulk of this.
 
-    Performs one-dimensional sharpening as such:
-        "Original + (Original - blurred) * Strength"
+    Performs one-dimensional sharpening as such: "Original + (Original - blurred) * Strength"
 
-    This particular function is recommended for SD content,
-    specifically after deinterlacing.
+    This particular function is recommended for SD content, specifically after deinterlacing.
 
     :param strength: float:        Amount to multiply blurred clip with original clip by
     :param dir: str:               Directional vector. 'v' = Vertical, 'h' = Horizontal
