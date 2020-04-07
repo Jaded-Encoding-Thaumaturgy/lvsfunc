@@ -187,11 +187,16 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
     Creates a standard `compare` between frames from two clips that have differences.
     Useful for making comparisons between TV and BD encodes, as well as clean and hardsubbed sources.
 
-    Note that this might catch artifacting as differences! Use your eyes.
+    Note that this might catch artifacting as differences!
+    When in doubt, use your eyes to verify.
 
-    :param thr: int:            Threshold for PlaneStatsMin
+    :param thr: int:            Threshold for PlaneStatsMin. Max is 128
     :param print_frame: bool:   Print frame numbers
     """
+    if thr => 128:
+        return error(funcname, '"thr" should not be or exceed 128!')
+
+    tv, bd = fvf.Depth(tv, 8), fvf.Depth(bd, 8)
     bd = core.resize.Bicubic(bd, format=tv.format) if tv.format != bd.format else bd
 
     if print_frame:
