@@ -63,7 +63,7 @@ core = vs.core
 #### Comparison and Analysis Functions
 
 def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
-            frames: List[int] = None, 
+            frames: List[int] = None,
             rand_total: int = None,
             force_resample: bool = True, print_frame: bool = True,
             mismatch: bool = False) -> vs.VideoNode:
@@ -179,31 +179,44 @@ def stack_planes(clip: vs.VideoNode,
 
 
 def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
-              thr: int = 72,
+              thr: float = 72,
               print_frame: bool = True) -> vs.VideoNode:
     funcname = "tvbd_diff"
     """
     Creates a standard `compare` between frames from two clips that have differences.
     Useful for making comparisons between TV and BD encodes, as well as clean and hardsubbed sources.
+
+    There are two methods used here to find differences.
+    If thr is below 1, PlaneStatsDiff is used to figure out the differences.
+    Else, if thr is equal than or higher than 1, PlaneStatsMin/Max are used.
+
+    Recommended is PlaneStatsMin/Max, as those seem to catch
+    more outrageous differences more easily and not return
+    too many starved frames.
+
     Note that this might catch artifacting as differences!
-    When in doubt, use your eyes to verify.
-    :param thr: int:            Threshold for PlaneStatsMin. Max is 128
+    Make sure you verify every frame with your own eyes!
+
+    :param thr: float:          Threshold.
     :param print_frame: bool:   Print frame numbers
     """
-    if thr => 128:
+    if thr > 128:
         return error(funcname, '"thr" should not be or exceed 128!')
 
-    tv, bd = fvf.Depth(tv, 8), fvf.Depth(bd, 8)
-    bd = core.resize.Bicubic(bd, format=tv.format) if tv.format != bd.format else bd
+    bd = core.resize.Bicubic(bd, format=tv.format)
 
     if print_frame:
         tv, bd = tv.text.FrameNum(), bd.text.FrameNum()
-    diff = core.std.MakeDiff(tv, bd).std.PlaneStats()
 
     try:
-        frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] <= thr or f.props["PlaneStatsMax"] >= 255 - thr]
+        if thr <= 1:
+            diff = core.std.PlaneStats(tv, bd)
+            frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsDiff"] > thr]
+        else:
+            diff = core.std.MakeDiff(tv, bd).std.PlaneStats()
+            frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] <= thr or f.props["PlaneStatsMax"] >= 255 - thr]
         return compare(tv, bd, frames)
-    except StopIteration:
+    except:
         return error(funcname, 'No differences found')
 
 
