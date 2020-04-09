@@ -63,9 +63,10 @@ core = vs.core
 #### Comparison and Analysis Functions
 
 def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
-            frames: List[int] = None,
-            rand_frames: bool = False, rand_total: int = None,
-            force_resample: bool = True, print_frame: bool = True) -> vs.VideoNode:
+            frames: List[int] = None, 
+            rand_total: int = None,
+            force_resample: bool = True, print_frame: bool = True,
+            mismatch: bool = False) -> vs.VideoNode:
     funcname = "compare"
     """
     Allows for the same frames from two different clips to be compared by putting them next to each other in a list.
@@ -75,10 +76,10 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     Shorthand for this function is "comp".
 
     :param frames: int:               List of frames to compare
-    :param rand_frames: bool:         Pick random frames from the given clips
     :param rand_total: int:           Amount of random frames to pick
     :param force_resample: bool:      Forcibly resamples the clip to RGB24
     :param print_frame: bool:         Print frame numbers
+    :param mismatch: bool:            Allow for clips with different formats and dimensions to be compared
     """
     def resample(clip):
         # Resampling to 8bit and RGB to properly display how it appears on your screen
@@ -98,16 +99,14 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
         clip_a, clip_b = clip_a.text.FrameNum(), clip_b.text.FrameNum()
 
     if frames is None:
-        rand_frames = True
-
-    if rand_frames:
         if not rand_total:
             # More comparisons for shorter clips so you can compare stuff like NCs more conveniently
             rand_total = int(clip_a.num_frames/1000) if clip_a.num_frames > 5000 else int(clip_a.num_frames/100)
         frames = sorted(random.sample(range(1, clip_a.num_frames-1), rand_total))
 
-    pairs = (clip_a[frame] + clip_b[frame] for frame in frames)
-    return sum(pairs, next(pairs))
+    frames_a = core.std.Splice([clip_a[f] for f in frames])
+    frames_b = core.std.Splice([clip_b[f] for f in frames])
+    return core.std.Interleave([frames_a, frames_b], mismatch=mismatch)
 
 
 def stack_compare(*clips: vs.VideoNode,
@@ -186,10 +185,8 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
     """
     Creates a standard `compare` between frames from two clips that have differences.
     Useful for making comparisons between TV and BD encodes, as well as clean and hardsubbed sources.
-
     Note that this might catch artifacting as differences!
     When in doubt, use your eyes to verify.
-
     :param thr: int:            Threshold for PlaneStatsMin. Max is 128
     :param print_frame: bool:   Print frame numbers
     """
