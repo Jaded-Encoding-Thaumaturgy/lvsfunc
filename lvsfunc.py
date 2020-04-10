@@ -197,7 +197,7 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
     Note that this might catch artifacting as differences!
     Make sure you verify every frame with your own eyes!
 
-    :param thr: float:          Threshold. >= 1 uses PlaneStatsDiff, <1 uses Max/Min. Max is 128
+    :param thr: float:          Threshold. <= 1 uses PlaneStatsDiff, >1 uses Max/Min. Max is 128
     :param return_array: bool:  Return frames as an array comparison (using "compare")
     """
     if thr > 128:
