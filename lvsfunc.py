@@ -216,7 +216,7 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
         return error(funcname, 'No differences found')
 
     if return_array:
-        return lvf.compare(tv.text.FrameNum().text.Text('TV', 9),
+        return compare(tv.text.FrameNum().text.Text('TV', 9),
                            bd.text.FrameNum().text.Text('BD', 9),
                            frames)
     else:
@@ -225,7 +225,7 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
         diff = core.resize.Spline36(diff, get_w(576), 576).text.FrameNum(8)
         tv, bd = core.resize.Spline36(tv, diff.width/2, diff.height/2), core.resize.Spline36(bd, diff.width/2, diff.height/2)
         tv, bd = tv.text.Text("TV source", 3), bd.text.Text("BD source", 1)
-        stacked =  core.std.StackVertical([core.std.StackHorizontal([tv, bd]), diff])
+        stacked = core.std.StackVertical([core.std.StackHorizontal([tv, bd]), diff])
         return core.std.Splice([stacked[f] for f in frames])
 
 
