@@ -180,7 +180,7 @@ def stack_planes(clip: vs.VideoNode,
 
 def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
               thr: float = 72,
-              print_frame: bool = True) -> vs.VideoNode:
+              return_array: bool = False) -> vs.VideoNode:
     funcname = "tvbd_diff"
     """
     Creates a standard `compare` between frames from two clips that have differences.
@@ -197,16 +197,13 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
     Note that this might catch artifacting as differences!
     Make sure you verify every frame with your own eyes!
 
-    :param thr: float:          Threshold.
-    :param print_frame: bool:   Print frame numbers
+    :param thr: float:          Threshold. >= 1 uses PlaneStatsDiff, <1 uses Max/Min. Max is 128
+    :param return_array: bool:  Return frames as an array comparison (using "compare")
     """
     if thr > 128:
         return error(funcname, '"thr" should not be or exceed 128!')
 
     bd = core.resize.Bicubic(bd, format=tv.format)
-
-    if print_frame:
-        tv, bd = tv.text.FrameNum(), bd.text.FrameNum()
 
     try:
         if thr <= 1:
@@ -215,9 +212,21 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
         else:
             diff = core.std.MakeDiff(tv, bd).std.PlaneStats()
             frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] <= thr or f.props["PlaneStatsMax"] >= 255 - thr]
-        return compare(tv, bd, frames)
     except:
         return error(funcname, 'No differences found')
+
+    if return_array:
+        return lvf.compare(tv.text.FrameNum().text.Text('TV', 9),
+                           bd.text.FrameNum().text.Text('BD', 9),
+                           frames)
+    else:
+        if thr <= 1:
+            diff = core.std.MakeDiff(tv, bd)
+        diff = core.resize.Spline36(diff, get_w(576), 576).text.FrameNum(8)
+        tv, bd = core.resize.Spline36(tv, diff.width/2, diff.height/2), core.resize.Spline36(bd, diff.width/2, diff.height/2)
+        tv, bd = tv.text.Text("TV source", 3), bd.text.Text("BD source", 1)
+        stacked =  core.std.StackVertical([core.std.StackHorizontal([tv, bd]), diff])
+        return core.std.Splice([stacked[f] for f in frames])
 
 
 #### Scaling and Resizing Functions
