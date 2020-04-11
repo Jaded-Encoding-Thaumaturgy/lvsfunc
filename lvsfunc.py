@@ -10,10 +10,15 @@ import fvsfunc as fvf                           # https://github.com/Irrational-
 import havsfunc as haf                          # https://github.com/HomeOfVapourSynthEvolution/havsfunc
 import kagefunc as kgf                          # https://github.com/Irrational-Encoding-Wizardry/kagefunc
 import mvsfunc as mvf                           # https://github.com/HomeOfVapourSynthEvolution/mvsfunc
+import descale as ds                            # https://github.com/Irrational-Encoding-Wizardry/vapoursynth-descale
 from nnedi3_rpow2 import *                      # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
 from nnedi3_resample import nnedi3_resample     # https://github.com/mawen1250/VapourSynth-script/blob/master/nnedi3_resample.py
 from vsTAAmbk import TAAmbk                     # https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk
 from vsutil import *                            # https://github.com/Irrational-Encoding-Wizardry/vsutil
+
+from collections import namedtuple
+from typing import Callable, List, Dict
+import math
 
 core = vs.core
 
@@ -289,118 +294,111 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     return core.std.FrameEval(clip, partial(_diff, clip_a=clip, clip_b=descaled, threshold=threshold),  diff)
 
 
-# TO-DO: Fix smart_descale failing on specific resolutions for unknown reasons
-#        Fix smart_descale not returning the frameprop with the height it was descaled to
-
-def smart_descale(clip: vs.VideoNode,
-                  res: List[int],
-                  b: float = 1/3, c: float = 1/3,
-                  thresh1: float = 0.03, thresh2: float = 0.7,
-                  no_mask: float = False,
-                  show_mask: bool = False, show_dmask: bool = False,
-                  sraa_upscale: bool = False, rfactor: float = 1.5,
-                  sraa_sharp: bool = False) -> vs.VideoNode:
-    funcname = "smart_descale"
+def smart_descale(src: vs.VideoNode,
+                  resolutions: List[int],
+                  kernel: str = 'bicubic',
+                  b: float = 0, c: float = 1/2, taps: int = 4,
+                  thr: float = 0.05, rescale: bool = False) -> vs.VideoNode:
     """
-    Original function written by kageru and modified into a general function by me.
-    For more information and comments I suggest you check out the original script:
-        https://git.kageru.moe/kageru/vs-scripts/src/branch/master/abyss1.py
+    A function that allows you to descale to multiple native resolutions.
+    Written by kageru, and slightly adjusted by me. Thanks Varde for helping me fix some bugs with it.
 
-    A descaling function that compares relative errors between multiple resolutions and descales accordingly.
-    Most of this code was leveraged from kageru's Made in Abyss script.
-    As this is an incredibly complex function, I will offer only minimal support.
+    This function will descale clips to multiple resolutions and return the descaled clip
+    that is mostly likely to be the actual resolution of the clip. This is useful for shows
+    like Shield Hero, Made in Abyss, or Symphogear that love jumping between multiple resolutions.
 
-    :param res: List[int]:             A list of resolutions to descale to. For example: [900, 871, 872, 877]
-    :param thresh1: float:             Threshold for when a frame will be descaled.
-    :param thresh2: float:             Threshold for when a frame will not be descaled.
-    :param sraa_upscale: bool:         Use upscaled_sraa to upscale the frames (warning: very slow!)
-    :param rfactor: float:             Image enlargement factor for upscaled_sraa
+    The returned clip will be multiple resolutions, meaning most resamplers will break,
+    as well as encoding it as-is. When handling it, please ensure you return the clip to
+    a steady resolution before further processing.
+
+    Setting rescaled will use `smart_rescaler` to reupscale the clip to its original resolution.
+    This will return a proper YUV clip as well. If rescaled is set to False, the returned clip
+    will be GRAY.
+
+    :param resolutions: List[int]:      A list of resolutions to descale to
+    :param kernel: str:                 Kernel used to descale
+    :param thr: float:                  Threshold for when a clip is discerned as "non-scaleable"
+    :param rescale: bool:               Rescale the clip to the original resolution after descaling
     """
-    def _descaling(clip: vs.VideoNode, h: int, b: float, c: float):
-        # Descale and return a tuple of descaled clip and diff mask between that and the original.
-        down = clip.descale.Debicubic(get_w(h), h, b, c)
-        up = down.resize.Bicubic(clip.width, clip.height, filter_param_a=b, filter_param_b=c)
-        diff = core.std.Expr([clip, up], 'x y - abs').std.PlaneStats()
-        return down, diff
+    Resolution = namedtuple('Resolution', ['width', 'height'])
+    ScaleAttempt = namedtuple('ScaleAttempt', ['descaled', 'rescaled', 'resolution', 'diff'])
+    src_c = src
 
-    def _select(n, y, debic_list, sraa_upscale, rfactor, f):
-        # This simply descales to each of those and selects the most appropriate for each frame.
-        errors = [x.props.PlaneStatsAverage for x in f]
-        y_deb = debic_list[errors.index(min(errors))]
-        dmask = core.std.Expr([y, y_deb.resize.Bicubic(clip.width, clip.height)], 'x y - abs 0.025 > 1 0 ?').std.Maximum().std.SetFrameProp("_descaled_resolution", intval=y_deb.height)
+    src = fvf.Depth((get_y(src) if src.format.num_planes != 1 else src), 32) \
+        .std.SetFrameProp('descaleResolution', intval=src.height)
 
-        if sraa_upscale:
-            up = upscaled_sraa(y_deb, rfactor, h=clip.height).resize.Bicubic(clip.width, clip.height)
-        else:
-            up = fvf.Depth(nnedi3_rpow2(fvf.Depth(y_deb, 16), nns=4, correct_shift=True, width=clip.width, height=clip.height), 32)
-        return core.std.ClipToProp(up, dmask)
+    def perform_descale(height: int) -> ScaleAttempt:
+        resolution = Resolution(get_w(height, src.width / src.height), height)
+        descaled = ds.get_filter(b, c, taps, kernel)(src, resolution.width, resolution.height) \
+            .std.SetFrameProp('descaleResolution', intval=height)
+        rescaled = get_scale_filter(kernel, b=b, c=c, taps=taps)(descaled, src.width, src.height)
+        diff = core.std.Expr([rescaled, src], 'x y - abs').std.PlaneStats()
+        return ScaleAttempt(descaled, rescaled, resolution, diff)
 
-    def _square():
-        top = core.std.BlankClip(length=len(y), format=vs.GRAYS, height=4, width=10, color=[1])
-        side = core.std.BlankClip(length=len(y), format=vs.GRAYS, height=2, width=4, color=[1])
-        center = core.std.BlankClip(length=len(y), format=vs.GRAYS, height=2, width=2, color=[0])
-        t1 = core.std.StackHorizontal([side, center, side])
-        return core.std.StackVertical([top, t1, top])
+    clips_by_resolution = {c.resolution.height: c for c in map(perform_descale, resolutions)}
+    # If we pass a variable res clip as first argument to FrameEval, we’re also allowed to return one.
+    variable_res_clip = core.std.Splice([
+        core.std.BlankClip(src, length=len(src)-1), core.std.BlankClip(src, length=1, width=src.width + 1)
+    ], mismatch=True)
 
-    def _restore_original(n, f, clip: vs.VideoNode, orig: vs.VideoNode, thresh_a: float, thresh_b: float):
-        # Just revert the entire scaling if the difference is too big. This should catch the 1080p scenes.
-        if f.props.PlaneStatsAverage < thresh_a:
-            return clip.std.SetFrameProp("_descaled", intval=1)
-        elif f.props.PlaneStatsAverage > thresh_b:
-            return orig.std.SetFrameProp("_descaled", intval=0)
-        return core.std.Merge(clip, orig, (f.props.PlaneStatsAverage - thresh_a) * 20).std.SetFrameProp("_descaled", intval=2)
+    def select_descale(n: int, f: List[vs.VideoFrame]):
+        best_res = max(f, key=lambda frame: math.log(src.height - frame.props.descaleResolution, 2) * round(1/max(frame.props.PlaneStatsAverage, 1e-12)) ** 0.2)
 
-    # Error handling
-    if len(res) < 2:
-        return error(funcname, 'This function requires more than two resolutions to descale to')
+        best_attempt = clips_by_resolution.get(best_res.props.descaleResolution)
+        if thr == 0:
+            return best_attempt.descaled
+        # No blending here because src and descaled have different resolutions.
+        # The caller can use the frameProps to deal with that if they so desire.
+        if best_res.props.PlaneStatsAverage > thr:
+            return src
+        return best_attempt.descaled
 
+    props = [c.diff for c in clips_by_resolution.values()]
+    descaled = core.std.FrameEval(variable_res_clip, select_descale,
+                              prop_src=props)
 
-    og = clip
-    clip32 = fvf.Depth(clip, 32)
-    if one_plane(clip32):
-        y = get_y(clip32)
-    else:
-        y, u, v = split(clip32)
-
-    debic_listp = [_descaling(y, h, b, c) for h in res]
-    debic_list = [a[0] for a in debic_listp]
-    debic_props = [a[1] for a in debic_listp]
-
-    y_deb = core.std.FrameEval(y, partial(_select, y=y, debic_list=debic_list,
-                                                  sraa_upscale=sraa_upscale, rfactor=rfactor), prop_src=debic_props)
-    # TO-DO: It returns a frame size error here for whatever reason. Need to figure out what causes it and fix it
-    dmask = core.std.PropToClip(y_deb)
-    if show_dmask:
-        return dmask
-    # TO-DO: Figure out how to make it properly round depending on resolution (although this should usually be 1080p anyway)
-    line = core.std.StackHorizontal([_square()]*192)
-    full_squares = core.std.StackVertical([line]*108)
-
-    artifacts = core.misc.Hysteresis(dmask.resize.Bicubic(clip32.width, clip32.height, _format=vs.GRAYS),
-                                     core.std.Expr([get_y(clip32).tcanny.TCanny(sigma=3), full_squares], 'x y min'))
-
-    ret_raw = kgf.retinex_edgemask(fvf.Depth(clip, 16))
-    ret = ret_raw.std.Binarize(30).rgvs.RemoveGrain(3)
-
-    mask = core.std.Expr([ret.resize.Point(_format=vs.GRAYS), kgf.iterate(artifacts, core.std.Maximum, 3)], 'x y -').std.Binarize(0.4)
-
-    mask = mask.std.Inflate().std.Convolution(matrix=[1]*9).std.Convolution(matrix=[1]*9)
-    if show_mask:
-        return mask
-
-    y = core.std.MaskedMerge(y, y_deb, mask)
-    merged = join([y, u, v]) if not one_plane(og) else y
-    merged = fvf.Depth(merged, get_depth(og))
-    if no_mask:
-        return merged
-
-    dmask = dmask.std.PlaneStats() # TO-DO: It returns a frame size error here for whatever reason. Need to figure out what causes it and fix it
-    return merged.std.FrameEval(partial(_restore_original, clip=merged, orig=og, thresh_a=thresh1, thresh_b=thresh2), prop_src=dmask)#.std.SetFrameProp("_descaled_resolution", intval=y_deb.height)
+    if rescale:
+        upscale = smart_reupscale(descaled, height=src.height, kernel=kernel, b=b, c=c, taps=taps)
+        return core.std.ShufflePlanes([fvf.Depth(upscale, 32), src_c], planes=[0,1,2], colorfamily=vs.YUV)
+    return descaled
 
 
-# TO-DO: Apply descale based on average error in a frame range rather than on a per-frame basis
-#        in order to prevent visible differences. Chances are if a couple of frames in a cut can't
-#        be descaled, all of them are no good.
+def smart_reupscale(clip: vs.VideoNode, width: int = None, height: int = None,
+                    kernel: str = 'bicubic', b: float = 0, c: float = 1/2, taps: int = 4,
+                    **znargs) -> vs.VideoNode:
+    funcname = "smart_reupscale"
+    """
+    Stolen from Varde.
+    A quick 'n easy wrapper used to re-upscale a descaled clip using smart_descale.
+    Uses znedi3, which seems to miraculously work with a multi-res clip.
+    """
+    def _transpose_shift(n, f, clip):
+        try:
+            h = f.props['descaleResolution']
+        except:
+            return error(funcname, "This clip was not descaled using smart_descale")
+        w = get_w(h)
+        clip = core.resize.Bicubic(clip, w, h*2, src_top=.5)
+        clip = core.std.Transpose(clip)
+        return clip
+
+    if height is None:
+        return error(funcname, "Please set the \"height\"!")
+    width = width or get_w(height)
+
+    # Doubling and downscale to given "h"
+    znargs = dict(field=0, dh=True, nsize=4, nns=4, qual=2) or znargs
+
+    if get_depth(clip) == 32:
+        clip = fvf.Depth(clip, 16)
+
+    try:
+        upsc = core.znedi3.nnedi3(clip, **znargs)
+    except:
+        return error(funcname, "Given clip is a bitdepth your version of znedi3 does not support")
+    upsc = core.std.FrameEval(upsc, partial(_transpose_shift, clip=upsc), prop_src=upsc)
+    upsc = core.znedi3.nnedi3(upsc, **znargs)
+    return get_scale_filter(kernel, b=b, c=c, taps=taps)(upsc, height, width, src_top=.5).std.Transpose()
 
 
 def test_descale(clip: vs.VideoNode,
@@ -960,98 +958,6 @@ def source(file: str, ref: vs.VideoNode = None,
     return clip
 
 
-# Experimental
-
-from collections import namedtuple
-from typing import Callable, List, Dict
-import math
-
-Resolution = namedtuple('Resolution', ['width', 'height'])
-def smarter_descale(src: vs.VideoNode,
-                    resolutions: List[int],
-                    descaler: Optional[Callable[[vs.VideoNode, int, int], vs.VideoNode]] = None,
-                    rescaler: Optional[Callable[[vs.VideoNode, int, int], vs.VideoNode]] = None,
-                    upscaler: Optional[Callable[[vs.VideoNode, int, int], vs.VideoNode]] = None,
-                    thr: float = 0.05,
-                    rescale: bool = True, to_src: bool = False) -> vs.VideoNode:
-    """
-    An updated version of smart_descale, hence smart*er*_descale.
-    Still in its experimental stage, and this is just a wrapper to also handle
-    format conversions afterwards because x264 throws a fit otherwise.
-
-    Example use:
-        import functools
-        import lvsfunc as lvf
-
-        scaled = lvf.smarter_descale(src, range(840,849), functools.partial(core.descale.Debicubic, b=0, c=1/2), functools.partial(core.resize.Spline36))
-        scaled.set_output()
-
-    :param resolutions: List[int]:     A list of the resolutions to attempt to descale to. For example: "resolutions=[720, 810]"
-                                        Range can help with easily getting a range of resolutions
-    :param descaler:                   Descaler used. Default is descale.Bicubic
-    :param rescaler:                   Rescaler used. Default is resize.Bicubic
-    :param upscaler:                   Upscaler used. Default is resize.Bicubi.
-    :param thr: float:                 Threshold for the descaling. Corrosponds directly to the same error rate as getscaler
-    :param rescale: bool:              To rescale to the highest-given height and handle conversion for x264 fuckery. Default is True
-    :param to_src: bool:               To upscale back to the src resolution with nnedi3_resample (inverse gauss)
-    """
-
-    descaler = descaler or core.descale.Debicubic
-    rescaler = rescaler or core.resize.Bicubic
-    upscaler = upscaler or core.resize.Spline36
-
-    ScaleAttempt = namedtuple('ScaleAttempt', ['descaled', 'rescaled', 'resolution', 'diff'])
-    src = fvf.Depth((get_y(src) if src.format.num_planes != 1 else src), 32) \
-        .std.SetFrameProp('descaleResolution', intval=src.height)
-
-    def perform_descale(height: int) -> ScaleAttempt:
-        resolution = Resolution(get_w(height, src.width / src.height), height)
-        descaled = descaler(src, resolution.width, resolution.height) \
-            .std.SetFrameProp('descaleResolution', intval=height)
-        rescaled = rescaler(descaled, src.width, src.height)
-        diff = core.std.Expr([rescaled, src], 'x y - abs').std.PlaneStats()
-        return ScaleAttempt(descaled, rescaled, resolution, diff)
-
-    clips_by_resolution = {c.resolution.height: c for c in map(perform_descale, resolutions)}
-    # If we pass a variable res clip as first argument to FrameEval, we’re also allowed to return one.
-    variable_res_clip = core.std.Splice([
-        core.std.BlankClip(src, length=len(src)-1), core.std.BlankClip(src, length=1, width=src.width + 1)
-    ], mismatch=True)
-
-    def select_descale(n: int, f: List[vs.VideoFrame]):
-        # TODO: higher resolutions tend to be lower. compensate for that
-        print(f)
-        print()
-        print([fr.props.PlaneStatsAverage for fr in f])
-        best_res = max(f, key=lambda frame: math.log(src.height - frame.props.descaleResolution, 2) * round(1/frame.props.PlaneStatsAverage) ** 0.2)
-        print('selected')
-        print(clips_by_resolution)
-        print(list(clips_by_resolution.keys()))
-        print(best_res.props.descaleResolution)
-        best_attempt = clips_by_resolution.get(best_res.props.descaleResolution)
-        print('found')
-        if threshold == 0:
-            return best_attempt.descaled
-        # No blending here because src and descaled have different resolutions.
-        # The caller can use the frameProps to deal with that if they so desire.
-        if best_res.props.PlaneStatsAverage > threshold:
-            return src
-        return best_attempt.descaled
-
-    props = [c.diff for c in clips_by_resolution.values()]
-    print(props)
-    scaled = core.std.FrameEval(variable_res_clip, select_descale,
-                                prop_src=props)
-
-    if rescale:
-        # You MUST set the output format again, or else x264/x265 will throw a hissy fit
-        scaled = upscaler(scaled, get_w(resolutions.sort()[-1]), resolutions.sort()[-1], format=src.format)
-        if to_src:
-            # This is done after scaling up because else nn3_rs returns an error
-            scaled = nnedi3_resample(scaled, src.width, src.height, kernel='gauss', invks=True, invkstaps=2, taps=1, a1=32, nns=4, qual=2, pscrn=4)
-    return scaled
-
-
 # Helper funcs
 
 def one_plane(clip: vs.VideoNode) -> bool:
@@ -1061,6 +967,22 @@ def one_plane(clip: vs.VideoNode) -> bool:
 def error(funcname: str, error_msg: str):
     # return errors in a slightly nicer way
     raise ValueError(f"{funcname}: {error_msg or 'An unknown error occured'}")
+
+
+def get_scale_filter(kernel: str, **kwargs):
+    """
+    kgf.get_descale_filter but for core.resize
+    """
+    kernel = kernel.lower()
+    filters = {
+        "bilinear": lambda **kwargs: core.resize.Bilinear,
+        "spline16": lambda **kwargs: core.resize.Spline16,
+        "spline36": lambda **kwargs: core.resize.Spline36,
+        "spline64": lambda **kwargs: core.resize.Spline64,
+        "bicubic": lambda b, c, **kwargs: partial(core.resize.Bicubic, filter_param_a=b, filter_param_b=c),
+        "lanczos": lambda taps, **kwargs: partial(core.resize.Lanczos, filter_param_a=taps),
+    }
+    return filters[kernel](**kwargs)
 
 
 # Aliases
