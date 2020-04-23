@@ -2,6 +2,7 @@
     Various functions I make use of often and other people might be able to use too.
     Suggestions and fixes are always appreciated!
 """
+import vapoursynth as vs
 
 import random
 from functools import partial
@@ -209,7 +210,7 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
     if thr > 128:
         return error(funcname, '"thr" should not be or exceed 128!')
 
-    bd = core.resize.Bicubic(bd, format=tv.format)
+    tv, bd = fvf.Depth(tv, 8), fvf.Depth(bd, 8)
 
     try:
         if thr <= 1:
@@ -360,7 +361,9 @@ def smart_descale(src: vs.VideoNode,
 
     if rescale:
         upscale = smart_reupscale(descaled, height=src.height, kernel=kernel, b=b, c=c, taps=taps)
-        return core.std.ShufflePlanes([fvf.Depth(upscale, 32), src_c], planes=[0,1,2], colorfamily=vs.YUV)
+        if src_c.format is vs.GRAY:
+            return upscale
+        return join([upscale, plane(src_c, 1), plane(src_c, 2)])
     return descaled
 
 
@@ -399,7 +402,7 @@ def smart_reupscale(clip: vs.VideoNode, width: int = None, height: int = None,
         return error(funcname, "Given clip is a bitdepth your version of znedi3 does not support")
     upsc = core.std.FrameEval(upsc, partial(_transpose_shift, clip=upsc), prop_src=upsc)
     upsc = core.znedi3.nnedi3(upsc, **znargs)
-    return get_scale_filter(kernel, b=b, c=c, taps=taps)(upsc, height, width, src_top=.5).std.Transpose()
+    return fvf.Depth(get_scale_filter(kernel, b=b, c=c, taps=taps)(upsc, height, width, src_top=.5).std.Transpose(), get_depth(clip_c))
 
 
 def test_descale(clip: vs.VideoNode,
@@ -426,19 +429,18 @@ def test_descale(clip: vs.VideoNode,
     :param taps: int:           Taps param for lanczos kernel. (Default value = 43)
     :param show_error: bool:    Show diff between the original clip and the reupscaled clip
     """
+    if get_depth(clip) != 32:
+        clip = fvf.Depth(clip, 32)
 
     clip_y = get_y(clip)
 
-    desc = fvf.Resize(clip_y, get_w(height), height,
-                      kernel=kernel, a1=b, a2=c, taps=taps,
-                      invks=True)
-    upsc = fvf.Resize(desc, clip.width, clip.height,
-                      kernel=kernel, a1=b, a2=c, taps=taps)
+    desc = ds.get_filter(b, c, taps, kernel)(clip_y, get_w(height, clip.width/clip.height), height)
+    upsc = get_scale_filter(kernel, b=b, c=c, taps=taps)(desc, clip.width, clip.height)
     upsc = core.std.PlaneStats(clip_y, upsc)
 
     if clip is vs.GRAY:
         return core.text.FrameProps(upsc, "PlaneStatsDiff") if show_error else upsc
-    merge = core.std.ShufflePlanes([upsc, clip], planes=[0, 1, 2], colorfamily=vs.YUV)
+    merge = core.std.ShufflePlanes([upsc, clip], [0,1,2], vs.YUV)
     return core.text.FrameProps(merge, "PlaneStatsDiff") if show_error else merge
 
 
