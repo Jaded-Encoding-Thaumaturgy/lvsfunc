@@ -15,16 +15,17 @@ This function offers the following (sorted by category):</br>
 | 9 | **Antialiasing** | transpose_aa | | AA's a clip by transposing it | clip, eedi3 |
 | 10 | **Antialiasing** | upscaled_sraa | | AA's through a upscaled single-rate AA. Can also be used for scaling | clip, rfactor, rep, h, sharp_downscale |
 | 11 | **Deinterlacing** | deblend | | Deblends a clip in an AABBA pattern and returns a decimated clip | clip, rep |
-| 11 | **Deinterlacing** | decomb | | Gets rid of the combing on an interlaced/telecined source | clip, TFF, decimate, vinv, sharp, dir, rep |
-| 12 | **Deinterlacing** | dir_deshimmer | | Directional deshimmering function | clip, TFF, dh, transpose, show_mask |
-| 13 | **Deinterlacing** | dir_unsharp | | Directional deshimmering function | clip, strength, dir, h |
-| 14 | **Denoising and Debanding** | quick_denoise | qden | Quick denoising function, allowing for different denoisers to be set for the chroma | clip, sigma, cmode, ref, **kwargs |
-| 15 | **Masking, Limiting, and Color Handling** | edgefixer | | A wrapper for ContinuityFixer that fixes under- and overshoot | clip, left, right, top, down, radius, full_range |
-| 16 | **Masking, Limiting, and Color Handling** | fix_cr_tint | | Does a rough fix to the green tint present in Crunchyroll encodes | clip, value |
-| 17 | **Masking, Limiting, and Color Handling** | limit_dark | | Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold | clip, filtered, threshold, threshold_range |
+| 12 | **Deinterlacing** | decomb | | Gets rid of the combing on an interlaced/telecined source | clip, TFF, decimate, vinv, sharp, dir, rep |
+| 13 | **Deinterlacing** | dir_deshimmer | | Directional deshimmering function | clip, TFF, dh, transpose, show_mask |
+| 14 | **Deinterlacing** | dir_unsharp | | Directional deshimmering function | clip, strength, dir, h |
+| 15 | **Denoising and Debanding** | quick_denoise | qden | Quick denoising function, allowing for different denoisers to be set for the chroma | clip, sigma, cmode, ref, **kwargs |
+| 16 | **Masking, Limiting, and Color Handling** | edgefixer | | A wrapper for ContinuityFixer that fixes under- and overshoot | clip, left, right, top, down, radius, full_range |
+| 17 | **Masking, Limiting, and Color Handling** | fix_cr_tint | | Does a rough fix to the green tint present in Crunchyroll encodes | clip, value |
+| 18 | **Masking, Limiting, and Color Handling** | limit_dark | | Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold | clip, filtered, threshold, threshold_range |
 | 19 | **Masking, Limiting, and Color Handling** | wipe_row | | Simple function to wipe a row with a blank or given clip. | clip, secondary, width, height, offset_x, offset_y, width2, height2, offset_x2, offset_y2, show_mask |
-| 19 | **Miscellaneous** | source | src | Automatically determines how a clip or image should be imported | file, ref, force_lsmas, mpls, mpls_playlist, mpls_angle |
-| 20 | **Experimental** | smarter_descale | | An updated version of smart_descale, hence smart*er*_descale | src, resolutions, descaler, rescaler, upscaler, thr, rescale, to_src |
+| 20 | **Miscellaneous** | source | src | Automatically determines how a clip or image should be imported | file, ref, force_lsmas, mpls, mpls_playlist, mpls_angle |
+| 21 | **Miscellaneous** | replace_ranges | rfs | Replaces frame ranges in a clip with those from another clip | clip_a, clip_b, ranges |
+| 22 | **Experimental** | smarter_descale | | An updated version of smart_descale, hence smart*er*_descale | src, resolutions, descaler, rescaler, upscaler, thr, rescale, to_src |
 
 
 ## Requirements:
