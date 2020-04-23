@@ -964,20 +964,16 @@ def source(file: str, ref: vs.VideoNode = None,
 def replace_ranges(clip_a: vs.VideoNode,
                    clip_b: vs.VideoNode,
                    ranges: List[Union[int, Tuple[int, int]]]) -> vs.VideoNode:
-    """
-    A replacement for ReplaceFramesSimple that uses ints and tuples rather than
-    a string.
-
-    :param clip_a: vs.VideoNode:                Original clip
-    :param clip_b: vs.VideoNode:                Replacement clip
-    :param ranges: List[Union[int, Tuple[int, int]]]: Ranges to replace clip_a (original clip)
-                                                      with clip_b (replacement clip).
-                                                      Integer values in the list
-                                                      indicate single frames,
-                                                      Tuple values indicate
-                                                      inclusive ranges.
-    """
     funcname = "replace_ranges"
+    """
+    A replacement for ReplaceFramesSimple that uses ints and tuples rather than a string.
+
+    :param clip_a: vs.VideoNode:                        Original clip
+    :param clip_b: vs.VideoNode:                        Replacement clip
+    :param ranges: List[Union[int, Tuple[int, int]]]:   Ranges to replace clip_a (original clip) with clip_b (replacement clip).
+                                                        Integer values in the list indicate single frames,
+                                                        Tuple values indicate inclusive ranges.
+    """
     out = clip_a
     for r in ranges:
         if type(r) is tuple:
