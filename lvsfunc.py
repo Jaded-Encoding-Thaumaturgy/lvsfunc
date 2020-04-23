@@ -17,7 +17,7 @@ from vsTAAmbk import TAAmbk                     # https://github.com/HomeOfVapou
 from vsutil import *                            # https://github.com/Irrational-Encoding-Wizardry/vsutil
 
 from collections import namedtuple
-from typing import Callable, List, Dict
+from typing import Callable, List, Dict, Union
 import math
 
 core = vs.core
@@ -63,6 +63,7 @@ core = vs.core
 
     Miscellaneous:
         - source (src)
+        - replace_ranges (rfs)
 """
 
 #### Comparison and Analysis Functions
@@ -958,6 +959,33 @@ def source(file: str, ref: vs.VideoNode = None,
     return clip
 
 
+def replace_ranges(clip_a: vs.VideoNode,
+                   clip_b: vs.VideoNode,
+                   ranges: List[Union[int, Tuple[int, int]]]) -> vs.VideoNode:
+    """
+    A replacement for ReplaceFramesSimple that uses ints and tuples rather than
+    a string.
+
+    :param clip_a: vs.VideoNode:                Original clip
+    :param clip_b: vs.VideoNode:                Replacement clip
+    :param ranges: List[Union[int, Tuple[int, int]]]: Ranges to replace clip_a (original clip)
+                                                      with clip_b (replacement clip).
+                                                      Integer values in the list
+                                                      indicate single frames,
+                                                      Tuple values indicate
+                                                      inclusive ranges.
+    """
+    funcname = "replace_ranges"
+    out = clip_a
+    for r in ranges:
+        if type(r) is tuple:
+            start, end = r
+            out = out[:start] + clip_b[start : end + 1] + out[end + 1 :]
+        else:
+            out = out[:r] + clip_b[r] + out[r + 1 :]
+    return out
+
+
 # Helper funcs
 
 def one_plane(clip: vs.VideoNode) -> bool:
@@ -992,3 +1020,4 @@ scomp = stack_compare
 qden = quick_denoise
 cond_desc = conditional_descale
 sraa = upscaled_sraa
+rfs = replace_ranges
