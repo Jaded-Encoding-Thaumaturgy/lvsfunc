@@ -393,6 +393,7 @@ def smart_reupscale(clip: vs.VideoNode, width: int = None, height: int = None,
     # Doubling and downscale to given "h"
     znargs = dict(field=0, dh=True, nsize=4, nns=4, qual=2) or znargs
 
+    clip_c = clip
     if get_depth(clip) == 32:
         clip = fvf.Depth(clip, 16)
 
@@ -966,7 +967,9 @@ def replace_ranges(clip_a: vs.VideoNode,
                    ranges: List[Union[int, Tuple[int, int]]]) -> vs.VideoNode:
     funcname = "replace_ranges"
     """
+    Written by heicrd.
     A replacement for ReplaceFramesSimple that uses ints and tuples rather than a string.
+    Frame ranges are inclusive.
 
     :param clip_a: vs.VideoNode:                        Original clip
     :param clip_b: vs.VideoNode:                        Replacement clip
@@ -978,7 +981,10 @@ def replace_ranges(clip_a: vs.VideoNode,
     for r in ranges:
         if type(r) is tuple:
             start, end = r
-            out = out[:start] + clip_b[start : end + 1] + out[end + 1 :]
+            if start == 0:
+                out = clip_b[: end + 1] + out[end + 1 :]
+            else:
+                out = out[:start] + clip_b[start : end + 1] + out[end + 1 :]
         else:
             out = out[:r] + clip_b[r] + out[r + 1 :]
     return out
