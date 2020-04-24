@@ -967,7 +967,7 @@ def replace_ranges(clip_a: vs.VideoNode,
                    ranges: List[Union[int, Tuple[int, int]]]) -> vs.VideoNode:
     funcname = "replace_ranges"
     """
-    Written by heicrd.
+    Written by Louis.
     A replacement for ReplaceFramesSimple that uses ints and tuples rather than a string.
     Frame ranges are inclusive.
 
