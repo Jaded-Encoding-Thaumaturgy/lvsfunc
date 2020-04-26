@@ -983,7 +983,7 @@ def replace_ranges(clip_a: vs.VideoNode,
             start, end = r
             if start == 0:
                 out = clip_b[: end + 1] + out[end + 1 :]
-            if end == out.num_frames - 1:
+            elif end == out.num_frames - 1:
                 out = out[:start] + clip_b[start :]
             else:
                 out = out[:start] + clip_b[start : end + 1] + out[end + 1 :]
