@@ -3,7 +3,8 @@ Full information on how every function/wrapper works can be found in the docstri
 
 ## How to install
 
-Stick the `lvsfunc` directory in your Python directory's `site-packages` and then restart VSEdit. You can then import lvsfunc and use its function as you would any other *func.
+Create a directory in your Python installation's `site-packages` called `lvsfunc` and dump all the Python files in there.
+You can then import lvsfunc and use its function as you would any other *func.
 
 ```py
 import lvsfunc as lvf
