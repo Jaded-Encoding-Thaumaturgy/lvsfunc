@@ -3,7 +3,16 @@ Full information on how every function/wrapper works can be found in the docstri
 
 ## How to install
 
-Stick the `lvsfunc` directory in `C:\Users\[user name]\AppData\Roaming\Python\Python37\site-packages`, and then restart VSEdit. lvsfunc should become usable for you.
+Stick the `lvsfunc` directory in `C:\Users\[user name]\AppData\Roaming\Python\Python37\site-packages`, and then restart VSEdit. You can then import lvsfunc and use its function as you would any other *func.
+
+```py
+import lvsfunc as lvf
+
+src = lvf.source()
+aa = lvf.nneedi3_clamp()
+comp = lvf.compare()
+...
+```
 
 ## Included functions and wrappers
 
