@@ -58,7 +58,7 @@ def quick_resample(clip: vs.VideoNode, function: Callable, **func_args) -> vs.Vi
         Useful for filters that only work in 16 bit or lower when you're working in float.
     """
     down = resampler(clip, 16)
-    filtered = function(down, *func_args)
+    filtered = function(down, **func_args)
     return resampler(filtered, clip.format.bits_per_sample)
 
 
