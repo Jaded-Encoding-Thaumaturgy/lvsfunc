@@ -1,31 +1,53 @@
-Contains functions I've written or modified for use in VapourSynth.
+lvsfunc, a collection of VapourSynth functions and wrappers written and/or "borrowed" by LightArrowsEXE.
+Full information on how every function/wrapper works can be found in the docstrings.
+
+## How to use
+
+lvsfunc makes use of submodules, which is a rather foreign concept to most VapourSynth users (considering how bad the whole *func system is). Thus, here is an explanation on how to import these functions.
+
+The function is split up into multiple submodules, each with their own namespace. If you want to, for example, use `upscaled_sraa`, you can call it like so:
+```py
+import lvsfunc as lvf
+
+aa = lvf.aa.upscaled_sraa()
+```
+
+This extends to every function and wrapper in lvsfunc. Below you can find a list of which submodule includes what function/wrapper.
+
+## Included functions and wrappers
 
 This function offers the following (sorted by category):</br>
 
-| # | Category | Function | Shorthand | Short Description | Parameters |
+| # | Namespace | Function | Shorthand | Short Description | Parameters |
 |---|----------|----------|-----------|-------------|------------|
-| 1 | **Comparison and Analysis** | compare  | comp | Compare two clips by putting them side-by-side in a list | clip_a, clip_b, frames, rand_frames, rand_total, disable_resample |
-| 2 | **Comparison and Analysis** | stack_compare | scomp | Compare two clips by stacking | clips, width, height, stack_vertical, make_diff, warn |
-| 3 | **Comparison and Analysis** | stack_planes| | Split and stack the planes of a given clip | clip, stack_vertical |
-| 4 | **Comparison and Analysis** | tvbd_diff | | Return frames with differences between the tv and bd clips | tv, bd, thr, print_frame |
-| 5 | **Scaling and Resizing** | conditional_descale | cond_desc | Descale a frame if the error doesn't exceed the given threshold | clip, height, b, c, threshold, upscaler |
-| 6 | **Scaling and Resizing** | smart_descale | sraa | A descaling function that compares relative errors between multiple resolutions and descales accordingly | clip, res, b, c, thresh1, thresh2, show_mask, show_dmask, sraa_upscale, rfactor, sraa_sharp |
-| 7 | **Scaling and Resizing** | test_descale | | Descales and reupscales the given clip for comparison | clip, height, kernel, b, c, taps, show_error |
-| 8 | **Antialiasing** | nneedi3_clamp | | Clamps the change between nnedi3 and eedi3, fixing the artifacting caused by eedi3 | clip, strength, mask, ret_mask, show_mask, opencl  |
-| 9 | **Antialiasing** | transpose_aa | | AA's a clip by transposing it | clip, eedi3 |
-| 10 | **Antialiasing** | upscaled_sraa | | AA's through a upscaled single-rate AA. Can also be used for scaling | clip, rfactor, rep, h, sharp_downscale |
-| 11 | **Deinterlacing** | deblend | | Deblends a clip in an AABBA pattern and returns a decimated clip | clip, rep |
-| 12 | **Deinterlacing** | decomb | | Gets rid of the combing on an interlaced/telecined source | clip, TFF, decimate, vinv, sharp, dir, rep |
-| 13 | **Deinterlacing** | dir_deshimmer | | Directional deshimmering function | clip, TFF, dh, transpose, show_mask |
-| 14 | **Deinterlacing** | dir_unsharp | | Directional deshimmering function | clip, strength, dir, h |
-| 15 | **Denoising and Debanding** | quick_denoise | qden | Quick denoising function, allowing for different denoisers to be set for the chroma | clip, sigma, cmode, ref, **kwargs |
-| 16 | **Masking, Limiting, and Color Handling** | edgefixer | | A wrapper for ContinuityFixer that fixes under- and overshoot | clip, left, right, top, down, radius, full_range |
-| 17 | **Masking, Limiting, and Color Handling** | fix_cr_tint | | Does a rough fix to the green tint present in Crunchyroll encodes | clip, value |
-| 18 | **Masking, Limiting, and Color Handling** | limit_dark | | Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold | clip, filtered, threshold, threshold_range |
-| 19 | **Masking, Limiting, and Color Handling** | wipe_row | | Simple function to wipe a row with a blank or given clip. | clip, secondary, width, height, offset_x, offset_y, width2, height2, offset_x2, offset_y2, show_mask |
-| 20 | **Miscellaneous** | source | src | Automatically determines how a clip or image should be imported | file, ref, force_lsmas, mpls, mpls_playlist, mpls_angle |
-| 21 | **Miscellaneous** | replace_ranges | rfs | Replaces frame ranges in a clip with those from another clip | clip_a, clip_b, ranges |
-| 22 | **Experimental** | smarter_descale | | An updated version of smart_descale, hence smart*er*_descale | src, resolutions, descaler, rescaler, upscaler, thr, rescale, to_src |
+|  | aa | nneedi3_clamp | | Clamps the change between nnedi3 and eedi3, fixing the artifacting caused by eedi3 | clip, strength, mask, ret_mask, show_mask, opencl |
+|  | aa | transpose_aa | | AA's a clip by transposing it | clip, eedi3 |
+|  | aa | upscaled_sraa | sraa | AA's through a upscaled single-rate AA. Can also be used for scaling | clip, rfactor, rep, h, sharp_downscale |
+|  | comp | compare | comp | Compare two clips by putting them side-by-side in a list | clip_a, clip_b, frames, rand_total, force_resample, print_frame, mismatch |
+|  | comp | stack_compare | scomp | Compare two clips by stacking | clips, make_diff, height, warn |
+|  | comp | stack_planes | | Split and stack the planes of a given clip | clip, stack_vertical |
+|  | comp | tvbd_diff | | Return frames with differences between the tv and bd clips | tv, bd, thr, return_array |
+|  | deint | deblend | | Deblends a clip in an AABBA pattern and returns a decimated clip | clip, rep |
+|  | deint | decomb | | Gets rid of the combing on an interlaced/telecined source | clip, TFF, decimate, vinv, sharpen, dir, rep |
+|  | deint | dir_deshimmer | | Directional deshimmering function | clip, TFF, dh, transpose, show_mask |
+|  | deint | dir_unsharp | | Directional deshimmering function | clip, strength, dir, h |
+|  | denoise | quick_denoise | qden | Quick denoising function, allowing for different denoisers to be set for the chroma | clip, ref, cmode, sigma, **kwargs |
+|  | helper | create_dmask | | A wrapper to create a luma mask for denoising, debanding, etc. | clip, luma_scaling |
+|  | helper | get_scale_filter | | kagefunc's get_descale_filter, but for the internal resizers | kernel, **kwargs |
+|  | helper | one_plane | | Returns True if there's only one plane (lol) | clip |
+|  | helper | pick_repair | | Returns rgvs.Repair if the clip is 16 bit or lower, else rgsf.Repair | clip |
+|  | helper | quick_resample | | A function to quickly resample to 16 bit and back to the original depth | clip, function, **func_args |
+|  | helper | resampler | | Really just a barebones version of fvsfunc's Depth to remove a common dependency | clip, bitdepth |
+|  | misc | edgefixer | | A wrapper for ContinuityFixer that fixes under- and overshoot | clip, left, right, top, down, radius, full_range |
+|  | misc | fix_cr_tint | | Does a rough fix to the green tint present in Crunchyroll encodes | clip, value |
+|  | misc | limit_dark | | Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold | clip, filtered, threshold, threshold_range |
+|  | misc | replace_ranges | rfs | Replaces frame ranges in a clip with those from another clip | clip_a, clip_b, ranges |
+|  | misc | source | src | Automatically determines how a clip or image should be imported | file, ref, force_lsmas, mpls, mpls_playlist, mpls_angle |
+|  | misc | wipe_row | | Simple function to wipe a row with a blank or given clip. | clip, secondary, width, height, offset_x, offset_y, width2, height2, offset_x2, offset_y2, show_mask |
+|  | scale | conditional_descale | cond_desc | Descale a frame if the error doesn't exceed the given threshold | clip, height, kernel, b, c, taps, threshold, upscaler, **upscale_args |
+|  | scale | smart_descale | | A descaling function that compares relative errors between multiple resolutions and descales accordingly | clip, resolutions, b, c, taps, thr, rescale |
+|  | scale | smart_reupscale | | A quick 'n easy wrapper used to re-upscale a descaled clip using smart_descale | clip, width, height, kernel, b, c, taps, **znargs |
+|  | scale | test_descale | | Descales and reupscales the given clip for comparison | clip, height, kernel, b, c, taps, show_error |
 
 
 ## Requirements:
