@@ -5,6 +5,7 @@
 import random
 from typing import List
 
+import mvsfunc as mvf
 from vsutil import fallback, get_subsampling, get_w, split
 
 import vapoursynth as vs
@@ -35,7 +36,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     """
     def _resample(clip: vs.VideoNode) -> vs.VideoNode:
         # Resampling to 8bit and RGB to properly display how it appears on your screen
-        return util.resampler(clip.resize.Point(format=vs.RGB24), 8)
+        return util.resampler(clip.resize.Point(format=vs.RGB24, matrix_in_s=mvf.GetMatrix(clip)), 8)
 
     # Error handling
     if frames and len(frames) > clip_a.num_frames:
