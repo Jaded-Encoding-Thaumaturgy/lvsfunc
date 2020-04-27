@@ -7,16 +7,16 @@
     or reach out to me on Discord (LightArrowsEXE#0476)!
 """
 
-from . import aa, comparison, deinterlace, denoise, util, misc, scale
+from . import aa, compare, deinterlace, denoise, util, misc, scale
 
 nneedi3_clamp = aa.nneedi3_clamp
 tranpose_aa = aa.transpose_aa
 upscaled_sraa = aa.upscaled_sraa
 
-compare = comparison.compare
-stack_compare = comparison.stack_compare
-stack_planes = comparison.stack_planes
-tvbd_diff = comparison.tvbd_diff
+stack_compare = compare.stack_compare
+stack_planes = compare.stack_planes
+tvbd_diff = compare.tvbd_diff
+compare = compare.compare
 
 deblend = deinterlace.deblend
 decomb = deinterlace.decomb

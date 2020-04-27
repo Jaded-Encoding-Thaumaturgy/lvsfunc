@@ -1,11 +1,15 @@
 lvsfunc, a collection of VapourSynth functions and wrappers written and/or "borrowed" by LightArrowsEXE.
 Full information on how every function/wrapper works can be found in the docstrings.
 
+## How to install
+
+Stick the `lvsfunc` directory in `C:\Users\[user name]\AppData\Roaming\Python\Python37\site-packages`, and then restart VSEdit. lvsfunc should become usable for you.
+
 ## Included functions and wrappers
 
 This function offers the following (sorted by category):</br>
 
-| Namespace | Function | Shorthand | Short Description | Parameters |
+| Namespace | Function | Alias | Short Description | Parameters |
 |----------|----------|-----------|-------------|------------|
 | aa | nneedi3_clamp | | Clamps the change between nnedi3 and eedi3, fixing the artifacting caused by eedi3 | clip, strength, mask, ret_mask, show_mask, opencl |
 | aa | transpose_aa | | AA's a clip by transposing it | clip, eedi3 |
