@@ -9,7 +9,7 @@ from havsfunc import QTGMC
 
 import vapoursynth as vs
 
-from . import helpers
+from . import util
 
 core = vs.core
 
@@ -45,7 +45,7 @@ def deblend(clip: vs.VideoNode, rep: int = None) -> vs.VideoNode:
             if n in blends_a:
                 c, cd, da, a = clip[n-1], clip[n], clip[n+1], clip[n+2]
                 debl = core.std.Expr([c, cd, da, a], expr_cd)
-                return helpers.pick_repair(clip)(debl, c, rep) if rep else debl
+                return util.pick_repair(clip)(debl, c, rep) if rep else debl
             else:
                 return clip
 
@@ -94,7 +94,7 @@ def decomb(clip: vs.VideoNode,
 
     decombed = decombed.vinverse.Vinverse() if vinv else decombed
     decombed = dir_unsharp(decombed, dir=dir) if sharpen else decombed
-    decombed = helpers.pick_repair(clip)(decombed, clip, rep) if rep else decombed
+    decombed = util.pick_repair(clip)(decombed, clip, rep) if rep else decombed
     return core.vivtc.VDecimate(decombed) if decimate else decombed
 
 

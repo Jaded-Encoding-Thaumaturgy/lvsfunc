@@ -7,4 +7,4 @@
     or reach out to me on Discord (LightArrowsEXE#0476)!
 """
 
-from . import aa, comp, deint, denoise, helpers, misc, scale
+from . import aa, comp, deint, den, util, misc, scale

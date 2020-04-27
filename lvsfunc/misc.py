@@ -10,7 +10,7 @@ from vsutil import get_depth, is_image
 
 import vapoursynth as vs
 
-from . import helpers
+from . import util
 
 core = vs.core
 
@@ -141,7 +141,7 @@ def fix_cr_tint(clip: vs.VideoNode, value: int = 128) -> vs.VideoNode:
     :param value: int:  Values added to every pixel
     """
     if get_depth(clip) != 16:
-        clip = helpers.resampler(clip, 16)
+        clip = util.resampler(clip, 16)
     return core.std.Expr(clip, f'x {value} +')
 
 

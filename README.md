@@ -31,13 +31,7 @@ This function offers the following (sorted by category):</br>
 | deint | decomb | | Gets rid of the combing on an interlaced/telecined source | clip, TFF, decimate, vinv, sharpen, dir, rep |
 | deint | dir_deshimmer | | Directional deshimmering function | clip, TFF, dh, transpose, show_mask |
 | deint | dir_unsharp | | Directional deshimmering function | clip, strength, dir, h |
-| denoise | quick_denoise | qden | Quick denoising function, allowing for different denoisers to be set for the chroma | clip, ref, cmode, sigma, **kwargs |
-| helper | create_dmask | | A wrapper to create a luma mask for denoising, debanding, etc. | clip, luma_scaling |
-| helper | get_scale_filter | | kagefunc's get_descale_filter, but for the internal resizers | kernel, **kwargs |
-| helper | one_plane | | Returns True if there's only one plane (lol) | clip |
-| helper | pick_repair | | Returns rgvs.Repair if the clip is 16 bit or lower, else rgsf.Repair | clip |
-| helper | quick_resample | | A function to quickly resample to 16 bit and back to the original depth | clip, function, **func_args |
-| helper | resampler | | Really just a barebones version of fvsfunc's Depth to remove a common dependency | clip, bitdepth |
+| den | quick_denoise | qden | Quick denoising function, allowing for different denoisers to be set for the chroma | clip, ref, cmode, sigma, **kwargs |
 | misc | edgefixer | | A wrapper for ContinuityFixer that fixes under- and overshoot | clip, left, right, top, down, radius, full_range |
 | misc | fix_cr_tint | | Does a rough fix to the green tint present in Crunchyroll encodes | clip, value |
 | misc | limit_dark | | Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold | clip, filtered, threshold, threshold_range |
@@ -48,6 +42,12 @@ This function offers the following (sorted by category):</br>
 | scale | smart_descale | | A descaling function that compares relative errors between multiple resolutions and descales accordingly | clip, resolutions, b, c, taps, thr, rescale |
 | scale | smart_reupscale | | A quick 'n easy wrapper used to re-upscale a descaled clip using smart_descale | clip, width, height, kernel, b, c, taps, **znargs |
 | scale | test_descale | | Descales and reupscales the given clip for comparison | clip, height, kernel, b, c, taps, show_error |
+| util | create_dmask | | A wrapper to create a luma mask for denoising, debanding, etc. | clip, luma_scaling |
+| util | get_scale_filter | | kagefunc's get_descale_filter, but for the internal resizers | kernel, **kwargs |
+| util | one_plane | | Returns True if there's only one plane (lol) | clip |
+| util | pick_repair | | Returns rgvs.Repair if the clip is 16 bit or lower, else rgsf.Repair | clip |
+| util | quick_resample | | A function to quickly resample to 16 bit and back to the original depth | clip, function, **func_args |
+| util | resampler | | Really just a barebones version of fvsfunc's Depth to remove a common dependency | clip, bitdepth |
 
 
 ## Requirements:

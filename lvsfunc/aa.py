@@ -7,7 +7,7 @@ from vsutil import get_subsampling, get_w, get_y, join, split
 
 import vapoursynth as vs
 
-from . import helpers
+from . import util
 
 core = vs.core
 
@@ -150,7 +150,7 @@ def upscaled_sraa(clip: vs.VideoNode,
     scaled = core.fmtc.resample(aa_y, w, h, kernel='gauss', invks=True, invkstaps=2, taps=1, a1=32) if sharp_downscale else core.resize.Spline36(aa_y, w, h)
 
     if rep:
-        scaled = helpers.pick_repair(scaled)(scaled, planes[0].resize.Spline36(w, h), rep)
+        scaled = util.pick_repair(scaled)(scaled, planes[0].resize.Spline36(w, h), rep)
     return scaled if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([scaled, clip], [0, 1, 2], vs.YUV)
 
 

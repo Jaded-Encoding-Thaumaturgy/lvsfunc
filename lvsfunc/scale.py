@@ -13,7 +13,7 @@ from vsutil import get_depth, get_w, get_y, join, plane, split
 
 import vapoursynth as vs
 
-from . import aa, helpers
+from . import aa, util
 
 try:
     import nnedi3_rpow2 as nnp2                 # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
@@ -50,7 +50,7 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     """
     def _get_error(clip, height, kernel, b, c, taps):
         descale = get_filter(b, c, taps, kernel)(clip, get_w(height, clip.width / clip.height), height)
-        upscale = helpers.get_scale_filter(kernel, b=b, c=c, taps=taps)(clip, clip.width, clip.height)
+        upscale = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(clip, clip.width, clip.height)
         diff = core.std.PlaneStats(upscale, clip)
         return descale, diff
 
@@ -58,7 +58,7 @@ def conditional_descale(clip: vs.VideoNode, height: int,
         return clip_a if f.props.PlaneStatsDiff > threshold else clip_b
 
     if get_depth(clip) != 32:
-        clip = helpers.resampler(clip, 32)
+        clip = util.resampler(clip, 32)
 
     planes = split(clip)
     descaled, diff = _get_error(planes[0], height=height, kernel=kernel, b=b, c=c, taps=taps)
@@ -116,14 +116,14 @@ def smart_descale(clip: vs.VideoNode,
     ScaleAttempt = namedtuple('ScaleAttempt', ['descaled', 'rescaled', 'resolution', 'diff'])
     clip_c = clip
 
-    clip = helpers.resampler((get_y(clip) if clip.format.num_planes != 1 else clip), 32) \
+    clip = util.resampler((get_y(clip) if clip.format.num_planes != 1 else clip), 32) \
         .std.SetFrameProp('descaleResolution', intval=clip.height)
 
     def _perform_descale(height: int) -> ScaleAttempt:
         resolution = Resolution(get_w(height, clip.width / clip.height), height)
         descaled = get_filter(b, c, taps, kernel)(clip, resolution.width, resolution.height) \
             .std.SetFrameProp('descaleResolution', intval=height)
-        rescaled = helpers.get_scale_filter(kernel, b=b, c=c, taps=taps)(descaled, clip.width, clip.height)
+        rescaled = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(descaled, clip.width, clip.height)
         diff = core.std.Expr([rescaled, clip], 'x y - abs').std.PlaneStats()
         return ScaleAttempt(descaled, rescaled, resolution, diff)
 
@@ -185,15 +185,15 @@ def smart_reupscale(clip: vs.VideoNode, width: int = None, height: int = None,
 
     clip_c = clip
     if get_depth(clip) == 32:
-        clip = helpers.resampler(clip, 16)
+        clip = util.resampler(clip, 16)
 
     try:
         upsc = core.znedi3.nnedi3(clip, **znargs)
     except:
-        upsc = helpers.resampler(core.znedi3.nnedi3(helpers.resampler(clip, 16), **znargs), get_depth(clip))
+        upsc = util.resampler(core.znedi3.nnedi3(util.resampler(clip, 16), **znargs), get_depth(clip))
     upsc = core.std.FrameEval(upsc, partial(_transpose_shift, clip=upsc), prop_src=upsc)
     upsc = core.znedi3.nnedi3(upsc, **znargs)
-    return helpers.resampler(helpers.get_scale_filter(kernel, b=b, c=c, taps=taps)(upsc, height, width, src_top=.5).std.Transpose(), get_depth(clip_c))
+    return util.resampler(util.get_scale_filter(kernel, b=b, c=c, taps=taps)(upsc, height, width, src_top=.5).std.Transpose(), get_depth(clip_c))
 
 
 def test_descale(clip: vs.VideoNode,
@@ -221,12 +221,12 @@ def test_descale(clip: vs.VideoNode,
     :param show_error: bool:    Show diff between the original clip and the reupscaled clip
     """
     if get_depth(clip) != 32:
-        clip = helpers.resampler(clip, 32)
+        clip = util.resampler(clip, 32)
 
     clip_y = get_y(clip)
 
     desc = get_filter(b, c, taps, kernel)(clip_y, get_w(height, clip.width / clip.height), height)
-    upsc = helpers.get_scale_filter(kernel, b=b, c=c, taps=taps)(desc, clip.width, clip.height)
+    upsc = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(desc, clip.width, clip.height)
     upsc = core.std.PlaneStats(clip_y, upsc)
 
     if clip is vs.GRAY:

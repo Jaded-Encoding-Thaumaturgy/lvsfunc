@@ -9,7 +9,7 @@ from vsutil import join, split
 
 import vapoursynth as vs
 
-from . import helpers
+from . import util
 
 core = vs.core
 
