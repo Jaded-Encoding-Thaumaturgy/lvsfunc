@@ -64,7 +64,3 @@ def quick_denoise(clip: vs.VideoNode,
 
     planes[0] = mvf.BM3D(planes[0], sigma=sigma, psample=0, radius1=1, ref=ref)
     return join(planes)
-
-
-# Aliases
-qden = quick_denoise

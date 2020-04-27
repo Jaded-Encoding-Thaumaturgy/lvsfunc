@@ -200,8 +200,3 @@ def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode = None,
 
 # TODO: Write function that only masks px of a certain color/threshold of colors.
 #       Think the magic wand tool in various image-editing programs.
-
-
-# Aliases
-src = source
-rfs = replace_ranges

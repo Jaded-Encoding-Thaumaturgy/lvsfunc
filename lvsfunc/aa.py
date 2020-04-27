@@ -152,7 +152,3 @@ def upscaled_sraa(clip: vs.VideoNode,
     if rep:
         scaled = util.pick_repair(scaled)(scaled, planes[0].resize.Spline36(w, h), rep)
     return scaled if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([scaled, clip], [0, 1, 2], vs.YUV)
-
-
-# Aliases
-sraa = upscaled_sraa

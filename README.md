@@ -1,19 +1,6 @@
 lvsfunc, a collection of VapourSynth functions and wrappers written and/or "borrowed" by LightArrowsEXE.
 Full information on how every function/wrapper works can be found in the docstrings.
 
-## How to use
-
-lvsfunc makes use of submodules, which is a rather foreign concept to most VapourSynth users (considering how bad the whole *func system is). Thus, here is an explanation on how to import these functions.
-
-The function is split up into multiple submodules, each with their own namespace. If you want to, for example, use `upscaled_sraa`, you can call it like so:
-```py
-import lvsfunc as lvf
-
-aa = lvf.aa.upscaled_sraa()
-```
-
-This extends to every function and wrapper in lvsfunc. Below you can find a list of which submodule includes what function/wrapper.
-
 ## Included functions and wrappers
 
 This function offers the following (sorted by category):</br>
