@@ -3,10 +3,10 @@
     or to be used to analyze something from a single clip.
 """
 import random
-from typing import List
+from typing import List, Optional
 
 import mvsfunc as mvf
-from vsutil import fallback, get_subsampling, get_w, split
+from vsutil import get_subsampling, get_w, split
 
 import vapoursynth as vs
 
@@ -16,23 +16,26 @@ core = vs.core
 
 
 def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
-            frames: List[int] = None,
-            rand_total: int = None,
+            frames: Optional[List[int]] = None,
+            rand_total: Optional[int] = None,
             force_resample: bool = True, print_frame: bool = True,
             mismatch: bool = False) -> vs.VideoNode:
-    funcname = "compare"
     """
-    Allows for the same frames from two different clips to be compared by putting them next to each other in a list.
+    Allows for the same frames from two different clips to be compared by interleaving them into a single clip.
     Clips are automatically resampled to 8bit YUV -> RGB24 to emulate how a monitor shows the frame.
     This can be disabled by setting `disable_resample` to True.
 
-    Shorthand for this function is "comp".
+    Alias for this function is "comp".
 
-    :param frames: int:               List of frames to compare
-    :param rand_total: int:           Amount of random frames to pick
-    :param force_resample: bool:      Forcibly resamples the clip to RGB24
-    :param print_frame: bool:         Print frame numbers
-    :param mismatch: bool:            Allow for clips with different formats and dimensions to be compared
+    :param clip_a:              Clip to compare
+    :param clip_b:              Second clip to compare
+    :param frames:              List of frames to compare (Default: None)
+    :param rand_total:          Number of random frames to pick (Default: None)
+    :param force_resample:      Forcibly resamples the clip to RGB24 (Default: True)
+    :param print_frame:         Print frame numbers (Default: True)
+    :param mismatch:            Allow for clips with different formats and dimensions to be compared (Default: False)
+
+    :return:                    Interleaved clip containing specified frames from clip_a and clip_b
     """
     def _resample(clip: vs.VideoNode) -> vs.VideoNode:
         # Resampling to 8bit and RGB to properly display how it appears on your screen
@@ -40,13 +43,13 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     # Error handling
     if frames and len(frames) > clip_a.num_frames:
-        raise ValueError(f"{funcname}: 'More comparisons requested than frames available'")
+        raise ValueError(f"compare: 'More comparisons requested than frames available'")
 
     if force_resample:
         clip_a, clip_b = _resample(clip_a), _resample(clip_b)
     else:
         if clip_a.format.id != clip_b.format.id:
-            raise ValueError(f"{funcname}: 'The format of both clips must be equal'")
+            raise ValueError(f"compare: 'The format of both clips must be equal'")
 
     if print_frame:
         clip_a, clip_b = clip_a.text.FrameNum(), clip_b.text.FrameNum()
@@ -66,7 +69,6 @@ def stack_compare(*clips: vs.VideoNode,
                   make_diff: bool = False,
                   height: int = None,
                   warn: bool = True) -> vs.VideoNode:
-    funcname = "stack_compare"
     """
     A simple wrapper that allows you to compare two clips by stacking them.
     You can stack an infinite amount of clips.
@@ -74,19 +76,23 @@ def stack_compare(*clips: vs.VideoNode,
     Best to use when trying to match two sources frame-accurately, however by setting height to the source's
     height (or None), it can be used for comparing frames.
 
-    Shorthand for this function is 'scomp'.
+    Alias for this function is 'scomp'.
 
-    :param make_diff: bool:         Create and stack a diff (only works if two clips are given)
-    :param warn: bool:              Prints the lengths of every given clip if lengths don't match
+    :param clips:             Clips to compare
+    :param make_diff:         Create and stack a diff (only works if two clips are given) (Default: False)
+    :param height:            Output height, determined automatically if None (Default: None)
+    :param warn:              Prints the lengths of every given clip if lengths don't match (Default: True)
+
+    :return:                  Clip with clips stacked
     """
     if len(clips) > 2:
-        raise ValueError(f"{funcname}: 'Too few clips supplied'")
+        raise ValueError(f"stack_compare: 'Too few clips supplied'")
 
     if len(clips) != 2 and make_diff:
-        raise ValueError(f"{funcname}: 'You can only create a diff for two clips'")
+        raise ValueError(f"stack_compare: 'You can only create a diff for two clips'")
 
     if len(set([c.format.id for c in clips])) != 1:
-        raise ValueError(f"{funcname}: 'The format of every clip must be equal'")
+        raise ValueError(f"stack_compare: 'The format of every clip must be equal'")
 
 
     if make_diff:
@@ -105,11 +111,13 @@ def stack_compare(*clips: vs.VideoNode,
 
 def stack_planes(clip: vs.VideoNode,
                  stack_vertical: bool = False) -> vs.VideoNode:
-    funcname = "stack_planes"
     """
     Stacks the planes of a clip.
 
-    :param stack_vertical: bool:    Stack the planes vertically
+    :param clip:              Input clip
+    :param stack_vertical:    Stack the planes vertically (Default: False)
+
+    :return:                  Clip with stacked planes
     """
 
     planes = split(clip)
@@ -125,13 +133,12 @@ def stack_planes(clip: vs.VideoNode,
     elif subsampling == '444':
         return core.std.StackVertical(planes) if stack_vertical else core.std.StackHorizontal(planes)
     else:
-        raise ValueError(f"{funcname}: 'Input clip must be in YUV format with 444 or 420 chroma subsampling'")
+        raise ValueError(f"stack_planes: 'Input clip must be in YUV format with 444 or 420 chroma subsampling'")
 
 
 def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
               thr: float = 72,
               return_array: bool = False) -> vs.VideoNode:
-    funcname = "tvbd_diff"
     """
     Creates a standard `stack_compare` between frames from two clips that have differences.
     Useful for making comparisons between TV and BD encodes, as well as clean and hardsubbed sources.
@@ -147,11 +154,13 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
     Note that this might catch artifacting as differences!
     Make sure you verify every frame with your own eyes!
 
-    :param thr: float:          Threshold. <= 1 uses PlaneStatsDiff, >1 uses Max/Min. Max is 128
-    :param return_array: bool:  Return frames as an array comparison (using "compare")
+    :param tv:            TV clip
+    :param bd:            BD clip
+    :param thr:           Threshold, <= 1 uses PlaneStatsDiff, >1 uses Max/Min. Max is 128 (Default: 72)
+    :param return_array:  Return frames as an interleaved comparison (using py:func:`lvsfunc.compare.compare`) (Default: False)
     """
     if thr > 128:
-        raise ValueError(f"{funcname}: \"thr\" should neither be nor exceed 128!'")
+        raise ValueError(f"tvbd_diff: \"thr\" should neither be nor exceed 128!'")
 
     tv, bd = util.resampler(tv, 8), util.resampler(bd, 8)
 
@@ -163,7 +172,7 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
         frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] <= thr or f.props["PlaneStatsMax"] >= 255 - thr]
 
     if frames == []:
-        raise ValueError(f"{funcname}: 'No differences found'")
+        raise ValueError(f"tvbd_diff: 'No differences found'")
 
     if return_array:
         return compare(tv.text.FrameNum().text.Text('Clip A', 9),

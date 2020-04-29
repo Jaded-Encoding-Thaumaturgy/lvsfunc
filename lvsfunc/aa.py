@@ -1,9 +1,10 @@
 """
-    Functions for various anti-aliasing functions and wrappers
+    Functions for various anti-aliasing functions and wrappers.
 """
 import kagefunc as kgf
 from vsTAAmbk import TAAmbk
-from vsutil import get_subsampling, get_w, get_y, join, split
+from vsutil import get_w, get_y, split
+from typing import Optional
 
 import vapoursynth as vs
 
@@ -13,19 +14,21 @@ core = vs.core
 
 
 def nneedi3_clamp(clip: vs.VideoNode, strength: int = 1,
-                  mask: vs.VideoNode = None, ret_mask: bool = False,
+                  mask: Optional[vs.VideoNode] = None, ret_mask: bool = False,
                   show_mask: bool = False,
                   opencl: bool = False) -> vs.VideoNode:
-    funcname = "nneedi3_clamp"
     """
-    Script written by Zastin. What it does is clamp the "change" done by eedi3 to the "change" of nnedi3.
+    Function written by Zastin to clamp eedi3 to nnedi3 for the purpose of reducing artifacts.
     This should fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
 
-    :param strength:            Set threshold strength
-    :param mask:                Allows for user to use their own mask
-    :param ret_mask: bool:      Replace default mask with a retinex edgemask
-    :param show_mask: bool:     Return mask
-    :param opencl: bool:        Opencl acceleration
+    :param clip:                Input clip
+    :param strength:            Set threshold strength (Default: 1)
+    :param mask:                Clip to use for custom mask (Default: None)
+    :param ret_mask:            Replace default mask with a retinex edgemask (Default: False)
+    :param show_mask:           Return mask instead of clip (Default: False)
+    :param opencl:              OpenCL acceleration (Default: False)
+
+    :return:                    Antialiased clip
     """
     bits = clip.format.bits_per_sample - 8
     thr = strength * (1 >> bits)
@@ -55,15 +58,16 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: int = 1,
 
 def transpose_aa(clip: vs.VideoNode,
                  eedi3: bool = False) -> vs.VideoNode:
-    funcname = "transpose_aa"
     """
-    Function written by Zastin and modified by me.
-    Performs anti-aliasing over a clip by using Nnedi3, transposing, using Nnedi3 again, and transposing a final time.
+    Function written by Zastin and modified by LightArrowsEXE to perform anti-aliasing
+    over a clip by using Nnedi3, transposing, using Nnedi3 again, and transposing a final time.
     This results in overall stronger anti-aliasing.
     Useful for shows like Yuru Camp with bad lineart problems.
 
-    :param eedi3: bool:     Use eedi3 for the interpolation instead
+    :param clip:      Input clip
+    :param eedi3:     Use eedi3 for the interpolation (Default: False)
 
+    :return:          Antialiased clip
     """
     clip_y = get_y(clip)
 
@@ -100,19 +104,24 @@ def transpose_aa(clip: vs.VideoNode,
 
 def upscaled_sraa(clip: vs.VideoNode,
                   rfactor: float = 1.5,
-                  rep: int = None,
-                  h: int = None, ar = None,
+                  rep: Optional[int] = None,
+                  h: Optional[int] = None, ar: Optional[int] = None,
                   sharp_downscale: bool = False) -> vs.VideoNode:
-    funcname = "upscaled_sraa"
     """
-    Another AA written by Zastin and modified by me.
-    Performs an upscaled single-rate AA to deal with heavy aliasing.
+    Another AA written by Zastin and modified by LightArrowsEXE to perform
+    an upscaled single-rate AA to deal with heavy aliasing.
     Useful for Web rips, where the source quality is not good enough to descale,
     but you still want to deal with some bad aliasing and lineart.
-    :param rfactor: float:  Image enlargement factor. 1.3..2 makes it comparable in strength to vsTAAmbk
-                            It is not recommended to go below 1.3
-    :param rep: int:        Repair mode
-    :param h: int:          Set custom height. Width and aspect ratio are auto-calculated
+
+    :param clip:            Input clip
+    :param rfactor:         Image enlargement factor. 1.3..2 makes it comparable in strength to vsTAAmbk.
+                            It is not recommended to go below 1.3 (Default: 1.5)
+    :param rep:             Repair mode (Default: None)
+    :param h:               Set custom height. Width and aspect ratio are auto-calculated (Default: None)
+    :param ar:              Force custom aspect ratio. Width is auto-calculated (Default: None)
+    :param sharp_downscale: Use a sharper downscaling kernel (inverse gauss) (Default: False)
+
+    :return:                Antialiased clip
     """
     planes = split(clip)
 

@@ -2,3 +2,10 @@
 *.vpy
 *.pyc
 BACK-UP/
+lvsfunc.egg-info/
+dist/
+build/
+venv/
+doc/_build
+doc/_static
+doc/_templates

@@ -1,0 +1,207 @@
+lvsfunc documentation
+---------------------
+
+.. toctree::
+   :maxdepth: 4
+   :caption: Contents:
+
+About
+---------------
+
+.. automodule:: lvsfunc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Dependencies
+----------------
+
+lvsfunc depends on the following third-party scripts:
+
+* `edi_rpow2 <https://gist.github.com/YamashitaRen/020c497524e794779d9c>`_
+* `havsfunc <https://github.com/HomeOfVapourSynthEvolution/havsfunc>`_
+* `kagefunc <https://github.com/Irrational-Encoding-Wizardry/kagefunc>`_
+* `mvsfunc <https://github.com/HomeOfVapourSynthEvolution/mvsfunc>`_
+* `nnedi3_resample <https://github.com/mawen1250/VapourSynth-script/blob/master/nnedi3_resample.py>`_
+* `nnedi3_rpow2 <https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py>`_
+* `vsTAAmbk <https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk>`_
+* `vsutil <https://github.com/Irrational-Encoding-Wizardry/vsutil>`_
+
+The following Vapoursynth libraries are also required for full functionality:
+
+* `adaptivegrain <https://git.kageru.moe/kageru/adaptivegrain>`_
+* `combmask <https://mega.nz/#!whtkTShS!JsDhi-_QGs-kZkzWqgcXHX2MQII4Bl9Y4Ft0zHnXDvk>`_
+* `d2vsource <https://github.com/dwbuiten/d2vsource>`_
+* `dgdecnv <http://rationalqm.us/dgdecnv/dgdecnv.html>`_
+* `fmtconv <https://github.com/EleonoreMizo/fmtconv>`_
+* `knlmeanscl <https://github.com/Khanattila/KNLMeansCL>`_
+* `rgsf <https://github.com/IFeelBloated/RGSF>`_
+* `vapoursynth-descale <https://github.com/Irrational-Encoding-Wizardry/vapoursynth-descale>`_
+* `vapoursynth-nnedi3 <https://github.com/dubhater/vapoursynth-nnedi3>`_
+* `vapoursynth-eedi3 <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-EEDI3>`_
+* `vapoursynth-waifu2x-caffe <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-Waifu2x-caffe>`_
+* `vs-continuityfixer <https://github.com/MonoS/VS-ContinuityFixer>`_
+* `znedi3 <https://github.com/sekrit-twc/znedi3>`_
+
+This list is non-exhaustive, as dependencies may have their own dependencies.
+
+Modules
+-------
+
+.. autosummary::
+
+   lvsfunc.aa
+   lvsfunc.comparison
+   lvsfunc.deinterlace
+   lvsfunc.denoise
+   lvsfunc.misc
+   lvsfunc.scale
+   lvsfunc.util
+
+Functions
+---------
+
+.. autosummary::
+
+   lvsfunc.aa.nneedi3_clamp
+   lvsfunc.aa.transpose_aa
+   lvsfunc.aa.upscaled_sraa
+   lvsfunc.comparison.compare
+   lvsfunc.comparison.stack_compare
+   lvsfunc.comparison.stack_planes
+   lvsfunc.comparison.tvbd_diff
+   lvsfunc.deinterlace.deblend
+   lvsfunc.deinterlace.decomb
+   lvsfunc.deinterlace.dir_deshimmer
+   lvsfunc.deinterlace.dir_unsharp
+   lvsfunc.denoise.quick_denoise
+   lvsfunc.misc.edgefixer
+   lvsfunc.misc.fix_cr_tint
+   lvsfunc.misc.limit_dark
+   lvsfunc.misc.replace_ranges
+   lvsfunc.misc.source
+   lvsfunc.misc.wipe_row
+   lvsfunc.scale.conditional_descale
+   lvsfunc.scale.smart_descale
+   lvsfunc.scale.smart_reupscale
+   lvsfunc.scale.test_descale
+   lvsfunc.util.create_dmask
+   lvsfunc.util.get_scale_filter
+   lvsfunc.util.one_plane
+   lvsfunc.util.pick_repair
+   lvsfunc.util.quick_resample
+   lvsfunc.util.resampler
+
+lvsfunc.aa
+---------------
+
+.. autosummary::
+
+   lvsfunc.aa.nneedi3_clamp
+   lvsfunc.aa.transpose_aa
+   lvsfunc.aa.upscaled_sraa
+
+.. automodule:: lvsfunc.aa
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+lvsfunc.comparison
+-------------------
+
+.. autosummary::
+
+   lvsfunc.comparison.compare
+   lvsfunc.comparison.stack_compare
+   lvsfunc.comparison.stack_planes
+   lvsfunc.comparison.tvbd_diff
+
+.. automodule:: lvsfunc.comparison
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+lvsfunc.deinterlace
+-------------------
+
+.. autosummary::
+
+   lvsfunc.deinterlace.deblend
+   lvsfunc.deinterlace.decomb
+   lvsfunc.deinterlace.dir_deshimmer
+   lvsfunc.deinterlace.dir_unsharp
+
+.. automodule:: lvsfunc.deinterlace
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+lvsfunc.denoise
+-------------------
+
+.. autosummary::
+
+   lvsfunc.denoise.quick_denoise
+
+.. automodule:: lvsfunc.denoise
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+lvsfunc.misc
+-------------------
+
+.. autosummary::
+
+   lvsfunc.misc.edgefixer
+   lvsfunc.misc.fix_cr_tint
+   lvsfunc.misc.limit_dark
+   lvsfunc.misc.replace_ranges
+   lvsfunc.misc.source
+   lvsfunc.misc.wipe_row
+
+.. automodule:: lvsfunc.misc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+lvsfunc.scale
+-------------------
+
+.. autosummary::
+
+   lvsfunc.scale.conditional_descale
+   lvsfunc.scale.smart_descale
+   lvsfunc.scale.smart_reupscale
+   lvsfunc.scale.test_descale
+
+.. automodule:: lvsfunc.scale
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+lvsfunc.util
+-------------------
+
+.. autosummary::
+
+   lvsfunc.util.create_dmask
+   lvsfunc.util.get_scale_filter
+   lvsfunc.util.one_plane
+   lvsfunc.util.pick_repair
+   lvsfunc.util.quick_resample
+   lvsfunc.util.resampler
+
+.. automodule:: lvsfunc.util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Footer
+---------
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

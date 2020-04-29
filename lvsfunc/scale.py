@@ -4,7 +4,7 @@
 import math
 from collections import namedtuple
 from functools import partial
-from typing import List
+from typing import List, Optional
 
 from descale import get_filter
 from nnedi3_resample import \
@@ -28,11 +28,10 @@ def conditional_descale(clip: vs.VideoNode, height: int,
                         b: float = 1 / 3, c: float = 1 / 3,
                         taps: int = 4,
                         threshold: float = 0.003,
-                        upscaler: str = None,
+                        upscaler: str = "nnedi3_rpow2",
                         **upscale_args) -> vs.VideoNode:
-    funcname = "conditional_descale"
     """
-    Descales and reupscales a clip. If the difference exceeds the threshold, the frame will not be descaled.
+    Descales and reupscales a clip; if the difference exceeds the threshold, the frame will not be descaled.
     If it does not exceed the threshold, the frame will upscaled using either nnedi3_rpow2 or waifu2x-caffe.
 
     Useful for bad BDs that have additional post-processing done on some scenes, rather than all of them.
@@ -43,10 +42,17 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     The code for _get_error was mostly taken from kageru's Made in Abyss script.
     Special thanks to Lypheo for holding my hand as this was written.
 
-    :param height: int:                   Target descale height
-    :param threshold: float:              Threshold for deciding to descale or leave the original frame
-    :param upscaler: str:                 What scaler is used to upscale (options: nnedi3_rpow2 (default), upscaled_sraa, waifu2x)
-    :param replacement_clip: videoNode    A clip to replace frames that were not descaled with.
+    :param clip:                   Input clip
+    :param height:                 Target descale height
+    :param kernel:                 Kernel used to descale (see :py:func:`lvsfunc.util.get_scale_filter`, Default: bicubic)
+    :param b:                      B-param for bicubic kernel (Default: 1 / 3)
+    :param c:                      C-param for bicubic kernel (Default: 1 / 3)
+    :param taps:                   Taps param for lanczos kernel (Default: 4)
+    :param threshold:              Threshold for deciding to descale or leave the original frame (Default: 0.003)
+    :param upscaler:               Which upscaler to use ("nnedi3_rpow2" (default), "upscaled_sraa", "waifu2x" (caffe))
+    :param upscale_args:           Arguments passed to upscaler
+
+    :return:                       Constant-resolution rescaled clip
     """
     def _get_error(clip, height, kernel, b, c, taps):
         descale = get_filter(b, c, taps, kernel)(clip, get_w(height, clip.width / clip.height), height)
@@ -63,7 +69,6 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     planes = split(clip)
     descaled, diff = _get_error(planes[0], height=height, kernel=kernel, b=b, c=c, taps=taps)
 
-    upscaler = upscaler or "nnedi3_rpow2"
     if upscaler in ['nnedi3_rpow2', 'nnedi3', 'nn3_rp2']:
         planes[0] = nnp2(descaled, upscale_args, width=clip.width, height=clip.height)
     elif upscaler in ['nnedi3_resample', 'nn3_res']:
@@ -76,7 +81,7 @@ def conditional_descale(clip: vs.VideoNode, height: int,
         w2xargs = dict(noise=-1, scale=2, model=6, cudnn=True, processor=0, tta=False) or upscale_args
         planes[0] = core.caffe.Waifu2x(descaled, w2xargs).resize.Spline36(clip.width, clip.height)
     else:
-        raise ValueError(f"{funcname}: '\"{upscaler}\" is not a valid option for \"upscaler\". Please pick either \"nnedi3_rpow2\", \"nnedi3_resample\", \"upscaled_sraa\", or \"waifu2x\"'")
+        raise ValueError(f"conditional_descale: '\"{upscaler}\" is not a valid option for \"upscaler\". Please pick either \"nnedi3_rpow2\", \"nnedi3_resample\", \"upscaled_sraa\", or \"waifu2x\"'")
 
 
     descaled = join(planes).resize.Spline36(format=clip.format)
@@ -92,7 +97,7 @@ def smart_descale(clip: vs.VideoNode,
                   b: float = 0, c: float = 1/2, taps: int = 4,
                   thr: float = 0.05, rescale: bool = False) -> vs.VideoNode:
     """
-    A function that allows you to descale to multiple native resolutions.
+    Allows you to descale to multiple native resolutions.
     Written by kageru, and slightly adjusted by me. Thanks Varde for helping me fix some bugs with it.
 
     This function will descale clips to multiple resolutions and return the descaled clip
@@ -107,10 +112,16 @@ def smart_descale(clip: vs.VideoNode,
     This will return a proper YUV clip as well. If rescaled is set to False, the returned clip
     will be GRAY.
 
-    :param resolutions: List[int]:      A list of resolutions to descale to
-    :param kernel: str:                 Kernel used to descale
-    :param thr: float:                  Threshold for when a clip is discerned as "non-scaleable"
-    :param rescale: bool:               Rescale the clip to the original resolution after descaling
+    :param clip:             Input clip
+    :param resolutions:      A list of resolutions to descale to
+    :param kernel:           Kernel used to descale (see :py:func:`lvsfunc.util.get_scale_filter`, Default: bicubic)
+    :param b:                B-param for bicubic kernel (Default: 1 / 3)
+    :param c:                C-param for bicubic kernel (Default: 1 / 3)
+    :param taps:             Taps param for lanczos kernel (Default: 4)
+    :param thr:              Threshold for when a clip is discerned as "non-scaleable" (Default: 0.05)
+    :param rescale:          Rescale the clip to the original resolution after descaling (Default: False)
+
+    :return:                 Variable-resolution clip containing descaled frames
     """
     Resolution = namedtuple('Resolution', ['width', 'height'])
     ScaleAttempt = namedtuple('ScaleAttempt', ['descaled', 'rescaled', 'resolution', 'diff'])
@@ -157,27 +168,36 @@ def smart_descale(clip: vs.VideoNode,
     return descaled
 
 
-def smart_reupscale(clip: vs.VideoNode, width: int = None, height: int = None,
-                    kernel: str = 'bicubic', b: float = 0, c: float = 1/2, taps: int = 4,
+def smart_reupscale(clip: vs.VideoNode, width: Optional[int] = None, height: int = 1080,
+                    kernel: str = 'bicubic', b: float = 0, c: float = 1 / 2, taps: int = 4,
                     **znargs) -> vs.VideoNode:
-    funcname = "smart_reupscale"
     """
-    Stolen from Varde.
-    A quick 'n easy wrapper used to re-upscale a descaled clip using smart_descale.
+    A quick 'n easy wrapper used to re-upscale a clip descaled with smart_descale.
     Uses znedi3, which seems to miraculously work with a multi-res clip.
+
+    Stolen from Varde.
+
+    :param clip:         Input clip
+    :param width:        Upscale width. If None, determine from `height` assuming 16:9 aspect ratio (Default: None)
+    :param height:       Upscale height (Default: 1080)
+    :param kernel:       Kernel used to upscale (see :py:func:`lvsfunc.util.get_scale_filter`)
+    :param b:            B-param for bicubic kernel (Default: 0)
+    :param c:            C-param for bicubic kernel (Default: 1 / 2)
+    :param taps:         Taps param for lanczos kernel. (Default: 4)
+    :param znargs:       Arguments passed to znedi3
+
+    :return:             Reupscaled clip
     """
     def _transpose_shift(n, f, clip):
         try:
             h = f.props['descaleResolution']
         except:
-            raise ValueError(f"{funcname}: 'This clip was not descaled using smart_descale'")
+            raise ValueError(f"smart_reupscale: 'This clip was not descaled using smart_descale'")
         w = get_w(h)
         clip = core.resize.Bicubic(clip, w, h*2, src_top=.5)
         clip = core.std.Transpose(clip)
         return clip
 
-    if height is None:
-       raise ValueError(f"{funcname}: 'Please set the \"height\"!'")
     width = width or get_w(height)
 
     # Doubling and downscale to given "h"
@@ -202,23 +222,24 @@ def test_descale(clip: vs.VideoNode,
                  b: float = 1 / 3, c: float = 1 / 3,
                  taps: int = 3,
                  show_error: bool = True) -> vs.VideoNode:
-    funcname = "test_descale"
     """
-    Generic function to test descales with.
-    Descales and reupscales a given clip, allowing you to compare the two easily.
+    Generic function to test descales with;
+    descales and reupscales a given clip, allowing you to compare the two easily.
 
     When comparing, it is recommended to do atleast a 4x zoom using Nearest Neighbor.
     I also suggest using 'compare', as that will make comparison a lot easier.
 
-    Some of this code was leveraged from DescaleAA, and it also uses functions
-    available in fvsfunc.
+    Some of this code was leveraged from DescaleAA found in fvsfunc.
 
-    :param height: int:         Target descaled height.
-    :param kernel: str:         Descale kernel - 'bicubic'(default), 'bilinear', 'lanczos', 'spline16', or 'spline36'
-    :param b: float:            B-param for bicubic kernel. (Default value = 1 / 3)
-    :param c: float:            C-param for bicubic kernel. (Default value = 1 / 3)
-    :param taps: int:           Taps param for lanczos kernel. (Default value = 43)
-    :param show_error: bool:    Show diff between the original clip and the reupscaled clip
+    :param clip:           Input clip
+    :param height:         Target descaled height.
+    :param kernel:         Kernel used to descale (see :py:func:`lvsfunc.util.get_scale_filter`)
+    :param b:              B-param for bicubic kernel (Default: 1 / 3)
+    :param c:              C-param for bicubic kernel (Default: 1 / 3)
+    :param taps:           Taps param for lanczos kernel (Default: 3)
+    :param show_error:     Show diff between the original clip and the reupscaled clip (Default: True)
+
+    :return: A clip re-upscaled with the same kernel
     """
     if get_depth(clip) != 32:
         clip = util.resampler(clip, 32)
