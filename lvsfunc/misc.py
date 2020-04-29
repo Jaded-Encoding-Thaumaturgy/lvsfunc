@@ -4,8 +4,6 @@
 from functools import partial
 from typing import List, Optional, Tuple, Union
 
-import kagefunc as kgf
-import mvsfunc as mvf
 from vsutil import get_depth, is_image
 
 import vapoursynth as vs
@@ -15,23 +13,32 @@ from . import util
 core = vs.core
 
 
-def source(file: str, ref: vs.VideoNode = None,
+def source(file: str, ref: Optional[vs.VideoNode] = None,
            force_lsmas: bool = False,
            mpls: bool = False,  mpls_playlist: int = 0, mpls_angle: int = 0) -> vs.VideoNode:
-    funcname = "source"
     """
     Generic clip import function.
     Automatically determines if ffms2 or L-SMASH should be used to import a clip, but L-SMASH can be forced.
     It also automatically determines if an image has been imported.
     You can set its fps using 'fpsnum' and 'fpsden', or using a reference clip with 'ref'.
 
-    :param file: str:               OS absolute file location
-    :param ref: vs.VideoNode:       Use another clip as reference for the clip's format, resolution, and framerate
-    :param force_lsmas: bool:       Force files to be imported with L-SMASH
-    :param mpls: bool:              Load in a mpls file
-    :param mpls_playlist: int:     Playlist number, which is the number in mpls file name
-    :param mpls_angle: int:        Angle number to select in the mpls playlist
+    Dependencies:
+
+        * d2vsource (optional: d2v sources)
+        * dgdecodenv (optional: dgi sources)
+        * mvsfunc (optional: reference clip mode)
+        * vapoursynth-readmpls (optional: mpls sources)
+
+    :param file:              Input file
+    :param ref:               Use another clip as reference for the clip's format, resolution, and framerate (Default: None)
+    :param force_lsmas:       Force files to be imported with L-SMASH (Default: False)
+    :param mpls:              Load in a mpls file (Default: False)
+    :param mpls_playlist:     Playlist number, which is the number in mpls file name (Default: 0)
+    :param mpls_angle:        Angle number to select in the mpls playlist (Default: 0)
+
+    :return:                  Vapoursynth clip representing input file
     """
+
     # TODO: Consider adding kwargs for additional options,
     #       find a way to NOT have to rely on a million elif's
     if file.startswith('file:///'):
@@ -39,9 +46,9 @@ def source(file: str, ref: vs.VideoNode = None,
 
     # Error handling for some file types
     if file.endswith('.mpls') and mpls is False:
-        raise ValueError(f"{funcname}: 'Please set \"mpls = True\" and give a path to the base Blu-ray directory when trying to load in mpls files'")
+        raise ValueError(f"source: 'Please set \"mpls = True\" and give a path to the base Blu-ray directory when trying to load in mpls files'")
     if file.endswith('.vob') or file.endswith('.ts'):
-        raise ValueError(f"{funcname}: 'Please index VOB and TS files with d2v before importing them'")
+        raise ValueError(f"source: 'Please index VOB and TS files with d2v before importing them'")
 
     if force_lsmas:
         return core.lsmas.LWLibavSource(file)
@@ -63,27 +70,35 @@ def source(file: str, ref: vs.VideoNode = None,
             clip = core.ffms2.Source(file)
 
     if ref:
+        try:
+            import mvsfunc as mvf
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("source: missing dependency 'mvsfunc'")
+
         clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
         clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height, format=ref.format, matrix_s=mvf.GetMatrix(ref))
         if is_image(file):
             clip = clip*(ref.num_frames-1)
+
     return clip
 
 
 def replace_ranges(clip_a: vs.VideoNode,
                    clip_b: vs.VideoNode,
                    ranges: List[Union[int, Tuple[int, int]]]) -> vs.VideoNode:
-    funcname = "replace_ranges"
     """
-    Written by Louis.
     A replacement for ReplaceFramesSimple that uses ints and tuples rather than a string.
     Frame ranges are inclusive.
 
-    :param clip_a: vs.VideoNode:                        Original clip
-    :param clip_b: vs.VideoNode:                        Replacement clip
-    :param ranges: List[Union[int, Tuple[int, int]]]:   Ranges to replace clip_a (original clip) with clip_b (replacement clip).
-                                                        Integer values in the list indicate single frames,
-                                                        Tuple values indicate inclusive ranges.
+    Written by louis.
+
+    :param clip_a:     Original clip
+    :param clip_b:     Replacement clip
+    :param ranges:     Ranges to replace clip_a (original clip) with clip_b (replacement clip).
+                       Integer values in the list indicate single frames,
+                       Tuple values indicate inclusive ranges.
+
+    :return:           Clip with ranges from clip_a replaced with clip_b
     """
     out = clip_a
     for r in ranges:
@@ -114,9 +129,17 @@ def edgefixer(clip: vs.VideoNode,
 
     ...If possible, you should be using bbmod instead, though.
 
-    :param left: List[int]:        Amount of pixels to fix. Extends to right, top, and bottom
-    :param radius: List[int]:      Radius for edgefixing
-    :param full_range: bool:       Does not run the expression over the clip to fix over/undershoot
+    Dependencies: vs-continuityfixer
+
+    :param clip:        Input clip
+    :param left:        Number of pixels to fix on the left (Default: None)
+    :param right:       Number of pixels to fix on the right (Default: None)
+    :param top:         Number of pixels to fix on the top (Default: None)
+    :param bottom:      Number of pixels to fix on the bottom (Default: None)
+    :param radius:      Radius for edgefixing (Default: None)
+    :param full_range:  Does not run the expression over the clip to fix over/undershoot (Default: False)
+
+    :return:            Clip with fixed edges
     """
 
     if left is None:
@@ -133,11 +156,13 @@ def edgefixer(clip: vs.VideoNode,
 
 
 def fix_cr_tint(clip: vs.VideoNode, value: int = 128) -> vs.VideoNode:
-    funcname = "fix_cr_tint"
     """
-    Tries to forcibly fix Crunchyroll's green tint by adding pixel values
+    Tries to forcibly fix Crunchyroll's green tint by adding pixel values.
 
-    :param value: int:  Values added to every pixel
+    :param clip:   Input clip
+    :param value:  Value added to every pixel (Default: 128)
+
+    :return:       Clip with CR tint fixed
     """
     if get_depth(clip) != 16:
         clip = util.resampler(clip, 16)
@@ -145,8 +170,7 @@ def fix_cr_tint(clip: vs.VideoNode, value: int = 128) -> vs.VideoNode:
 
 
 def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
-               threshold: float = .25, threshold_range: int = None) -> vs.VideoNode:
-    funcname = "limit_dark"
+               threshold: float = 0.25, threshold_range: Optional[int] = None) -> vs.VideoNode:
     """
     Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold.
     This way you can run lighter (or heavier) filtering on scenes that are almost entirely dark.
@@ -154,8 +178,12 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
     There is one caveat, however: You can get scenes where every other frame is filtered
     rather than the entire scene. Please do take care to avoid that if possible.
 
-    threshold: float:       Threshold for frame averages to be filtered
-    threshold_range: int:   Threshold for a range of frame averages to be filtered
+    :param clip:              Input clip
+    :param filtered:          Filtered clip
+    :param threshold:         Threshold for frame averages to be filtered (Default: 0.25)
+    :param threshold_range:   Threshold for a range of frame averages to be filtered (Default: None)
+
+    :return:                  Conditionally filtered clip
     """
     def _diff(n, f, clip, filtered, threshold, threshold_range):
         if threshold_range:
@@ -164,27 +192,44 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
             return clip if f.props.PlaneStatsAverage > threshold else filtered
 
     if threshold_range and threshold_range > threshold:
-        raise ValueError(f"{funcname}: '\"threshold_range\" ({threshold_range}) must be a lower value than \"threshold\" ({threshold})'")
+        raise ValueError(f"limit_dark: '\"threshold_range\" ({threshold_range}) must be a lower value than \"threshold\" ({threshold})'")
 
     avg = core.std.PlaneStats(clip)
     return core.std.FrameEval(clip, partial(_diff, clip=clip, filtered=filtered, threshold=threshold, threshold_range=threshold_range), avg)
 
 
-def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode = None,
+def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode = Optional[None],
              width: int = 1, height: int = 1,
              offset_x: int = 0, offset_y: int = 0,
              width2: Optional[int] = None, height2: Optional[int] = None,
-             offset_x2: int = 0, offset_y2: Optional[int] = None,
+             offset_x2: Optional[int] = None, offset_y2: Optional[int] = None,
              show_mask: bool = False) -> vs.VideoNode:
-    funcname = "wipe_row"
     """
     Simple function to wipe a row with a blank clip.
     You can also give it a different clip to replace a row with.
 
     if width2, height2, etc. are given, it will merge the two masks.
 
-    :param secondary: vs.VideoNode:     Appoint a different clip to replace wiped rows with
+    Dependencies: kagefunc
+
+    :param clip:           Input clip
+    :param secondary:      Clip to replace wiped rows with (Default: None)
+    :param width:          Width of row (Default: 1)
+    :param height:         Height of row (Default: 1)
+    :param offset_x:       X-offset of row (Default: 0)
+    :param offset_y:       Y-offset of row (Default: 0)
+    :param width2:         Width of row 2 (Default: None)
+    :param height2:        Height of row 2 (Default: None)
+    :param offset_x2:      X-offset of row 2 (Default: None)
+    :param offset_y2:      Y-offset of row 2 (Default: None)
+
+    :return:               Clip with rows wiped
     """
+    try:
+        import kagefunc as kgf
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("wipe_row: missing dependency 'kagefunc'")
+
     secondary = secondary or core.std.BlankClip(clip)
 
     sqmask = kgf.squaremask(clip, width, height, offset_x, offset_y)

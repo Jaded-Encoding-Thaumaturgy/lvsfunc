@@ -5,7 +5,6 @@
 from functools import partial
 from typing import Optional
 
-from havsfunc import QTGMC
 
 import vapoursynth as vs
 
@@ -14,8 +13,7 @@ from . import util
 core = vs.core
 
 
-def deblend(clip: vs.VideoNode, rep: int = None) -> vs.VideoNode:
-    funcname = "deblend"
+def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:
     """
     A simple function to fix deblending for interlaced video with an AABBA blending pattern,
     where A is a normal frame and B is a blended frame.
@@ -30,7 +28,12 @@ def deblend(clip: vs.VideoNode, rep: int = None) -> vs.VideoNode:
     For more information, please refer to this blogpost by torchlight:
     https://mechaweaponsvidya.wordpress.com/2012/09/13/adventures-in-deblending/
 
-    :param rep: int: Repair mode for the deblended frames
+    Dependencies: rgsf (optional: 32bit clip)
+
+    :param clip:     Input clip
+    :param rep:      Repair mode for the deblended frames, no repair if None (Default: None)
+
+    :return:         Deblended clip
     """
 
     blends_a = range(2, clip.num_frames-1, 5)
@@ -54,28 +57,36 @@ def deblend(clip: vs.VideoNode, rep: int = None) -> vs.VideoNode:
 
 
 def decomb(clip: vs.VideoNode,
-           TFF: Optional[bool] = None,
+           TFF: bool,
            decimate: bool = True,
            vinv: bool = False,
            sharpen: bool = False, dir: str = 'v',
            rep: Optional[int] = None):
-    funcname = "decomb"
     """
-    Function written by Midlifecrisis from the WEEB AUTISM server, and slightly modified by me.
-
-    This function does some aggressive filtering to get rid of the combing on a interlaced/telecined source.
+    Does some aggressive filtering to get rid of the combing on a interlaced/telecined source.
     You can also allow it to decimate the clip, or keep it disabled if you wish to handle the decimating yourself.
     Vinverse can also be disabled, allowing for less aggressive decombing. Note that this means far more combing will be left over!
 
-    :param TFF: bool:           Top-Field-First. Mandatory to set. Set to either "True" or False"
-    :param decimate: bool:      Decimate the video after deinterlacing
-    :param vinv: bool:          Use vinverse to get rid of additional combing
-    :param sharpen: bool:       Unsharpen after deinterlacing
-    :param dir: str:            Directional vector. 'v' = Vertical, 'h' = Horizontal
-    :param rep: int:            Repair mode for repairing the decombed frame using the original src frame
+    Function written by Midlifecrisis from the WEEB AUTISM server, and slightly modified by LightArrowsEXE.
+
+    Dependencies: combmask, havsfunc (QTGMC), rgsf (optional: 32bit clip)
+
+    Deciphering havsfunc's dependencies is left as an exercise for the user.
+
+    :param clip:          Input clip
+    :param TFF:           Top-Field-First
+    :param decimate:      Decimate the video after deinterlacing (Default: True)
+    :param vinv:          Use vinverse to get rid of additional combing (Default: False)
+    :param sharpen:       Unsharpen after deinterlacing (Default: False)
+    :param dir:           Directional vector. 'v' = Vertical, 'h' = Horizontal (Default: v)
+    :param rep:           Repair mode for repairing the decombed frame using the original src frame (Default: None)
+
+    :return:              Decombed clip
     """
-    if TFF is None:
-        raise ValueError(f"{funcname}: '\"TFF\" has to be set to either \"True\" or \"False\"!'")
+    try:
+        from havsfunc import QTGMC
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("decomb: missing dependency 'havsfunc'")
 
     VFM_TFF = int(TFF)
 
@@ -102,17 +113,21 @@ def dir_deshimmer(clip: vs.VideoNode, TFF: bool = True,
                   dh: bool = False,
                   transpose: bool = True,
                   show_mask: bool = False) -> vs.VideoNode:
-    funcname = "dir_deshimmer"
     """
-    Directional deshimmering function
+    Directional deshimmering function.
 
     Only works (in the few instances it does, anyway) for obvious horizontal and vertical shimmering.
     Odds of success are low. But if you're desperate, it's worth a shot.
 
-    :param dh: bool:           Interpolate to double the height of given clip beforehand
-    :param TFF: bool:          Top Field First. Set to False if TFF doesn't work
-    :param transpose: bool:    Transpose the clip before attempting to deshimmer
-    :param show_mask: bool:    Show nnedi3's mask
+    Dependencies: vapoursynth-nnedi3
+
+    :param clip:         Input clip
+    :param TFF:          Top Field First. Set to False if TFF doesn't work (Default: True)
+    :param dh:           Interpolate to double the height of given clip beforehand (Default: False)
+    :param transpose:    Transpose the clip before attempting to deshimmer (Default: True)
+    :param show_mask:    Show nnedi3's mask (Default: False)
+
+    :return:             Deshimmered clip
     """
     clip = core.std.Transpose(clip) if transpose else clip
     deshim = core.nnedi3.nnedi3(clip, field=TFF, dh=dh, show_mask=show_mask)
@@ -123,23 +138,27 @@ def dir_unsharp(clip: vs.VideoNode,
                 strength: float = 1.0,
                 dir: str = 'v',
                 h: float = 3.4) -> vs.VideoNode:
-    funcname = "dir_unsharp"
     """
-    A diff'd directional unsharpening function.
+    Diff'd directional unsharpening function.
     Special thanks to thebombzen and kageru for essentially writing the bulk of this.
 
     Performs one-dimensional sharpening as such: "Original + (Original - blurred) * Strength"
 
     This particular function is recommended for SD content, specifically after deinterlacing.
 
-    :param strength: float:        Amount to multiply blurred clip with original clip by
-    :param dir: str:               Directional vector. 'v' = Vertical, 'h' = Horizontal
-    :param h: float:               Sigma for knlmeans, to prevent noise from getting sharpened
+    Dependencies: knlmeanscl
+
+    :param clip:            Input clip
+    :param strength:        Amount to multiply blurred clip with original clip by (Default: 1.0)
+    :param dir:             Directional vector. 'v' = Vertical, 'h' = Horizontal (Default: v)
+    :param h:               Sigma for knlmeans, to prevent noise from getting sharpened (Default: 3.4)
+
+    :return:                Unsharpened clip
     """
 
     dir = dir.lower()
     if dir not in ['v', 'h']:
-        raise ValueError(f"{funcname}: '\"dir\" must be either \"v\" or \"h\"'")
+        raise ValueError(f"dir_unsharp: '\"dir\" must be either \"v\" or \"h\"'")
 
     den = core.knlm.KNLMeansCL(clip, d=3, a=3, h=h)
     diff = core.std.MakeDiff(clip, den)
