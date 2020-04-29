@@ -24,8 +24,6 @@ lvsfunc depends on the following third-party scripts:
 * `havsfunc <https://github.com/HomeOfVapourSynthEvolution/havsfunc>`_
 * `kagefunc <https://github.com/Irrational-Encoding-Wizardry/kagefunc>`_
 * `mvsfunc <https://github.com/HomeOfVapourSynthEvolution/mvsfunc>`_
-* `nnedi3_resample <https://github.com/mawen1250/VapourSynth-script/blob/master/nnedi3_resample.py>`_
-* `nnedi3_rpow2 <https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py>`_
 * `vsTAAmbk <https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk>`_
 * `vsutil <https://github.com/Irrational-Encoding-Wizardry/vsutil>`_
 
@@ -43,7 +41,6 @@ The following Vapoursynth libraries are also required for full functionality:
 * `vapoursynth-eedi3 <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-EEDI3>`_
 * `vapoursynth-readmpls <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-ReadMpls>`_
 * `vapoursynth-retinex <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-Retinex>`_
-* `vapoursynth-waifu2x-caffe <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-Waifu2x-caffe>`_
 * `vapoursynth-tcanny <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-TCanny>`_
 * `vs-continuityfixer <https://github.com/MonoS/VS-ContinuityFixer>`_
 * `zimg <https://github.com/sekrit-twc/zimg>`_
