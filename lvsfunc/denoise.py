@@ -1,8 +1,6 @@
 """
     Wrappers and masks for denoising.
 """
-import havsfunc as haf
-import mvsfunc as mvf
 from vsutil import join, split
 from typing import Optional
 
@@ -28,6 +26,10 @@ def quick_denoise(clip: vs.VideoNode,
 
     Special thanks to kageru for helping me out with some ideas and pointers.
 
+    Dependencies: havsfunc (optional: SMDegrain mode), mvsfunc
+
+    Deciphering havsfunc's dependencies is left as an excercise for the user.
+
     :param clip:         Input clip
     :param cmode:        Chroma denoising modes:
                           'knlm' - Use knlmeans for denoising the chroma (Default),
@@ -40,6 +42,11 @@ def quick_denoise(clip: vs.VideoNode,
 
     :return:             Denoised clip
     """
+    try:
+        import mvsfunc as mvf
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("quick_denoise: missing dependency 'mvsfunc'")
+
     planes = split(clip)
     cmode = cmode.lower()
 
@@ -56,6 +63,10 @@ def quick_denoise(clip: vs.VideoNode,
         except KeyError:
             raise ValueError(f"denoise: '\"sbsize\" not specified'")
     elif cmode in [4, 'smd', 'smdegrain']:
+        try:
+            import havsfunc as haf
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("quick_denoise: missing dependency 'havsfunc'")
         planes[1] = haf.SMDegrain(planes[1], prefilter=3, **kwargs)
         planes[2] = haf.SMDegrain(planes[2], prefilter=3, **kwargs)
     else:

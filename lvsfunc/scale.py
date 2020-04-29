@@ -7,19 +7,11 @@ from functools import partial
 from typing import List, Optional, Union
 from fractions import Fraction
 
-from descale import get_filter
-from nnedi3_resample import \
-    nnedi3_resample  # https://github.com/mawen1250/VapourSynth-script/blob/master/nnedi3_resample.py
 from vsutil import get_depth, get_w, get_y, join, plane, split
 
 import vapoursynth as vs
 
 from . import aa, util
-
-try:
-    import nnedi3_rpow2 as nnp2                 # https://github.com/darealshinji/vapoursynth-plugins/blob/master/scripts/nnedi3_rpow2.py
-except ImportError:
-    import edi_rpow2 as nnp2                    # https://gist.github.com/YamashitaRen/020c497524e794779d9c
 
 core = vs.core
 
@@ -44,6 +36,19 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     The code for _get_error was mostly taken from kageru's Made in Abyss script.
     Special thanks to Lypheo for holding my hand as this was written.
 
+    Dependencies:
+
+    * fmtconv
+    * mvsfunc (optional: nnedi3_resample)
+    * nnedi3_rpow2 or edi_rpow2 (optional: nnedi3_rpow2 upscale)
+    * nnedi3_resample (optional: nnedi3_resample upscale)
+    * rgsf (optional: upscaled_sraa with 32bit clip)
+    * vapoursynth-descale
+    * vapoursynth-eedi3 (optional: upscaled_sraa upscale)
+    * vapoursynth-nnedi3 (optional: nnedi3_resample, nnedi3_rpow2, upscaled_sraa upscale)
+    * vapoursynth-waifu2x-caffe (optional: waifu2x upscale)
+    * zimg
+
     :param clip:                   Input clip
     :param height:                 Target descale height
     :param kernel:                 Kernel used to descale (see :py:func:`lvsfunc.util.get_scale_filter`, Default: bicubic)
@@ -51,11 +56,15 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     :param c:                      C-param for bicubic kernel (Default: 1 / 3)
     :param taps:                   Taps param for lanczos kernel (Default: 4)
     :param threshold:              Threshold for deciding to descale or leave the original frame (Default: 0.003)
-    :param upscaler:               Which upscaler to use ("nnedi3_rpow2" (default), "upscaled_sraa", "waifu2x" (caffe))
+    :param upscaler:               Which upscaler to use ("nnedi3_rpow2" (default), "nnedi3_resample", "upscaled_sraa", "waifu2x" (caffe))
     :param upscale_args:           Arguments passed to upscaler
 
     :return:                       Constant-resolution rescaled clip
     """
+    try:
+        from descale import get_filter
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("conditional_descale: missing dependency 'descale'")
 
     b = float(b)
     c = float(c)
@@ -76,8 +85,19 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     descaled, diff = _get_error(planes[0], height=height, kernel=kernel, b=b, c=c, taps=taps)
 
     if upscaler in ['nnedi3_rpow2', 'nnedi3', 'nn3_rp2']:
+        try:
+            import nnedi3_rpow2 as nnp2
+        except ModuleNotFoundError:
+            try:
+                import edi_rpow2 as nnp2
+            except ModuleNotFoundError:
+                raise ModuleNotFoundError("conditional_descale: missing dependency 'nnedi3_rpow2' or 'edi_rpow2'")
         planes[0] = nnp2(descaled, upscale_args, width=clip.width, height=clip.height)
     elif upscaler in ['nnedi3_resample', 'nn3_res']:
+        try:
+            from nnedi3_resample import nnedi3_resample
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("conditional_descale: missing dependency 'nnedi3_resample'")
         nnargs = dict(kernel='gauss', invks=True, invkstaps=2, taps=1, a1=32, nns=4, qual=2, pscrn=4) or upscale_args
         planes[0] = nnedi3_resample(descaled, clip.width, clip.height, nnargs)
     elif upscaler in ['upscaled_sraa', 'up_sraa', 'sraa']:
@@ -119,6 +139,8 @@ def smart_descale(clip: vs.VideoNode,
     This will return a proper YUV clip as well. If rescaled is set to False, the returned clip
     will be GRAY.
 
+    Dependencies: vapoursynth-descale
+
     :param clip:             Input clip
     :param resolutions:      A list of resolutions to descale to
     :param kernel:           Kernel used to descale (see :py:func:`lvsfunc.util.get_scale_filter`, Default: bicubic)
@@ -130,9 +152,14 @@ def smart_descale(clip: vs.VideoNode,
 
     :return:                 Variable-resolution clip containing descaled frames
     """
+    try:
+        from descale import get_filter
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("smart_descale: missing dependency 'descale'")
 
     b = float(b)
     c = float(c)
+
     Resolution = namedtuple('Resolution', ['width', 'height'])
     ScaleAttempt = namedtuple('ScaleAttempt', ['descaled', 'rescaled', 'resolution', 'diff'])
     clip_c = clip
@@ -188,6 +215,8 @@ def smart_reupscale(clip: vs.VideoNode, width: Optional[int] = None, height: int
     Uses znedi3, which seems to miraculously work with a multi-res clip.
 
     Stolen from Varde.
+
+    Dependencies: znedi3
 
     :param clip:         Input clip
     :param width:        Upscale width. If None, determine from `height` assuming 16:9 aspect ratio (Default: None)
@@ -248,6 +277,8 @@ def test_descale(clip: vs.VideoNode,
 
     Some of this code was leveraged from DescaleAA found in fvsfunc.
 
+    Dependencies: vapoursynth-descale
+
     :param clip:           Input clip
     :param height:         Target descaled height.
     :param kernel:         Kernel used to descale (see :py:func:`lvsfunc.util.get_scale_filter`)
@@ -258,6 +289,10 @@ def test_descale(clip: vs.VideoNode,
 
     :return: A clip re-upscaled with the same kernel
     """
+    try:
+        from descale import get_filter
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("test_descale: missing dependency 'descale'")
 
     b = float(b)
     c = float(c)

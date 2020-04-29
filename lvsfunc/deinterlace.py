@@ -5,7 +5,6 @@
 from functools import partial
 from typing import Optional
 
-from havsfunc import QTGMC
 
 import vapoursynth as vs
 
@@ -28,6 +27,8 @@ def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:
 
     For more information, please refer to this blogpost by torchlight:
     https://mechaweaponsvidya.wordpress.com/2012/09/13/adventures-in-deblending/
+
+    Dependencies: rgsf (optional: 32bit clip)
 
     :param clip:     Input clip
     :param rep:      Repair mode for the deblended frames, no repair if None (Default: None)
@@ -68,6 +69,10 @@ def decomb(clip: vs.VideoNode,
 
     Function written by Midlifecrisis from the WEEB AUTISM server, and slightly modified by LightArrowsEXE.
 
+    Dependencies: combmask, havsfunc (QTGMC), rgsf (optional: 32bit clip)
+
+    Deciphering havsfunc's dependencies is left as an exercise for the user.
+
     :param clip:          Input clip
     :param TFF:           Top-Field-First
     :param decimate:      Decimate the video after deinterlacing (Default: True)
@@ -78,6 +83,10 @@ def decomb(clip: vs.VideoNode,
 
     :return:              Decombed clip
     """
+    try:
+        from havsfunc import QTGMC
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("decomb: missing dependency 'havsfunc'")
 
     VFM_TFF = int(TFF)
 
@@ -110,6 +119,8 @@ def dir_deshimmer(clip: vs.VideoNode, TFF: bool = True,
     Only works (in the few instances it does, anyway) for obvious horizontal and vertical shimmering.
     Odds of success are low. But if you're desperate, it's worth a shot.
 
+    Dependencies: vapoursynth-nnedi3
+
     :param clip:         Input clip
     :param TFF:          Top Field First. Set to False if TFF doesn't work (Default: True)
     :param dh:           Interpolate to double the height of given clip beforehand (Default: False)
@@ -134,6 +145,8 @@ def dir_unsharp(clip: vs.VideoNode,
     Performs one-dimensional sharpening as such: "Original + (Original - blurred) * Strength"
 
     This particular function is recommended for SD content, specifically after deinterlacing.
+
+    Dependencies: knlmeanscl
 
     :param clip:            Input clip
     :param strength:        Amount to multiply blurred clip with original clip by (Default: 1.0)

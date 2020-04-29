@@ -5,7 +5,6 @@
 import random
 from typing import List, Optional
 
-import mvsfunc as mvf
 from vsutil import get_subsampling, get_w, split
 
 import vapoursynth as vs
@@ -27,6 +26,8 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     Alias for this function is "comp".
 
+    Dependencies: mvsfunc
+
     :param clip_a:              Clip to compare
     :param clip_b:              Second clip to compare
     :param frames:              List of frames to compare (Default: None)
@@ -37,6 +38,11 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     :return:                    Interleaved clip containing specified frames from clip_a and clip_b
     """
+    try:
+        import mvsfunc as mvf
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("compare: missing dependency 'mvsfunc'")
+
     def _resample(clip: vs.VideoNode) -> vs.VideoNode:
         # Resampling to 8bit and RGB to properly display how it appears on your screen
         return util.resampler(clip.resize.Point(format=vs.RGB24, matrix_in_s=mvf.GetMatrix(clip)), 8)

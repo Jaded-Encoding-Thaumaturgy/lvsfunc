@@ -1,8 +1,6 @@
 """
     Functions for various anti-aliasing functions and wrappers.
 """
-import kagefunc as kgf
-from vsTAAmbk import TAAmbk
 from vsutil import get_w, get_y, split
 from typing import Optional
 
@@ -21,6 +19,16 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: int = 1,
     Function written by Zastin to clamp eedi3 to nnedi3 for the purpose of reducing artifacts.
     This should fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
 
+    Dependencies:
+
+    * kagefunc (optional: retinex edgemask)
+    * vapoursynth-retinex (optional: retinex edgemask)
+    * vapoursynth-tcanny (optional: retinex edgemask)
+    * vapoursynth-eedi3
+    * vapoursynth-nnedi3 or znedi3
+    * vapoursynth-nnedi3cl (optional: opencl)
+    * vsTAAmbk
+
     :param clip:                Input clip
     :param strength:            Set threshold strength (Default: 1)
     :param mask:                Clip to use for custom mask (Default: None)
@@ -30,6 +38,11 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: int = 1,
 
     :return:                    Antialiased clip
     """
+    try:
+        from vsTAAmbk import TAAmbk
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("nnedi3_clamp: missing dependency 'vsTAAmbk'")
+
     bits = clip.format.bits_per_sample - 8
     thr = strength * (1 >> bits)
     strong = TAAmbk(clip, aatype='Eedi3', alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, mtype=0,
@@ -44,6 +57,10 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: int = 1,
     if mask:
         merged = clip.std.MaskedMerge(aa, mask, planes=0)
     elif ret_mask:
+        try:
+            import kagefunc as kgf
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("nnedi3_clamp: missing dependency 'kagefunc'")
         mask = kgf.retinex_edgemask(clip, 1).std.Binarize()
         merged = clip.std.MaskedMerge(aa, mask, planes=0)
     else:
@@ -63,6 +80,8 @@ def transpose_aa(clip: vs.VideoNode,
     over a clip by using Nnedi3, transposing, using Nnedi3 again, and transposing a final time.
     This results in overall stronger anti-aliasing.
     Useful for shows like Yuru Camp with bad lineart problems.
+
+    Dependencies: vapoursynth-eedi3, vapoursynth-nnedi3, znedi3
 
     :param clip:      Input clip
     :param eedi3:     Use eedi3 for the interpolation (Default: False)
@@ -112,6 +131,8 @@ def upscaled_sraa(clip: vs.VideoNode,
     an upscaled single-rate AA to deal with heavy aliasing.
     Useful for Web rips, where the source quality is not good enough to descale,
     but you still want to deal with some bad aliasing and lineart.
+
+    Dependencies: fmtconv, rgsf (optional: 32bit clip), vapoursynth-eedi3, vapoursynth-nnedi3
 
     :param clip:            Input clip
     :param rfactor:         Image enlargement factor. 1.3..2 makes it comparable in strength to vsTAAmbk.

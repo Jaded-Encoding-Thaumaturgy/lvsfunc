@@ -40,11 +40,18 @@ The following Vapoursynth libraries are also required for full functionality:
 * `vapoursynth-descale <https://github.com/Irrational-Encoding-Wizardry/vapoursynth-descale>`_
 * `vapoursynth-nnedi3 <https://github.com/dubhater/vapoursynth-nnedi3>`_
 * `vapoursynth-eedi3 <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-EEDI3>`_
+* `vapoursynth-readmpls <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-ReadMpls>`_
+* `vapoursynth-retinex <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-Retinex>`_
 * `vapoursynth-waifu2x-caffe <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-Waifu2x-caffe>`_
+* `vapoursynth-tcanny <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-TCanny>`_
 * `vs-continuityfixer <https://github.com/MonoS/VS-ContinuityFixer>`_
+* `zimg <https://github.com/sekrit-twc/zimg>`_
 * `znedi3 <https://github.com/sekrit-twc/znedi3>`_
 
 This list is non-exhaustive, as dependencies may have their own dependencies.
+An attempt has been made to document major dependencies on a per-function basis.
+Unfortunately, \*func family modules have complex dependency graphs and documenting
+them is beyond the scope of this module.
 
 Modules
 -------

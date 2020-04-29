@@ -91,6 +91,8 @@ def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
     Returns rgvs.Repair if the clip is 16 bit or lower, else rgsf.Repair.
     This is done because rgvs doesn't work with float, but rgsf does for whatever reason.
 
+    Dependencies: rgsf
+
     :param clip: Input clip
 
     :return:     Appropriate repair function for input clip's depth
@@ -101,6 +103,8 @@ def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 def create_dmask(clip: vs.VideoNode, luma_scaling: float = 8.0) -> vs.VideoNode:
     """
     A wrapper to create a luma mask for denoising, debanding, etc.
+
+    Dependencies: adaptivegrain
 
     :param clip:         Input clip
     :param luma_scaling: Luma scaling factor (Default: 8.0)

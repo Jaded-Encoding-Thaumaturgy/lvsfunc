@@ -4,8 +4,6 @@
 from functools import partial
 from typing import List, Optional, Tuple, Union
 
-import kagefunc as kgf
-import mvsfunc as mvf
 from vsutil import get_depth, is_image
 
 import vapoursynth as vs
@@ -24,6 +22,13 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
     It also automatically determines if an image has been imported.
     You can set its fps using 'fpsnum' and 'fpsden', or using a reference clip with 'ref'.
 
+    Dependencies:
+
+        * d2vsource (optional: d2v sources)
+        * dgdecodenv (optional: dgi sources)
+        * mvsfunc (optional: reference clip mode)
+        * vapoursynth-readmpls (optional: mpls sources)
+
     :param file:              Input file
     :param ref:               Use another clip as reference for the clip's format, resolution, and framerate (Default: None)
     :param force_lsmas:       Force files to be imported with L-SMASH (Default: False)
@@ -33,6 +38,7 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
 
     :return:                  Vapoursynth clip representing input file
     """
+
     # TODO: Consider adding kwargs for additional options,
     #       find a way to NOT have to rely on a million elif's
     if file.startswith('file:///'):
@@ -64,10 +70,16 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
             clip = core.ffms2.Source(file)
 
     if ref:
+        try:
+            import mvsfunc as mvf
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("source: missing dependency 'mvsfunc'")
+
         clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
         clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height, format=ref.format, matrix_s=mvf.GetMatrix(ref))
         if is_image(file):
             clip = clip*(ref.num_frames-1)
+
     return clip
 
 
@@ -116,6 +128,8 @@ def edgefixer(clip: vs.VideoNode,
     and adds what are in my opinion "more sane" ways of handling the parameters and given values.
 
     ...If possible, you should be using bbmod instead, though.
+
+    Dependencies: vs-continuityfixer
 
     :param clip:        Input clip
     :param left:        Number of pixels to fix on the left (Default: None)
@@ -196,6 +210,8 @@ def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode = Optional[None],
 
     if width2, height2, etc. are given, it will merge the two masks.
 
+    Dependencies: kagefunc
+
     :param clip:           Input clip
     :param secondary:      Clip to replace wiped rows with (Default: None)
     :param width:          Width of row (Default: 1)
@@ -209,6 +225,11 @@ def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode = Optional[None],
 
     :return:               Clip with rows wiped
     """
+    try:
+        import kagefunc as kgf
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("wipe_row: missing dependency 'kagefunc'")
+
     secondary = secondary or core.std.BlankClip(clip)
 
     sqmask = kgf.squaremask(clip, width, height, offset_x, offset_y)
