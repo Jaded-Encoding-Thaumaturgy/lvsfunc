@@ -70,6 +70,8 @@ html_static_path = ['_static']
 
 autosummary_generate = True
 
+autodoc_mock_imports = ["vsutil", "vapoursynth"]
+
 # -- Extension configuration -------------------------------------------------
 
 # -- Options for todo extension ----------------------------------------------
