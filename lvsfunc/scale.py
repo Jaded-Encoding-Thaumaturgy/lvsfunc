@@ -4,7 +4,8 @@
 import math
 from collections import namedtuple
 from functools import partial
-from typing import List, Optional
+from typing import List, Optional, Union
+from fractions import Fraction
 
 from descale import get_filter
 from nnedi3_resample import \
@@ -25,7 +26,8 @@ core = vs.core
 
 def conditional_descale(clip: vs.VideoNode, height: int,
                         kernel: str = 'bicubic',
-                        b: float = 1 / 3, c: float = 1 / 3,
+                        b: Union[float, Fraction] = Fraction(1, 3),
+                        c: Union[float, Fraction] = Fraction(1, 3),
                         taps: int = 4,
                         threshold: float = 0.003,
                         upscaler: str = "nnedi3_rpow2",
@@ -54,6 +56,10 @@ def conditional_descale(clip: vs.VideoNode, height: int,
 
     :return:                       Constant-resolution rescaled clip
     """
+
+    b = float(b)
+    c = float(c)
+
     def _get_error(clip, height, kernel, b, c, taps):
         descale = get_filter(b, c, taps, kernel)(clip, get_w(height, clip.width / clip.height), height)
         upscale = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(clip, clip.width, clip.height)
@@ -94,7 +100,8 @@ def conditional_descale(clip: vs.VideoNode, height: int,
 def smart_descale(clip: vs.VideoNode,
                   resolutions: List[int],
                   kernel: str = 'bicubic',
-                  b: float = 0, c: float = 1/2, taps: int = 4,
+                  b: Union[float, Fraction] = Fraction(0),
+                  c: Union[float, Fraction] = Fraction(1, 2), taps: int = 4,
                   thr: float = 0.05, rescale: bool = False) -> vs.VideoNode:
     """
     Allows you to descale to multiple native resolutions.
@@ -123,6 +130,9 @@ def smart_descale(clip: vs.VideoNode,
 
     :return:                 Variable-resolution clip containing descaled frames
     """
+
+    b = float(b)
+    c = float(c)
     Resolution = namedtuple('Resolution', ['width', 'height'])
     ScaleAttempt = namedtuple('ScaleAttempt', ['descaled', 'rescaled', 'resolution', 'diff'])
     clip_c = clip
@@ -169,7 +179,9 @@ def smart_descale(clip: vs.VideoNode,
 
 
 def smart_reupscale(clip: vs.VideoNode, width: Optional[int] = None, height: int = 1080,
-                    kernel: str = 'bicubic', b: float = 0, c: float = 1 / 2, taps: int = 4,
+                    kernel: str = 'bicubic',
+                    b: Union[float, Fraction] = Fraction(0),
+                    c: Union[float, Fraction] = Fraction(1, 2), taps: int = 4,
                     **znargs) -> vs.VideoNode:
     """
     A quick 'n easy wrapper used to re-upscale a clip descaled with smart_descale.
@@ -188,6 +200,10 @@ def smart_reupscale(clip: vs.VideoNode, width: Optional[int] = None, height: int
 
     :return:             Reupscaled clip
     """
+
+    b = float(b)
+    c = float(c)
+
     def _transpose_shift(n, f, clip):
         try:
             h = f.props['descaleResolution']
@@ -219,7 +235,8 @@ def smart_reupscale(clip: vs.VideoNode, width: Optional[int] = None, height: int
 def test_descale(clip: vs.VideoNode,
                  height: int,
                  kernel: str = 'bicubic',
-                 b: float = 1 / 3, c: float = 1 / 3,
+                 b: Union[float, Fraction] = Fraction(1, 3),
+                 c: Union[float, Fraction] = Fraction(1, 3),
                  taps: int = 3,
                  show_error: bool = True) -> vs.VideoNode:
     """
@@ -241,6 +258,10 @@ def test_descale(clip: vs.VideoNode,
 
     :return: A clip re-upscaled with the same kernel
     """
+
+    b = float(b)
+    c = float(c)
+
     if get_depth(clip) != 32:
         clip = util.resampler(clip, 32)
 
