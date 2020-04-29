@@ -1,8 +1,9 @@
 """
     Functions for various anti-aliasing functions and wrappers.
 """
-from vsutil import get_w, get_y, split
 from typing import Optional
+
+from vsutil import get_w, get_y, split
 
 import vapoursynth as vs
 
@@ -16,8 +17,10 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: int = 1,
                   show_mask: bool = False,
                   opencl: bool = False) -> vs.VideoNode:
     """
-    Function written by Zastin to clamp eedi3 to nnedi3 for the purpose of reducing artifacts.
+    A function that clamps eedi3 to nnedi3 for the purpose of reducing eedi3 artifacts.
     This should fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
+
+    Original function written by Zastin, modified by LightArrowsEXE.
 
     Dependencies:
 
@@ -76,10 +79,11 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: int = 1,
 def transpose_aa(clip: vs.VideoNode,
                  eedi3: bool = False) -> vs.VideoNode:
     """
-    Function written by Zastin and modified by LightArrowsEXE to perform anti-aliasing
-    over a clip by using Nnedi3, transposing, using Nnedi3 again, and transposing a final time.
+    Function that performs anti-aliasing over a clip by using nnedi3/eedi3 and tranposing multiple times.
     This results in overall stronger anti-aliasing.
     Useful for shows like Yuru Camp with bad lineart problems.
+
+    Original function written by Zastin, modified by LightArrowsEXE.
 
     Dependencies: vapoursynth-eedi3, vapoursynth-nnedi3, znedi3
 
@@ -127,10 +131,11 @@ def upscaled_sraa(clip: vs.VideoNode,
                   h: Optional[int] = None, ar: Optional[int] = None,
                   sharp_downscale: bool = False) -> vs.VideoNode:
     """
-    Another AA written by Zastin and modified by LightArrowsEXE to perform
-    an upscaled single-rate AA to deal with heavy aliasing.
+    A function that performs an upscaled single-rate AA to deal with heavy aliasing and broken-up lineart.
     Useful for Web rips, where the source quality is not good enough to descale,
     but you still want to deal with some bad aliasing and lineart.
+
+    Original function written by Zastin, heavily modified by LightArrowsEXE.
 
     Dependencies: fmtconv, rgsf (optional: 32bit clip), vapoursynth-eedi3, vapoursynth-nnedi3
 

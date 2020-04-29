@@ -1,10 +1,13 @@
 """
     Wrappers and masks for denoising.
 """
-from vsutil import join, split
 from typing import Optional
 
+from vsutil import get_y, join, split
+
 import vapoursynth as vs
+
+from . import util
 
 core = vs.core
 
@@ -74,3 +77,55 @@ def quick_denoise(clip: vs.VideoNode,
 
     planes[0] = mvf.BM3D(planes[0], sigma=sigma, psample=0, radius1=1, ref=ref)
     return join(planes)
+
+
+def adaptive_mask(clip: vs.VideoNode, luma_scaling: float = 8.0) -> vs.VideoNode:
+    """
+    A wrapper to create a luma mask for denoising and/or debanding.
+
+    Dependencies: adaptivegrain
+
+    :param clip:         Input clip
+    :param luma_scaling: Luma scaling factor (Default: 8.0)
+
+    :return:             Luma mask
+    """
+    return core.adg.Mask(clip.std.PlaneStats(), luma_scaling)
+
+
+def detail_mask(clip: vs.VideoNode, pre_denoise: Optional[float] = None,
+                rad: int = 3, radc: int = 2,
+                brz_a: float = 0.005, brz_b: float = 0.005) -> vs.VideoNode:
+    """
+        A wrapper for creating a detail mask to be used during denoising and/or debanding.
+        The detail mask is created using debandshit's rangemask,
+        and is then merged with Prewitt to catch lines it may have missed.
+
+        Dependencies: knlmeans (optional: pre_denoise), debandshit
+
+        :param clip:        Input clip
+        :param pre_denoise: Denoise the clip before creating the mask (Default: False)
+        :brz_a:             Binarizing for the detail mask (Default: 0.05)
+        :brz_b:             Binarizing for the edge mask (Default: 0.05)
+
+        :return:            Detail mask
+    """
+    try:
+        from debandshit import rangemask
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("detail_mask: missing dependency 'debandshit'")
+
+    if pre_denoise is not None:
+        clip = core.knlm.KNLMeansCL(clip, d=2, a=3, h=pre_denoise)
+
+    mask_a = util.resampler(get_y(clip), 16) if clip.format.bits_per_sample < 32 else get_y(clip)
+    mask_a = rangemask(mask_a, rad=rad, radc=radc)
+    mask_a = util.resampler(mask_a, clip.format.bits_per_sample)
+    mask_a = core.std.Binarize(mask_a, brz_a)
+
+    mask_b = core.std.Prewitt(get_y(clip))
+    mask_b = core.std.Binarize(mask_b, brz_b)
+
+    mask = core.std.Expr([mask_a, mask_b], 'x y max')
+    mask = util.pick_removegrain(mask)(mask, 22)
+    return util.pick_removegrain(mask)(mask, 11)

@@ -3,9 +3,9 @@
 """
 import math
 from collections import namedtuple
+from fractions import Fraction
 from functools import partial
 from typing import List, Optional, Union
-from fractions import Fraction
 
 from vsutil import get_depth, get_w, get_y, join, plane, split
 
@@ -124,8 +124,7 @@ def smart_descale(clip: vs.VideoNode,
                   c: Union[float, Fraction] = Fraction(1, 2), taps: int = 4,
                   thr: float = 0.05, rescale: bool = False) -> vs.VideoNode:
     """
-    Allows you to descale to multiple native resolutions.
-    Written by kageru, and slightly adjusted by me. Thanks Varde for helping me fix some bugs with it.
+    A function that descales a clip to multiple resolutions.
 
     This function will descale clips to multiple resolutions and return the descaled clip
     that is mostly likely to be the actual resolution of the clip. This is useful for shows
@@ -138,6 +137,8 @@ def smart_descale(clip: vs.VideoNode,
     Setting rescaled will use `smart_rescaler` to reupscale the clip to its original resolution.
     This will return a proper YUV clip as well. If rescaled is set to False, the returned clip
     will be GRAY.
+
+    Original written by kageru, and in part rewritten by me. Thanks Varde for helping me fix some bugs with it.
 
     Dependencies: vapoursynth-descale
 
@@ -211,8 +212,7 @@ def smart_reupscale(clip: vs.VideoNode, width: Optional[int] = None, height: int
                     c: Union[float, Fraction] = Fraction(1, 2), taps: int = 4,
                     **znargs) -> vs.VideoNode:
     """
-    A quick 'n easy wrapper used to re-upscale a clip descaled with smart_descale.
-    Uses znedi3, which seems to miraculously work with a multi-res clip.
+    A quick 'n easy wrapper used to re-upscale a clip descaled with smart_descale using znedi3.
 
     Stolen from Varde.
 
@@ -248,17 +248,10 @@ def smart_reupscale(clip: vs.VideoNode, width: Optional[int] = None, height: int
     # Doubling and downscale to given "h"
     znargs = dict(field=0, dh=True, nsize=4, nns=4, qual=2) or znargs
 
-    clip_c = clip
-    if get_depth(clip) == 32:
-        clip = util.resampler(clip, 16)
-
-    try:
-        upsc = core.znedi3.nnedi3(clip, **znargs)
-    except:
-        upsc = util.resampler(core.znedi3.nnedi3(util.resampler(clip, 16), **znargs), get_depth(clip))
+    upsc = util.quick_resample(clip, core.znedi3.nnedi3, **znargs)
     upsc = core.std.FrameEval(upsc, partial(_transpose_shift, clip=upsc), prop_src=upsc)
-    upsc = core.znedi3.nnedi3(upsc, **znargs)
-    return util.resampler(util.get_scale_filter(kernel, b=b, c=c, taps=taps)(upsc, height, width, src_top=.5).std.Transpose(), get_depth(clip_c))
+    upsc = util.quick_resample(upsc, core.znedi3.nnedi3, **znargs)
+    return util.get_scale_filter(kernel, b=b, c=c, taps=taps)(upsc, height=width, width=height, src_top=.5).std.Transpose()
 
 
 def test_descale(clip: vs.VideoNode,

@@ -19,6 +19,7 @@ Dependencies
 
 lvsfunc depends on the following third-party scripts:
 
+* `debandshit <https://pastebin.com/NGFBhCCn>`_
 * `edi_rpow2 <https://gist.github.com/YamashitaRen/020c497524e794779d9c>`_
 * `havsfunc <https://github.com/HomeOfVapourSynthEvolution/havsfunc>`_
 * `kagefunc <https://github.com/Irrational-Encoding-Wizardry/kagefunc>`_
@@ -83,6 +84,8 @@ Functions
    lvsfunc.deinterlace.dir_deshimmer
    lvsfunc.deinterlace.dir_unsharp
    lvsfunc.denoise.quick_denoise
+   lvsfunc.denoise.adaptive_mask
+   lvsfunc.denoise.detail_mask
    lvsfunc.misc.edgefixer
    lvsfunc.misc.fix_cr_tint
    lvsfunc.misc.limit_dark
@@ -93,10 +96,10 @@ Functions
    lvsfunc.scale.smart_descale
    lvsfunc.scale.smart_reupscale
    lvsfunc.scale.test_descale
-   lvsfunc.util.create_dmask
    lvsfunc.util.get_scale_filter
    lvsfunc.util.one_plane
    lvsfunc.util.pick_repair
+   lvsfunc.util.pick_removegrain
    lvsfunc.util.quick_resample
    lvsfunc.util.resampler
 
@@ -151,6 +154,8 @@ lvsfunc.denoise
 .. autosummary::
 
    lvsfunc.denoise.quick_denoise
+   lvsfunc.denoise.adaptive_mask
+   lvsfunc.denoise.detail_mask
 
 .. automodule:: lvsfunc.denoise
    :members:
@@ -194,10 +199,10 @@ lvsfunc.util
 
 .. autosummary::
 
-   lvsfunc.util.create_dmask
    lvsfunc.util.get_scale_filter
    lvsfunc.util.one_plane
    lvsfunc.util.pick_repair
+   lvsfunc.util.pick_removegrain
    lvsfunc.util.quick_resample
    lvsfunc.util.resampler
 

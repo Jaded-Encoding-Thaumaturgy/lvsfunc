@@ -9,8 +9,8 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 name = "lvsfunc"
-version = "0.0.1"
-release = "0.0.1"
+version = "0.0.2"
+release = "0.0.2"
 
 setuptools.setup(
     name=name,
@@ -20,6 +20,7 @@ setuptools.setup(
     description="Light's Vapoursynth Functions",
     long_description=long_description,
     long_description_content_type="text/markdown",
+    packages=["lvsfunc"],
     url="https://github.com/Irrational-Encoding-Wizardry/lvsfunc",
     install_requires=[
         "vapoursynth",
@@ -27,7 +28,7 @@ setuptools.setup(
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
-        # "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',

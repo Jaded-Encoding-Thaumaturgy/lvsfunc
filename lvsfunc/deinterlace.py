@@ -5,7 +5,6 @@
 from functools import partial
 from typing import Optional
 
-
 import vapoursynth as vs
 
 from . import util
