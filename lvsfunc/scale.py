@@ -4,29 +4,28 @@
 import math
 from collections import namedtuple
 from functools import partial
-from typing import List, Optional, Union
+from typing import Callable, List, Optional, Union
 from fractions import Fraction
 
 from vsutil import get_depth, get_w, get_y, join, plane, split
 
 import vapoursynth as vs
 
-from . import aa, util
+from . import util
 
 core = vs.core
 
 
 def conditional_descale(clip: vs.VideoNode, height: int,
+                        upscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode],
                         kernel: str = 'bicubic',
                         b: Union[float, Fraction] = Fraction(1, 3),
                         c: Union[float, Fraction] = Fraction(1, 3),
                         taps: int = 4,
-                        threshold: float = 0.003,
-                        upscaler: str = "nnedi3_rpow2",
-                        **upscale_args) -> vs.VideoNode:
+                        threshold: float = 0.003) -> vs.VideoNode:
     """
     Descales and reupscales a clip; if the difference exceeds the threshold, the frame will not be descaled.
-    If it does not exceed the threshold, the frame will upscaled using either nnedi3_rpow2 or waifu2x-caffe.
+    If it does not exceed the threshold, the frame will upscaled using the caller-supplied upscaler function.
 
     Useful for bad BDs that have additional post-processing done on some scenes, rather than all of them.
 
@@ -36,28 +35,17 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     The code for _get_error was mostly taken from kageru's Made in Abyss script.
     Special thanks to Lypheo for holding my hand as this was written.
 
-    Dependencies:
-
-    * fmtconv
-    * mvsfunc (optional: nnedi3_resample)
-    * nnedi3_rpow2 or edi_rpow2 (optional: nnedi3_rpow2 upscale)
-    * nnedi3_resample (optional: nnedi3_resample upscale)
-    * rgsf (optional: upscaled_sraa with 32bit clip)
-    * vapoursynth-descale
-    * vapoursynth-eedi3 (optional: upscaled_sraa upscale)
-    * vapoursynth-nnedi3 (optional: nnedi3_resample, nnedi3_rpow2, upscaled_sraa upscale)
-    * vapoursynth-waifu2x-caffe (optional: waifu2x upscale)
-    * zimg
+    Dependencies: vapoursynth-descale
 
     :param clip:                   Input clip
+    :param upscaler:               Callable function with signature upscaler(clip, width, height) -> vs.VideoNode to be used for reupscaling.
+                                   Example for nnedi3_rpow2: `lambda clip, width, height: nnedi3_rpow2(clip).resize.Spline36(width, height)`
     :param height:                 Target descale height
     :param kernel:                 Kernel used to descale (see :py:func:`lvsfunc.util.get_scale_filter`, Default: bicubic)
     :param b:                      B-param for bicubic kernel (Default: 1 / 3)
     :param c:                      C-param for bicubic kernel (Default: 1 / 3)
     :param taps:                   Taps param for lanczos kernel (Default: 4)
     :param threshold:              Threshold for deciding to descale or leave the original frame (Default: 0.003)
-    :param upscaler:               Which upscaler to use ("nnedi3_rpow2" (default), "nnedi3_resample", "upscaled_sraa", "waifu2x" (caffe))
-    :param upscale_args:           Arguments passed to upscaler
 
     :return:                       Constant-resolution rescaled clip
     """
@@ -84,31 +72,10 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     planes = split(clip)
     descaled, diff = _get_error(planes[0], height=height, kernel=kernel, b=b, c=c, taps=taps)
 
-    if upscaler in ['nnedi3_rpow2', 'nnedi3', 'nn3_rp2']:
-        try:
-            import nnedi3_rpow2 as nnp2
-        except ModuleNotFoundError:
-            try:
-                import edi_rpow2 as nnp2
-            except ModuleNotFoundError:
-                raise ModuleNotFoundError("conditional_descale: missing dependency 'nnedi3_rpow2' or 'edi_rpow2'")
-        planes[0] = nnp2(descaled, upscale_args, width=clip.width, height=clip.height)
-    elif upscaler in ['nnedi3_resample', 'nn3_res']:
-        try:
-            from nnedi3_resample import nnedi3_resample
-        except ModuleNotFoundError:
-            raise ModuleNotFoundError("conditional_descale: missing dependency 'nnedi3_resample'")
-        nnargs = dict(kernel='gauss', invks=True, invkstaps=2, taps=1, a1=32, nns=4, qual=2, pscrn=4) or upscale_args
-        planes[0] = nnedi3_resample(descaled, clip.width, clip.height, nnargs)
-    elif upscaler in ['upscaled_sraa', 'up_sraa', 'sraa']:
-        srargs = dict(sharp_downscale=False) or upscale_args
-        planes[0] = aa.upscaled_sraa(descaled, srargs, h=clip.height)
-    elif upscaler in ['waifu2x', 'w2x']:
-        w2xargs = dict(noise=-1, scale=2, model=6, cudnn=True, processor=0, tta=False) or upscale_args
-        planes[0] = core.caffe.Waifu2x(descaled, w2xargs).resize.Spline36(clip.width, clip.height)
-    else:
-        raise ValueError(f"conditional_descale: '\"{upscaler}\" is not a valid option for \"upscaler\". Please pick either \"nnedi3_rpow2\", \"nnedi3_resample\", \"upscaled_sraa\", or \"waifu2x\"'")
-
+    try:
+        planes[0] = upscaler(descaled, clip.width, clip.height)
+    except:
+        raise Exception("conditional_descale: upscale function misbehaved")
 
     descaled = join(planes).resize.Spline36(format=clip.format)
     descaled = descaled.std.SetFrameProp("_descaled", intval=1)
