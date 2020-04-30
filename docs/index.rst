@@ -212,7 +212,8 @@ lvsfunc.util
 Special credits
 -------------------
 A special thanks to every contributor that contributed to lvsfunc.
-` The list of contributors can be found here. <https://github.com/Irrational-Encoding-Wizardry/lvsfunc/graphs/contributors>`_
+
+`The list of contributors can be found here. <https://github.com/Irrational-Encoding-Wizardry/lvsfunc/graphs/contributors>`_
 
 
 
