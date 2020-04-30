@@ -234,7 +234,8 @@ def test_descale(clip: vs.VideoNode,
     descales and reupscales a given clip, allowing you to compare the two easily.
 
     When comparing, it is recommended to do atleast a 4x zoom using Nearest Neighbor.
-    I also suggest using 'compare', as that will make comparison a lot easier.
+    I also suggest using 'compare' (py:func:lvsfunc.comparison.compare),
+    as that will make comparing the output with the source clip a lot easier.
 
     Some of this code was leveraged from DescaleAA found in fvsfunc.
 

@@ -80,9 +80,9 @@ Functions
    lvsfunc.deinterlace.decomb
    lvsfunc.deinterlace.dir_deshimmer
    lvsfunc.deinterlace.dir_unsharp
-   lvsfunc.denoise.quick_denoise
    lvsfunc.denoise.adaptive_mask
    lvsfunc.denoise.detail_mask
+   lvsfunc.denoise.quick_denoise
    lvsfunc.misc.edgefixer
    lvsfunc.misc.fix_cr_tint
    lvsfunc.misc.limit_dark
@@ -150,9 +150,9 @@ lvsfunc.denoise
 
 .. autosummary::
 
-   lvsfunc.denoise.quick_denoise
    lvsfunc.denoise.adaptive_mask
    lvsfunc.denoise.detail_mask
+   lvsfunc.denoise.quick_denoise
 
 .. automodule:: lvsfunc.denoise
    :members:
@@ -207,6 +207,13 @@ lvsfunc.util
    :members:
    :undoc-members:
    :show-inheritance:
+
+
+Special credits
+-------------------
+A special thanks to every contributor that contributed to lvsfunc.
+A list of contributors can be found here:
+<https://github.com/Irrational-Encoding-Wizardry/lvsfunc/graphs/contributors>`_
 
 
 Footer

@@ -87,7 +87,7 @@ def stack_compare(*clips: vs.VideoNode,
     :param clips:             Clips to compare
     :param make_diff:         Create and stack a diff (only works if two clips are given) (Default: False)
     :param height:            Output height, determined automatically if None (Default: None)
-    :param warn:              Prints the lengths of every given clip if lengths don't match (Default: True)
+    :param warn:              Warns if the length of given clips don't align (Default: True)
 
     :return:                  Clip with clips stacked
     """
@@ -163,7 +163,7 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
     :param tv:            TV clip
     :param bd:            BD clip
     :param thr:           Threshold, <= 1 uses PlaneStatsDiff, >1 uses Max/Min. Max is 128 (Default: 72)
-    :param return_array:  Return frames as an interleaved comparison (using py:func:`lvsfunc.compare.compare`) (Default: False)
+    :param return_array:  Return frames as an interleaved comparison (using py:func:`lvsfunc.comparison.compare`) (Default: False)
     """
     if thr > 128:
         raise ValueError(f"tvbd_diff: \"thr\" should neither be nor exceed 128!'")

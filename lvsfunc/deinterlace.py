@@ -64,9 +64,9 @@ def decomb(clip: vs.VideoNode,
     """
     Does some aggressive filtering to get rid of the combing on a interlaced/telecined source.
     You can also allow it to decimate the clip, or keep it disabled if you wish to handle the decimating yourself.
-    Vinverse can also be disabled, allowing for less aggressive decombing. Note that this means far more combing will be left over!
+    Enabling vinverse will result in more aggressive decombing at the cost of potential detail loss.
 
-    Function written by Midlifecrisis from the WEEB AUTISM server, and slightly modified by LightArrowsEXE.
+    Function written by Midlifecrisis from the WEEB AUTISM server, and modified by LightArrowsEXE.
 
     Dependencies: combmask, havsfunc (QTGMC), rgsf (optional: 32bit clip)
 
@@ -139,11 +139,11 @@ def dir_unsharp(clip: vs.VideoNode,
                 h: float = 3.4) -> vs.VideoNode:
     """
     Diff'd directional unsharpening function.
-    Special thanks to thebombzen and kageru for essentially writing the bulk of this.
-
     Performs one-dimensional sharpening as such: "Original + (Original - blurred) * Strength"
 
     This particular function is recommended for SD content, specifically after deinterlacing.
+
+    Special thanks to thebombzen and kageru for writing the bulk of this.
 
     Dependencies: knlmeanscl
 
