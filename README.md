@@ -1,12 +1,13 @@
 lvsfunc, a collection of VapourSynth functions and wrappers written and/or
-"borrowed" by LightArrowsEXE. Full information on how every function/wrapper
-works and specific dependencies can be found in the documentation.
+"borrowed" by LightArrowsEXE.<br>
+Full information on how every function/wrapper works
+and specific dependencies can be found in the [documentation](https://lvsfunc.readthedocs.io/).
 
 ## How to install
 
-Install with `python3 setup.py install`
+Install with `python3 setup.py install`.
 
-
+Functions can be loaded and used as follows:
 ```py
 import lvsfunc as lvf
 
