@@ -214,11 +214,11 @@ def smart_reupscale(clip: vs.VideoNode, width: Optional[int] = None, height: int
     width = width or get_w(height)
 
     # Doubling and downscale to given "h"
-    znargs = dict(field=0, dh=True, nsize=4, nns=4, qual=2) or znargs
+    znargs = znargs or dict(nsize=4, nns=4, qual=2, pscrn=2)
 
-    upsc = util.quick_resample(clip, core.znedi3.nnedi3, **znargs)
+    upsc = util.quick_resample(clip, core.znedi3.nnedi3, field=0, dh=True, **znargs)
     upsc = core.std.FrameEval(upsc, partial(_transpose_shift, clip=upsc), prop_src=upsc)
-    upsc = util.quick_resample(upsc, core.znedi3.nnedi3, **znargs)
+    upsc = util.quick_resample(upsc, core.znedi3.nnedi3, field=0, dh=True, **znargs)
     return util.get_scale_filter(kernel, b=b, c=c, taps=taps)(upsc, height=width, width=height, src_top=.5).std.Transpose()
 
 
