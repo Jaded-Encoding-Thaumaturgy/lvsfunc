@@ -189,7 +189,7 @@ def smart_reupscale(clip: vs.VideoNode, width: Optional[int] = None, height: int
     :param clip:         Input clip
     :param width:        Upscale width. If None, determine from `height` assuming 16:9 aspect ratio (Default: None)
     :param height:       Upscale height (Default: 1080)
-    :param kernel:       Kernel used to upscale (see :py:func:`lvsfunc.util.get_scale_filter`)
+    :param kernel:       Kernel used to downscale the doubled clip (see :py:func:`lvsfunc.util.get_scale_filter`)
     :param b:            B-param for bicubic kernel (Default: 0)
     :param c:            C-param for bicubic kernel (Default: 1 / 2)
     :param taps:         Taps param for lanczos kernel. (Default: 4)
