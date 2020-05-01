@@ -63,8 +63,8 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     if frames is None:
         if not rand_total:
             # More comparisons for shorter clips so you can compare stuff like NCs more conveniently
-            rand_total = int(clip_a.num_frames/1000) if clip_a.num_frames > 5000 else int(clip_a.num_frames/100)
-        frames = sorted(random.sample(range(1, clip_a.num_frames-1), rand_total))
+            rand_total = int(clip_a.num_frames / 1000) if clip_a.num_frames > 5000 else int(clip_a.num_frames / 100)
+        frames = sorted(random.sample(range(1, clip_a.num_frames - 1), rand_total))
 
     frames_a = core.std.Splice([clip_a[f] for f in frames])
     frames_b = core.std.Splice([clip_b[f] for f in frames])
@@ -100,11 +100,10 @@ def stack_compare(*clips: vs.VideoNode,
     if len(set([c.format.id for c in clips])) != 1:
         raise ValueError(f"stack_compare: 'The format of every clip must be equal'")
 
-
     if make_diff:
         diff = core.std.MakeDiff(clips[0], clips[1])
         diff = core.resize.Spline36(diff, get_w(576), 576).text.FrameNum(8)
-        clips = [core.resize.Spline36(c, diff.width/2, diff.height/2) for c in clips]
+        clips = [core.resize.Spline36(c, diff.width / 2, diff.height / 2) for c in clips]
         clips[0], clips[1] = clips[0].text.Text("Clip A", 3), clips[1].text.Text("Clip B", 1)
         stack = core.std.StackVertical([core.std.StackHorizontal([clips[0], clips[1]]), diff])
     else:
@@ -172,10 +171,10 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
 
     if thr <= 1:
         diff = core.std.PlaneStats(tv, bd)
-        frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsDiff"] > thr]
+        frames = [i for i, f in enumerate(diff.frames()) if f.props["PlaneStatsDiff"] > thr]
     else:
         diff = core.std.MakeDiff(tv, bd).std.PlaneStats()
-        frames = [i for i,f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] <= thr or f.props["PlaneStatsMax"] >= 255 - thr]
+        frames = [i for i, f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] <= thr or f.props["PlaneStatsMax"] >= 255 - thr]
 
     if frames == []:
         raise ValueError(f"tvbd_diff: 'No differences found'")
@@ -188,7 +187,7 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
         if thr <= 1:
             diff = core.std.MakeDiff(tv, bd)
         diff = core.resize.Spline36(diff, get_w(576), 576).text.FrameNum(8)
-        tv, bd = core.resize.Spline36(tv, diff.width/2, diff.height/2), core.resize.Spline36(bd, diff.width/2, diff.height/2)
+        tv, bd = core.resize.Spline36(tv, diff.width / 2, diff.height / 2), core.resize.Spline36(bd, diff.width / 2, diff.height / 2)
         tv, bd = tv.text.Text("Clip A", 3), bd.text.Text("Clip B", 1)
         stacked = core.std.StackVertical([core.std.StackHorizontal([tv, bd]), diff])
         return core.std.Splice([stacked[f] for f in frames])

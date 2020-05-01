@@ -37,7 +37,6 @@ smart_descale = scale.smart_descale
 smart_reupscale = scale.smart_reupscale
 test_descale = scale.test_descale
 
-
 # Aliases
 sraa = upscaled_sraa
 comp = compare

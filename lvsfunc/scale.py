@@ -82,7 +82,7 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     descaled = descaled.std.SetFrameProp("_descaled", intval=1)
     clip = clip.std.SetFrameProp("_descaled", intval=0)
 
-    return core.std.FrameEval(clip, partial(_diff, clip_a=clip, clip_b=descaled, threshold=threshold),  diff)
+    return core.std.FrameEval(clip, partial(_diff, clip_a=clip, clip_b=descaled, threshold=threshold), diff)
 
 
 def smart_descale(clip: vs.VideoNode,
@@ -147,11 +147,11 @@ def smart_descale(clip: vs.VideoNode,
     clips_by_resolution = {c.resolution.height: c for c in map(_perform_descale, resolutions)}
     # If we pass a variable res clip as first argument to FrameEval, we’re also allowed to return one.
     variable_res_clip = core.std.Splice([
-        core.std.BlankClip(clip, length=len(clip)-1), core.std.BlankClip(clip, length=1, width=clip.width + 1)
+        core.std.BlankClip(clip, length=len(clip) - 1), core.std.BlankClip(clip, length=1, width=clip.width + 1)
     ], mismatch=True)
 
     def _select_descale(n: int, f: List[vs.VideoFrame]):
-        best_res = max(f, key=lambda frame: math.log(clip.height - frame.props.descaleResolution, 2) * round(1/max(frame.props.PlaneStatsAverage, 1e-12)) ** 0.2)
+        best_res = max(f, key=lambda frame: math.log(clip.height - frame.props.descaleResolution, 2) * round(1 / max(frame.props.PlaneStatsAverage, 1e-12)) ** 0.2)
 
         best_attempt = clips_by_resolution.get(best_res.props.descaleResolution)
         if thr == 0:
@@ -164,7 +164,7 @@ def smart_descale(clip: vs.VideoNode,
 
     props = [c.diff for c in clips_by_resolution.values()]
     descaled = core.std.FrameEval(variable_res_clip, _select_descale,
-                              prop_src=props)
+                                  prop_src=props)
 
     if rescale:
         upscale = smart_reupscale(descaled, height=clip.height, kernel=kernel, b=b, c=c, taps=taps)
@@ -207,7 +207,7 @@ def smart_reupscale(clip: vs.VideoNode, width: Optional[int] = None, height: int
         except:
             raise ValueError(f"smart_reupscale: 'This clip was not descaled using smart_descale'")
         w = get_w(h)
-        clip = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(clip, width=w, height=h*2, src_top=.5)
+        clip = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(clip, width=w, height=h * 2, src_top=.5)
         return core.std.Transpose(clip)
 
     width = width or get_w(height)
@@ -272,12 +272,11 @@ def test_descale(clip: vs.VideoNode,
     merge = core.std.ShufflePlanes([upsc, clip], [0, 1, 2], vs.YUV)
     return core.text.FrameProps(merge, "PlaneStatsDiff") if show_error else merge
 
+# TODO: Write a function that checks every possible combination of B and C in bicubic
+#       and returns a list of the results. Possibly return all the frames in order of
+#       smallest difference to biggest. Not reliable, but maybe useful as starting point.
 
-# TO-DO: Write a function that checks every possible combination of B and C in bicubic
-#        and returns a list of the results. Possibly return all the frames in order of
-#        smallest difference to biggest. Not reliable, but maybe useful as starting point.
 
-
-# TO-DO: Write "multi_descale", a function that allows you to descale a frame twice,
-#        like for example when the CGI in a show is handled in a different resolution
-#        than the drawn animation.
+# TODO: Write "multi_descale", a function that allows you to descale a frame twice,
+#       like for example when the CGI in a show is handled in a different resolution
+#       than the drawn animation.

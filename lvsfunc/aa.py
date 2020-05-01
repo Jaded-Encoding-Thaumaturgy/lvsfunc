@@ -152,10 +152,10 @@ def upscaled_sraa(clip: vs.VideoNode,
     planes = split(clip)
 
     nnargs = dict(nsize=0, nns=4, qual=2)
-    eeargs = dict(alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20) # TAAmbk defaults are 0.5, 0.2, 20, 3, 30
+    eeargs = dict(alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)  # TAAmbk defaults are 0.5, 0.2, 20, 3, 30
 
-    ssw = round( clip.width  * rfactor )
-    ssh = round( clip.height * rfactor )
+    ssw = round(clip.width * rfactor)
+    ssh = round(clip.height * rfactor)
 
     while ssw % 2:
         ssw += 1

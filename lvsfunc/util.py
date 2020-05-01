@@ -87,7 +87,7 @@ def quick_resample(clip: vs.VideoNode, function: Callable[..., vs.VideoNode], **
     return resampler(filtered, clip.format.bits_per_sample)
 
 
-# TO-DO: Merge pick_repair and pick_removegrain?
+# TODO: Merge pick_repair and pick_removegrain?
 def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
     """
     Returns rgvs.Repair if the clip is 16 bit or lower, else rgsf.Repair.
