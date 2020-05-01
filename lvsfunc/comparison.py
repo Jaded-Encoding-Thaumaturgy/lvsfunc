@@ -5,9 +5,8 @@
 import random
 from typing import List, Optional
 
-from vsutil import get_subsampling, get_w, split
-
 import vapoursynth as vs
+from vsutil import get_subsampling, get_w, split
 
 from . import util
 

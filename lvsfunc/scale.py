@@ -6,11 +6,9 @@ from collections import namedtuple
 from fractions import Fraction
 from functools import partial
 from typing import Callable, List, Optional, Union
-from fractions import Fraction
-
-from vsutil import get_depth, get_w, get_y, join, plane, split
 
 import vapoursynth as vs
+from vsutil import get_depth, get_w, get_y, join, plane, split
 
 from . import util
 

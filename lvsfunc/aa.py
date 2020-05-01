@@ -3,9 +3,8 @@
 """
 from typing import Optional
 
-from vsutil import get_w, get_y, split
-
 import vapoursynth as vs
+from vsutil import get_w, get_y, split
 
 from . import util
 

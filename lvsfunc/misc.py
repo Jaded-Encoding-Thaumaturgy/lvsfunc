@@ -4,9 +4,8 @@
 from functools import partial
 from typing import List, Optional, Tuple, Union
 
-from vsutil import get_depth, is_image
-
 import vapoursynth as vs
+from vsutil import get_depth, is_image
 
 from . import util
 
