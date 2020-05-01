@@ -26,12 +26,12 @@ def resampler(clip: vs.VideoNode, bitdepth: int) -> vs.VideoNode:
     All credit for the original script goes to Frechdachs.
 
     :param clip:    Input clip
-    :param bidepth: Depth to resample to
+    :param bitdepth: Depth to resample to
 
     :return:        Clip resampled to bitdepth
     """
     clip_cf = clip.format.color_family
-    dst_st = dst_st = vs.INTEGER if bitdepth < 32 else vs.FLOAT
+    dst_st = vs.INTEGER if bitdepth < 32 else vs.FLOAT
     src_sw = clip.format.subsampling_w
     src_sh = clip.format.subsampling_h
 
