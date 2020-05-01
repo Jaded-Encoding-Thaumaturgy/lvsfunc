@@ -207,7 +207,7 @@ def smart_reupscale(clip: vs.VideoNode, width: Optional[int] = None, height: int
         except:
             raise ValueError(f"smart_reupscale: 'This clip was not descaled using smart_descale'")
         w = get_w(h)
-        clip = core.resize.Bicubic(clip, w, h*2, src_top=.5)
+        clip = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(clip, width=w, height=h*2, src_top=.5)
         clip = core.std.Transpose(clip)
         return clip
 
