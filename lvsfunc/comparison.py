@@ -175,7 +175,7 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
         diff = core.std.MakeDiff(tv, bd).std.PlaneStats()
         frames = [i for i, f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] <= thr or f.props["PlaneStatsMax"] >= 255 - thr]
 
-    if frames == []:
+    if not frames:
         raise ValueError(f"tvbd_diff: 'No differences found'")
 
     if return_array:
