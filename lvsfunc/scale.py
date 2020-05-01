@@ -203,7 +203,7 @@ def smart_reupscale(clip: vs.VideoNode, width: Optional[int] = None, height: int
 
     def _transpose_shift(n, f, clip):
         try:
-            h = f.props['descaleResolution']
+            h = f.props.descaleResolution
         except:
             raise ValueError(f"smart_reupscale: 'This clip was not descaled using smart_descale'")
         w = get_w(h)
