@@ -189,7 +189,7 @@ def smart_reupscale(clip: vs.VideoNode, width: Optional[int] = None, height: int
     :param clip:         Input clip
     :param width:        Upscale width. If None, determine from `height` assuming 16:9 aspect ratio (Default: None)
     :param height:       Upscale height (Default: 1080)
-    :param kernel:       Kernel used to upscale (see :py:func:`lvsfunc.util.get_scale_filter`)
+    :param kernel:       Kernel used to downscale the doubled clip (see :py:func:`lvsfunc.util.get_scale_filter`)
     :param b:            B-param for bicubic kernel (Default: 0)
     :param c:            C-param for bicubic kernel (Default: 1 / 2)
     :param taps:         Taps param for lanczos kernel. (Default: 4)
@@ -203,22 +203,21 @@ def smart_reupscale(clip: vs.VideoNode, width: Optional[int] = None, height: int
 
     def _transpose_shift(n, f, clip):
         try:
-            h = f.props['descaleResolution']
+            h = f.props.descaleResolution
         except:
             raise ValueError(f"smart_reupscale: 'This clip was not descaled using smart_descale'")
         w = get_w(h)
-        clip = core.resize.Bicubic(clip, w, h*2, src_top=.5)
-        clip = core.std.Transpose(clip)
-        return clip
+        clip = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(clip, width=w, height=h*2, src_top=.5)
+        return core.std.Transpose(clip)
 
     width = width or get_w(height)
 
     # Doubling and downscale to given "h"
-    znargs = dict(field=0, dh=True, nsize=4, nns=4, qual=2) or znargs
+    znargs = znargs or dict(nsize=4, nns=4, qual=2, pscrn=2)
 
-    upsc = util.quick_resample(clip, core.znedi3.nnedi3, **znargs)
+    upsc = util.quick_resample(clip, core.znedi3.nnedi3, field=0, dh=True, **znargs)
     upsc = core.std.FrameEval(upsc, partial(_transpose_shift, clip=upsc), prop_src=upsc)
-    upsc = util.quick_resample(upsc, core.znedi3.nnedi3, **znargs)
+    upsc = util.quick_resample(upsc, core.znedi3.nnedi3, field=0, dh=True, **znargs)
     return util.get_scale_filter(kernel, b=b, c=c, taps=taps)(upsc, height=width, width=height, src_top=.5).std.Transpose()
 
 
