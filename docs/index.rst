@@ -19,7 +19,7 @@ Dependencies
 
 lvsfunc depends on the following third-party scripts:
 
-* `debandshit <https://pastebin.com/NGFBhCCn>`_
+* `debandshit <https://github.com/LightArrowsEXE/debandshit>`_
 * `edi_rpow2 <https://gist.github.com/YamashitaRen/020c497524e794779d9c>`_
 * `havsfunc <https://github.com/HomeOfVapourSynthEvolution/havsfunc>`_
 * `kagefunc <https://github.com/Irrational-Encoding-Wizardry/kagefunc>`_
