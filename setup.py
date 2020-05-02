@@ -9,8 +9,8 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 name = "lvsfunc"
-version = "0.0.2"
-release = "0.0.2"
+version = "0.0.3"
+release = "0.0.3"
 
 setuptools.setup(
     name=name,
@@ -31,7 +31,7 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.8',
     command_options={
         "build_sphinx": {
             "project": ("setup.py", name),

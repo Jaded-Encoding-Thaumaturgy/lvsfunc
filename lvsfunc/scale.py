@@ -111,8 +111,8 @@ def smart_descale(clip: vs.VideoNode,
     :param clip:             Input clip
     :param resolutions:      A list of resolutions to descale to
     :param kernel:           Kernel used to descale (see :py:func:`lvsfunc.util.get_scale_filter`, Default: bicubic)
-    :param b:                B-param for bicubic kernel (Default: 1 / 3)
-    :param c:                C-param for bicubic kernel (Default: 1 / 3)
+    :param b:                B-param for bicubic kernel (Default: 0)
+    :param c:                C-param for bicubic kernel (Default: 1 / 2)
     :param taps:             Taps param for lanczos kernel (Default: 4)
     :param thr:              Threshold for when a clip is discerned as "non-scaleable" (Default: 0.05)
     :param rescale:          Rescale the clip to the original resolution after descaling (Default: False)
