@@ -270,6 +270,7 @@ def test_descale(clip: vs.VideoNode,
     merge = core.std.ShufflePlanes([upsc, clip], [0, 1, 2], vs.YUV)
     return core.text.FrameProps(merge, "PlaneStatsDiff") if show_error else merge
 
+
 # TODO: Write a function that checks every possible combination of B and C in bicubic
 #       and returns a list of the results. Possibly return all the frames in order of
 #       smallest difference to biggest. Not reliable, but maybe useful as starting point.

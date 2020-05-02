@@ -78,7 +78,7 @@ def decomb(clip: vs.VideoNode,
     :param vinv:          Use vinverse to get rid of additional combing (Default: False)
     :param sharpen:       Unsharpen after deinterlacing (Default: False)
     :param dir:           Directional vector. 'v' = Vertical, 'h' = Horizontal (Default: v)
-    :param rep:           Repair mode for repairing the decombed frame using the original src frame (Default: None)
+    :param rep:           Repair mode for repairing the decombed clip using the original clip (Default: None)
 
     :return:              Decombed clip
     """

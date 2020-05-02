@@ -97,8 +97,8 @@ Functions
    lvsfunc.scale.test_descale
    lvsfunc.util.get_scale_filter
    lvsfunc.util.one_plane
-   lvsfunc.util.pick_repair
    lvsfunc.util.pick_removegrain
+   lvsfunc.util.pick_repair
    lvsfunc.util.quick_resample
    lvsfunc.util.resampler
 
@@ -202,8 +202,8 @@ lvsfunc.util
 
    lvsfunc.util.get_scale_filter
    lvsfunc.util.one_plane
-   lvsfunc.util.pick_repair
    lvsfunc.util.pick_removegrain
+   lvsfunc.util.pick_repair
    lvsfunc.util.quick_resample
    lvsfunc.util.resampler
 

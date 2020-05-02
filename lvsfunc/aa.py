@@ -47,8 +47,7 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: int = 1,
 
     bits = clip.format.bits_per_sample - 8
     thr = strength * (1 >> bits)
-    strong = TAAmbk(clip, aatype='Eedi3', alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, mtype=0,
-                    opencl=opencl)
+    strong = TAAmbk(clip, aatype='Eedi3', alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20, mtype=0, opencl=opencl)
     weak = TAAmbk(clip, aatype='Nnedi3', nsize=3, nns=3, qual=1, mtype=0, opencl=opencl)
     expr = 'x z - y z - * 0 < y x y {0} + min y {0} - max ?'.format(thr)
 
@@ -84,7 +83,7 @@ def transpose_aa(clip: vs.VideoNode,
 
     Original function written by Zastin, modified by LightArrowsEXE.
 
-    Dependencies: vapoursynth-eedi3, vapoursynth-nnedi3, znedi3
+    Dependencies: rgsf (optional: 32 bit clip), vapoursynth-eedi3, vapoursynth-nnedi3, znedi3
 
     :param clip:      Input clip
     :param eedi3:     Use eedi3 for the interpolation (Default: False)
@@ -119,7 +118,8 @@ def transpose_aa(clip: vs.VideoNode,
         return core.std.Expr([flt, clip, blur], 'x y < x x + z - x max y min x x + z - x min y max ?')
 
     aaclip = _aa(clip_y)
-    aaclip = _csharp(aaclip, clip_y).rgvs.Repair(clip_y, 13)
+    aaclip = _csharp(aaclip, clip_y)
+    aaclip = util.pick_repair(clip_y)(clip_y, 13)
 
     return aaclip if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
 
@@ -136,7 +136,7 @@ def upscaled_sraa(clip: vs.VideoNode,
 
     Original function written by Zastin, heavily modified by LightArrowsEXE.
 
-    Dependencies: fmtconv, rgsf (optional: 32bit clip), vapoursynth-eedi3, vapoursynth-nnedi3
+    Dependencies: fmtconv, rgsf (optional: 32 bit clip), vapoursynth-eedi3, vapoursynth-nnedi3
 
     :param clip:            Input clip
     :param rfactor:         Image enlargement factor. 1.3..2 makes it comparable in strength to vsTAAmbk.

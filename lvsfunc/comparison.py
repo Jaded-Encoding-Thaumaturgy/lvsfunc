@@ -20,7 +20,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
             mismatch: bool = False) -> vs.VideoNode:
     """
     Allows for the same frames from two different clips to be compared by interleaving them into a single clip.
-    Clips are automatically resampled to 8bit YUV -> RGB24 to emulate how a monitor shows the frame.
+    Clips are automatically resampled to 8 bit YUV -> RGB24 to emulate how a monitor shows the frame.
     This can be disabled by setting `disable_resample` to True.
 
     Alias for this function is "comp".
@@ -38,13 +38,13 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     :return:                    Interleaved clip containing specified frames from clip_a and clip_b
     """
     try:
-        import mvsfunc as mvf
+        from mvsfunc import GetMatrix
     except ModuleNotFoundError:
         raise ModuleNotFoundError("compare: missing dependency 'mvsfunc'")
 
     def _resample(clip: vs.VideoNode) -> vs.VideoNode:
-        # Resampling to 8bit and RGB to properly display how it appears on your screen
-        return util.resampler(clip.resize.Point(format=vs.RGB24, matrix_in_s=mvf.GetMatrix(clip)), 8)
+        # Resampling to 8 bit and RGB to properly display how it appears on your screen
+        return util.resampler(clip.resize.Point(format=vs.RGB24, matrix_in_s=GetMatrix(clip)), 8)
 
     # Error handling
     if frames and len(frames) > clip_a.num_frames:

@@ -27,7 +27,9 @@ quick_denoise = denoise.quick_denoise
 
 edgefixer = misc.edgefixer
 fix_cr_tint = misc.fix_cr_tint
+frames_since_bookmark = misc.frames_since_bookmark
 limit_dark = misc.limit_dark
+load_bookmarks = misc.load_bookmarks
 replace_ranges = misc.replace_ranges
 source = misc.source
 wipe_row = misc.wipe_row
@@ -38,10 +40,10 @@ smart_reupscale = scale.smart_reupscale
 test_descale = scale.test_descale
 
 # Aliases
-sraa = upscaled_sraa
 comp = compare
-scomp = stack_compare
-qden = quick_denoise
-src = source
-rfs = replace_ranges
 cond_desc = conditional_descale
+qden = quick_denoise
+rfs = replace_ranges
+scomp = stack_compare
+sraa = upscaled_sraa
+src = source

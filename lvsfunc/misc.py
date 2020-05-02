@@ -70,12 +70,12 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
 
     if ref:
         try:
-            import mvsfunc as mvf
+            from mvsfunc import GetMatrix
         except ModuleNotFoundError:
             raise ModuleNotFoundError("source: missing dependency 'mvsfunc'")
 
         clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
-        clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height, format=ref.format, matrix_s=mvf.GetMatrix(ref))
+        clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height, format=ref.format, matrix_s=GetMatrix(ref))
         if is_image(file):
             clip = clip * (ref.num_frames - 1)
 
