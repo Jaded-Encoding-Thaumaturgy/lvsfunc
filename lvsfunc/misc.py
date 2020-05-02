@@ -4,9 +4,8 @@
 from functools import partial
 from typing import List, Optional, Tuple, Union
 
-from vsutil import get_depth, is_image
-
 import vapoursynth as vs
+from vsutil import get_depth, is_image
 
 from . import util
 
@@ -15,7 +14,7 @@ core = vs.core
 
 def source(file: str, ref: Optional[vs.VideoNode] = None,
            force_lsmas: bool = False,
-           mpls: bool = False,  mpls_playlist: int = 0, mpls_angle: int = 0) -> vs.VideoNode:
+           mpls: bool = False, mpls_playlist: int = 0, mpls_angle: int = 0) -> vs.VideoNode:
     """
     Generic clip import function.
     Automatically determines if ffms2 or L-SMASH should be used to import a clip, but L-SMASH can be forced.
@@ -78,7 +77,7 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
         clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
         clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height, format=ref.format, matrix_s=mvf.GetMatrix(ref))
         if is_image(file):
-            clip = clip*(ref.num_frames-1)
+            clip = clip * (ref.num_frames - 1)
 
     return clip
 
@@ -107,11 +106,11 @@ def replace_ranges(clip_a: vs.VideoNode,
         else:
             start = r
             end = r
-        tmp = clip_b[start : end + 1]
+        tmp = clip_b[start:end + 1]
         if start != 0:
             tmp = out[: start] + tmp
         if end < out.num_frames - 1:
-            tmp = tmp + out[end + 1 :]
+            tmp = tmp + out[end + 1:]
         out = tmp
     return out
 
@@ -152,7 +151,7 @@ def edgefixer(clip: vs.VideoNode,
         bottom = top
 
     ef = core.edgefixer.ContinuityFixer(clip, left, top, right, bottom, radius)
-    return ef if full_range else core.std.Limiter(ef, 16, [235,240])
+    return ef if full_range else core.std.Limiter(ef, 16, [235, 240])
 
 
 def fix_cr_tint(clip: vs.VideoNode, value: int = 128) -> vs.VideoNode:

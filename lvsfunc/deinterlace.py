@@ -35,17 +35,17 @@ def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:
     :return:         Deblended clip
     """
 
-    blends_a = range(2, clip.num_frames-1, 5)
-    blends_b = range(3, clip.num_frames-1, 5)
+    blends_a = range(2, clip.num_frames - 1, 5)
+    blends_b = range(3, clip.num_frames - 1, 5)
     expr_cd = ["z a 2 / - y x 2 / - +"]
 
     def deblend(n, clip, rep):
-    # Thanks Myaa, motbob and kageru!
-        if n%5 in [0, 1, 4]:
+        # Thanks Myaa, motbob and kageru!
+        if n % 5 in [0, 1, 4]:
             return clip
         else:
             if n in blends_a:
-                c, cd, da, a = clip[n-1], clip[n], clip[n+1], clip[n+2]
+                c, cd, da, a = clip[n - 1], clip[n], clip[n + 1], clip[n + 2]
                 debl = core.std.Expr([c, cd, da, a], expr_cd)
                 return util.pick_repair(clip)(debl, c, rep) if rep else debl
             else:
