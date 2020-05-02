@@ -85,7 +85,9 @@ Functions
    lvsfunc.denoise.quick_denoise
    lvsfunc.misc.edgefixer
    lvsfunc.misc.fix_cr_tint
+   lvsfunc.misc.frames_since_bookmark
    lvsfunc.misc.limit_dark
+   lvsfunc.misc.load_bookmarks
    lvsfunc.misc.replace_ranges
    lvsfunc.misc.source
    lvsfunc.misc.wipe_row
@@ -166,7 +168,9 @@ lvsfunc.misc
 
    lvsfunc.misc.edgefixer
    lvsfunc.misc.fix_cr_tint
+   lvsfunc.misc.frames_since_bookmark
    lvsfunc.misc.limit_dark
+   lvsfunc.misc.load_bookmarks
    lvsfunc.misc.replace_ranges
    lvsfunc.misc.source
    lvsfunc.misc.wipe_row

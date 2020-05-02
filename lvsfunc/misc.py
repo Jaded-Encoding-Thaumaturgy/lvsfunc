@@ -54,7 +54,7 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
         return core.lsmas.LWLibavSource(file)
 
     elif mpls:
-        mpls = core.mpls.Read(file, mpls_playlist)
+        mpls = core.mpls.Read(file, mpls_playlist, mpls_angle)
         clip = core.std.Splice([core.lsmas.LWLibavSource(mpls['clip'][i]) for i in range(mpls['count'])])
 
     elif file.endswith('.d2v'):
@@ -240,6 +240,50 @@ def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode = Optional[None],
     if show_mask:
         return sqmask
     return core.std.MaskedMerge(clip, secondary, sqmask)
+
+
+def load_bookmarks(bookmark_path: str) -> List[int]:
+    """
+    VSEdit bookmark loader.
+
+    load_bookmarks(os.path.basename(__file__)+".bookmarks")
+    will load the VSEdit bookmarks for the current Vapoursynth script.
+
+    :param bookmark_path:  Path to bookmarks file
+
+    :return:               A list of bookmarked frames
+    """
+    with open(bookmark_path) as f:
+        bookmarks = [int(i) for i in f.read().split(", ")]
+
+        if bookmarks[0] != 0:
+            bookmarks.insert(0, 0)
+
+    return bookmarks
+
+
+def frames_since_bookmark(clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoNode:
+    """
+    Displays frames since last bookmark to create easily reusable scenefiltering.
+    Can be used in tandem with :py:func:`lvsfunc.misc.load_bookmarks` to import VSEdit bookmarks.
+
+    :param clip:        Input clip
+    :param bookmarks:   A list of bookmarks
+
+    :return:            Clip with bookmarked frames
+    """
+    def _frames_since_bookmark(n: int, clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoNode:
+        for i, bookmark in enumerate(bookmarks):
+            frames_since = n - bookmark
+
+            if frames_since >= 0 and i + 1 >= len(bookmarks):
+                result = frames_since
+            elif frames_since >= 0 and n - bookmarks[i + 1] < 0:
+                result = frames_since
+                break
+
+        return core.text.Text(clip, result)
+    return core.std.FrameEval(clip, partial(_frames_since_bookmark, clip=clip, bookmarks=bookmarks))
 
 
 # TODO: Write function that only masks px of a certain color/threshold of colors.

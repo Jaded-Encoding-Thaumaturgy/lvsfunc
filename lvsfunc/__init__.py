@@ -1,7 +1,5 @@
 """
-    lvsfunc, a collection of VapourSynth functions and wrappers written and/or "borrowed" by LightArrowsEXE.
-    Information on how every function/wrapper works can be found in the docstrings,
-    and a full list of functions can be found in the README.
+    lvsfunc, a collection of VapourSynth functions and wrappers written and/or modified by LightArrowsEXE.
 
     If you spot any issues, please do not hesitate to send in a Pull Request
     or reach out to me on Discord (LightArrowsEXE#0476)!
@@ -13,16 +11,18 @@ nneedi3_clamp = aa.nneedi3_clamp
 tranpose_aa = aa.transpose_aa
 upscaled_sraa = aa.upscaled_sraa
 
+compare = comparison.compare
 stack_compare = comparison.stack_compare
 stack_planes = comparison.stack_planes
 tvbd_diff = comparison.tvbd_diff
-compare = comparison.compare
 
 deblend = deinterlace.deblend
 decomb = deinterlace.decomb
 dir_deshimmer = deinterlace.dir_deshimmer
 dir_unsharp = deinterlace.dir_unsharp
 
+adaptive_mask = denoise.adaptive_mask
+detail_mask = denoise.detail_mask
 quick_denoise = denoise.quick_denoise
 
 edgefixer = misc.edgefixer
