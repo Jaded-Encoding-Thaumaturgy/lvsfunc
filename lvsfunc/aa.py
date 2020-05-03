@@ -4,7 +4,7 @@
 from typing import Optional
 
 import vapoursynth as vs
-from vsutil import get_w, get_y, split
+from vsutil import get_w, get_y
 
 from . import util
 
@@ -148,7 +148,7 @@ def upscaled_sraa(clip: vs.VideoNode,
 
     :return:                Antialiased clip
     """
-    planes = split(clip)
+    luma = get_y(clip)
 
     nnargs = dict(nsize=0, nns=4, qual=2)
     eeargs = dict(alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)  # TAAmbk defaults are 0.5, 0.2, 20, 3, 30
@@ -169,7 +169,7 @@ def upscaled_sraa(clip: vs.VideoNode,
         w, h = clip.width, clip.height
 
     # Nnedi3 upscale from source height to source height * rounding (Default 1.5)
-    up_y = core.nnedi3.nnedi3(planes[0], 0, 1, 0, **nnargs)
+    up_y = core.nnedi3.nnedi3(luma, 0, 1, 0, **nnargs)
     up_y = core.resize.Spline36(up_y, height=ssh, src_top=.5)
     up_y = core.std.Transpose(up_y)
     up_y = core.nnedi3.nnedi3(up_y, 0, 1, 0, **nnargs)
@@ -184,5 +184,5 @@ def upscaled_sraa(clip: vs.VideoNode,
     scaled = core.fmtc.resample(aa_y, w, h, kernel='gauss', invks=True, invkstaps=2, taps=1, a1=32) if sharp_downscale else core.resize.Spline36(aa_y, w, h)
 
     if rep:
-        scaled = util.pick_repair(scaled)(scaled, planes[0].resize.Spline36(w, h), rep)
+        scaled = util.pick_repair(scaled)(scaled, luma.resize.Spline36(w, h), rep)
     return scaled if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([scaled, clip], [0, 1, 2], vs.YUV)
