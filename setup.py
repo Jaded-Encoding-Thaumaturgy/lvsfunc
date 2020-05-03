@@ -2,8 +2,11 @@
 
 import setuptools
 
-with open("README.md", "r") as fh:
+with open("README.md") as fh:
     long_description = fh.read()
+
+with open("requirements.txt") as fh:
+    install_requires = fh.read()
 
 name = "lvsfunc"
 version = "0.0.3"
@@ -19,10 +22,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     packages=["lvsfunc"],
     url="https://github.com/Irrational-Encoding-Wizardry/lvsfunc",
-    install_requires=[
-        "vapoursynth",
-        "vsutil"
-    ],
+    install_requires=install_requires,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
