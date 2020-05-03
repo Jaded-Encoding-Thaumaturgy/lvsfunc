@@ -2,9 +2,6 @@
 
 import setuptools
 
-from sphinx.setup_command import BuildDoc
-cmdclass = {'build_sphinx': BuildDoc}
-
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
