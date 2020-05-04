@@ -92,6 +92,7 @@ Functions
    lvsfunc.misc.source
    lvsfunc.misc.wipe_row
    lvsfunc.scale.conditional_descale
+   lvsfunc.scale.descale
    lvsfunc.scale.smart_descale
    lvsfunc.scale.smart_reupscale
    lvsfunc.scale.test_descale
@@ -186,6 +187,7 @@ lvsfunc.scale
 .. autosummary::
 
    lvsfunc.scale.conditional_descale
+   lvsfunc.scale.descale
    lvsfunc.scale.smart_descale
    lvsfunc.scale.smart_reupscale
    lvsfunc.scale.test_descale

@@ -8,16 +8,90 @@ from functools import partial
 from typing import Callable, List, Optional, Union
 
 import vapoursynth as vs
-from vsutil import get_depth, get_w, get_y, join, plane, split
+from vsutil import get_depth, get_w, get_y, iterate, join, plane, split
 
 from . import util
 
 core = vs.core
 
 
-def conditional_descale(clip: vs.VideoNode, 
-                        width: Optional[int], height: int = 720,
+def descale(clip: vs.VideoNode,
+            upscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode],
+            width: Optional[int] = None, height: int = 720,
+            kernel: str = 'bicubic', brz: float = 0.05,
+            b: float = 0, c: float = 1 / 2, taps: int = 4,
+            src_left: float = 0.0,
+            src_top: float = 0.0) -> vs.VideoNode:
+    """
+    A generic descaling function.
+    includes support for handling fractional resolutions (although that's still experimental)
+
+    If you want to descale to a fractional resolution,
+    set src_left and src_top and round up the target height.
+
+    :param clip:                   Clip to descale
+    :param upscaler:               Callable function with signature upscaler(clip, width, height) -> vs.VideoNode to be used for reupscaling.
+                                   Example for nnedi3_rpow2: `clip, upscaler = nnedi3_rpow2, ...`
+    :param width:                  Width to descale to (if None, auto-calculated)
+    :param height:                 Height to descale to (Default: 720)
+    :param kernel:                 Kernel used to descale (see :py:func:`descale.get_filter`, default: bicubic)
+    :param brz:                    Binarizing for the credit mask
+    :param b:                      B-param for bicubic kernel (Default: 0)
+    :param c:                      C-param for bicubic kernel (Default: 1 / 2)
+    :param taps:                   Taps param for lanczos kernel (Default: 4)
+    :param src_left:               Horizontal shifting for fractional resolutions
+    :param src_top:                Vertical shifting for fractional resolutions
+
+    :return:                       Descaled and re-upscaled clip
+    """
+    try:
+        from descale import get_filter
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("fractional_descale: missing dependency 'descale'")
+
+    def _create_credit_mask(clip: vs.VideoNode, descaled_clip: vs.VideoNode,
+                            kernel: str = 'bicubic', brz: float = 0.05,
+                            b: float = 0, c: float = 1/2, taps: int = 4,
+                            src_left: Optional[float] = False,
+                            src_top: Optional[float] = False) -> vs.VideoNode:
+        src_left = src_left or 0
+        src_top = src_top or 0
+
+        rescaled = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(descaled_clip, clip.width, clip.height,
+                                                                      src_left = src_left, src_top = src_top)
+        credit_mask = core.std.Expr([clip, rescaled], 'x y - abs').std.Binarize(brz)
+        credit_mask = iterate(credit_mask, core.std.Maximum, 4)
+        return iterate(credit_mask, core.std.Inflate, 2)
+
+    kernel = kernel.lower()
+
+    if width is None:
+        width = get_w(clip, clip.width / clip.height)
+
+    clip_y = get_y(clip)
+    descaled = get_filter(b, c, taps, kernel)(clip_y, width, height)
+
+    # This is done this way to prevent it from doing a needless conversion if params not passed
+    if src_left is not 0 or src_top is not 0:
+        descaled = core.resize.Bicubic(descaled, src_left = src_left, src_top = src_top)
+
+    upscaled = upscaler(descaled, width=clip.width, height=clip.height)
+
+    if src_left is not 0 or src_top is not 0:
+        upscaled = core.resize.Bicubic(descaled, src_left = -src_left, src_top = -src_top)
+
+    credit_mask = _create_credit_mask(clip_y, descaled, kernel, brz, b, c, taps, src_left, src_top)
+    merged = core.std.MaskedMerge(upscaled, clip_y, credit_mask)
+    merged = core.std.SetFrameProp(merged, "_descaled", data="True")
+
+    if clip.format is vs.GRAY:
+        return merged
+    return join([merged, plane(clip, 1), plane(clip, 2)])
+
+
+def conditional_descale(clip: vs.VideoNode,
                         upscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode],
+                        width: Optional[int] = None, height: int = 720,
                         kernel: str = 'bicubic',
                         b: Union[float, Fraction] = Fraction(0),
                         c: Union[float, Fraction] = Fraction(1, 2),
