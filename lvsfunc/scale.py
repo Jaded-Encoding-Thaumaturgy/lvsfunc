@@ -18,10 +18,11 @@ core = vs.core
 def conditional_descale(clip: vs.VideoNode, height: int,
                         upscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode],
                         kernel: str = 'bicubic',
-                        b: Union[float, Fraction] = Fraction(1, 3),
-                        c: Union[float, Fraction] = Fraction(1, 3),
+                        b: Union[float, Fraction] = Fraction(0),
+                        c: Union[float, Fraction] = Fraction(1, 2),
                         taps: int = 4,
-                        threshold: float = 0.003) -> vs.VideoNode:
+                        threshold: float = 0.003,
+                        **upscaler_args) -> vs.VideoNode:
     """
     Descales and reupscales a clip; if the difference exceeds the threshold, the frame will not be descaled.
     If it does not exceed the threshold, the frame will upscaled using the caller-supplied upscaler function.
@@ -71,10 +72,7 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     planes = split(clip)
     descaled, diff = _get_error(planes[0], height=height, kernel=kernel, b=b, c=c, taps=taps)
 
-    try:
-        planes[0] = upscaler(descaled, clip.width, clip.height)
-    except:
-        raise Exception("conditional_descale: upscale function misbehaved")
+    planes[0] = upscaler(descaled, clip.width, clip.height, **upscaler_args)
 
     descaled = join(planes).resize.Spline36(format=clip.format)
     descaled = descaled.std.SetFrameProp("_descaled", intval=1)
@@ -222,9 +220,9 @@ def smart_reupscale(clip: vs.VideoNode, width: Optional[int] = None, height: int
 def test_descale(clip: vs.VideoNode,
                  height: int,
                  kernel: str = 'bicubic',
-                 b: Union[float, Fraction] = Fraction(1, 3),
-                 c: Union[float, Fraction] = Fraction(1, 3),
-                 taps: int = 3,
+                 b: Union[float, Fraction] = Fraction(0),
+                 c: Union[float, Fraction] = Fraction(1, 2),
+                 taps: int = 4,
                  show_error: bool = True) -> vs.VideoNode:
     """
     Generic function to test descales with;
