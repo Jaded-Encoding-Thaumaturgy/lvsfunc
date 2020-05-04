@@ -42,6 +42,8 @@ test_descale = scale.test_descale
 # Aliases
 comp = compare
 cond_desc = conditional_descale
+ef = edgefixer
+nneedi3 = nneedi3_clamp
 qden = quick_denoise
 rfs = replace_ranges
 scomp = stack_compare

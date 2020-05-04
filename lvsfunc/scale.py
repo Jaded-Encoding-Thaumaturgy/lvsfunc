@@ -277,3 +277,7 @@ def test_descale(clip: vs.VideoNode,
 # TODO: Write "multi_descale", a function that allows you to descale a frame twice,
 #       like for example when the CGI in a show is handled in a different resolution
 #       than the drawn animation.
+
+
+# Aliases
+cond_desc = conditional_descale

@@ -128,3 +128,7 @@ def detail_mask(clip: vs.VideoNode, pre_denoise: Optional[float] = None,
     mask = core.std.Expr([mask_a, mask_b], 'x y max')
     mask = util.pick_removegrain(mask)(mask, 22)
     return util.pick_removegrain(mask)(mask, 11)
+
+
+# Aliases:
+qden = quick_denoise
