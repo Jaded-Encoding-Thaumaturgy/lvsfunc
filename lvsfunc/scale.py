@@ -15,7 +15,8 @@ from . import util
 core = vs.core
 
 
-def conditional_descale(clip: vs.VideoNode, height: int,
+def conditional_descale(clip: vs.VideoNode, 
+                        width: Optional[int], height: int = 720,
                         upscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode],
                         kernel: str = 'bicubic',
                         b: Union[float, Fraction] = Fraction(0),
@@ -40,7 +41,8 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     :param clip:                   Input clip
     :param upscaler:               Callable function with signature upscaler(clip, width, height) -> vs.VideoNode to be used for reupscaling.
                                    Example for nnedi3_rpow2: `lambda clip, width, height: nnedi3_rpow2(clip).resize.Spline36(width, height)`
-    :param height:                 Target descale height
+    :param width:                  Target descale width. If None, determine from `height`
+    :param height:                 Target descale height (Default: 720)
     :param kernel:                 Kernel used to descale (see :py:func:`lvsfunc.util.get_scale_filter`, Default: bicubic)
     :param b:                      B-param for bicubic kernel (Default: 1 / 3)
     :param c:                      C-param for bicubic kernel (Default: 1 / 3)
@@ -57,9 +59,11 @@ def conditional_descale(clip: vs.VideoNode, height: int,
     b = float(b)
     c = float(c)
 
-    def _get_error(clip, height, kernel, b, c, taps):
-        descale = get_filter(b, c, taps, kernel)(clip, get_w(height, clip.width / clip.height), height)
-        upscale = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(clip, clip.width, clip.height)
+    width = width or get_w(height, clip.width / clip.height)
+
+    def _get_error(clip, width, height, kernel, b, c, taps):
+        descale = get_filter(b, c, taps, kernel)(clip, width, height)
+        upscale = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(descale, clip.width, clip.height)
         diff = core.std.PlaneStats(upscale, clip)
         return descale, diff
 
@@ -70,7 +74,7 @@ def conditional_descale(clip: vs.VideoNode, height: int,
         clip = util.resampler(clip, 32)
 
     planes = split(clip)
-    descaled, diff = _get_error(planes[0], height=height, kernel=kernel, b=b, c=c, taps=taps)
+    descaled, diff = _get_error(planes[0], width=width, height=height, kernel=kernel, b=b, c=c, taps=taps)
 
     planes[0] = upscaler(descaled, clip.width, clip.height, **upscaler_args)
 
@@ -170,7 +174,8 @@ def smart_descale(clip: vs.VideoNode,
     return descaled
 
 
-def smart_reupscale(clip: vs.VideoNode, width: Optional[int] = None, height: int = 1080,
+def smart_reupscale(clip: vs.VideoNode,
+                    width: Optional[int] = None, height: int = 1080,
                     kernel: str = 'bicubic',
                     b: Union[float, Fraction] = Fraction(0),
                     c: Union[float, Fraction] = Fraction(1, 2), taps: int = 4,
@@ -218,7 +223,7 @@ def smart_reupscale(clip: vs.VideoNode, width: Optional[int] = None, height: int
 
 
 def test_descale(clip: vs.VideoNode,
-                 height: int,
+                 width: Optional[int] = None, height: int = 720,
                  kernel: str = 'bicubic',
                  b: Union[float, Fraction] = Fraction(0),
                  c: Union[float, Fraction] = Fraction(1, 2),
@@ -237,12 +242,13 @@ def test_descale(clip: vs.VideoNode,
     Dependencies: vapoursynth-descale
 
     :param clip:           Input clip
-    :param height:         Target descaled height.
+    :param width:          Target descale width. If None, determine from `height`
+    :param height:         Target descale height (Default: 720)
     :param kernel:         Kernel used to descale (see :py:func:`lvsfunc.util.get_scale_filter`)
-    :param b:              B-param for bicubic kernel (Default: 1 / 3)
-    :param c:              C-param for bicubic kernel (Default: 1 / 3)
-    :param taps:           Taps param for lanczos kernel (Default: 3)
-    :param show_error:     Show diff between the original clip and the reupscaled clip (Default: True)
+    :param b:              B-param for bicubic kernel (Default: 0)
+    :param c:              C-param for bicubic kernel (Default: 1 / 2)
+    :param taps:           Taps param for lanczos kernel (Default: 4)
+    :param show_error:     Show diff between the original clip and the re-upscaled clip (Default: True)
 
     :return: A clip re-upscaled with the same kernel
     """
@@ -254,12 +260,14 @@ def test_descale(clip: vs.VideoNode,
     b = float(b)
     c = float(c)
 
+    width = width or get_w(height, clip.width / clip.height)
+
     if get_depth(clip) != 32:
         clip = util.resampler(clip, 32)
 
     clip_y = get_y(clip)
 
-    desc = get_filter(b, c, taps, kernel)(clip_y, get_w(height, clip.width / clip.height), height)
+    desc = get_filter(b, c, taps, kernel)(clip_y, width, height)
     upsc = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(desc, clip.width, clip.height)
     upsc = core.std.PlaneStats(clip_y, upsc)
 
