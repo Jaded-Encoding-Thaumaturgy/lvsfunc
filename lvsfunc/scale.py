@@ -244,7 +244,7 @@ def smart_descale(clip: vs.VideoNode,
         upscale = smart_reupscale(descaled, height=clip.height, kernel=kernel, b=b, c=c, taps=taps)
         if clip_c.format is vs.GRAY:
             return upscale
-        return join([upscale, plane(clip_c, 1), plane(clip_c, 2)])
+        return core.std.ShufflePlanes([upscale, clip_c], [0, 1, 2], vs.YUV)
     return descaled
 
 
