@@ -336,14 +336,11 @@ def test_descale(clip: vs.VideoNode,
 
     width = width or get_w(height, clip.width / clip.height)
 
-    if get_depth(clip) != 32:
-        clip = util.resampler(clip, 32)
-
     clip_y = get_y(clip)
 
     desc = get_filter(b, c, taps, kernel)(clip_y, width, height)
     upsc = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(desc, clip.width, clip.height)
-    upsc = core.std.PlaneStats(clip_y, upsc)
+    upsc = core.std.PlaneStats(upsc, clip_y)
 
     if clip is vs.GRAY:
         return core.text.FrameProps(upsc, "PlaneStatsDiff") if show_error else upsc
