@@ -287,9 +287,3 @@ def frames_since_bookmark(clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoN
 
 # TODO: Write function that only masks px of a certain color/threshold of colors.
 #       Think the magic wand tool in various image-editing programs.
-
-
-# Aliases:
-rfs = replace_ranges
-src = source
-ef = edgefixer
