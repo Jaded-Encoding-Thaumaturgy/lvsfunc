@@ -1,11 +1,12 @@
 # Vapoursynth
-*.vpy
+.vscode
 *.pyc
+*.vpy
 BACK-UP/
-lvsfunc.egg-info/
-dist/
 build/
-venv/
+dist/
 doc/_build
 doc/_static
 doc/_templates
+lvsfunc.egg-info/
+venv/
