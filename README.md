@@ -11,7 +11,17 @@ remove that from your system first.<br>
 You can then install `lvsfunc`
 with `python3 setup.py install`.
 
-Functions can be loaded and used as follows:
+### Arch Linux
+
+Install the [AUR package](https://aur.archlinux.org/packages/vapoursynth-plugin-lvsfunc-git/) `vapoursynth-plugin-lvsfunc-git` with your favorite AUR helper:
+
+```sh
+yay -S vapoursynth-plugin-lvsfunc-git
+```
+
+<br>
+After installation, functions can be loaded and used as follows:
+
 ```py
 import lvsfunc as lvf
 
