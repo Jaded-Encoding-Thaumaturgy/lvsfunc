@@ -9,7 +9,7 @@ can be found in the [documentation](https://lvsfunc.readthedocs.io/).
 ## How to install
 
 If you have the old `lvsfunc.py` module,
-remove that from your system first.  
+remove that from your system first.
 You can then install `lvsfunc`
 with `python3 setup.py install`.
 
