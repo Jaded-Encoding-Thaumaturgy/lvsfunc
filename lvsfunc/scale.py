@@ -72,12 +72,12 @@ def descale(clip: vs.VideoNode,
     descaled = get_filter(b, c, taps, kernel)(clip_y, width, height)
 
     # This is done this way to prevent it from doing a needless conversion if params not passed
-    if src_left is not 0 or src_top is not 0:
+    if src_left != 0 or src_top != 0:
         descaled = core.resize.Bicubic(descaled, src_left = src_left, src_top = src_top)
 
     upscaled = upscaler(descaled, width=clip.width, height=clip.height)
 
-    if src_left is not 0 or src_top is not 0:
+    if src_left != 0 or src_top != 0:
         upscaled = core.resize.Bicubic(descaled, src_left = -src_left, src_top = -src_top)
 
     credit_mask = _create_credit_mask(clip_y, descaled, kernel, brz, b, c, taps, src_left, src_top)
