@@ -31,7 +31,7 @@ def descale(clip: vs.VideoNode,
 
     :param clip:                   Clip to descale
     :param upscaler:               Callable function with signature upscaler(clip, width, height) -> vs.VideoNode to be used for reupscaling.
-                                   Example for nnedi3_rpow2: `clip, upscaler = nnedi3_rpow2, ...`
+                                   Example for nnedi3_rpow2: `lambda clip, width, height: nnedi3_rpow2(clip, width, height)`
     :param width:                  Width to descale to (if None, auto-calculated)
     :param height:                 Height to descale to (Default: 720)
     :param kernel:                 Kernel used to descale (see :py:func:`descale.get_filter`, default: bicubic)
@@ -114,7 +114,7 @@ def conditional_descale(clip: vs.VideoNode,
 
     :param clip:                   Input clip
     :param upscaler:               Callable function with signature upscaler(clip, width, height) -> vs.VideoNode to be used for reupscaling.
-                                   Example for nnedi3_rpow2: `lambda clip, width, height: nnedi3_rpow2(clip).resize.Spline36(width, height)`
+                                   Example for nnedi3_rpow2: `lambda clip, width, height: nnedi3_rpow2(clip, width, height)`
     :param width:                  Target descale width. If None, determine from `height`
     :param height:                 Target descale height (Default: 720)
     :param kernel:                 Kernel used to descale (see :py:func:`lvsfunc.util.get_scale_filter`, Default: bicubic)
