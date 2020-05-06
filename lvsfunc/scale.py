@@ -47,7 +47,7 @@ def descale(clip: vs.VideoNode,
     try:
         from descale import get_filter
     except ModuleNotFoundError:
-        raise ModuleNotFoundError("fractional_descale: missing dependency 'descale'")
+        raise ModuleNotFoundError("descale: missing dependency 'descale'")
 
     def _create_credit_mask(clip: vs.VideoNode, descaled_clip: vs.VideoNode,
                             kernel: str = 'bicubic', brz: float = 0.05,
