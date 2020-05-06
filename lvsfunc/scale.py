@@ -40,14 +40,12 @@ def descale(clip: vs.VideoNode,
     :return:                       Descaled and re-upscaled clip
     """
     def _create_credit_mask(clip: vs.VideoNode, descaled_clip: vs.VideoNode,
-                            kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2), brz: float = 0.05,
-                            src_left: Optional[float] = False,
-                            src_top: Optional[float] = False) -> vs.VideoNode:
-        src_left = src_left or 0
-        src_top = src_top or 0
-
+                            kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
+                            brz: float = 0.05,
+                            src_left: float = 0.0,
+                            src_top: float = 0.0) -> vs.VideoNode:
         rescaled = kernel.scale(descaled_clip, clip.width, clip.height,
-                                src_left=src_left, src_top=src_top)
+                                (src_left, src_top))
         credit_mask = core.std.Expr([clip, rescaled], 'x y - abs').std.Binarize(brz)
         credit_mask = iterate(credit_mask, core.std.Maximum, 4)
         return iterate(credit_mask, core.std.Inflate, 2)
@@ -59,12 +57,12 @@ def descale(clip: vs.VideoNode,
 
     # This is done this way to prevent it from doing a needless conversion if params not passed
     if src_left != 0 or src_top != 0:
-        descaled = core.resize.Bicubic(descaled, src_left = src_left, src_top = src_top)
+        descaled = core.resize.Bicubic(descaled, src_left=src_left, src_top=src_top)
 
     upscaled = upscaler(descaled, width=clip.width, height=clip.height)
 
     if src_left != 0 or src_top != 0:
-        upscaled = core.resize.Bicubic(descaled, src_left = -src_left, src_top = -src_top)
+        upscaled = core.resize.Bicubic(descaled, src_left=-src_left, src_top=-src_top)
 
     credit_mask = _create_credit_mask(clip_y, descaled, kernel, brz, src_left, src_top)
     merged = core.std.MaskedMerge(upscaled, clip_y, credit_mask)
@@ -234,7 +232,7 @@ def smart_reupscale(clip: vs.VideoNode,
         except:
             raise ValueError(f"smart_reupscale: 'This clip was not descaled using smart_descale'")
         w = get_w(h)
-        clip = kernel.scale(clip, width=w, height=h*2, src_top=.5)
+        clip = kernel.scale(clip, w, h*2, (0.5, 0))
         return core.std.Transpose(clip)
 
     width = width or get_w(height)
@@ -245,7 +243,7 @@ def smart_reupscale(clip: vs.VideoNode,
     upsc = util.quick_resample(clip, core.znedi3.nnedi3, field=0, dh=True, **znargs)
     upsc = core.std.FrameEval(upsc, partial(_transpose_shift, clip=upsc), prop_src=upsc)
     upsc = util.quick_resample(upsc, core.znedi3.nnedi3, field=0, dh=True, **znargs)
-    return kernel.scale(upsc, height=width, width=height, src_top=.5).std.Transpose()
+    return kernel.scale(upsc, width=height, height=width, shift=(0.5, 0)).std.Transpose()
 
 
 def test_descale(clip: vs.VideoNode,
