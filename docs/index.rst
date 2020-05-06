@@ -60,6 +60,7 @@ Modules
    lvsfunc.comparison
    lvsfunc.deinterlace
    lvsfunc.denoise
+   lvsfunc.kernels
    lvsfunc.misc
    lvsfunc.scale
    lvsfunc.util
@@ -157,6 +158,14 @@ lvsfunc.denoise
    lvsfunc.denoise.quick_denoise
 
 .. automodule:: lvsfunc.denoise
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+lvsfunc.kernels
+-------------------
+
+.. automodule:: lvsfunc.kernels
    :members:
    :undoc-members:
    :show-inheritance:

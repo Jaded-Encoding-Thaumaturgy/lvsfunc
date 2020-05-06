@@ -2,7 +2,6 @@
     Functions for (de)scaling.
 """
 import math
-from abc import ABC, abstractmethod
 from collections import namedtuple
 from functools import partial
 from typing import Callable, List, Optional
@@ -10,99 +9,16 @@ from typing import Callable, List, Optional
 import vapoursynth as vs
 from vsutil import get_depth, get_w, get_y, iterate, join, plane, split
 
-from . import util
+from . import kernels, util
 
 core = vs.core
-
-
-class Kernel(ABC):
-    """ Abstract scaling kernel interface. """
-    @abstractmethod
-    def scale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
-        pass
-
-    @abstractmethod
-    def descale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
-        pass
-
-
-class Scalers:
-    """ Kernels for vapoursynth internal resizers. """
-    class Bilinear(Kernel):
-        """ Built-in bilinear resizer. """
-        def scale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
-            return core.resize.Bilinear(clip, width, height, **kwargs)
-
-        def descale(self, clip: vs.VideoNode, width: int, height: int, **kwargs):
-            return core.descale.Debilinear(clip, width, height, **kwargs)
-
-    class Bicubic(Kernel):
-        """
-        Built-in bicubic resizer.
-
-        :param b: B-param for bicubic kernel
-        :param c: C-param for bicubic kernel
-        """
-        def __init__(self, b: float = 0, c: float = 1/2):
-            self.b = b
-            self.c = c
-
-        def scale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
-            return core.resize.Bicubic(clip, width, height,
-                                       filter_param_a=self.b,
-                                       filter_param_b=self.c, **kwargs)
-
-        def descale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
-            return core.descale.Debicubic(clip, width, height, b=self.b,
-                                          c=self.c, **kwargs)
-
-    class Lanczos(Kernel):
-        """
-        Built-in lanczos resizer.
-
-        :param taps: taps param for lanczos kernel
-        """
-        def __init__(self, taps: int = 4):
-            self.taps = taps
-
-        def scale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
-            return core.resize.Lanczos(clip, width, height,
-                                       filter_param_a=self.taps, **kwargs)
-
-        def descale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
-            return core.descale.Delanczos(clip, width, height, taps=self.taps,
-                                          **kwargs)
-
-    class Spline16(Kernel):
-        """ Built-in spline16 resizer. """
-        def scale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
-            return core.resize.Spline16(clip, width, height, **kwargs)
-
-        def descale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
-            return core.descale.Despline16(clip, width, height, **kwargs)
-
-    class Spline36(Kernel):
-        """ Built-in spline36 resizer. """
-        def scale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
-            return core.resize.Spline36(clip, width, height, **kwargs)
-
-        def descale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
-            return core.descale.Despline36(clip, width, height, **kwargs)
-
-    class Spline64(Kernel):
-        """ Built-in spline64 resizer. """
-        def scale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
-            return core.resize.Spline64(clip, width, height, **kwargs)
-
-        def descale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
-            return core.descale.Despline64(clip, width, height, **kwargs)
 
 
 def descale(clip: vs.VideoNode,
             upscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode],
             width: Optional[int] = None, height: int = 720,
-            kernel: Kernel = Scalers.Bicubic(b=0, c=1/2), brz: float = 0.05,
-            src_left: float = 0.0,
+            kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
+            brz: float = 0.05, src_left: float = 0.0,
             src_top: float = 0.0) -> vs.VideoNode:
     """
     A generic descaling function.
@@ -116,7 +32,7 @@ def descale(clip: vs.VideoNode,
                                    Example for nnedi3_rpow2: `lambda clip, width, height: nnedi3_rpow2(clip, width, height)`
     :param width:                  Width to descale to (if None, auto-calculated)
     :param height:                 Height to descale to (Default: 720)
-    :param kernel:                 Kernel used to descale (see :py:class:`lvsfunc.scale.Scalers`, Default: Scalers.Bicubic(b=0, c=1/2))
+    :param kernel:                 Kernel used to descale (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=0, c=1/2))
     :param brz:                    Binarizing for the credit mask
     :param src_left:               Horizontal shifting for fractional resolutions
     :param src_top:                Vertical shifting for fractional resolutions
@@ -124,7 +40,7 @@ def descale(clip: vs.VideoNode,
     :return:                       Descaled and re-upscaled clip
     """
     def _create_credit_mask(clip: vs.VideoNode, descaled_clip: vs.VideoNode,
-                            kernel: Kernel = Scalers.Bicubic(b=0, c=1/2), brz: float = 0.05,
+                            kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2), brz: float = 0.05,
                             src_left: Optional[float] = False,
                             src_top: Optional[float] = False) -> vs.VideoNode:
         src_left = src_left or 0
@@ -162,7 +78,7 @@ def descale(clip: vs.VideoNode,
 def conditional_descale(clip: vs.VideoNode,
                         upscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode],
                         width: Optional[int] = None, height: int = 720,
-                        kernel: Kernel = Scalers.Bicubic(b=0, c=1/2),
+                        kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
                         taps: int = 4,
                         threshold: float = 0.003,
                         **upscaler_args) -> vs.VideoNode:
@@ -185,7 +101,7 @@ def conditional_descale(clip: vs.VideoNode,
                                    Example for nnedi3_rpow2: `lambda clip, width, height: nnedi3_rpow2(clip, width, height)`
     :param width:                  Target descale width. If None, determine from `height`
     :param height:                 Target descale height (Default: 720)
-    :param kernel:                 Kernel used to descale (see :py:class:`lvsfunc.scale.Scalers`, Default: Scalers.Bicubic(b=0, c=1/2))
+    :param kernel:                 Kernel used to descale (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=0, c=1/2))
     :param threshold:              Threshold for deciding to descale or leave the original frame (Default: 0.003)
 
     :return:                       Constant-resolution rescaled clip
@@ -218,7 +134,7 @@ def conditional_descale(clip: vs.VideoNode,
 
 def smart_descale(clip: vs.VideoNode,
                   resolutions: List[int],
-                  kernel: Kernel = Scalers.Bicubic(b=0, c=1/2),
+                  kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
                   thr: float = 0.05, rescale: bool = False) -> vs.VideoNode:
     """
     A function that descales a clip to multiple resolutions.
@@ -241,7 +157,7 @@ def smart_descale(clip: vs.VideoNode,
 
     :param clip:             Input clip
     :param resolutions:      A list of resolutions to descale to
-    :param kernel:           Kernel used to descale (see :py:class:`lvsfunc.scale.Scalers`, Default: Scalers.Bicubic(b=0, c=1/2))
+    :param kernel:           Kernel used to descale (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=0, c=1/2))
     :param thr:              Threshold for when a clip is discerned as "non-scaleable" (Default: 0.05)
     :param rescale:          Rescale the clip to the original resolution after descaling (Default: False)
 
@@ -294,7 +210,7 @@ def smart_descale(clip: vs.VideoNode,
 
 def smart_reupscale(clip: vs.VideoNode,
                     width: Optional[int] = None, height: int = 1080,
-                    kernel: Kernel = Scalers.Bicubic(b=0, c=1/2),
+                    kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
                     **znargs) -> vs.VideoNode:
     """
     A quick 'n easy wrapper used to re-upscale a clip descaled with smart_descale using znedi3.
@@ -306,7 +222,7 @@ def smart_reupscale(clip: vs.VideoNode,
     :param clip:         Input clip
     :param width:        Upscale width. If None, determine from `height` assuming 16:9 aspect ratio (Default: None)
     :param height:       Upscale height (Default: 1080)
-    :param kernel:       Kernel used to downscale the doubled clip (see :py:class:`lvsfunc.scale.Scalers`, Default: Scalers.Bicubic(b=0, c=1/2))
+    :param kernel:       Kernel used to downscale the doubled clip (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=0, c=1/2))
     :param znargs:       Arguments passed to znedi3
 
     :return:             Reupscaled clip
@@ -334,7 +250,7 @@ def smart_reupscale(clip: vs.VideoNode,
 
 def test_descale(clip: vs.VideoNode,
                  width: Optional[int] = None, height: int = 720,
-                 kernel: Kernel = Scalers.Bicubic(b=0, c=1/2),
+                 kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
                  show_error: bool = True) -> vs.VideoNode:
     """
     Generic function to test descales with;
@@ -351,7 +267,7 @@ def test_descale(clip: vs.VideoNode,
     :param clip:           Input clip
     :param width:          Target descale width. If None, determine from `height`
     :param height:         Target descale height (Default: 720)
-    :param kernel:         Kernel used to descale (see :py:class:`lvsfunc.scale.Scalers`, Default: Scalers.Bicubic(b=0, c=1/2))
+    :param kernel:         Kernel used to descale (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=0, c=1/2))
     :param show_error:     Show diff between the original clip and the re-upscaled clip (Default: True)
 
     :return: A clip re-upscaled with the same kernel
