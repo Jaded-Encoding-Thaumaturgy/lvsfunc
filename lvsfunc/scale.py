@@ -2,10 +2,10 @@
     Functions for (de)scaling.
 """
 import math
+from abc import ABC, abstractmethod
 from collections import namedtuple
-from fractions import Fraction
 from functools import partial
-from typing import Callable, List, Optional, Union
+from typing import Callable, List, Optional
 
 import vapoursynth as vs
 from vsutil import get_depth, get_w, get_y, iterate, join, plane, split
@@ -15,11 +15,93 @@ from . import util
 core = vs.core
 
 
+class Kernel(ABC):
+    """ Abstract scaling kernel interface. """
+    @abstractmethod
+    def scale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
+        pass
+
+    @abstractmethod
+    def descale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
+        pass
+
+
+class Scalers:
+    """ Kernels for vapoursynth internal resizers. """
+    class Bilinear(Kernel):
+        """ Built-in bilinear resizer. """
+        def scale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
+            return core.resize.Bilinear(clip, width, height, **kwargs)
+
+        def descale(self, clip: vs.VideoNode, width: int, height: int, **kwargs):
+            return core.descale.Debilinear(clip, width, height, **kwargs)
+
+    class Bicubic(Kernel):
+        """
+        Built-in bicubic resizer.
+
+        :param b: B-param for bicubic kernel
+        :param c: C-param for bicubic kernel
+        """
+        def __init__(self, b: float = 0, c: float = 1/2):
+            self.b = b
+            self.c = c
+
+        def scale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
+            return core.resize.Bicubic(clip, width, height,
+                                       filter_param_a=self.b,
+                                       filter_param_b=self.c, **kwargs)
+
+        def descale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
+            return core.descale.Debicubic(clip, width, height, b=self.b,
+                                          c=self.c, **kwargs)
+
+    class Lanczos(Kernel):
+        """
+        Built-in lanczos resizer.
+
+        :param taps: taps param for lanczos kernel
+        """
+        def __init__(self, taps: int = 4):
+            self.taps = taps
+
+        def scale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
+            return core.resize.Lanczos(clip, width, height,
+                                       filter_param_a=self.taps, **kwargs)
+
+        def descale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
+            return core.descale.Delanczos(clip, width, height, taps=self.taps,
+                                          **kwargs)
+
+    class Spline16(Kernel):
+        """ Built-in spline16 resizer. """
+        def scale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
+            return core.resize.Spline16(clip, width, height, **kwargs)
+
+        def descale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
+            return core.descale.Despline16(clip, width, height, **kwargs)
+
+    class Spline36(Kernel):
+        """ Built-in spline36 resizer. """
+        def scale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
+            return core.resize.Spline36(clip, width, height, **kwargs)
+
+        def descale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
+            return core.descale.Despline36(clip, width, height, **kwargs)
+
+    class Spline64(Kernel):
+        """ Built-in spline64 resizer. """
+        def scale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
+            return core.resize.Spline64(clip, width, height, **kwargs)
+
+        def descale(self, clip: vs.VideoNode, width: int, height: int, **kwargs) -> vs.VideoNode:
+            return core.descale.Despline64(clip, width, height, **kwargs)
+
+
 def descale(clip: vs.VideoNode,
             upscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode],
             width: Optional[int] = None, height: int = 720,
-            kernel: str = 'bicubic', brz: float = 0.05,
-            b: float = 0, c: float = 1 / 2, taps: int = 4,
+            kernel: Kernel = Scalers.Bicubic(b=0, c=1/2), brz: float = 0.05,
             src_left: float = 0.0,
             src_top: float = 0.0) -> vs.VideoNode:
     """
@@ -34,42 +116,30 @@ def descale(clip: vs.VideoNode,
                                    Example for nnedi3_rpow2: `lambda clip, width, height: nnedi3_rpow2(clip, width, height)`
     :param width:                  Width to descale to (if None, auto-calculated)
     :param height:                 Height to descale to (Default: 720)
-    :param kernel:                 Kernel used to descale (see :py:func:`descale.get_filter`, default: bicubic)
+    :param kernel:                 Kernel used to descale (see :py:class:`lvsfunc.scale.Scalers`, Default: Scalers.Bicubic(b=0, c=1/2))
     :param brz:                    Binarizing for the credit mask
-    :param b:                      B-param for bicubic kernel (Default: 0)
-    :param c:                      C-param for bicubic kernel (Default: 1 / 2)
-    :param taps:                   Taps param for lanczos kernel (Default: 4)
     :param src_left:               Horizontal shifting for fractional resolutions
     :param src_top:                Vertical shifting for fractional resolutions
 
     :return:                       Descaled and re-upscaled clip
     """
-    try:
-        from descale import get_filter
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("descale: missing dependency 'descale'")
-
     def _create_credit_mask(clip: vs.VideoNode, descaled_clip: vs.VideoNode,
-                            kernel: str = 'bicubic', brz: float = 0.05,
-                            b: float = 0, c: float = 1/2, taps: int = 4,
+                            kernel: Kernel = Scalers.Bicubic(b=0, c=1/2), brz: float = 0.05,
                             src_left: Optional[float] = False,
                             src_top: Optional[float] = False) -> vs.VideoNode:
         src_left = src_left or 0
         src_top = src_top or 0
 
-        rescaled = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(descaled_clip, clip.width, clip.height,
-                                                                      src_left = src_left, src_top = src_top)
+        rescaled = kernel.scale(descaled_clip, clip.width, clip.height,
+                                src_left=src_left, src_top=src_top)
         credit_mask = core.std.Expr([clip, rescaled], 'x y - abs').std.Binarize(brz)
         credit_mask = iterate(credit_mask, core.std.Maximum, 4)
         return iterate(credit_mask, core.std.Inflate, 2)
 
-    kernel = kernel.lower()
-
-    if width is None:
-        width = get_w(clip, clip.width / clip.height)
+    width = width or get_w(height, clip.width / clip.height)
 
     clip_y = get_y(clip)
-    descaled = get_filter(b, c, taps, kernel)(clip_y, width, height)
+    descaled = kernel.descale(clip_y, width, height)
 
     # This is done this way to prevent it from doing a needless conversion if params not passed
     if src_left != 0 or src_top != 0:
@@ -80,7 +150,7 @@ def descale(clip: vs.VideoNode,
     if src_left != 0 or src_top != 0:
         upscaled = core.resize.Bicubic(descaled, src_left = -src_left, src_top = -src_top)
 
-    credit_mask = _create_credit_mask(clip_y, descaled, kernel, brz, b, c, taps, src_left, src_top)
+    credit_mask = _create_credit_mask(clip_y, descaled, kernel, brz, src_left, src_top)
     merged = core.std.MaskedMerge(upscaled, clip_y, credit_mask)
     merged = core.std.SetFrameProp(merged, "_descaled", data="True")
 
@@ -92,9 +162,7 @@ def descale(clip: vs.VideoNode,
 def conditional_descale(clip: vs.VideoNode,
                         upscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode],
                         width: Optional[int] = None, height: int = 720,
-                        kernel: str = 'bicubic',
-                        b: Union[float, Fraction] = Fraction(0),
-                        c: Union[float, Fraction] = Fraction(1, 2),
+                        kernel: Kernel = Scalers.Bicubic(b=0, c=1/2),
                         taps: int = 4,
                         threshold: float = 0.003,
                         **upscaler_args) -> vs.VideoNode:
@@ -117,27 +185,16 @@ def conditional_descale(clip: vs.VideoNode,
                                    Example for nnedi3_rpow2: `lambda clip, width, height: nnedi3_rpow2(clip, width, height)`
     :param width:                  Target descale width. If None, determine from `height`
     :param height:                 Target descale height (Default: 720)
-    :param kernel:                 Kernel used to descale (see :py:func:`lvsfunc.util.get_scale_filter`, Default: bicubic)
-    :param b:                      B-param for bicubic kernel (Default: 1 / 3)
-    :param c:                      C-param for bicubic kernel (Default: 1 / 3)
-    :param taps:                   Taps param for lanczos kernel (Default: 4)
+    :param kernel:                 Kernel used to descale (see :py:class:`lvsfunc.scale.Scalers`, Default: Scalers.Bicubic(b=0, c=1/2))
     :param threshold:              Threshold for deciding to descale or leave the original frame (Default: 0.003)
 
     :return:                       Constant-resolution rescaled clip
     """
-    try:
-        from descale import get_filter
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("conditional_descale: missing dependency 'descale'")
-
-    b = float(b)
-    c = float(c)
-
     width = width or get_w(height, clip.width / clip.height)
 
-    def _get_error(clip, width, height, kernel, b, c, taps):
-        descale = get_filter(b, c, taps, kernel)(clip, width, height)
-        upscale = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(descale, clip.width, clip.height)
+    def _get_error(clip, width, height, kernel):
+        descale = kernel.descale(clip, width, height)
+        upscale = kernel.scale(descale, clip.width, clip.height)
         diff = core.std.PlaneStats(upscale, clip)
         return descale, diff
 
@@ -148,7 +205,7 @@ def conditional_descale(clip: vs.VideoNode,
         clip = util.resampler(clip, 32)
 
     planes = split(clip)
-    descaled, diff = _get_error(planes[0], width=width, height=height, kernel=kernel, b=b, c=c, taps=taps)
+    descaled, diff = _get_error(planes[0], width=width, height=height, kernel=kernel)
 
     planes[0] = upscaler(descaled, clip.width, clip.height, **upscaler_args)
 
@@ -161,9 +218,7 @@ def conditional_descale(clip: vs.VideoNode,
 
 def smart_descale(clip: vs.VideoNode,
                   resolutions: List[int],
-                  kernel: str = 'bicubic',
-                  b: Union[float, Fraction] = Fraction(0),
-                  c: Union[float, Fraction] = Fraction(1, 2), taps: int = 4,
+                  kernel: Kernel = Scalers.Bicubic(b=0, c=1/2),
                   thr: float = 0.05, rescale: bool = False) -> vs.VideoNode:
     """
     A function that descales a clip to multiple resolutions.
@@ -186,23 +241,12 @@ def smart_descale(clip: vs.VideoNode,
 
     :param clip:             Input clip
     :param resolutions:      A list of resolutions to descale to
-    :param kernel:           Kernel used to descale (see :py:func:`lvsfunc.util.get_scale_filter`, Default: bicubic)
-    :param b:                B-param for bicubic kernel (Default: 0)
-    :param c:                C-param for bicubic kernel (Default: 1 / 2)
-    :param taps:             Taps param for lanczos kernel (Default: 4)
+    :param kernel:           Kernel used to descale (see :py:class:`lvsfunc.scale.Scalers`, Default: Scalers.Bicubic(b=0, c=1/2))
     :param thr:              Threshold for when a clip is discerned as "non-scaleable" (Default: 0.05)
     :param rescale:          Rescale the clip to the original resolution after descaling (Default: False)
 
     :return:                 Variable-resolution clip containing descaled frames
     """
-    try:
-        from descale import get_filter
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("smart_descale: missing dependency 'descale'")
-
-    b = float(b)
-    c = float(c)
-
     Resolution = namedtuple('Resolution', ['width', 'height'])
     ScaleAttempt = namedtuple('ScaleAttempt', ['descaled', 'rescaled', 'resolution', 'diff'])
     clip_c = clip
@@ -212,9 +256,9 @@ def smart_descale(clip: vs.VideoNode,
 
     def _perform_descale(height: int) -> ScaleAttempt:
         resolution = Resolution(get_w(height, clip.width / clip.height), height)
-        descaled = get_filter(b, c, taps, kernel)(clip, resolution.width, resolution.height) \
+        descaled = kernel.descale(clip, resolution.width, resolution.height) \
             .std.SetFrameProp('descaleResolution', intval=height)
-        rescaled = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(descaled, clip.width, clip.height)
+        rescaled = kernel.scale(descaled, clip.width, clip.height)
         diff = core.std.Expr([rescaled, clip], 'x y - abs').std.PlaneStats()
         return ScaleAttempt(descaled, rescaled, resolution, diff)
 
@@ -241,7 +285,7 @@ def smart_descale(clip: vs.VideoNode,
                                   prop_src=props)
 
     if rescale:
-        upscale = smart_reupscale(descaled, height=clip.height, kernel=kernel, b=b, c=c, taps=taps)
+        upscale = smart_reupscale(descaled, height=clip.height, kernel=kernel)
         if clip_c.format is vs.GRAY:
             return upscale
         return core.std.ShufflePlanes([upscale, clip_c], [0, 1, 2], vs.YUV)
@@ -250,9 +294,7 @@ def smart_descale(clip: vs.VideoNode,
 
 def smart_reupscale(clip: vs.VideoNode,
                     width: Optional[int] = None, height: int = 1080,
-                    kernel: str = 'bicubic',
-                    b: Union[float, Fraction] = Fraction(0),
-                    c: Union[float, Fraction] = Fraction(1, 2), taps: int = 4,
+                    kernel: Kernel = Scalers.Bicubic(b=0, c=1/2),
                     **znargs) -> vs.VideoNode:
     """
     A quick 'n easy wrapper used to re-upscale a clip descaled with smart_descale using znedi3.
@@ -264,17 +306,11 @@ def smart_reupscale(clip: vs.VideoNode,
     :param clip:         Input clip
     :param width:        Upscale width. If None, determine from `height` assuming 16:9 aspect ratio (Default: None)
     :param height:       Upscale height (Default: 1080)
-    :param kernel:       Kernel used to downscale the doubled clip (see :py:func:`lvsfunc.util.get_scale_filter`)
-    :param b:            B-param for bicubic kernel (Default: 0)
-    :param c:            C-param for bicubic kernel (Default: 1 / 2)
-    :param taps:         Taps param for lanczos kernel. (Default: 4)
+    :param kernel:       Kernel used to downscale the doubled clip (see :py:class:`lvsfunc.scale.Scalers`, Default: Scalers.Bicubic(b=0, c=1/2))
     :param znargs:       Arguments passed to znedi3
 
     :return:             Reupscaled clip
     """
-
-    b = float(b)
-    c = float(c)
 
     def _transpose_shift(n, f, clip):
         try:
@@ -282,7 +318,7 @@ def smart_reupscale(clip: vs.VideoNode,
         except:
             raise ValueError(f"smart_reupscale: 'This clip was not descaled using smart_descale'")
         w = get_w(h)
-        clip = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(clip, width=w, height=h * 2, src_top=.5)
+        clip = kernel.scale(clip, width=w, height=h*2, src_top=.5)
         return core.std.Transpose(clip)
 
     width = width or get_w(height)
@@ -293,15 +329,12 @@ def smart_reupscale(clip: vs.VideoNode,
     upsc = util.quick_resample(clip, core.znedi3.nnedi3, field=0, dh=True, **znargs)
     upsc = core.std.FrameEval(upsc, partial(_transpose_shift, clip=upsc), prop_src=upsc)
     upsc = util.quick_resample(upsc, core.znedi3.nnedi3, field=0, dh=True, **znargs)
-    return util.get_scale_filter(kernel, b=b, c=c, taps=taps)(upsc, height=width, width=height, src_top=.5).std.Transpose()
+    return kernel.scale(upsc, height=width, width=height, src_top=.5).std.Transpose()
 
 
 def test_descale(clip: vs.VideoNode,
                  width: Optional[int] = None, height: int = 720,
-                 kernel: str = 'bicubic',
-                 b: Union[float, Fraction] = Fraction(0),
-                 c: Union[float, Fraction] = Fraction(1, 2),
-                 taps: int = 4,
+                 kernel: Kernel = Scalers.Bicubic(b=0, c=1/2),
                  show_error: bool = True) -> vs.VideoNode:
     """
     Generic function to test descales with;
@@ -318,28 +351,17 @@ def test_descale(clip: vs.VideoNode,
     :param clip:           Input clip
     :param width:          Target descale width. If None, determine from `height`
     :param height:         Target descale height (Default: 720)
-    :param kernel:         Kernel used to descale (see :py:func:`lvsfunc.util.get_scale_filter`)
-    :param b:              B-param for bicubic kernel (Default: 0)
-    :param c:              C-param for bicubic kernel (Default: 1 / 2)
-    :param taps:           Taps param for lanczos kernel (Default: 4)
+    :param kernel:         Kernel used to descale (see :py:class:`lvsfunc.scale.Scalers`, Default: Scalers.Bicubic(b=0, c=1/2))
     :param show_error:     Show diff between the original clip and the re-upscaled clip (Default: True)
 
     :return: A clip re-upscaled with the same kernel
     """
-    try:
-        from descale import get_filter
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("test_descale: missing dependency 'descale'")
-
-    b = float(b)
-    c = float(c)
-
     width = width or get_w(height, clip.width / clip.height)
 
     clip_y = get_y(clip)
 
-    desc = get_filter(b, c, taps, kernel)(clip_y, width, height)
-    upsc = util.get_scale_filter(kernel, b=b, c=c, taps=taps)(desc, clip.width, clip.height)
+    desc = kernel.descale(clip_y, width, height)
+    upsc = kernel.scale(desc, clip.width, clip.height)
     upsc = core.std.PlaneStats(upsc, clip_y)
 
     if clip is vs.GRAY:

@@ -96,7 +96,6 @@ Functions
    lvsfunc.scale.smart_descale
    lvsfunc.scale.smart_reupscale
    lvsfunc.scale.test_descale
-   lvsfunc.util.get_scale_filter
    lvsfunc.util.one_plane
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
@@ -202,7 +201,6 @@ lvsfunc.util
 
 .. autosummary::
 
-   lvsfunc.util.get_scale_filter
    lvsfunc.util.one_plane
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
