@@ -10,3 +10,4 @@ doc/_static
 doc/_templates
 lvsfunc.egg-info/
 venv/
+.mypy_cache/

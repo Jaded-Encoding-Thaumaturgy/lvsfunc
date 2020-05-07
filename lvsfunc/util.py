@@ -43,30 +43,6 @@ def resampler(clip: vs.VideoNode, bitdepth: int) -> vs.VideoNode:
     return core.resize.Point(clip, format=form.id, dither_type=dither_type)
 
 
-def get_scale_filter(kernel: str, **kwargs) -> Callable[..., vs.VideoNode]:
-    """
-    kagefunc's get_descale_filter, but for the internal resizers.
-
-    :param kernel:     Resize kernel to use. Currently supports "bilinear", "spline16",
-                       "spline36", "spline64", "bicubic", and "lanczos"
-    :param kwargs:     Parameters to pass to internal resizers. Parameter c and b
-                       are automatically bound to filter_param_a and filter_param_b
-                       respectively for bicubic and taps is bound to filter_param_a for lanczos
-
-    :return:           Callable scale function
-    """
-    kernel = kernel.lower()
-    filters = {
-        "bilinear": lambda **kwargs: core.resize.Bilinear,
-        "spline16": lambda **kwargs: core.resize.Spline16,
-        "spline36": lambda **kwargs: core.resize.Spline36,
-        "spline64": lambda **kwargs: core.resize.Spline64,
-        "bicubic": lambda b, c, **kwargs: partial(core.resize.Bicubic, filter_param_a=b, filter_param_b=c),
-        "lanczos": lambda taps, **kwargs: partial(core.resize.Lanczos, filter_param_a=taps),
-    }
-    return filters[kernel](**kwargs)
-
-
 def quick_resample(clip: vs.VideoNode, function: Callable[..., vs.VideoNode], **func_args) -> vs.VideoNode:
     """
     A function to quickly resample to 16/8 bit and back to the original depth.

@@ -60,6 +60,7 @@ Modules
    lvsfunc.comparison
    lvsfunc.deinterlace
    lvsfunc.denoise
+   lvsfunc.kernels
    lvsfunc.misc
    lvsfunc.scale
    lvsfunc.util
@@ -96,7 +97,6 @@ Functions
    lvsfunc.scale.smart_descale
    lvsfunc.scale.smart_reupscale
    lvsfunc.scale.test_descale
-   lvsfunc.util.get_scale_filter
    lvsfunc.util.one_plane
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
@@ -162,6 +162,14 @@ lvsfunc.denoise
    :undoc-members:
    :show-inheritance:
 
+lvsfunc.kernels
+-------------------
+
+.. automodule:: lvsfunc.kernels
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 lvsfunc.misc
 -------------------
 
@@ -202,7 +210,6 @@ lvsfunc.util
 
 .. autosummary::
 
-   lvsfunc.util.get_scale_filter
    lvsfunc.util.one_plane
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
