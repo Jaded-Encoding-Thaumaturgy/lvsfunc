@@ -92,10 +92,8 @@ Functions
    lvsfunc.misc.replace_ranges
    lvsfunc.misc.source
    lvsfunc.misc.wipe_row
-   lvsfunc.scale.conditional_descale
    lvsfunc.scale.descale
-   lvsfunc.scale.smart_descale
-   lvsfunc.scale.smart_reupscale
+   lvsfunc.scale.reupscale
    lvsfunc.scale.test_descale
    lvsfunc.util.one_plane
    lvsfunc.util.pick_removegrain
@@ -194,16 +192,27 @@ lvsfunc.scale
 
 .. autosummary::
 
-   lvsfunc.scale.conditional_descale
    lvsfunc.scale.descale
-   lvsfunc.scale.smart_descale
-   lvsfunc.scale.smart_reupscale
+   lvsfunc.scale.reupscale
    lvsfunc.scale.test_descale
+
+.. autoclass:: lvsfunc.scale.Resolution
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
+.. autoclass:: lvsfunc.scale.ScaleAttempt
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
 
 .. automodule:: lvsfunc.scale
    :members:
    :undoc-members:
    :show-inheritance:
+   :exclude-members: Resolution, ScaleAttempt
 
 lvsfunc.util
 -------------------

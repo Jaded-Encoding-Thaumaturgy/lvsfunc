@@ -5,8 +5,9 @@
     or reach out to me on Discord (LightArrowsEXE#0476)!
 """
 
-from . import aa, comparison, deinterlace, denoise, util, misc, scale
+from . import aa, comparison, deinterlace, denoise, misc, scale
 
+# Provided for compatibility purposes and may be removed without notice.
 nneedi3_clamp = aa.nneedi3_clamp
 tranpose_aa = aa.transpose_aa
 upscaled_sraa = aa.upscaled_sraa
@@ -34,14 +35,11 @@ replace_ranges = misc.replace_ranges
 source = misc.source
 wipe_row = misc.wipe_row
 
-conditional_descale = scale.conditional_descale
-smart_descale = scale.smart_descale
-smart_reupscale = scale.smart_reupscale
+smart_reupscale = scale.reupscale
 test_descale = scale.test_descale
 
 # Aliases
 comp = compare
-cond_desc = conditional_descale
 ef = edgefixer
 nneedi3 = nneedi3_clamp
 qden = quick_denoise
