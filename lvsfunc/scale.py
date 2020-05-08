@@ -7,7 +7,7 @@ from typing import Callable, Dict, List, NamedTuple, Optional, Tuple, Union, \
     cast
 
 import vapoursynth as vs
-from vsutil import get_w, get_y, iterate, join, plane
+from vsutil import get_depth, get_w, get_y, iterate, join, plane
 
 from . import kernels, util
 
@@ -237,6 +237,7 @@ def descale(clip: vs.VideoNode,
         dmask = mask(clip_y, rescaled)
         upscaled = core.std.MaskedMerge(upscaled, clip_y, dmask)
 
+    upscaled = util.resampler(upscaled, get_depth(clip))
     upscaled = core.std.SetFrameProp(upscaled, "_descaled", data="True")
 
     if clip.format.num_planes == 1:
