@@ -145,8 +145,8 @@ def descale(clip: vs.VideoNode,
             kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
             threshold: float = 0.0,
             mask: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode]
-            = detail_mask, src_left: float = 0.0, src_top: float = 0.0
-            ) -> vs.VideoNode:
+            = detail_mask, src_left: float = 0.0, src_top: float = 0.0,
+            show_mask: bool = False) -> vs.VideoNode:
     """
     A unified descaling function.
     Includes support for handling fractional resolutions (experimental),
@@ -177,6 +177,7 @@ def descale(clip: vs.VideoNode,
                                     (Default: :py:func:`lvsfunc.scale.detail_mask`)
     :param src_left:                Horizontal shifting for fractional resolutions (Default: 0.0)
     :param src_top:                 Vertical shifting for fractional resolutions (Default: 0.0)
+    :param show_mask:               Return detail mask
 
     :return:                       Descaled and re-upscaled clip
     """
@@ -235,6 +236,10 @@ def descale(clip: vs.VideoNode,
         rescaled = kernel.scale(descaled, clip.width, clip.height,
                                 (src_left, src_top))
         dmask = mask(clip_y, rescaled)
+
+        if show_mask:
+            return dmask
+
         upscaled = core.std.MaskedMerge(upscaled, clip_y, dmask)
 
     upscaled = util.resampler(upscaled, get_depth(clip))
