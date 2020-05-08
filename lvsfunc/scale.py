@@ -94,9 +94,9 @@ def _select_descale(n: int, f: Union[vs.VideoFrame, List[vs.VideoFrame]],
 
 
 def reupscale(clip: vs.VideoNode,
-                    width: Optional[int] = None, height: int = 1080,
-                    kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
-                    **kwargs) -> vs.VideoNode:
+              width: Optional[int] = None, height: int = 1080,
+              kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
+              **kwargs) -> vs.VideoNode:
     """
     A quick 'n easy wrapper used to re-upscale a clip descaled with descale using znedi3.
 
@@ -179,11 +179,8 @@ def descale(clip: vs.VideoNode,
 
     if type(width) is int:
         width = [cast(int, width)]
-
-    if width is None:
-        get_w_partial = partial(get_w,
-                                aspect_ratio=clip.width / clip.height)
-        width = list(map(get_w_partial, height))
+    elif width is None:
+        width = [get_w(h, aspect_ratio=clip.width/clip.height) for h in height]
 
     width = cast(List[int], width)
 
