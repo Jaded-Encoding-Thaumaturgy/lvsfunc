@@ -50,19 +50,6 @@ def _transpose_shift(n, f, clip, kernel, caller):
     return core.std.Transpose(clip)
 
 
-def _create_detail_mask(clip: vs.VideoNode, descaled_clip: vs.VideoNode,
-                        kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
-                        brz: float = 0.05,
-                        src_left: float = 0.0,
-                        src_top: float = 0.0) -> vs.VideoNode:
-    rescaled = kernel.scale(descaled_clip, clip.width, clip.height,
-                            (src_left, src_top))
-    credit_mask = core.std.Expr([clip, rescaled], 'x y - abs') \
-        .std.Binarize(brz)
-    credit_mask = iterate(credit_mask, core.std.Maximum, 4)
-    return iterate(credit_mask, core.std.Inflate, 2)
-
-
 def _perform_descale(resolution: Resolution, clip: vs.VideoNode,
                      kernel: kernels.Kernel) -> ScaleAttempt:
     descaled = kernel.descale(clip, resolution.width, resolution.height) \
@@ -131,6 +118,24 @@ def reupscale(clip: vs.VideoNode,
         .std.Transpose()
 
 
+def detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
+                threshold: float = 0.05) -> vs.VideoNode:
+    """
+    Generate a detail mask given a clip and a clip rescaled with the same
+    kernel.
+
+    :param clip:           Original clip
+    :param rescaled_clip:  Clip downscaled and reupscaled using the same kernel
+    :param threshold:      Binarization threshold for mask (Default: 0.05)
+
+    :return:               Mask of lost detail
+    """
+    mask = core.std.Expr([clip, rescaled_clip], 'x y - abs') \
+        .std.Binarize(threshold)
+    mask = iterate(mask, core.std.Maximum, 4)
+    return iterate(mask, core.std.Inflate, 2)
+
+
 def descale(clip: vs.VideoNode,
             upscaler:
             Optional[Callable[[vs.VideoNode, int, int], vs.VideoNode]]
@@ -138,8 +143,10 @@ def descale(clip: vs.VideoNode,
             width: Union[int, List[int], None] = None,
             height: Union[int, List[int]] = 720,
             kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
-            threshold: float = 0.0, brz: float = 0.05, dmask: bool = True,
-            src_left: float = 0.0, src_top: float = 0.0) -> vs.VideoNode:
+            threshold: float = 0.0,
+            mask: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode]
+            = detail_mask, src_left: float = 0.0, src_top: float = 0.0
+            ) -> vs.VideoNode:
     """
     A unified descaling function.
     Includes support for handling fractional resolutions (experimental),
@@ -155,20 +162,21 @@ def descale(clip: vs.VideoNode,
 
     Dependencies: vapoursynth-descale, znedi3
 
-    :param clip:                   Clip to descale
-    :param upscaler:               Callable function with signature upscaler(clip, width, height) -> vs.VideoNode to be used for reupscaling.
-                                   Must be capable of handling variable res clips for multiple heights and conditional scaling.
-                                   Note that if upscaler is None, no upscaling will be performed and neither detail masking nor
-                                   proper fractional descaling can be preformed. (Default: :py:func:`lvsfunc.scale.reupscale`)
-    :param width:                  Width to descale to (if None, auto-calculated)
-    :param height:                 Height(s) to descale to. List indicates multiple resolutions,
-                                   the function will determine the best. (Default: 720)
-    :param kernel:                 Kernel used to descale (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=0, c=1/2))
-    :param threshold:              Error threshold for conditional descaling (Default: 0.0, always descale)
-    :param brz:                    Binarization threshold for the detail mask (Default: 0.05)
-    :param dmask:                  Whether to attempt to mask detail after rescaling (Default: True)
-    :param src_left:               Horizontal shifting for fractional resolutions (Default: 0.0)
-    :param src_top:                Vertical shifting for fractional resolutions (Default: 0.0)
+    :param clip:                    Clip to descale
+    :param upscaler:                Callable function with signature upscaler(clip, width, height) -> vs.VideoNode to be used for reupscaling.
+                                    Must be capable of handling variable res clips for multiple heights and conditional scaling.
+                                    Note that if upscaler is None, no upscaling will be performed and neither detail masking nor
+                                    proper fractional descaling can be preformed. (Default: :py:func:`lvsfunc.scale.reupscale`)
+    :param width:                   Width to descale to (if None, auto-calculated)
+    :param height:                  Height(s) to descale to. List indicates multiple resolutions,
+                                    the function will determine the best. (Default: 720)
+    :param kernel:                  Kernel used to descale (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=0, c=1/2))
+    :param threshold:               Error threshold for conditional descaling (Default: 0.0, always descale)
+    :param mask:                    Function used to mask detail. If ``None``, no masking.
+                                    Function must accept a clip and a reupscaled clip and return a mask.
+                                    (Default: :py:func:`lvsfunc.scale.detail_mask`)
+    :param src_left:                Horizontal shifting for fractional resolutions (Default: 0.0)
+    :param src_top:                 Vertical shifting for fractional resolutions (Default: 0.0)
 
     :return:                       Descaled and re-upscaled clip
     """
@@ -222,11 +230,12 @@ def descale(clip: vs.VideoNode,
         upscaled = core.resize.Bicubic(descaled, src_left=-src_left,
                                        src_top=-src_top)
 
-    if dmask:
+    if mask:
         clip_y = clip_y.resize.Point(format=upscaled.format.id)
-        detail_mask = _create_detail_mask(clip_y, descaled, kernel, brz,
-                                          src_left, src_top)
-        upscaled = core.std.MaskedMerge(upscaled, clip_y, detail_mask)
+        rescaled = kernel.scale(descaled, clip.width, clip.height,
+                                (src_left, src_top))
+        dmask = mask(clip_y, rescaled)
+        upscaled = core.std.MaskedMerge(upscaled, clip_y, dmask)
 
     upscaled = core.std.SetFrameProp(upscaled, "_descaled", data="True")
 
