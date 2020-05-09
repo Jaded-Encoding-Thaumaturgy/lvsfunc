@@ -50,11 +50,35 @@ def _transpose_shift(n, f, clip, kernel, caller):
     return core.std.Transpose(clip)
 
 
+def _select_best(n, f, clips):
+    clip_data = []
+    for p in f:
+        clip_data.append(p.props.PlaneStatsAverage)
+    return clips[clip_data.index(min(clip_data))]
+
+
 def _perform_descale(resolution: Resolution, clip: vs.VideoNode,
-                     kernel: kernels.Kernel) -> ScaleAttempt:
-    descaled = kernel.descale(clip, resolution.width, resolution.height) \
-        .std.SetFrameProp('descaleResolution', intval=resolution.height)
-    rescaled = kernel.scale(descaled, clip.width, clip.height)
+                     kernel_list: Union[kernels.Kernel, List[kernels.Kernel]]) -> ScaleAttempt:
+    descaled_clips_ = []
+    rescaled_clips_ = []
+    smask_clips_ = []
+    for kernel in kernel_list:
+        descaled = kernel.descale(clip, resolution.width, resolution.height) \
+            .std.SetFrameProp('descaleResolution', intval=resolution.height) \
+                .std.SetFrameProp('descaler', data=kernel)
+        descaled_clips_.append(descaled)
+
+        rescaled = kernel.scale(descaled, clip.width, clip.height)
+        rescaled_clips_.append(rescaled)
+
+        smask = core.std.Expr([clip, rescaled], 'x y - abs dup 0.015 > swap 0 ?')
+        smask = core.std.CropRel(smask, 5, 5, 5, 5).std.PlaneStats()
+        smask_clips_.append(smask)
+
+    descaled, rescaled = [core.std.FrameEval(clips_[0], partial(_select_best, clips=clips_),
+                                             prop_src=smask_clips_)
+                          for clips_ in [descaled_clips_, rescaled_clips_]]
+
     diff = core.std.Expr([rescaled, clip], 'x y - abs').std.PlaneStats()
     return ScaleAttempt(descaled, rescaled, resolution, diff)
 
@@ -142,8 +166,7 @@ def descale(clip: vs.VideoNode,
             = reupscale,
             width: Union[int, List[int], None] = None,
             height: Union[int, List[int]] = 720,
-            kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
-            threshold: float = 0.0,
+            kernel_list: Union[kernels.Kernel, List[kernels.Kernel]] = kernels.Bicubic(b=0, c=1/2),            threshold: float = 0.0,
             mask: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode]
             = detail_mask, src_left: float = 0.0, src_top: float = 0.0,
             show_mask: bool = False) -> vs.VideoNode:
@@ -170,7 +193,7 @@ def descale(clip: vs.VideoNode,
     :param width:                   Width to descale to (if None, auto-calculated)
     :param height:                  Height(s) to descale to. List indicates multiple resolutions,
                                     the function will determine the best. (Default: 720)
-    :param kernel:                  Kernel used to descale (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=0, c=1/2))
+    :param kernel_list:             List of kernels used to descale (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=0, c=1/2))
     :param threshold:               Error threshold for conditional descaling (Default: 0.0, always descale)
     :param mask:                    Function used to mask detail. If ``None``, no masking.
                                     Function must accept a clip and a reupscaled clip and return a mask.
@@ -199,14 +222,15 @@ def descale(clip: vs.VideoNode,
     resolutions = [Resolution(*r) for r in zip(width, height)]
 
     clip_y = util.resampler(get_y(clip), 32) \
-        .std.SetFrameProp('descaleResolution', intval=clip.height)
+        .std.SetFrameProp('descaleResolution', intval=clip.height) \
+            .std.SetFrameProp('descaler', data='')
 
     variable_res_clip = core.std.Splice([
         core.std.BlankClip(clip_y, length=len(clip) - 1),
         core.std.BlankClip(clip_y, length=1, width=clip.width + 1)
     ], mismatch=True)
 
-    descale_partial = partial(_perform_descale, clip=clip_y, kernel=kernel)
+    descale_partial = partial(_perform_descale, clip=clip_y, kernel_list=kernel_list)
     clips_by_resolution = {c.resolution.height:
                            c for c in map(descale_partial, resolutions)}
 
