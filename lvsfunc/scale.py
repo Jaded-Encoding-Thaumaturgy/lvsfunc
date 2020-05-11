@@ -235,7 +235,7 @@ def descale(clip: vs.VideoNode,
         clip_y = clip_y.resize.Point(format=upscaled.format.id)
         rescaled = kernel.scale(descaled, clip.width, clip.height,
                                 (src_left, src_top))
-        rescaled_clip = rescaled_clip.resize.Point(format=clip.format.id)
+        rescaled = rescaled.resize.Point(format=clip.format.id)
         dmask = mask(clip_y, rescaled)
 
         if show_mask:
