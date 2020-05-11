@@ -130,6 +130,8 @@ def detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
 
     :return:               Mask of lost detail
     """
+    if clip.format.id != rescaled_clip.format.id:
+            raise ValueError(f"detail_mask: 'The format of both clips must be equal'")
     mask = core.std.Expr([clip, rescaled_clip], 'x y - abs') \
         .std.Binarize(threshold)
     mask = iterate(mask, core.std.Maximum, 4)
