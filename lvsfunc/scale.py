@@ -130,7 +130,6 @@ def detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
 
     :return:               Mask of lost detail
     """
-    rescaled_clip = rescaled_clip.resize.Point(format=clip.format.id)
     mask = core.std.Expr([clip, rescaled_clip], 'x y - abs') \
         .std.Binarize(threshold)
     mask = iterate(mask, core.std.Maximum, 4)
@@ -236,6 +235,7 @@ def descale(clip: vs.VideoNode,
         clip_y = clip_y.resize.Point(format=upscaled.format.id)
         rescaled = kernel.scale(descaled, clip.width, clip.height,
                                 (src_left, src_top))
+        rescaled_clip = rescaled_clip.resize.Point(format=clip.format.id)
         dmask = mask(clip_y, rescaled)
 
         if show_mask:
