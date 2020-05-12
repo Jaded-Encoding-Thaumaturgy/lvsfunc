@@ -75,7 +75,8 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: int = 1,
 
 
 def transpose_aa(clip: vs.VideoNode,
-                 eedi3: bool = False) -> vs.VideoNode:
+                 eedi3: bool = False,
+                 rep: int = 13) -> vs.VideoNode:
     """
     Function that performs anti-aliasing over a clip by using nnedi3/eedi3 and tranposing multiple times.
     This results in overall stronger anti-aliasing.
@@ -87,6 +88,7 @@ def transpose_aa(clip: vs.VideoNode,
 
     :param clip:      Input clip
     :param eedi3:     Use eedi3 for the interpolation (Default: False)
+    :param rep:       Repair mode. Pass it 0 to not repair (Default: 13)
 
     :return:          Antialiased clip
     """
@@ -119,7 +121,7 @@ def transpose_aa(clip: vs.VideoNode,
 
     aaclip = _aa(clip_y)
     aaclip = _csharp(aaclip, clip_y)
-    aaclip = util.pick_repair(clip_y)(clip_y, 13)
+    aaclip = util.pick_repair(clip_y)(aaclip, clip_y, rep)
 
     return aaclip if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
 
