@@ -5,6 +5,7 @@ from typing import Optional
 
 import vapoursynth as vs
 from vsutil import get_y, join, split
+from typing import Any, cast
 
 from . import util
 
@@ -15,7 +16,7 @@ def quick_denoise(clip: vs.VideoNode,
                   ref: vs.VideoNode = Optional[None],
                   cmode: str = 'knlm',
                   sigma: float = 2,
-                  **kwargs) -> vs.VideoNode:
+                  **kwargs: Any) -> vs.VideoNode:
     """
     This wrapper is used to denoise both the luma and chroma using various denoisers of your choosing.
     If you wish to use just one denoiser,
@@ -60,8 +61,9 @@ def quick_denoise(clip: vs.VideoNode,
         planes[2] = planes[2].tnlm.TNLMeans(ax=2, ay=2, az=2, **kwargs)
     elif cmode in [3, 'dft', 'dfttest']:
         try:
-            planes[1] = planes[1].dfttest.DFTTest(sosize=kwargs['sbsize'] * 0.75, **kwargs)
-            planes[2] = planes[2].dfttest.DFTTest(sosize=kwargs['sbsize'] * 0.75, **kwargs)
+            sbsize = cast(int, kwargs['sbsize'])
+            planes[1] = planes[1].dfttest.DFTTest(sosize=sbsize * 0.75, **kwargs)
+            planes[2] = planes[2].dfttest.DFTTest(sosize=sbsize * 0.75, **kwargs)
         except KeyError:
             raise ValueError(f"denoise: '\"sbsize\" not specified'")
     elif cmode in [4, 'smd', 'smdegrain']:

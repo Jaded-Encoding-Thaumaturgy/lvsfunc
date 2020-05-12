@@ -3,7 +3,7 @@ Kernels for vapoursynth internal resizers. Intended for use by
 :py:mod:`lvsfunc.scale` functions.
 """
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Any, Tuple
 
 import vapoursynth as vs
 
@@ -17,7 +17,7 @@ class Kernel(ABC):
     Additional kwargs supplied to constructor are passed only to the internal
     resizer, not the descale resizer.
     """
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         self.kwargs = kwargs
 
     @abstractmethod
@@ -51,7 +51,7 @@ class Bicubic(Kernel):
     :param b: B-param for bicubic kernel
     :param c: C-param for bicubic kernel
     """
-    def __init__(self, b: float = 0, c: float = 1/2, **kwargs):
+    def __init__(self, b: float = 0, c: float = 1/2, **kwargs: Any) -> None:
         self.b = b
         self.c = c
         super().__init__(**kwargs)
@@ -77,7 +77,7 @@ class Lanczos(Kernel):
 
     :param taps: taps param for lanczos kernel
     """
-    def __init__(self, taps: int = 4, **kwargs):
+    def __init__(self, taps: int = 4, **kwargs: Any) -> None:
         self.taps = taps
         super().__init__(**kwargs)
 

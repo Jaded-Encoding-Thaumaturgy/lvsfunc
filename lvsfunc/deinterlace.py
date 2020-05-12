@@ -39,7 +39,8 @@ def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:
     blends_b = range(3, clip.num_frames - 1, 5)
     expr_cd = ["z a 2 / - y x 2 / - +"]
 
-    def deblend(n, clip, rep):
+    def deblend(n: int, clip: vs.VideoNode, rep: Optional[int]
+                ) -> vs.VideoNode:
         # Thanks Myaa, motbob and kageru!
         if n % 5 in [0, 1, 4]:
             return clip
@@ -60,7 +61,7 @@ def decomb(clip: vs.VideoNode,
            decimate: bool = True,
            vinv: bool = False,
            sharpen: bool = False, dir: str = 'v',
-           rep: Optional[int] = None):
+           rep: Optional[int] = None) -> vs.VideoNode:
     """
     Does some aggressive filtering to get rid of the combing on a interlaced/telecined source.
     You can also allow it to decimate the clip, or keep it disabled if you wish to handle the decimating yourself.
@@ -89,7 +90,8 @@ def decomb(clip: vs.VideoNode,
 
     VFM_TFF = int(TFF)
 
-    def _pp(n, f, clip, pp):
+    def _pp(n: int, f: vs.VideoFrame, clip: vs.VideoNode, pp: vs.VideoNode
+            ) -> vs.VideoNode:
         return pp if f.props._Combed == 1 else clip
 
     clip = core.vivtc.VFM(clip, order=VFM_TFF, mode=1)

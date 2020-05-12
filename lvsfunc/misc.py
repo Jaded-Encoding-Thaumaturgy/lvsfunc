@@ -2,7 +2,7 @@
     Miscellaneous functions and wrappers that didn't really have a place in any other submodules.
 """
 from functools import partial
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, cast
 
 import vapoursynth as vs
 from vsutil import get_depth, is_image
@@ -53,8 +53,8 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
         return core.lsmas.LWLibavSource(file)
 
     elif mpls:
-        mpls = core.mpls.Read(file, mpls_playlist, mpls_angle)
-        clip = core.std.Splice([core.lsmas.LWLibavSource(mpls['clip'][i]) for i in range(mpls['count'])])
+        mpls_in = core.mpls.Read(file, mpls_playlist, mpls_angle)
+        clip = core.std.Splice([core.lsmas.LWLibavSource(mpls_in['clip'][i]) for i in range(mpls_in['count'])])
 
     elif file.endswith('.d2v'):
         clip = core.d2v.Source(file)
@@ -102,10 +102,10 @@ def replace_ranges(clip_a: vs.VideoNode,
     out = clip_a
     for r in ranges:
         if type(r) is tuple:
-            start, end = r
+            start, end = cast(Tuple[int, int], r)
         else:
-            start = r
-            end = r
+            start = cast(int, r)
+            end = cast(int, r)
         tmp = clip_b[start:end + 1]
         if start != 0:
             tmp = out[: start] + tmp
@@ -116,8 +116,10 @@ def replace_ranges(clip_a: vs.VideoNode,
 
 
 def edgefixer(clip: vs.VideoNode,
-              left: Optional[List[int]] = None, right: Optional[List[int]] = None,
-              top: Optional[List[int]] = None, bottom: Optional[List[int]] = None,
+              left: Union[int, List[int], None] = None,
+              right: Union[int, List[int], None] = None,
+              top: Union[int, List[int], None] = None,
+              bottom: Union[int, List[int], None] = None,
               radius: Optional[List[int]] = None,
               full_range: bool = False) -> vs.VideoNode:
     """
@@ -184,7 +186,9 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
 
     :return:                  Conditionally filtered clip
     """
-    def _diff(n, f, clip, filtered, threshold, threshold_range):
+    def _diff(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
+              filtered: vs.VideoNode, threshold: float,
+              threshold_range: Optional[int]) -> vs.VideoNode:
         if threshold_range:
             return filtered if threshold_range <= f.props.PlaneStatsAverage <= threshold else clip
         else:

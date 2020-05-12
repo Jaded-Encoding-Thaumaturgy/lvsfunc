@@ -72,7 +72,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
 def stack_compare(*clips: vs.VideoNode,
                   make_diff: bool = False,
-                  height: int = None,
+                  height: Optional[int] = None,
                   warn: bool = True) -> vs.VideoNode:
     """
     A simple wrapper that allows you to compare two clips by stacking them.
@@ -102,9 +102,9 @@ def stack_compare(*clips: vs.VideoNode,
     if make_diff:
         diff = core.std.MakeDiff(clips[0], clips[1])
         diff = core.resize.Spline36(diff, get_w(576), 576).text.FrameNum(8)
-        clips = [core.resize.Spline36(c, diff.width / 2, diff.height / 2) for c in clips]
-        clips[0], clips[1] = clips[0].text.Text("Clip A", 3), clips[1].text.Text("Clip B", 1)
-        stack = core.std.StackVertical([core.std.StackHorizontal([clips[0], clips[1]]), diff])
+        resize = [core.resize.Spline36(c, diff.width / 2, diff.height / 2) for c in clips]
+        resize[0], resize[1] = resize[0].text.Text("Clip A", 3), resize[1].text.Text("Clip B", 1)
+        stack = core.std.StackVertical([core.std.StackHorizontal([resize[0], resize[1]]), diff])
     else:
         stack = core.std.StackHorizontal(clips)
     if warn:
