@@ -78,7 +78,7 @@ def transpose_aa(clip: vs.VideoNode,
                  eedi3: bool = False,
                  rep: int = 13) -> vs.VideoNode:
     """
-    Function that performs anti-aliasing over a clip by using nnedi3/eedi3 and tranposing multiple times.
+    Function that performs anti-aliasing over a clip by using nnedi3/eedi3 and transposing multiple times.
     This results in overall stronger anti-aliasing.
     Useful for shows like Yuru Camp with bad lineart problems.
 
