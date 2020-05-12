@@ -1,8 +1,7 @@
 """
     Helper functions for the main functions in the script.
 """
-from functools import partial
-from typing import Callable
+from typing import Callable, cast
 
 import vapoursynth as vs
 
@@ -17,7 +16,7 @@ def one_plane(clip: vs.VideoNode) -> bool:
 
     :return:        Boolean representing whether the input has one plane or not
     """
-    return clip.format.num_planes == 1
+    return cast(int, clip.format.num_planes) == 1
 
 
 def resampler(clip: vs.VideoNode, bitdepth: int) -> vs.VideoNode:
@@ -43,23 +42,24 @@ def resampler(clip: vs.VideoNode, bitdepth: int) -> vs.VideoNode:
     return core.resize.Point(clip, format=form.id, dither_type=dither_type)
 
 
-def quick_resample(clip: vs.VideoNode, function: Callable[..., vs.VideoNode], **func_args) -> vs.VideoNode:
+def quick_resample(clip: vs.VideoNode,
+                   function: Callable[[vs.VideoNode], vs.VideoNode]
+                   ) -> vs.VideoNode:
     """
     A function to quickly resample to 16/8 bit and back to the original depth.
     Useful for filters that only work in 16 bit or lower when you're working in float.
 
     :param clip:      Input clip
-    :param function:  Filter to run after resampling
-    :param func_args: Arguments for filter
+    :param function:  Filter to run after resampling (accepts and returns clip)
 
     :return:          Filtered clip in original depth
     """
     try:
         down = resampler(clip, 16)
-        filtered = function(down, **func_args)
-    except:
+        filtered = function(down)
+    except:  # noqa: E722
         down = resampler(clip, 8)
-        filtered = function(down, **func_args)
+        filtered = function(down)
     return resampler(filtered, clip.format.bits_per_sample)
 
 
@@ -75,7 +75,7 @@ def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 
     :return:     Appropriate repair function for input clip's depth
     """
-    return core.rgvs.Repair if clip.format.bits_per_sample < 32 else core.rgsf.Repair
+    return core.rgvs.Repair if clip.format.bits_per_sample < 32 else core.rgsf.Repair  # type: ignore
 
 
 def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
@@ -89,4 +89,4 @@ def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 
     :return:     Appropriate RemoveGrain function for input clip's depth
     """
-    return core.rgvs.RemoveGrain if clip.format.bits_per_sample < 32 else core.rgsf.RemoveGrain
+    return core.rgvs.RemoveGrain if clip.format.bits_per_sample < 32 else core.rgsf.RemoveGrain  # type: ignore

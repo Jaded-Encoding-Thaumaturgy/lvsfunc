@@ -52,8 +52,9 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: int = 1,
     expr = 'x z - y z - * 0 < y x y {0} + min y {0} - max ?'.format(thr)
 
     if clip.format.num_planes > 1:
-        expr = [expr, '']
-    aa = core.std.Expr([strong, weak, clip], expr)
+        aa = core.std.Expr([strong, weak, clip], [expr, ''])
+    else:
+        aa = core.std.Expr([strong, weak, clip], expr)
 
     if mask:
         merged = clip.std.MaskedMerge(aa, mask, planes=0)
@@ -95,7 +96,7 @@ def transpose_aa(clip: vs.VideoNode,
     clip_y = get_y(clip)
 
     if eedi3:
-        def _aa(clip_y):
+        def _aa(clip_y: vs.VideoNode) -> vs.VideoNode:
             clip_y = clip_y.std.Transpose()
             clip_y = clip_y.eedi3m.EEDI3(0, 1, 0, 0.5, 0.2)
             clip_y = clip_y.znedi3.nnedi3(1, 0, 0, 3, 4, 2)
@@ -105,7 +106,7 @@ def transpose_aa(clip: vs.VideoNode,
             clip_y = clip_y.znedi3.nnedi3(1, 0, 0, 3, 4, 2)
             return clip_y.resize.Spline36(clip.width, clip.height, src_top=.5)
     else:
-        def _aa(clip_y):
+        def _aa(clip_y: vs.VideoNode) -> vs.VideoNode:
             clip_y = clip_y.std.Transpose()
             clip_y = clip_y.nnedi3.nnedi3(0, 1, 0, 3, 3, 2)
             clip_y = clip_y.nnedi3.nnedi3(1, 0, 0, 3, 3, 2)
@@ -115,7 +116,7 @@ def transpose_aa(clip: vs.VideoNode,
             clip_y = clip_y.nnedi3.nnedi3(1, 0, 0, 3, 3, 2)
             return clip_y.resize.Spline36(clip.width, clip.height, src_top=.5)
 
-    def _csharp(flt, clip):
+    def _csharp(flt: vs.VideoNode, clip: vs.VideoNode) -> vs.VideoNode:
         blur = core.std.Convolution(flt, [1] * 9)
         return core.std.Expr([flt, clip, blur], 'x y < x x + z - x max y min x x + z - x min y max ?')
 

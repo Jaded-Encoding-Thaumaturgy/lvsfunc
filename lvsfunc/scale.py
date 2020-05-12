@@ -3,8 +3,8 @@
 """
 import math
 from functools import partial
-from typing import Callable, Dict, List, NamedTuple, Optional, Tuple, Union, \
-    cast
+from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple, \
+    Union, cast
 
 import vapoursynth as vs
 from vsutil import get_depth, get_w, get_y, iterate, join, plane
@@ -40,10 +40,11 @@ class ScaleAttempt(NamedTuple):
     """ The subtractive difference between the original and descaled frame. """
 
 
-def _transpose_shift(n, f, clip, kernel, caller):
+def _transpose_shift(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
+                     kernel: kernels.Kernel, caller: str) -> vs.VideoNode:
     try:
         h = f.props.descaleResolution
-    except:
+    except AttributeError:
         raise ValueError(f"{caller}: 'This clip was not descaled using descale'")
     w = get_w(h)
     clip = kernel.scale(clip, w, h*2, (0.5, 0))
@@ -83,7 +84,7 @@ def _select_descale(n: int, f: Union[vs.VideoFrame, List[vs.VideoFrame]],
 def reupscale(clip: vs.VideoNode,
               width: Optional[int] = None, height: int = 1080,
               kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
-              **kwargs) -> vs.VideoNode:
+              **kwargs: Any) -> vs.VideoNode:
     """
     A quick 'n easy wrapper used to re-upscale a clip descaled with descale using znedi3.
 
@@ -106,14 +107,14 @@ def reupscale(clip: vs.VideoNode,
     znargs = dict(nsize=4, nns=4, qual=2, pscrn=2)
     znargs.update(kwargs)
 
-    upsc = util.quick_resample(clip, core.znedi3.nnedi3, field=0, dh=True,
-                               **znargs)
+    upsc = util.quick_resample(clip, partial(core.znedi3.nnedi3, field=0,
+                                             dh=True, **znargs))
     upsc = core.std.FrameEval(upsc, partial(_transpose_shift, clip=upsc,
                                             kernel=kernel,
                                             caller="reupscale"),
                               prop_src=upsc)
-    upsc = util.quick_resample(upsc, core.znedi3.nnedi3, field=0, dh=True,
-                               **znargs)
+    upsc = util.quick_resample(upsc, partial(core.znedi3.nnedi3, field=0,
+                                             dh=True, **znargs))
     return kernel.scale(upsc, width=height, height=width, shift=(0.5, 0)) \
         .std.Transpose()
 
