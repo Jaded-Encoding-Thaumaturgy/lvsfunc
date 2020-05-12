@@ -1,7 +1,7 @@
 """
     Helper functions for the main functions in the script.
 """
-from typing import Callable
+from typing import Callable, cast
 
 import vapoursynth as vs
 
@@ -16,7 +16,7 @@ def one_plane(clip: vs.VideoNode) -> bool:
 
     :return:        Boolean representing whether the input has one plane or not
     """
-    return True if clip.format.num_planes == 1 else False
+    return cast(int, clip.format.num_planes) == 1
 
 
 def resampler(clip: vs.VideoNode, bitdepth: int) -> vs.VideoNode:
