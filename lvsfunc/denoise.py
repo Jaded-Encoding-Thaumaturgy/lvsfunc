@@ -116,15 +116,15 @@ def detail_mask(clip: vs.VideoNode, pre_denoise: Optional[float] = None,
     except ModuleNotFoundError:
         raise ModuleNotFoundError("detail_mask: missing dependency 'debandshit'")
 
-    if pre_denoise is not None:
-        clip = core.knlm.KNLMeansCL(clip, d=2, a=3, h=pre_denoise)
+    den_a = core.knlm.KNLMeansCL(clip, d=2, a=3, h=pre_denoise, device_type ='GPU') if pre_denoise is not None else clip
+    den_b = core.knlm.KNLMeansCL(clip, d=2, a=3, h=pre_denoise/2, device_type ='GPU') if pre_denoise is not None else clip
 
-    mask_a = util.resampler(get_y(clip), 16) if clip.format.bits_per_sample < 32 else get_y(clip)
+    mask_a = util.resampler(get_y(den_a), 16) if clip.format.bits_per_sample < 32 else get_y(den_a)
     mask_a = rangemask(mask_a, rad=rad, radc=radc)
     mask_a = util.resampler(mask_a, clip.format.bits_per_sample)
     mask_a = core.std.Binarize(mask_a, brz_a)
 
-    mask_b = core.std.Prewitt(get_y(clip))
+    mask_b = core.std.Prewitt(get_y(den_b))
     mask_b = core.std.Binarize(mask_b, brz_b)
 
     mask = core.std.Expr([mask_a, mask_b], 'x y max')
