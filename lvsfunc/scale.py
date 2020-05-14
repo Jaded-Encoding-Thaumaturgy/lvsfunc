@@ -91,7 +91,9 @@ def reupscale(clip: vs.VideoNode,
     """
     A quick 'n easy wrapper used to re-upscale a clip descaled with descale using znedi3.
 
-    Stolen from Varde.
+    Function is curried to allow parameter tuning when passing to :py:func:`lvsfunc.scale.descale`
+
+    Stolen from Varde with some adjustments made.
 
     Dependencies: znedi3
 
@@ -128,6 +130,8 @@ def descale_detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
     """
     Generate a detail mask given a clip and a clip rescaled with the same
     kernel.
+
+    Function is curried to allow parameter tuning when passing to :py:func:`lvsfunc.scale.descale`
 
     :param clip:           Original clip
     :param rescaled_clip:  Clip downscaled and reupscaled using the same kernel

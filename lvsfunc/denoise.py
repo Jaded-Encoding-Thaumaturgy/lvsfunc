@@ -86,6 +86,9 @@ def adaptive_mask(clip: vs.VideoNode, luma_scaling: float = 8.0) -> vs.VideoNode
     """
     A wrapper to create a luma mask for denoising and/or debanding.
 
+    Function is curried to allow parameter tuning when passing to denoisers
+    that allow you to pass your own mask.
+
     Dependencies: adaptivegrain
 
     :param clip:         Input clip
@@ -104,6 +107,9 @@ def detail_mask(clip: vs.VideoNode, pre_denoise: Optional[float] = None,
         A wrapper for creating a detail mask to be used during denoising and/or debanding.
         The detail mask is created using debandshit's rangemask,
         and is then merged with Prewitt to catch lines it may have missed.
+
+        Function is curried to allow parameter tuning when passing to denoisers
+        that allow you to pass your own mask.
 
         Dependencies: knlmeans (optional: pre_denoise), debandshit
 
