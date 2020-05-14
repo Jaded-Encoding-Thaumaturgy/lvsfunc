@@ -130,7 +130,7 @@ def transpose_aa(clip: vs.VideoNode,
 def upscaled_sraa(clip: vs.VideoNode,
                   rfactor: float = 1.5,
                   rep: Optional[int] = None,
-                  h: Optional[int] = None, ar: Optional[int] = None,
+                  h: Optional[int] = None, ar: Optional[float] = None,
                   sharp_downscale: bool = False) -> vs.VideoNode:
     """
     A function that performs an upscaled single-rate AA to deal with heavy aliasing and broken-up lineart.
