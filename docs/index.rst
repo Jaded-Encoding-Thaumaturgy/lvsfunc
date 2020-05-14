@@ -93,7 +93,7 @@ Functions
    lvsfunc.misc.source
    lvsfunc.misc.wipe_row
    lvsfunc.scale.descale
-   lvsfunc.scale.detail_mask
+   lvsfunc.scale.descale_detail_mask
    lvsfunc.scale.reupscale
    lvsfunc.scale.test_descale
    lvsfunc.util.one_plane
@@ -194,7 +194,7 @@ lvsfunc.scale
 .. autosummary::
 
    lvsfunc.scale.descale
-   lvsfunc.scale.detail_mask
+   lvsfunc.scale.descale_detail_mask
    lvsfunc.scale.reupscale
    lvsfunc.scale.test_descale
 

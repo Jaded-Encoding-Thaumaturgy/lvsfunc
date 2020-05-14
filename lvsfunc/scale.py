@@ -122,7 +122,7 @@ def reupscale(clip: vs.VideoNode,
 
 
 @functoolz.curry
-def detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
+def descale_detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
                 threshold: float = 0.05) -> vs.VideoNode:
     """
     Generate a detail mask given a clip and a clip rescaled with the same
@@ -149,7 +149,7 @@ def descale(clip: vs.VideoNode,
             kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
             threshold: float = 0.0,
             mask: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode]
-            = detail_mask, src_left: float = 0.0, src_top: float = 0.0,
+            = descale_detail_mask, src_left: float = 0.0, src_top: float = 0.0,
             show_mask: bool = False) -> vs.VideoNode:
     """
     A unified descaling function.
