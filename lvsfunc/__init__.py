@@ -35,9 +35,9 @@ replace_ranges = misc.replace_ranges
 source = misc.source
 wipe_row = misc.wipe_row
 
-reupscale = scale.reupscale
 descale = scale.descale
 descale_detail_mask = scale.descale_detail_mask
+reupscale = scale.reupscale
 test_descale = scale.test_descale
 
 # Aliases for backwards compatibility
@@ -47,7 +47,7 @@ nneedi3 = nneedi3_clamp
 qden = quick_denoise
 rfs = replace_ranges
 scomp = stack_compare
+smart_descale = descale
+smart_reupscale = reupscale
 sraa = upscaled_sraa
 src = source
-smart_reupscale = reupscale
-smart_descale = descale
