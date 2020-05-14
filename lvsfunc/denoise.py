@@ -1,11 +1,12 @@
 """
     Wrappers and masks for denoising.
 """
-from typing import Optional
+from typing import Any, Optional, cast
+
+from toolz import functoolz
+from vsutil import get_y, join, split
 
 import vapoursynth as vs
-from vsutil import get_y, join, split
-from typing import Any, cast
 
 from . import util
 
@@ -80,6 +81,7 @@ def quick_denoise(clip: vs.VideoNode,
     return join(planes)
 
 
+@functoolz.curry
 def adaptive_mask(clip: vs.VideoNode, luma_scaling: float = 8.0) -> vs.VideoNode:
     """
     A wrapper to create a luma mask for denoising and/or debanding.
@@ -94,6 +96,7 @@ def adaptive_mask(clip: vs.VideoNode, luma_scaling: float = 8.0) -> vs.VideoNode
     return core.adg.Mask(clip.std.PlaneStats(), luma_scaling)
 
 
+@functoolz.curry
 def detail_mask(clip: vs.VideoNode, pre_denoise: Optional[float] = None,
                 rad: int = 3, radc: int = 2,
                 brz_a: float = 0.005, brz_b: float = 0.005) -> vs.VideoNode:
