@@ -106,6 +106,8 @@ def detail_mask(clip: vs.VideoNode, pre_denoise: Optional[float] = None,
 
         :param clip:        Input clip
         :param pre_denoise: Denoise the clip before creating the mask (Default: False)
+        :param rad:         The luma equivalent of gradfun3's "mask" parameter
+        :param radc:        The chroma equivalent of gradfun3's "mask" parameter
         :brz_a:             Binarizing for the detail mask (Default: 0.05)
         :brz_b:             Binarizing for the edge mask (Default: 0.05)
 
