@@ -3,12 +3,13 @@
 """
 import math
 from functools import partial
+from typing import (Any, Callable, Dict, List, NamedTuple, Optional, Tuple,
+                    Union, cast)
+
 from toolz import functoolz
-from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple, \
-    Union, cast
+from vsutil import get_depth, get_w, get_y, iterate, join, plane
 
 import vapoursynth as vs
-from vsutil import get_depth, get_w, get_y, iterate, join, plane
 
 from . import kernels, util
 
