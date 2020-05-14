@@ -3,6 +3,7 @@
 """
 import math
 from functools import partial
+from toolz import functoolz
 from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple, \
     Union, cast
 
@@ -81,6 +82,7 @@ def _select_descale(n: int, f: Union[vs.VideoFrame, List[vs.VideoFrame]],
     return best_attempt.descaled
 
 
+@functoolz.curry
 def reupscale(clip: vs.VideoNode,
               width: Optional[int] = None, height: int = 1080,
               kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
@@ -119,6 +121,7 @@ def reupscale(clip: vs.VideoNode,
         .std.Transpose()
 
 
+@functoolz.curry
 def detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
                 threshold: float = 0.05) -> vs.VideoNode:
     """
