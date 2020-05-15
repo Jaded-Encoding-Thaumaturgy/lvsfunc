@@ -4,3 +4,14 @@
     If you spot any issues, please do not hesitate to send in a Pull Request
     or reach out to me on Discord (LightArrowsEXE#0476)!
 """
+
+from . import aa, comparison, deinterlace, denoise, misc, scale
+
+# Aliases:
+comp = comparison.compare
+ef = misc.edgefixer
+qden = denoise.quick_denoise
+rfs = misc.replace_ranges
+scomp = comparison.stack_compare
+sraa = aa.upscaled_sraa
+src = misc.source
