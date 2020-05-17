@@ -139,7 +139,7 @@ def descale_detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
 
     :return:               Mask of lost detail
     """
-    mask = core.std.Expr([clip, rescaled_clip], 'x y - abs') \
+    mask = core.std.Expr([get_y(clip), get_y(rescaled_clip)], 'x y - abs') \
         .std.Binarize(threshold)
     mask = iterate(mask, core.std.Maximum, 4)
     return iterate(mask, core.std.Inflate, 2)
