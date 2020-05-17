@@ -90,7 +90,7 @@ def stack_compare(*clips: vs.VideoNode,
 
     :return:                  Clip with clips stacked
     """
-    if len(clips) > 2:
+    if len(clips) < 2:
         raise ValueError(f"stack_compare: 'Too few clips supplied'")
 
     if len(clips) != 2 and make_diff:
