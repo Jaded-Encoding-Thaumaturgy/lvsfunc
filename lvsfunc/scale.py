@@ -174,6 +174,7 @@ def descale(clip: vs.VideoNode,
     :param clip:                    Clip to descale
     :param upscaler:                Callable function with signature upscaler(clip, width, height) -> vs.VideoNode to be used for reupscaling.
                                     Must be capable of handling variable res clips for multiple heights and conditional scaling.
+                                    If a single height is given and upscaler is None, a constant resolution GRAY clip will be returned instead.
                                     Note that if upscaler is None, no upscaling will be performed and neither detail masking nor
                                     proper fractional descaling can be preformed. (Default: :py:func:`lvsfunc.scale.reupscale`)
     :param width:                   Width to descale to (if None, auto-calculated)
@@ -232,9 +233,13 @@ def descale(clip: vs.VideoNode,
                                        src_top=src_top)
 
     if upscaler is None:
-        return descaled
-
-    upscaled = upscaler(descaled, clip.width, clip.height)
+        upscaled = descaled
+        if len(height) == 1:
+            upscaled = core.resize.Point(upscaled, width, height)
+        else:
+            return upscaled
+    else:
+        upscaled = upscaler(descaled, clip.width, clip.height)
 
     if src_left != 0 or src_top != 0:
         upscaled = core.resize.Bicubic(descaled, src_left=-src_left,
@@ -247,17 +252,19 @@ def descale(clip: vs.VideoNode,
         rescaled = rescaled.resize.Point(format=clip.format.id)
         dmask = mask(clip_y, rescaled)
 
+        if upscaler is None:
+            dmask = core.resize.Spline36(dmask, upscaled.width, upscaled.height)
+            clip_y = core.resize.Spline36(clip_y, upscaled.width, upscaled.height)
+
         if show_mask:
             return dmask
 
         upscaled = core.std.MaskedMerge(upscaled, clip_y, dmask)
 
     upscaled = util.resampler(upscaled, get_depth(clip))
-    upscaled = core.std.SetFrameProp(upscaled, "_descaled", data="True")
 
-    if clip.format.num_planes == 1:
+    if clip.format.num_planes == 1 or upscaler is None:
         return upscaled
-
     return join([upscaled, plane(clip, 1), plane(clip, 2)])
 
 
