@@ -304,19 +304,19 @@ def allow_vres(func: Callable[..., vs.VideoNode],
 
     :return:            Decorated function
     """
-    def frameeval_wrapper(n: int, clip: vs.VideoNode,
-                          f: Callable[..., vs.VideoNode],
-                          args: Any, kwargs: Any,
-                          format_out: Optional[int] = None) -> vs.VideoNode:
-        frame = clip.get_frame(n)
-        res = f(clip.resize.Point(frame.width, frame.height), *args, **kwargs)
+    def frameeval_wrapper(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
+                          g: Callable[..., vs.VideoNode], args: Any,
+                          kwargs: Any, format_out: Optional[int] = None
+                          ) -> vs.VideoNode:
+        res = g(clip.resize.Point(f.width, f.height), *args, **kwargs)
         return res.resize.Point(format=format_out) if format_out else res
 
     def inner(clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
         clip_out = clip.resize.Point(format=format_out) if format_out else clip
         return core.std.FrameEval(clip_out, partial(frameeval_wrapper, clip=clip,
-                                                    f=func, format_out=format_out,
-                                                    args=args, kwargs=kwargs))
+                                                    g=func, format_out=format_out,
+                                                    args=args, kwargs=kwargs),
+                                  prop_src=[clip])
 
     inner.__name__ = func.__name__
     return inner
@@ -335,11 +335,10 @@ def chroma_injector(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.Video
 
     :return:            Decorated function
     """
-    def upscale_chroma(n: int, luma: vs.VideoNode, chroma: vs.VideoNode
-                       ) -> vs.VideoNode:
-        frame = luma.get_frame(n)
-        luma = luma.resize.Point(frame.width, frame.height, format=vs.GRAY16)
-        chroma = chroma.resize.Spline36(frame.width, frame.height, format=vs.YUV444P16)
+    def upscale_chroma(n: int, f: vs.VideoFrame, luma: vs.VideoNode,
+                       chroma: vs.VideoNode) -> vs.VideoNode:
+        luma = luma.resize.Point(f.width, f.height, format=vs.GRAY16)
+        chroma = chroma.resize.Spline36(f.width, f.height, format=vs.YUV444P16)
         res = core.std.ShufflePlanes([luma, chroma], planes=[0, 1, 2], colorfamily=vs.YUV)
         return res
 
@@ -356,7 +355,7 @@ def chroma_injector(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.Video
         else:
             clip_in = core.std.FrameEval(y.resize.Point(format=vs.YUV444P16),
                                          partial(upscale_chroma, luma=y,
-                                                 chroma=_chroma))
+                                                 chroma=_chroma), prop_src=[y])
 
         ret = allow_vres(get_y, vs.GRAY16)(func(clip_in, *args, **kwargs))
         return ret.resize.Point(format=vs.GRAY16)
