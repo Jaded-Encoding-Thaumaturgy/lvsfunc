@@ -2,10 +2,11 @@
     Miscellaneous functions and wrappers that didn't really have a place in any other submodules.
 """
 from functools import partial
-from typing import List, Optional, Tuple, Union, cast
+from cytoolz import functoolz
+from typing import Any, Callable, List, Optional, Tuple, Union, cast
 
 import vapoursynth as vs
-from vsutil import get_depth, is_image
+from vsutil import get_depth, get_y, is_image
 
 from . import util
 
@@ -287,6 +288,81 @@ def frames_since_bookmark(clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoN
 
         return core.text.Text(clip, result)
     return core.std.FrameEval(clip, partial(_frames_since_bookmark, clip=clip, bookmarks=bookmarks))
+
+
+def allow_vres(func: Callable[..., vs.VideoNode],
+               format_out: Optional[int] = None) -> Callable[..., vs.VideoNode]:
+    """
+    Decorator allowing a variable res clip to be passed to a single-input
+    function that otherwise would not be able to accept it. Implemented by
+    FrameEvaling and resizing the clip to each frame. Does not work
+    when the function needs to return a different format.
+
+
+    :param func:        Function to call
+    :param format_out:  Format FrameEval should expect
+
+    :return:            Decorated function
+    """
+    def frameeval_wrapper(n: int, clip: vs.VideoNode,
+                          f: Callable[..., vs.VideoNode],
+                          args: Any, kwargs: Any,
+                          format_out: Optional[int] = None) -> vs.VideoNode:
+        frame = clip.get_frame(n)
+        res = f(clip.resize.Point(frame.width, frame.height), *args, **kwargs)
+        return res.resize.Point(format=format_out) if format_out else res
+
+    def inner(clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
+        clip_out = clip.resize.Point(format=format_out) if format_out else clip
+        return core.std.FrameEval(clip_out, partial(frameeval_wrapper, clip=clip,
+                                                    f=func, format_out=format_out,
+                                                    args=args, kwargs=kwargs))
+
+    inner.__name__ = func.__name__
+    return inner
+
+
+def chroma_injector(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.VideoNode]:
+    """
+    Decorator allowing injection of reference chroma into a function which
+    would normally only receive luma, such as an upscaler passed to
+    :py:func:`lvsfunc.scale.descale`. The chroma is resampled to the input
+    clip's width and height, shuffled to YUV444P16, then passed to the function.
+    Luma is then extracted from the function result and returned. The first
+    argument of the function is assumed to be the luma source.
+
+    :param func:        Function to call with injected chroma
+
+    :return:            Decorated function
+    """
+    def upscale_chroma(n: int, luma: vs.VideoNode, chroma: vs.VideoNode
+                       ) -> vs.VideoNode:
+        frame = luma.get_frame(n)
+        luma = luma.resize.Point(frame.width, frame.height, format=vs.GRAY16)
+        chroma = chroma.resize.Spline36(frame.width, frame.height, format=vs.YUV444P16)
+        res = core.std.ShufflePlanes([luma, chroma], planes=[0, 1, 2], colorfamily=vs.YUV)
+        return res
+
+    @functoolz.curry
+    def inner(_chroma: vs.VideoNode, clip: vs.VideoNode, *args: Any,
+              **kwargs: Any) -> vs.VideoNode:
+        y = allow_vres(get_y, vs.GRAY16)(clip)
+
+        y = y.resize.Point(format=vs.GRAY16)
+        if y.width != 0 and y.height != 0:
+            chroma = _chroma.resize.Spline36(y.width, y.height, format=vs.YUV444P16)
+            clip_in = core.std.ShufflePlanes([y, chroma], planes=[0, 1, 2],
+                                             colorfamily=vs.YUV)
+        else:
+            clip_in = core.std.FrameEval(y.resize.Point(format=vs.YUV444P16),
+                                         partial(upscale_chroma, luma=y,
+                                                 chroma=_chroma))
+
+        ret = allow_vres(get_y, vs.GRAY16)(func(clip_in, *args, **kwargs))
+        return ret.resize.Point(format=vs.GRAY16)
+
+    inner.__name__ = func.__name__
+    return inner
 
 
 # TODO: Write function that only masks px of a certain color/threshold of colors.

@@ -6,7 +6,7 @@ from functools import partial
 from typing import (Any, Callable, Dict, List, NamedTuple, Optional, Tuple,
                     Union, cast)
 
-from toolz import functoolz
+from cytoolz import functoolz
 from vsutil import get_depth, get_w, get_y, iterate, join, plane
 
 import vapoursynth as vs
@@ -126,7 +126,7 @@ def reupscale(clip: vs.VideoNode,
 
 @functoolz.curry
 def descale_detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
-                threshold: float = 0.05) -> vs.VideoNode:
+                        threshold: float = 0.05) -> vs.VideoNode:
     """
     Generate a detail mask given a clip and a clip rescaled with the same
     kernel.

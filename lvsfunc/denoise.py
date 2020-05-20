@@ -3,7 +3,7 @@
 """
 from typing import Any, Optional, cast
 
-from toolz import functoolz
+from cytoolz import functoolz
 from vsutil import get_y, join, split
 
 import vapoursynth as vs
