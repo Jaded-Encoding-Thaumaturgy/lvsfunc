@@ -174,6 +174,8 @@ lvsfunc.misc
 
 .. autosummary::
 
+   lvsfunc.misc.allow_vres
+   lvsfunc.misc.chroma_injector
    lvsfunc.misc.edgefixer
    lvsfunc.misc.fix_cr_tint
    lvsfunc.misc.frames_since_bookmark
