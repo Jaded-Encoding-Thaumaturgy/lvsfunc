@@ -11,7 +11,7 @@ try:
     from cytoolz import functoolz
 except ModuleNotFoundError:
     try:
-        from toolz import functoolz
+        from toolz import functoolz  # type: ignore
     except ImportError:
         raise ModuleNotFoundError("Cannot find functoolz: Please install toolz or cytoolz")
 
