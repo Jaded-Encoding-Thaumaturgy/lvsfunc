@@ -3,10 +3,17 @@
 """
 from typing import Any, Optional, cast
 
-from cytoolz import functoolz
 from vsutil import get_y, join, split
 
 import vapoursynth as vs
+
+try:
+    from cytoolz import functoolz
+except ModuleNotFoundError:
+    try:
+        from toolz import functoolz
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("Cannot find functoolz: Please install toolz or cytoolz")
 
 from . import util
 

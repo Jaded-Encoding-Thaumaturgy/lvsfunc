@@ -6,10 +6,17 @@ from functools import partial
 from typing import (Any, Callable, Dict, List, NamedTuple, Optional, Tuple,
                     Union, cast)
 
-from cytoolz import functoolz
 from vsutil import get_depth, get_w, get_y, iterate, join, plane
 
 import vapoursynth as vs
+
+try:
+    from cytoolz import functoolz
+except ModuleNotFoundError:
+    try:
+        from toolz import functoolz
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("Cannot find functoolz: Please install toolz or cytoolz")
 
 from . import kernels, util
 

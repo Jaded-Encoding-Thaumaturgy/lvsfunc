@@ -2,11 +2,18 @@
     Miscellaneous functions and wrappers that didn't really have a place in any other submodules.
 """
 from functools import partial
-from cytoolz import functoolz
 from typing import Any, Callable, List, Optional, Tuple, Union, cast
 
 import vapoursynth as vs
 from vsutil import get_depth, get_y, is_image
+
+try:
+    from cytoolz import functoolz
+except ModuleNotFoundError:
+    try:
+        from toolz import functoolz
+    except ImportError:
+        raise ModuleNotFoundError("Cannot find functoolz: Please install toolz or cytoolz")
 
 from . import util
 
