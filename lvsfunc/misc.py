@@ -12,7 +12,7 @@ try:
 except ModuleNotFoundError:
     try:
         from toolz import functoolz  # type: ignore
-    except ImportError:
+    except ModuleNotFoundError:
         raise ModuleNotFoundError("Cannot find functoolz: Please install toolz or cytoolz")
 
 from . import util
