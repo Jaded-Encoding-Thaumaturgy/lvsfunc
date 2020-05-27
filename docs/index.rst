@@ -96,7 +96,6 @@ Functions
    lvsfunc.scale.descale_detail_mask
    lvsfunc.scale.reupscale
    lvsfunc.scale.test_descale
-   lvsfunc.util.one_plane
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
    lvsfunc.util.quick_resample

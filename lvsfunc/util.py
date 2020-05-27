@@ -8,16 +8,6 @@ import vapoursynth as vs
 core = vs.core
 
 
-def one_plane(clip: vs.VideoNode) -> bool:
-    """
-    Returns True if the clip contains only one plane.
-
-    :param clip:    Input clip
-
-    :return:        Boolean representing whether the input has one plane or not
-    """
-    return cast(int, clip.format.num_planes) == 1
-
 
 def resampler(clip: vs.VideoNode, bitdepth: int) -> vs.VideoNode:
     """
