@@ -10,6 +10,8 @@ from vsutil import get_depth, get_w, get_y, iterate, join, plane
 
 import vapoursynth as vs
 
+from . import kernels, util
+
 try:
     from cytoolz import functoolz
 except ModuleNotFoundError:
@@ -17,8 +19,6 @@ except ModuleNotFoundError:
         from toolz import functoolz  # type: ignore
     except ModuleNotFoundError:
         raise ModuleNotFoundError("Cannot find functoolz: Please install toolz or cytoolz")
-
-from . import kernels, util
 
 core = vs.core
 

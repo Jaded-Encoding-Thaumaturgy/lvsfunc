@@ -7,6 +7,8 @@ from vsutil import get_y, join, split
 
 import vapoursynth as vs
 
+from . import util
+
 try:
     from cytoolz import functoolz
 except ModuleNotFoundError:
@@ -14,8 +16,6 @@ except ModuleNotFoundError:
         from toolz import functoolz  # type: ignore
     except ModuleNotFoundError:
         raise ModuleNotFoundError("Cannot find functoolz: Please install toolz or cytoolz")
-
-from . import util
 
 core = vs.core
 

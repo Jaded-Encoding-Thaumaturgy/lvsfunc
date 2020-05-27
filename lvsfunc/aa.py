@@ -3,8 +3,9 @@
 """
 from typing import Optional
 
-import vapoursynth as vs
 from vsutil import get_w, get_y
+
+import vapoursynth as vs
 
 from . import util
 
