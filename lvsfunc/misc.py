@@ -376,6 +376,12 @@ def chroma_injector(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.Video
 #       Think the magic wand tool in various image-editing programs.
 
 
+# TODO: Write a wrapper for duplex's Chroma Reconstructor.
+#       It should optimally be able to accept anything and accurately reconstruct it,
+#       so long as the user gives it the right clips. Otherwise, it should assume
+#       that the chroma was scaled down using Nearest Neighbor or something alike.
+
+
 # Aliases:
 src = source
 rfs = replace_ranges

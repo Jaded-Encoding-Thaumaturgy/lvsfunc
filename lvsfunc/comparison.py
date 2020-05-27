@@ -193,6 +193,12 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
         return core.std.Splice([stacked[f] for f in frames])
 
 
+# TODO: Write a comparison function that displays parts of clips side-by-side, similar to a slider.
+#       It should theoretically accept an infinite amount of clips
+#       and accurately split the width among all clips.
+#       Odd-resolution clips will also need to be taken into account.
+
+
 # Aliases:
 comp = compare
 scomp = stack_compare
