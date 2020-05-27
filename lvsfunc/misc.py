@@ -1,7 +1,7 @@
 """
     Miscellaneous functions and wrappers that didn't really have a place in any other submodules.
 """
-from functools import partial
+from functools import partial, wraps
 from typing import Any, Callable, List, Optional, Tuple, Union, cast
 
 import vapoursynth as vs
@@ -301,35 +301,33 @@ def frames_since_bookmark(clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoN
     return core.std.FrameEval(clip, partial(_frames_since_bookmark, clip=clip, bookmarks=bookmarks))
 
 
-def allow_vres(func: Callable[..., vs.VideoNode],
-               format_out: Optional[int] = None) -> Callable[..., vs.VideoNode]:
+def allow_variable(format_out: Optional[int] = None) -> Callable[..., vs.VideoNode]:
     """
-    Decorator allowing a variable res clip to be passed to a single-input
-    function that otherwise would not be able to accept it. Implemented by
-    FrameEvaling and resizing the clip to each frame. Does not work
-    when the function needs to return a different format.
+    Decorator allowing a variable-res and/or variable-format clip to be passed
+    to a function that otherwise would not be able to accept it. Implemented by
+    FrameEvaling and resizing the clip to each frame. Does not work when the
+    function needs to return a different format unless an output format is
+    specified. As such, this decorator must be called as a function when used
+    (e.g. @allow_vres() or @allow_vres(vs.GRAY16)). If the provided clip is
+    variable format, no output format is required to be specified.
 
+    :param format_out:  Output format FrameEval should expect
 
-    :param func:        Function to call
-    :param format_out:  Format FrameEval should expect
-
-    :return:            Decorated function
+    :return:            Function decorator for the given output format.
     """
-    def frameeval_wrapper(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
-                          g: Callable[..., vs.VideoNode], args: Any,
-                          kwargs: Any, format_out: Optional[int] = None
-                          ) -> vs.VideoNode:
-        res = g(clip.resize.Point(f.width, f.height), *args, **kwargs)
-        return res.resize.Point(format=format_out) if format_out else res
 
-    def inner(clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
-        clip_out = clip.resize.Point(format=format_out) if format_out else clip
-        return core.std.FrameEval(clip_out, partial(frameeval_wrapper, clip=clip,
-                                                    g=func, format_out=format_out,
-                                                    args=args, kwargs=kwargs),
-                                  prop_src=[clip])
+    def inner(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.VideoNode]:
+        @wraps(func)
+        def inner2(clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
+            def frameeval_wrapper(n: int, f: vs.VideoFrame) -> vs.VideoNode:
+                res = func(clip.resize.Point(f.width, f.height, format=f.format), *args, **kwargs)
+                return res.resize.Point(format=format_out) if format_out else res
 
-    inner.__name__ = func.__name__
+            clip_out = clip.resize.Point(format=format_out) if format_out else clip
+            return core.std.FrameEval(clip_out, frameeval_wrapper, prop_src=[clip])
+
+        return inner2
+
     return inner
 
 
@@ -338,40 +336,72 @@ def chroma_injector(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.Video
     Decorator allowing injection of reference chroma into a function which
     would normally only receive luma, such as an upscaler passed to
     :py:func:`lvsfunc.scale.descale`. The chroma is resampled to the input
-    clip's width and height, shuffled to YUV444P16, then passed to the function.
+    clip's width and height, shuffled to YUV444PX, then passed to the function.
     Luma is then extracted from the function result and returned. The first
-    argument of the function is assumed to be the luma source.
+    argument of the function is assumed to be the luma source. This works with
+    variable resolution and may work with variable format, however the latter
+    is wholly untested and likely a bad idea in every conceivable use case.
 
     :param func:        Function to call with injected chroma
 
     :return:            Decorated function
     """
-    def upscale_chroma(n: int, f: vs.VideoFrame, luma: vs.VideoNode,
-                       chroma: vs.VideoNode) -> vs.VideoNode:
-        luma = luma.resize.Point(f.width, f.height, format=vs.GRAY16)
-        chroma = chroma.resize.Spline36(f.width, f.height, format=vs.YUV444P16)
-        res = core.std.ShufflePlanes([luma, chroma], planes=[0, 1, 2], colorfamily=vs.YUV)
-        return res
 
     @functoolz.curry
+    @wraps(func)
     def inner(_chroma: vs.VideoNode, clip: vs.VideoNode, *args: Any,
               **kwargs: Any) -> vs.VideoNode:
-        y = allow_vres(get_y, vs.GRAY16)(clip)
 
-        y = y.resize.Point(format=vs.GRAY16)
-        if y.width != 0 and y.height != 0:
-            chroma = _chroma.resize.Spline36(y.width, y.height, format=vs.YUV444P16)
+        def upscale_chroma(n: int, f: vs.VideoFrame) -> vs.VideoNode:
+            luma = y.resize.Point(f.width, f.height)
+            if out_fmt is not None:
+                fmt = out_fmt
+            else:
+                fmt = core.register_format(vs.YUV, f.format.sample_type,
+                                           f.format.bits_per_sample, 0, 0)
+            chroma = _chroma.resize.Spline36(f.width, f.height,
+                                             format=fmt.id)
+            res = core.std.ShufflePlanes([luma, chroma], planes=[0, 1, 2],
+                                         colorfamily=vs.YUV)
+            return res
+
+        if clip.format is not None:
+            if clip.format.color_family not in (vs.GRAY, vs.YUV):
+                raise ValueError("chroma_injector: only YUV and GRAY clips are supported")
+
+            in_fmt = core.register_format(vs.GRAY, clip.format.sample_type,
+                                          clip.format.bits_per_sample, 0, 0)
+            y = allow_variable(in_fmt.id)(get_y)(clip)
+            # We want to use YUV444PX for chroma injection
+            out_fmt = core.register_format(vs.YUV, clip.format.sample_type,
+                                           clip.format.bits_per_sample, 0, 0)
+        else:
+            y = allow_variable()(get_y)(clip)
+            out_fmt = None
+
+        if y.width != 0 and y.height != 0 and y.format is not None:
+            chroma = _chroma.resize.Spline36(y.width, y.height, format=out_fmt.id)
             clip_in = core.std.ShufflePlanes([y, chroma], planes=[0, 1, 2],
                                              colorfamily=vs.YUV)
         else:
-            clip_in = core.std.FrameEval(y.resize.Point(format=vs.YUV444P16),
-                                         partial(upscale_chroma, luma=y,
-                                                 chroma=_chroma), prop_src=[y])
+            y_f = y.resize.Point(format=out_fmt.id) if out_fmt is not None else y
+            clip_in = core.std.FrameEval(y_f, upscale_chroma, prop_src=[y])
 
-        ret = allow_vres(get_y, vs.GRAY16)(func(clip_in, *args, **kwargs))
-        return ret.resize.Point(format=vs.GRAY16)
+        result = func(clip_in, *args, **kwargs)
 
-    inner.__name__ = func.__name__
+        if result.format is not None:
+            if result.format.color_family not in (vs.GRAY, vs.YUV):
+                raise ValueError("chroma_injector: can only decorate function with YUV and/or GRAY format return")
+
+            if result.format.color_family == vs.GRAY:
+                return result
+
+            res_fmt = core.register_format(vs.GRAY, result.format.sample_type,
+                                           result.format.bits_per_sample, 0, 0)
+            return allow_variable(res_fmt.id)(get_y)(result)
+        else:
+            return allow_variable()(get_y)(result)
+
     return inner
 
 
