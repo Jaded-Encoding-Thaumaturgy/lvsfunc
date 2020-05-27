@@ -5,15 +5,7 @@ from functools import partial, wraps
 from typing import Any, Callable, List, Optional, Tuple, Union, cast
 
 import vapoursynth as vs
-from vsutil import depth, get_depth, get_y, is_image
-
-try:
-    from cytoolz import functoolz
-except ModuleNotFoundError:
-    try:
-        from toolz import functoolz  # type: ignore
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("Cannot find functoolz: Please install toolz or cytoolz")
+from vsutil import depth, get_depth, get_w, get_y, is_image
 
 core = vs.core
 
@@ -301,29 +293,36 @@ def frames_since_bookmark(clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoN
     return core.std.FrameEval(clip, partial(_frames_since_bookmark, clip=clip, bookmarks=bookmarks))
 
 
-def allow_variable(format_out: Optional[int] = None) -> Callable[..., vs.VideoNode]:
+def allow_variable(width: Optional[int] = None, height: Optional[int] = None,
+                   format: Optional[int] = None) -> Callable[..., vs.VideoNode]:
     """
     Decorator allowing a variable-res and/or variable-format clip to be passed
     to a function that otherwise would not be able to accept it. Implemented by
     FrameEvaling and resizing the clip to each frame. Does not work when the
     function needs to return a different format unless an output format is
     specified. As such, this decorator must be called as a function when used
-    (e.g. @allow_vres() or @allow_vres(vs.GRAY16)). If the provided clip is
-    variable format, no output format is required to be specified.
+    (e.g. @allow_variable() or @allow_variable(format=vs.GRAY16)). If the
+    provided clip is variable format, no output format is required to be
+    specified.
 
-    :param format_out:  Output format FrameEval should expect
+    :param width:   Output clip width
+    :param height:  Output clip height
+    :param format:  Output clip format
 
     :return:            Function decorator for the given output format.
     """
+    if height is not None:
+        width = width if width else get_w(height)
 
     def inner(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.VideoNode]:
         @wraps(func)
         def inner2(clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
             def frameeval_wrapper(n: int, f: vs.VideoFrame) -> vs.VideoNode:
                 res = func(clip.resize.Point(f.width, f.height, format=f.format), *args, **kwargs)
-                return res.resize.Point(format=format_out) if format_out else res
+                return res.resize.Point(format=format) if format else res
 
-            clip_out = clip.resize.Point(format=format_out) if format_out else clip
+            clip_out = clip.resize.Point(format=format) if format else clip
+            clip_out = clip_out.resize.Point(width, height) if width and height else clip_out
             return core.std.FrameEval(clip_out, frameeval_wrapper, prop_src=[clip])
 
         return inner2
@@ -347,13 +346,12 @@ def chroma_injector(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.Video
     :return:            Decorated function
     """
 
-    @functoolz.curry
     @wraps(func)
     def inner(_chroma: vs.VideoNode, clip: vs.VideoNode, *args: Any,
               **kwargs: Any) -> vs.VideoNode:
 
         def upscale_chroma(n: int, f: vs.VideoFrame) -> vs.VideoNode:
-            luma = y.resize.Point(f.width, f.height)
+            luma = y.resize.Point(f.width, f.height, format=f.format)
             if out_fmt is not None:
                 fmt = out_fmt
             else:
@@ -371,7 +369,7 @@ def chroma_injector(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.Video
 
             in_fmt = core.register_format(vs.GRAY, clip.format.sample_type,
                                           clip.format.bits_per_sample, 0, 0)
-            y = allow_variable(in_fmt.id)(get_y)(clip)
+            y = allow_variable(format=in_fmt.id)(get_y)(clip)
             # We want to use YUV444PX for chroma injection
             out_fmt = core.register_format(vs.YUV, clip.format.sample_type,
                                            clip.format.bits_per_sample, 0, 0)
@@ -398,7 +396,7 @@ def chroma_injector(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.Video
 
             res_fmt = core.register_format(vs.GRAY, result.format.sample_type,
                                            result.format.bits_per_sample, 0, 0)
-            return allow_variable(res_fmt.id)(get_y)(result)
+            return allow_variable(format=res_fmt.id)(get_y)(result)
         else:
             return allow_variable()(get_y)(result)
 
