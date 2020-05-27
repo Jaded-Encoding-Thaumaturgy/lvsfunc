@@ -4,8 +4,11 @@
 from functools import partial
 from typing import Any, Callable, List, Optional, Tuple, Union, cast
 
-import vapoursynth as vs
 from vsutil import get_depth, get_y, is_image
+
+import vapoursynth as vs
+
+from . import util
 
 try:
     from cytoolz import functoolz
@@ -14,8 +17,6 @@ except ModuleNotFoundError:
         from toolz import functoolz  # type: ignore
     except ModuleNotFoundError:
         raise ModuleNotFoundError("Cannot find functoolz: Please install toolz or cytoolz")
-
-from . import util
 
 core = vs.core
 
@@ -373,3 +374,9 @@ def chroma_injector(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.Video
 
 # TODO: Write function that only masks px of a certain color/threshold of colors.
 #       Think the magic wand tool in various image-editing programs.
+
+
+# Aliases:
+src = source
+rfs = replace_ranges
+ef = edgefixer

@@ -191,3 +191,9 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
         tv, bd = tv.text.Text("Clip A", 3), bd.text.Text("Clip B", 1)
         stacked = core.std.StackVertical([core.std.StackHorizontal([tv, bd]), diff])
         return core.std.Splice([stacked[f] for f in frames])
+
+
+# Aliases:
+comp = compare
+scomp = stack_compare
+diff = tvbd_diff
