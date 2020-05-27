@@ -294,20 +294,21 @@ def frames_since_bookmark(clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoN
 
 
 def allow_variable(width: Optional[int] = None, height: Optional[int] = None,
-                   format: Optional[int] = None) -> Callable[..., vs.VideoNode]:
+                   format: Optional[int] = None
+                   ) -> Callable[..., Callable[..., vs.VideoNode]]:
     """
     Decorator allowing a variable-res and/or variable-format clip to be passed
     to a function that otherwise would not be able to accept it. Implemented by
     FrameEvaling and resizing the clip to each frame. Does not work when the
     function needs to return a different format unless an output format is
     specified. As such, this decorator must be called as a function when used
-    (e.g. @allow_variable() or @allow_variable(format=vs.GRAY16)). If the
-    provided clip is variable format, no output format is required to be
+    (e.g. ``@allow_variable()`` or ``@allow_variable(format=vs.GRAY16)``). If
+    the provided clip is variable format, no output format is required to be
     specified.
 
-    :param width:   Output clip width
-    :param height:  Output clip height
-    :param format:  Output clip format
+    :param width:       Output clip width
+    :param height:      Output clip height
+    :param format:      Output clip format
 
     :return:            Function decorator for the given output format.
     """
@@ -335,11 +336,12 @@ def chroma_injector(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.Video
     Decorator allowing injection of reference chroma into a function which
     would normally only receive luma, such as an upscaler passed to
     :py:func:`lvsfunc.scale.descale`. The chroma is resampled to the input
-    clip's width and height, shuffled to YUV444PX, then passed to the function.
-    Luma is then extracted from the function result and returned. The first
-    argument of the function is assumed to be the luma source. This works with
-    variable resolution and may work with variable format, however the latter
-    is wholly untested and likely a bad idea in every conceivable use case.
+    clip's width, height, and pixel format, shuffled to YUV444PX, then passed
+    to the function. Luma is then extracted from the function result and
+    returned. The first argument of the function is assumed to be the luma
+    source. This works with variable resolution and may work with variable
+    format, however the latter is wholly untested and likely a bad idea in
+    every conceivable use case.
 
     :param func:        Function to call with injected chroma
 
