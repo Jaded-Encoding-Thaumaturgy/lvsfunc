@@ -21,7 +21,7 @@ core = vs.core
 
 
 def quick_denoise(clip: vs.VideoNode,
-                  ref: vs.VideoNode = Optional[None],
+                  ref: Optional[vs.VideoNode] = None,
                   cmode: str = 'knlm',
                   sigma: float = 2,
                   **kwargs: Any) -> vs.VideoNode:
@@ -58,6 +58,9 @@ def quick_denoise(clip: vs.VideoNode,
     except ModuleNotFoundError:
         raise ModuleNotFoundError("quick_denoise: missing dependency 'mvsfunc'")
 
+    if clip.format is None or clip.format.color_family not in (vs.YUV, vs.YCOCG, vs.RGB):
+        raise ValueError("quick_denoise: input clip must be vs.YUV, vs.YCOCG, or vs.RGB")
+
     planes = split(clip)
     cmode = cmode.lower()
 
@@ -73,17 +76,19 @@ def quick_denoise(clip: vs.VideoNode,
             planes[1] = planes[1].dfttest.DFTTest(sosize=sbsize * 0.75, **kwargs)
             planes[2] = planes[2].dfttest.DFTTest(sosize=sbsize * 0.75, **kwargs)
         except KeyError:
-            raise ValueError(f"denoise: '\"sbsize\" not specified'")
+            raise ValueError(f"quick_denoise: '\"sbsize\" not specified'")
     elif cmode in [4, 'smd', 'smdegrain']:
         try:
             import havsfunc as haf
         except ModuleNotFoundError:
             raise ModuleNotFoundError("quick_denoise: missing dependency 'havsfunc'")
+
         planes[1] = haf.SMDegrain(planes[1], prefilter=3, **kwargs)
         planes[2] = haf.SMDegrain(planes[2], prefilter=3, **kwargs)
     else:
-        raise ValueError(f"denoise: 'Unknown cmode'")
+        raise ValueError(f"quick_denoise: 'Unknown cmode'")
 
+    ref = ref or planes[0]
     planes[0] = mvf.BM3D(planes[0], sigma=sigma, psample=0, radius1=1, ref=ref)
     return join(planes)
 
@@ -148,3 +153,7 @@ def detail_mask(clip: vs.VideoNode, pre_denoise: Optional[float] = None,
     mask = core.std.Expr([mask_a, mask_b], 'x y max')
     mask = util.pick_removegrain(mask)(mask, 22)
     return util.pick_removegrain(mask)(mask, 11)
+
+
+# Alias:
+qden = quick_denoise
