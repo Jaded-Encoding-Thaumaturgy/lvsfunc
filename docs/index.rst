@@ -99,7 +99,6 @@ Functions
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
    lvsfunc.util.quick_resample
-   lvsfunc.util.resampler
 
 lvsfunc.aa
 ---------------
@@ -226,7 +225,6 @@ lvsfunc.util
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
    lvsfunc.util.quick_resample
-   lvsfunc.util.resampler
 
 .. automodule:: lvsfunc.util
    :members:
