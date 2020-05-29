@@ -3,9 +3,8 @@
 """
 from typing import Any, Optional, cast
 
-from vsutil import get_y, join, split
-
 import vapoursynth as vs
+from vsutil import depth, get_y, join, split
 
 from . import util
 
@@ -142,9 +141,9 @@ def detail_mask(clip: vs.VideoNode, pre_denoise: Optional[float] = None,
     den_a = core.knlm.KNLMeansCL(clip, d=2, a=3, h=pre_denoise, device_type ='GPU') if pre_denoise is not None else clip
     den_b = core.knlm.KNLMeansCL(clip, d=2, a=3, h=pre_denoise/2, device_type ='GPU') if pre_denoise is not None else clip
 
-    mask_a = util.resampler(get_y(den_a), 16) if clip.format.bits_per_sample < 32 else get_y(den_a)
+    mask_a = depth(get_y(den_a), 16) if clip.format.bits_per_sample < 32 else get_y(den_a)
     mask_a = rangemask(mask_a, rad=rad, radc=radc)
-    mask_a = util.resampler(mask_a, clip.format.bits_per_sample)
+    mask_a = depth(mask_a, clip.format.bits_per_sample)
     mask_a = core.std.Binarize(mask_a, brz_a)
 
     mask_b = core.std.Prewitt(get_y(den_b))

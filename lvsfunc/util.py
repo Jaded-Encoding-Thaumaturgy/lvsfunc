@@ -1,35 +1,12 @@
 """
     Helper functions for the main functions in the script.
 """
-from typing import Callable, cast
+from typing import Callable
 
 import vapoursynth as vs
+from vsutil import depth
 
 core = vs.core
-
-
-
-def resampler(clip: vs.VideoNode, bitdepth: int) -> vs.VideoNode:
-    """
-    A barebones version of fvsfunc's Depth to remove a common dependency.
-    All credit for the original script goes to Frechdachs.
-
-    :param clip:    Input clip
-    :param bitdepth: Depth to resample to
-
-    :return:        Clip resampled to bitdepth
-    """
-    clip_cf = clip.format.color_family
-    dst_st = vs.INTEGER if bitdepth < 32 else vs.FLOAT
-    src_sw = clip.format.subsampling_w
-    src_sh = clip.format.subsampling_h
-
-    if clip.format.bits_per_sample == bitdepth:
-        return clip
-
-    dither_type = 'error_diffusion' if bitdepth > clip.format.bits_per_sample else 'none'
-    form = core.register_format(clip_cf, dst_st, bitdepth, src_sw, src_sh)
-    return core.resize.Point(clip, format=form.id, dither_type=dither_type)
 
 
 def quick_resample(clip: vs.VideoNode,
@@ -45,12 +22,12 @@ def quick_resample(clip: vs.VideoNode,
     :return:          Filtered clip in original depth
     """
     try:
-        down = resampler(clip, 16)
+        down = depth(clip, 16)
         filtered = function(down)
     except:  # noqa: E722
-        down = resampler(clip, 8)
+        down = depth(clip, 8)
         filtered = function(down)
-    return resampler(filtered, clip.format.bits_per_sample)
+    return depth(filtered, clip.format.bits_per_sample)
 
 
 # TODO: Merge pick_repair and pick_removegrain?
