@@ -3,12 +3,10 @@
 """
 import math
 from functools import partial
-from typing import (Any, Callable, Dict, List, NamedTuple, Optional, Tuple,
-                    Union, cast)
-
-from vsutil import get_depth, get_w, get_y, iterate, join, plane
+from typing import Any, Callable, cast, Dict, List, NamedTuple, Optional, Tuple, Union
 
 import vapoursynth as vs
+from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
 
 from . import kernels, util
 
@@ -215,7 +213,7 @@ def descale(clip: vs.VideoNode,
 
     resolutions = [Resolution(*r) for r in zip(width, height)]
 
-    clip_y = util.resampler(get_y(clip), 32) \
+    clip_y = depth(get_y(clip), 32) \
         .std.SetFrameProp('descaleResolution', intval=clip.height)
 
     variable_res_clip = core.std.Splice([
@@ -268,7 +266,7 @@ def descale(clip: vs.VideoNode,
 
         upscaled = core.std.MaskedMerge(upscaled, clip_y, dmask)
 
-    upscaled = util.resampler(upscaled, get_depth(clip))
+    upscaled = depth(upscaled, get_depth(clip))
 
     if clip.format.num_planes == 1 or upscaler is None:
         return upscaled
@@ -304,7 +302,7 @@ def test_descale(clip: vs.VideoNode,
     """
     width = width or get_w(height, clip.width / clip.height)
 
-    clip_y = util.resampler(get_y(clip), 32)
+    clip_y = depth(get_y(clip), 32)
 
     descale = _perform_descale(Resolution(width, height), clip_y, kernel)
     rescaled = core.std.PlaneStats(descale.rescaled, clip_y)

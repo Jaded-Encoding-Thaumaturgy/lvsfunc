@@ -2,13 +2,10 @@
     Miscellaneous functions and wrappers that didn't really have a place in any other submodules.
 """
 from functools import partial
-from typing import Any, Callable, List, Optional, Tuple, Union, cast
-
-from vsutil import get_depth, get_y, is_image
+from typing import Any, Callable, cast, List, Optional, Tuple, Union
 
 import vapoursynth as vs
-
-from . import util
+from vsutil import depth, get_depth, get_y, is_image
 
 try:
     from cytoolz import functoolz
@@ -175,7 +172,7 @@ def fix_cr_tint(clip: vs.VideoNode, value: int = 128) -> vs.VideoNode:
     :return:       Clip with CR tint fixed
     """
     if get_depth(clip) != 16:
-        clip = util.resampler(clip, 16)
+        clip = depth(clip, 16)
     return core.std.Expr(clip, f'x {value} +')
 
 
