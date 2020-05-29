@@ -2,7 +2,7 @@
     Miscellaneous functions and wrappers that didn't really have a place in any other submodules.
 """
 from functools import partial
-from typing import Any, Callable, cast, List, Optional, Tuple, Union
+from typing import Any, Callable, List, Optional, Tuple, Union, cast
 
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_y, is_image

@@ -3,7 +3,7 @@
 """
 import math
 from functools import partial
-from typing import Any, Callable, cast, Dict, List, NamedTuple, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple, Union, cast
 
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane

@@ -1,7 +1,7 @@
 """
     Wrappers and masks for denoising.
 """
-from typing import Any, cast, Optional
+from typing import Any, Optional, cast
 
 import vapoursynth as vs
 from vsutil import depth, get_y, join, split
