@@ -1,7 +1,7 @@
 """
     Helper functions for the main functions in the script.
 """
-from typing import Callable, cast
+from typing import Callable
 
 import vapoursynth as vs
 from vsutil import depth
