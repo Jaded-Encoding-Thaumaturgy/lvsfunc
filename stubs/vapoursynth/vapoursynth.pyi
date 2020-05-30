@@ -607,12 +607,13 @@ class _Plugin_lsmas_Bound(Plugin):
 
 
 # implementation: mpls
+MPLS = typing.TypedDict("MPLS", {"clip": typing.Sequence[bytes], "filename": typing.Sequence[bytes], "count": int})
 class _Plugin_mpls_Unbound(Plugin):
     """
     This class implements the module definitions for the corresponding VapourSynth plugin.
     This class cannot be imported.
     """
-    def Read(self, bd_path: typing.Union[str, bytes, bytearray], playlist: int, angle: typing.Union[int, None] = None) -> "VideoNode": ...
+    def Read(self, bd_path: typing.Union[str, bytes, bytearray], playlist: int, angle: typing.Union[int, None] = None) -> MPLS: ...
 
 
 class _Plugin_mpls_Bound(Plugin):
@@ -620,7 +621,7 @@ class _Plugin_mpls_Bound(Plugin):
     This class implements the module definitions for the corresponding VapourSynth plugin.
     This class cannot be imported.
     """
-    def Read(self, playlist: int, angle: typing.Union[int, None] = None) -> "VideoNode": ...
+    def Read(self, playlist: int, angle: typing.Union[int, None] = None) -> MPLS: ...
 # end implementation
 
 
