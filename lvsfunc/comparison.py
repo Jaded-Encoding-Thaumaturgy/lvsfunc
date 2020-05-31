@@ -48,7 +48,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     # Error handling
     if frames and len(frames) > clip_a.num_frames:
-        raise ValueError(f"compare: 'More comparisons requested than frames available'")
+        raise ValueError("compare: 'More comparisons requested than frames available'")
 
     if force_resample:
         clip_a, clip_b = _resample(clip_a), _resample(clip_b)
@@ -56,7 +56,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
         if clip_a.format is None or clip_b.format is None:
             raise ValueError("compare: 'Variable-format clips not supported'")
         if clip_a.format.id != clip_b.format.id:
-            raise ValueError(f"compare: 'The format of both clips must be equal'")
+            raise ValueError("compare: 'The format of both clips must be equal'")
 
     if print_frame:
         clip_a, clip_b = clip_a.text.FrameNum(), clip_b.text.FrameNum()
@@ -93,10 +93,10 @@ def stack_compare(*clips: vs.VideoNode,
     :return:                  Clip with clips stacked
     """
     if len(clips) < 2:
-        raise ValueError(f"stack_compare: 'Too few clips supplied'")
+        raise ValueError("stack_compare: 'Too few clips supplied'")
 
     if len(clips) != 2 and make_diff:
-        raise ValueError(f"stack_compare: 'You can only create a diff for two clips'")
+        raise ValueError("stack_compare: 'You can only create a diff for two clips'")
 
     formats = set()
     for c in clips:
@@ -104,7 +104,7 @@ def stack_compare(*clips: vs.VideoNode,
             raise ValueError("stack_compare: 'Variable-format clips not supported'")
         formats.add(c.format.id)
     if len(formats) != 1:
-        raise ValueError(f"stack_compare: 'The format of every clip must be equal'")
+        raise ValueError("stack_compare: 'The format of every clip must be equal'")
 
     if make_diff:
         diff = core.std.MakeDiff(clips[0], clips[1])
@@ -116,7 +116,7 @@ def stack_compare(*clips: vs.VideoNode,
         stack = core.std.StackHorizontal(clips)
     if warn:
         if len(set([c.num_frames for c in clips])) != 1:
-            stack = core.text.Text(stack, f"Clip Length Mismatch Detected! \nPlease make sure the lengths of all clips match!\n"+"".join(f"\nClip {i+1}: {c.num_frames} Frames" for i, c in enumerate(clips)), 2)
+            stack = core.text.Text(stack, "Clip Length Mismatch Detected! \nPlease make sure the lengths of all clips match!\n"+"".join(f"\nClip {i+1}: {c.num_frames} Frames" for i, c in enumerate(clips)), 2)
     return stack
 
 
@@ -144,7 +144,7 @@ def stack_planes(clip: vs.VideoNode,
     elif subsampling == '444':
         return core.std.StackVertical(planes) if stack_vertical else core.std.StackHorizontal(planes)
     else:
-        raise ValueError(f"stack_planes: 'Input clip must be in YUV format with 444 or 420 chroma subsampling'")
+        raise ValueError("stack_planes: 'Input clip must be in YUV format with 444 or 420 chroma subsampling'")
 
 
 def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
@@ -173,7 +173,7 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
     :param return_array:  Return frames as an interleaved comparison (using py:func:`lvsfunc.comparison.compare`) (Default: False)
     """
     if thr > 128:
-        raise ValueError(f"tvbd_diff: \"thr\" should neither be nor exceed 128!'")
+        raise ValueError("tvbd_diff: \"thr\" should neither be nor exceed 128!'")
 
     tv, bd = depth(tv, 8), depth(bd, 8)
 
@@ -188,7 +188,7 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
         frames = [i for i, f in enumerate(diff.frames()) if get_prop(f, "PlaneStatsMin", t) <= thr or get_prop(f, "PlaneStatsMax", t) >= 255 - thr]
 
     if not frames:
-        raise ValueError(f"tvbd_diff: 'No differences found'")
+        raise ValueError("tvbd_diff: 'No differences found'")
 
     if return_array:
         return compare(tv.text.FrameNum().text.Text('Clip A', 9),

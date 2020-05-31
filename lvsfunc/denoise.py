@@ -77,7 +77,7 @@ def quick_denoise(clip: vs.VideoNode,
             planes[1] = planes[1].dfttest.DFTTest(sosize=int(sbsize * 0.75), **kwargs)
             planes[2] = planes[2].dfttest.DFTTest(sosize=int(sbsize * 0.75), **kwargs)
         except KeyError:
-            raise ValueError(f"quick_denoise: '\"sbsize\" not specified'")
+            raise ValueError("quick_denoise: '\"sbsize\" not specified'")
     elif cmode in [4, 'smd', 'smdegrain']:
         try:
             import havsfunc as haf
@@ -87,7 +87,7 @@ def quick_denoise(clip: vs.VideoNode,
         planes[1] = haf.SMDegrain(planes[1], prefilter=3, **kwargs)
         planes[2] = haf.SMDegrain(planes[2], prefilter=3, **kwargs)
     else:
-        raise ValueError(f"quick_denoise: 'Unknown cmode'")
+        raise ValueError("quick_denoise: 'Unknown cmode'")
 
     ref = ref or planes[0]
     planes[0] = mvf.BM3D(planes[0], sigma=sigma, psample=0, radius1=1, ref=ref)

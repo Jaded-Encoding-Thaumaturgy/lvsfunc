@@ -159,7 +159,7 @@ def dir_unsharp(clip: vs.VideoNode,
 
     dir = dir.lower()
     if dir not in ['v', 'h']:
-        raise ValueError(f"dir_unsharp: '\"dir\" must be either \"v\" or \"h\"'")
+        raise ValueError("dir_unsharp: '\"dir\" must be either \"v\" or \"h\"'")
 
     den = core.knlm.KNLMeansCL(clip, d=3, a=3, h=h)
     diff = core.std.MakeDiff(clip, den)

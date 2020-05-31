@@ -49,9 +49,9 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
 
     # Error handling for some file types
     if file.endswith('.mpls') and mpls is False:
-        raise ValueError(f"source: 'Please set \"mpls = True\" and give a path to the base Blu-ray directory when trying to load in mpls files'")
+        raise ValueError("source: 'Please set \"mpls = True\" and give a path to the base Blu-ray directory when trying to load in mpls files'")
     if file.endswith('.vob') or file.endswith('.ts'):
-        raise ValueError(f"source: 'Please index VOB and TS files with d2v before importing them'")
+        raise ValueError("source: 'Please index VOB and TS files with d2v before importing them'")
 
     if force_lsmas:
         return core.lsmas.LWLibavSource(file)
