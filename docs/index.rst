@@ -84,6 +84,8 @@ Functions
    lvsfunc.denoise.adaptive_mask
    lvsfunc.denoise.detail_mask
    lvsfunc.denoise.quick_denoise
+   lvsfunc.misc.allow_variable
+   lvsfunc.misc.chroma_injector
    lvsfunc.misc.edgefixer
    lvsfunc.misc.fix_cr_tint
    lvsfunc.misc.frames_since_bookmark
@@ -172,7 +174,7 @@ lvsfunc.misc
 
 .. autosummary::
 
-   lvsfunc.misc.allow_vres
+   lvsfunc.misc.allow_variable
    lvsfunc.misc.chroma_injector
    lvsfunc.misc.edgefixer
    lvsfunc.misc.fix_cr_tint
