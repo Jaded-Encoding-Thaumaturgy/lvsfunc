@@ -49,19 +49,15 @@ class ScaleAttempt(NamedTuple):
 
 def _transpose_shift(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
                      kernel: kernels.Kernel, caller: str) -> vs.VideoNode:
-    try:
-        h = f.props.descaleResolution
-    except AttributeError:
-        raise ValueError(f"{caller}: 'This clip was not descaled using descale'")
-    w = get_w(h)
+    h = f.height
+    w = f.width
     clip = kernel.scale(clip, w, h*2, (0.5, 0))
     return core.std.Transpose(clip)
 
 
 def _perform_descale(resolution: Resolution, clip: vs.VideoNode,
                      kernel: kernels.Kernel) -> ScaleAttempt:
-    descaled = kernel.descale(clip, resolution.width, resolution.height) \
-        .std.SetFrameProp('descaleResolution', intval=resolution.height)
+    descaled = kernel.descale(clip, resolution.width, resolution.height)
     rescaled = kernel.scale(descaled, clip.width, clip.height)
     diff = core.std.Expr([rescaled, clip], 'x y - abs').std.PlaneStats()
     return ScaleAttempt(descaled, rescaled, resolution, diff)
@@ -75,15 +71,15 @@ def _select_descale(n: int, f: Union[vs.VideoFrame, List[vs.VideoFrame]],
         f = [cast(vs.VideoFrame, f)]
     f = cast(List[vs.VideoFrame], f)
     best_res = max(f, key=lambda frame:
-                   math.log(clip.height - frame.props.descaleResolution, 2)
-                   * round(1 / max(frame.props.PlaneStatsAverage, 1e-12))
+                   math.log(clip.height - frame.height, 2)
+                   * round(1 / max(util.get_prop(frame, "PlaneStatsAverage", float), 1e-12))
                    ** 0.2)
 
-    best_attempt = clips_by_resolution.get(best_res.props.descaleResolution)
+    best_attempt = clips_by_resolution.get(best_res.height)
     assert best_attempt is not None  # mypy thinks the lookup could fail
     if threshold == 0:
         return best_attempt.descaled
-    if best_res.props.PlaneStatsAverage > threshold:
+    if util.get_prop(best_res, "PlaneStatsAverage", float) > threshold:
         return clip
     return best_attempt.descaled
 
@@ -196,6 +192,9 @@ def descale(clip: vs.VideoNode,
 
     :return:                       Descaled and re-upscaled clip
     """
+    if clip.format is None:
+        raise ValueError("descale: 'Variable-format clips not supported'")
+
     if type(height) is int:
         height = [cast(int, height)]
 
@@ -240,7 +239,7 @@ def descale(clip: vs.VideoNode,
     if upscaler is None:
         upscaled = descaled
         if len(height) == 1:
-            upscaled = core.resize.Point(upscaled, width, height)
+            upscaled = core.resize.Point(upscaled, width[0], height[0])
         else:
             return upscaled
     else:
@@ -249,6 +248,9 @@ def descale(clip: vs.VideoNode,
     if src_left != 0 or src_top != 0:
         upscaled = core.resize.Bicubic(descaled, src_left=-src_left,
                                        src_top=-src_top)
+
+    if upscaled.format is None:
+        raise RuntimeError("descale: 'Upscaler cannot return variable-format clips'")
 
     if mask:
         clip_y = clip_y.resize.Point(format=upscaled.format.id)
@@ -300,6 +302,9 @@ def test_descale(clip: vs.VideoNode,
     :return: A tuple containing a clip re-upscaled with the same kernel and
              a ScaleAttempt tuple.
     """
+    if clip.format is None:
+        raise ValueError("test_descale: 'Variable-format clips not supported'")
+
     width = width or get_w(height, clip.width / clip.height)
 
     clip_y = depth(get_y(clip), 32)

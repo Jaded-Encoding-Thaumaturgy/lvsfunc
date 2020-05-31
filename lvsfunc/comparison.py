@@ -8,6 +8,8 @@ from typing import List, Optional
 import vapoursynth as vs
 from vsutil import depth, get_subsampling, get_w, split
 
+from .util import get_prop
+
 core = vs.core
 
 
@@ -42,7 +44,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     def _resample(clip: vs.VideoNode) -> vs.VideoNode:
         # Resampling to 8 bit and RGB to properly display how it appears on your screen
-        return depth(clip.resize.Point(format=vs.RGB24, matrix_in_s=GetMatrix(clip)), 8)
+        return depth(clip.resize.Point(format=vs.RGB24, matrix_in_s=str(GetMatrix(clip))), 8)
 
     # Error handling
     if frames and len(frames) > clip_a.num_frames:
@@ -51,6 +53,8 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     if force_resample:
         clip_a, clip_b = _resample(clip_a), _resample(clip_b)
     else:
+        if clip_a.format is None or clip_b.format is None:
+            raise ValueError("compare: 'Variable-format clips not supported'")
         if clip_a.format.id != clip_b.format.id:
             raise ValueError(f"compare: 'The format of both clips must be equal'")
 
@@ -94,13 +98,18 @@ def stack_compare(*clips: vs.VideoNode,
     if len(clips) != 2 and make_diff:
         raise ValueError(f"stack_compare: 'You can only create a diff for two clips'")
 
-    if len(set([c.format.id for c in clips])) != 1:
+    formats = set()
+    for c in clips:
+        if c.format is None:
+            raise ValueError("stack_compare: 'Variable-format clips not supported'")
+        formats.add(c.format.id)
+    if len(formats) != 1:
         raise ValueError(f"stack_compare: 'The format of every clip must be equal'")
 
     if make_diff:
         diff = core.std.MakeDiff(clips[0], clips[1])
         diff = core.resize.Spline36(diff, get_w(576), 576).text.FrameNum(8)
-        resize = [core.resize.Spline36(c, diff.width / 2, diff.height / 2) for c in clips]
+        resize = [core.resize.Spline36(c, int(diff.width / 2), int(diff.height / 2)) for c in clips]
         resize[0], resize[1] = resize[0].text.Text("Clip A", 3), resize[1].text.Text("Clip B", 1)
         stack = core.std.StackVertical([core.std.StackHorizontal([resize[0], resize[1]]), diff])
     else:
@@ -170,10 +179,13 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
 
     if thr <= 1:
         diff = core.std.PlaneStats(tv, bd)
-        frames = [i for i, f in enumerate(diff.frames()) if f.props["PlaneStatsDiff"] > thr]
+        frames = [i for i, f in enumerate(diff.frames()) if get_prop(f, "PlaneStatsDiff", float) > thr]
     else:
         diff = core.std.MakeDiff(tv, bd).std.PlaneStats()
-        frames = [i for i, f in enumerate(diff.frames()) if f.props["PlaneStatsMin"] <= thr or f.props["PlaneStatsMax"] >= 255 - thr]
+        if diff.format is None:
+            raise ValueError("tvbd_diff: 'Variable-format clips not supported'")
+        t = float if diff.format.sample_type == vs.FLOAT else int
+        frames = [i for i, f in enumerate(diff.frames()) if get_prop(f, "PlaneStatsMin", t) <= thr or get_prop(f, "PlaneStatsMax", t) >= 255 - thr]
 
     if not frames:
         raise ValueError(f"tvbd_diff: 'No differences found'")
@@ -186,7 +198,7 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
         if thr <= 1:
             diff = core.std.MakeDiff(tv, bd)
         diff = core.resize.Spline36(diff, get_w(576), 576).text.FrameNum(8)
-        tv, bd = core.resize.Spline36(tv, diff.width / 2, diff.height / 2), core.resize.Spline36(bd, diff.width / 2, diff.height / 2)
+        tv, bd = core.resize.Spline36(tv, int(diff.width / 2), int(diff.height / 2)), core.resize.Spline36(bd, int(diff.width / 2), int(diff.height / 2))
         tv, bd = tv.text.Text("Clip A", 3), bd.text.Text("Clip B", 1)
         stacked = core.std.StackVertical([core.std.StackHorizontal([tv, bd]), diff])
         return core.std.Splice([stacked[f] for f in frames])

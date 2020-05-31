@@ -1,7 +1,7 @@
 """
     Helper functions for the main functions in the script.
 """
-from typing import Callable
+from typing import Any, Callable, Sequence, Type, TypeVar, Union, cast
 
 import vapoursynth as vs
 from vsutil import depth
@@ -21,6 +21,8 @@ def quick_resample(clip: vs.VideoNode,
 
     :return:          Filtered clip in original depth
     """
+    if clip.format is None:
+        raise ValueError("quick_resample: 'Variable-format clips not supported'")
     try:
         down = depth(clip, 16)
         filtered = function(down)
@@ -42,7 +44,9 @@ def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 
     :return:     Appropriate repair function for input clip's depth
     """
-    return core.rgvs.Repair if clip.format.bits_per_sample < 32 else core.rgsf.Repair  # type: ignore
+    if clip.format is None:
+        raise ValueError("pick_repair: 'Variable-format clips not supported'")
+    return core.rgvs.Repair if clip.format.bits_per_sample < 32 else core.rgsf.Repair
 
 
 def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
@@ -56,4 +60,40 @@ def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 
     :return:     Appropriate RemoveGrain function for input clip's depth
     """
-    return core.rgvs.RemoveGrain if clip.format.bits_per_sample < 32 else core.rgsf.RemoveGrain  # type: ignore
+    if clip.format is None:
+        raise ValueError("pick_removegrain: 'Variable-format clips not supported'")
+    return core.rgvs.RemoveGrain if clip.format.bits_per_sample < 32 else core.rgsf.RemoveGrain
+
+
+VideoProp = Union[
+    int, Sequence[int],
+    float, Sequence[float],
+    str, Sequence[str],
+    vs.VideoNode, Sequence[vs.VideoNode],
+    vs.VideoFrame, Sequence[vs.VideoFrame],
+    Callable[..., Any], Sequence[Callable[..., Any]]
+]
+
+T = TypeVar("T", bound=VideoProp)
+
+
+def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
+    """
+    Gets gets FrameProp ``prop`` from frame ``frame`` with expected type ``t``
+    to satisfy the type checker.
+
+    :param frame:   Frame containing props
+    :param key:     Prop to get
+    :param t:       Type of prop
+
+    :return:        frame.prop[key]
+    """
+    try:
+        prop = frame.props[key]
+    except KeyError:
+        raise KeyError(f"get_prop: 'Key {key} not present in props'")
+    real_type = type(prop)
+    if real_type is not t:
+        raise ValueError(f"get_prop: 'Key {key} did not contain expected type: Expected {t} got {real_type}'")
+
+    return cast(T, prop)

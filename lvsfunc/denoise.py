@@ -74,8 +74,8 @@ def quick_denoise(clip: vs.VideoNode,
     elif cmode in [3, 'dft', 'dfttest']:
         try:
             sbsize = cast(int, kwargs['sbsize'])
-            planes[1] = planes[1].dfttest.DFTTest(sosize=sbsize * 0.75, **kwargs)
-            planes[2] = planes[2].dfttest.DFTTest(sosize=sbsize * 0.75, **kwargs)
+            planes[1] = planes[1].dfttest.DFTTest(sosize=int(sbsize * 0.75), **kwargs)
+            planes[2] = planes[2].dfttest.DFTTest(sosize=int(sbsize * 0.75), **kwargs)
         except KeyError:
             raise ValueError(f"quick_denoise: '\"sbsize\" not specified'")
     elif cmode in [4, 'smd', 'smdegrain']:
@@ -140,8 +140,11 @@ def detail_mask(clip: vs.VideoNode, pre_denoise: Optional[float] = None,
     except ModuleNotFoundError:
         raise ModuleNotFoundError("detail_mask: missing dependency 'debandshit'")
 
-    den_a = core.knlm.KNLMeansCL(clip, d=2, a=3, h=pre_denoise, device_type ='GPU') if pre_denoise is not None else clip
-    den_b = core.knlm.KNLMeansCL(clip, d=2, a=3, h=pre_denoise/2, device_type ='GPU') if pre_denoise is not None else clip
+    if clip.format is None:
+        raise ValueError("detail_mask: 'Variable-format clips not supported'")
+
+    den_a = core.knlm.KNLMeansCL(clip, d=2, a=3, h=pre_denoise, device_type='GPU') if pre_denoise is not None else clip
+    den_b = core.knlm.KNLMeansCL(clip, d=2, a=3, h=pre_denoise/2, device_type='GPU') if pre_denoise is not None else clip
 
     mask_a = depth(get_y(den_a), 16) if clip.format.bits_per_sample < 32 else get_y(den_a)
     mask_a = rangemask(mask_a, rad=rad, radc=radc)

@@ -1,7 +1,7 @@
 """
     Functions for various anti-aliasing functions and wrappers.
 """
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import vapoursynth as vs
 from vsutil import get_w, get_y
@@ -44,6 +44,9 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: int = 1,
         from vsTAAmbk import TAAmbk
     except ModuleNotFoundError:
         raise ModuleNotFoundError("nnedi3_clamp: missing dependency 'vsTAAmbk'")
+
+    if clip.format is None:
+        raise ValueError("nneedi3_clamp: 'Variable-format clips not supported'")
 
     bits = clip.format.bits_per_sample - 8
     thr = strength * (1 >> bits)
@@ -93,6 +96,9 @@ def transpose_aa(clip: vs.VideoNode,
 
     :return:          Antialiased clip
     """
+    if clip.format is None:
+        raise ValueError("transpose_aa: 'Variable-format clips not supported'")
+
     clip_y = get_y(clip)
 
     if eedi3:
@@ -153,10 +159,13 @@ def upscaled_sraa(clip: vs.VideoNode,
 
     :return:                Antialiased clip
     """
+    if clip.format is None:
+        raise ValueError("upscaled_sraa: 'Variable-format clips not supported'")
+
     luma = get_y(clip)
 
-    nnargs = dict(nsize=0, nns=4, qual=2)
-    eeargs = dict(alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)  # TAAmbk defaults are 0.5, 0.2, 20, 3, 30
+    nnargs: Dict[str, Any] = dict(nsize=0, nns=4, qual=2)
+    eeargs: Dict[str, Any] = dict(alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)  # TAAmbk defaults are 0.5, 0.2, 20, 3, 30
 
     ssw = round(clip.width * rfactor)
     ssh = round(clip.height * rfactor)
@@ -181,9 +190,9 @@ def upscaled_sraa(clip: vs.VideoNode,
     up_y = core.resize.Spline36(up_y, height=ssw, src_top=.5)
 
     # Single-rate AA
-    aa_y = core.eedi3m.EEDI3(up_y, 0, 0, 0, **eeargs, sclip=core.nnedi3.nnedi3(up_y, 0, 0, 0, **nnargs))
+    aa_y = core.eedi3m.EEDI3(up_y, 0, 0, 0, sclip=core.nnedi3.nnedi3(up_y, 0, 0, 0, **nnargs), **eeargs)
     aa_y = core.std.Transpose(aa_y)
-    aa_y = core.eedi3m.EEDI3(aa_y, 0, 0, 0, **eeargs, sclip=core.nnedi3.nnedi3(aa_y, 0, 0, 0, **nnargs))
+    aa_y = core.eedi3m.EEDI3(aa_y, 0, 0, 0, sclip=core.nnedi3.nnedi3(aa_y, 0, 0, 0, **nnargs), **eeargs)
 
     # Back to source clip height or given height
     scaled = core.fmtc.resample(aa_y, w, h, kernel='gauss', invks=True, invkstaps=2, taps=1, a1=32) if sharp_downscale else core.resize.Spline36(aa_y, w, h)

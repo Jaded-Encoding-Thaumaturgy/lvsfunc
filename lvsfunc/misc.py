@@ -7,6 +7,8 @@ from typing import Any, Callable, List, Optional, Tuple, TypeVar, Union, cast
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_w, get_y, is_image
 
+from .util import get_prop
+
 core = vs.core
 
 
@@ -74,8 +76,10 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
         except ModuleNotFoundError:
             raise ModuleNotFoundError("source: missing dependency 'mvsfunc'")
 
+        if ref.format is None:
+            raise ValueError("source: 'Variable-format clips not supported.'")
         clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
-        clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height, format=ref.format, matrix_s=GetMatrix(ref))
+        clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height, format=ref.format.id, matrix_s=str(GetMatrix(ref)))
         if is_image(file):
             clip = clip * (ref.num_frames - 1)
 
@@ -157,7 +161,7 @@ def edgefixer(clip: vs.VideoNode,
         bottom = top
 
     ef = core.edgefixer.ContinuityFixer(clip, left, top, right, bottom, radius)
-    return ef if full_range else core.std.Limiter(ef, 16, [235, 240])
+    return ef if full_range else core.std.Limiter(ef, 16.0, [235, 240])
 
 
 def fix_cr_tint(clip: vs.VideoNode, value: int = 128) -> vs.VideoNode:
@@ -193,10 +197,11 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
     def _diff(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
               filtered: vs.VideoNode, threshold: float,
               threshold_range: Optional[int]) -> vs.VideoNode:
+        psa = get_prop(f, "PlaneStatsAverage", float)
         if threshold_range:
-            return filtered if threshold_range <= f.props.PlaneStatsAverage <= threshold else clip
+            return filtered if threshold_range <= psa <= threshold else clip
         else:
-            return clip if f.props.PlaneStatsAverage > threshold else filtered
+            return clip if psa > threshold else filtered
 
     if threshold_range and threshold_range > threshold:
         raise ValueError(f"limit_dark: '\"threshold_range\" ({threshold_range}) must be a lower value than \"threshold\" ({threshold})'")
@@ -241,6 +246,8 @@ def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode = Optional[None],
 
     sqmask = kgf.squaremask(clip, width, height, offset_x, offset_y)
     if width2 and height2:
+        if offset_x2 is None:
+            raise TypeError("wipe_row: 'offset_x2 cannot be None if using two masks'")
         sqmask2 = kgf.squaremask(clip, width2, height2, offset_x2, offset_y - 1 if offset_y2 is None else offset_y2)
         sqmask = core.std.Expr([sqmask, sqmask2], "x y +")
 
@@ -289,7 +296,7 @@ def frames_since_bookmark(clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoN
                 result = frames_since
                 break
 
-        return core.text.Text(clip, result)
+        return core.text.Text(clip, str(result))
     return core.std.FrameEval(clip, partial(_frames_since_bookmark, clip=clip, bookmarks=bookmarks))
 
 
