@@ -5,6 +5,8 @@
     or reach out to me on Discord (LightArrowsEXE#0476)!
 """
 
+# flake8: noqa
+
 from . import aa, comparison, deinterlace, denoise, misc, scale
 
 # Aliases:
