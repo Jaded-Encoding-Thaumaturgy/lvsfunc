@@ -27,6 +27,8 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
     It also automatically determines if an image has been imported.
     You can set its fps using 'fpsnum' and 'fpsden', or using a reference clip with 'ref'.
 
+    Alias for this function is `lvsfunc.src`.
+
     Dependencies:
 
         * d2vsource (optional: d2v sources)
@@ -97,6 +99,8 @@ def replace_ranges(clip_a: vs.VideoNode,
 
     Written by louis.
 
+    Alias for this function is `lvsfunc.rfs`.
+
     :param clip_a:     Original clip
     :param clip_b:     Replacement clip
     :param ranges:     Ranges to replace clip_a (original clip) with clip_b (replacement clip).
@@ -135,6 +139,8 @@ def edgefixer(clip: vs.VideoNode,
     and adds what are in my opinion "more sane" ways of handling the parameters and given values.
 
     ...If possible, you should be using bbmod instead, though.
+
+    Alias for this function is `lvsfunc.ef`.
 
     Dependencies: vs-continuityfixer
 
@@ -377,9 +383,3 @@ def chroma_injector(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.Video
 #       It should optimally be able to accept anything and accurately reconstruct it,
 #       so long as the user gives it the right clips. Otherwise, it should assume
 #       that the chroma was scaled down using Nearest Neighbor or something alike.
-
-
-# Aliases:
-src = source
-rfs = replace_ranges
-ef = edgefixer
