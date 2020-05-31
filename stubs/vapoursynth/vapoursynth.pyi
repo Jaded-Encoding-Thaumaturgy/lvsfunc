@@ -288,7 +288,7 @@ class Format:
     def replace(self, *,
                 color_family: typing.Optional[ColorFamily] = None,
                 sample_type: typing.Optional[SampleType] = None,
-                bits_per_pixel: typing.Optional[int] = None,
+                bits_per_sample: typing.Optional[int] = None,
                 subsampling_w: typing.Optional[int] = None,
                 subsampling_h: typing.Optional[int] = None
                 ) -> 'Format': ...
@@ -1226,7 +1226,7 @@ class Core:
         2D/3D frequency domain denoiser
         """
 # end instance
-# instance_bound: dgdecodenv
+# instance_unbound: dgdecodenv
     @property
     def dgdecodenv(self) -> _Plugin_dgdecodenv_Unbound:
         """
