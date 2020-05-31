@@ -36,6 +36,8 @@ def quick_denoise(clip: vs.VideoNode,
 
     Special thanks to kageru for helping me out with some ideas and pointers.
 
+    Alias for this function is `lvsfunc.qden`.
+
     Dependencies: havsfunc (optional: SMDegrain mode), mvsfunc
 
     Deciphering havsfunc's dependencies is left as an excercise for the user.
@@ -152,7 +154,3 @@ def detail_mask(clip: vs.VideoNode, pre_denoise: Optional[float] = None,
     mask = core.std.Expr([mask_a, mask_b], 'x y max')
     mask = util.pick_removegrain(mask)(mask, 22)
     return util.pick_removegrain(mask)(mask, 11)
-
-
-# Alias:
-qden = quick_denoise

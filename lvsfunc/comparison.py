@@ -21,7 +21,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     Clips are automatically resampled to 8 bit YUV -> RGB24 to emulate how a monitor shows the frame.
     This can be disabled by setting `disable_resample` to True.
 
-    Alias for this function is "comp".
+    Alias for this function is `lvsfunc.comp`.
 
     Dependencies: mvsfunc
 
@@ -79,7 +79,7 @@ def stack_compare(*clips: vs.VideoNode,
     Best to use when trying to match two sources frame-accurately, however by setting height to the source's
     height (or None), it can be used for comparing frames.
 
-    Alias for this function is 'scomp'.
+    Alias for this function is `lvsfunc.scomp`.
 
     :param clips:             Clips to compare
     :param make_diff:         Create and stack a diff (only works if two clips are given) (Default: False)
@@ -156,6 +156,8 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
     Note that this might catch artifacting as differences!
     Make sure you verify every frame with your own eyes!
 
+    Alias for this function is `lvsfunc.diff`.
+
     :param tv:            TV clip
     :param bd:            BD clip
     :param thr:           Threshold, <= 1 uses PlaneStatsDiff, >1 uses Max/Min. Max is 128 (Default: 72)
@@ -194,9 +196,3 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
 #       It should theoretically accept an infinite amount of clips
 #       and accurately split the width among all clips.
 #       Odd-resolution clips will also need to be taken into account.
-
-
-# Aliases:
-comp = compare
-scomp = stack_compare
-diff = tvbd_diff
