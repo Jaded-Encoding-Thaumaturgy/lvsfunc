@@ -221,7 +221,6 @@ lvsfunc.util
 
 .. autosummary::
 
-   lvsfunc.util.one_plane
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
    lvsfunc.util.quick_resample
