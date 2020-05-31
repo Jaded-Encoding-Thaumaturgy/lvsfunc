@@ -2,7 +2,7 @@
     Miscellaneous functions and wrappers that didn't really have a place in any other submodules.
 """
 from functools import partial, wraps
-from typing import Any, Callable, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, List, Optional, Tuple, TypeVar, Union, cast
 
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_w, get_y, is_image
@@ -293,9 +293,12 @@ def frames_since_bookmark(clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoN
     return core.std.FrameEval(clip, partial(_frames_since_bookmark, clip=clip, bookmarks=bookmarks))
 
 
+F = TypeVar("F", bound=Callable[..., vs.VideoNode])
+
+
 def allow_variable(width: Optional[int] = None, height: Optional[int] = None,
                    format: Optional[int] = None
-                   ) -> Callable[..., Callable[..., vs.VideoNode]]:
+                   ) -> Callable[[Callable[..., vs.VideoNode]], Callable[..., vs.VideoNode]]:
     """
     Decorator allowing a variable-res and/or variable-format clip to be passed
     to a function that otherwise would not be able to accept it. Implemented by
@@ -315,23 +318,23 @@ def allow_variable(width: Optional[int] = None, height: Optional[int] = None,
     if height is not None:
         width = width if width else get_w(height)
 
-    def inner(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.VideoNode]:
+    def inner(func: F) -> F:
         @wraps(func)
         def inner2(clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
             def frameeval_wrapper(n: int, f: vs.VideoFrame) -> vs.VideoNode:
-                res = func(clip.resize.Point(f.width, f.height, format=f.format), *args, **kwargs)
+                res = func(clip.resize.Point(f.width, f.height, format=f.format.id), *args, **kwargs)
                 return res.resize.Point(format=format) if format else res
 
             clip_out = clip.resize.Point(format=format) if format else clip
             clip_out = clip_out.resize.Point(width, height) if width and height else clip_out
             return core.std.FrameEval(clip_out, frameeval_wrapper, prop_src=[clip])
 
-        return inner2
+        return cast(F, inner2)
 
     return inner
 
 
-def chroma_injector(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.VideoNode]:
+def chroma_injector(func: F) -> F:
     """
     Decorator allowing injection of reference chroma into a function which
     would normally only receive luma, such as an upscaler passed to
@@ -353,7 +356,7 @@ def chroma_injector(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.Video
               **kwargs: Any) -> vs.VideoNode:
 
         def upscale_chroma(n: int, f: vs.VideoFrame) -> vs.VideoNode:
-            luma = y.resize.Point(f.width, f.height, format=f.format)
+            luma = y.resize.Point(f.width, f.height, format=f.format.id)
             if out_fmt is not None:
                 fmt = out_fmt
             else:
@@ -365,6 +368,7 @@ def chroma_injector(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.Video
                                          colorfamily=vs.YUV)
             return res
 
+        out_fmt: Optional[vs.Format] = None
         if clip.format is not None:
             if clip.format.color_family not in (vs.GRAY, vs.YUV):
                 raise ValueError("chroma_injector: only YUV and GRAY clips are supported")
@@ -377,9 +381,8 @@ def chroma_injector(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.Video
                                            clip.format.bits_per_sample, 0, 0)
         else:
             y = allow_variable()(get_y)(clip)
-            out_fmt = None
 
-        if y.width != 0 and y.height != 0 and y.format is not None:
+        if y.width != 0 and y.height != 0 and out_fmt is not None:
             chroma = _chroma.resize.Spline36(y.width, y.height, format=out_fmt.id)
             clip_in = core.std.ShufflePlanes([y, chroma], planes=[0, 1, 2],
                                              colorfamily=vs.YUV)
@@ -402,7 +405,7 @@ def chroma_injector(func: Callable[..., vs.VideoNode]) -> Callable[..., vs.Video
         else:
             return allow_variable()(get_y)(result)
 
-    return inner
+    return cast(F, inner)
 
 
 # TODO: Write function that only masks px of a certain color/threshold of colors.
