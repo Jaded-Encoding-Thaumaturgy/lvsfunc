@@ -101,7 +101,8 @@ def reupscale(clip: vs.VideoNode,
     :param clip:         Input clip
     :param width:        Upscale width. If None, determine from `height` assuming 16:9 aspect ratio (Default: None)
     :param height:       Upscale height (Default: 1080)
-    :param kernel:       Kernel used to downscale the doubled clip (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=0, c=1/2))
+    :param kernel:       Kernel used to downscale the doubled clip (see :py:class:`lvsfunc.kernels.Kernel`,
+                         Default: kernels.Bicubic(b=0, c=1/2))
     :param kwargs:       Arguments passed to znedi3 (Default: nsize=4, nns=4, qual=2, pscrn=2)
 
     :return:             Reupscaled clip
@@ -173,15 +174,20 @@ def descale(clip: vs.VideoNode,
     Dependencies: vapoursynth-descale, znedi3
 
     :param clip:                    Clip to descale
-    :param upscaler:                Callable function with signature upscaler(clip, width, height) -> vs.VideoNode to be used for reupscaling.
-                                    Must be capable of handling variable res clips for multiple heights and conditional scaling.
-                                    If a single height is given and upscaler is None, a constant resolution GRAY clip will be returned instead.
-                                    Note that if upscaler is None, no upscaling will be performed and neither detail masking nor
-                                    proper fractional descaling can be preformed. (Default: :py:func:`lvsfunc.scale.reupscale`)
+    :param upscaler:                Callable function with signature upscaler(clip, width, height)
+                                    -> vs.VideoNode to be used for reupscaling.
+                                    Must be capable of handling variable res clips
+                                    for multiple heights and conditional scaling.
+                                    If a single height is given and upscaler is None,
+                                    a constant resolution GRAY clip will be returned instead.
+                                    Note that if upscaler is None, no upscaling will be performed
+                                    and neither detail masking nor proper fractional descaling can be preformed.
+                                    (Default: :py:func:`lvsfunc.scale.reupscale`)
     :param width:                   Width to descale to (if None, auto-calculated)
     :param height:                  Height(s) to descale to. List indicates multiple resolutions,
                                     the function will determine the best. (Default: 720)
-    :param kernel:                  Kernel used to descale (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=0, c=1/2))
+    :param kernel:                  Kernel used to descale (see :py:class:`lvsfunc.kernels.Kernel`,
+                                    (Default: kernels.Bicubic(b=0, c=1/2))
     :param threshold:               Error threshold for conditional descaling (Default: 0.0, always descale)
     :param mask:                    Function used to mask detail. If ``None``, no masking.
                                     Function must accept a clip and a reupscaled clip and return a mask.
@@ -296,7 +302,8 @@ def test_descale(clip: vs.VideoNode,
     :param clip:           Input clip
     :param width:          Target descale width. If None, determine from `height`
     :param height:         Target descale height (Default: 720)
-    :param kernel:         Kernel used to descale (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=0, c=1/2))
+    :param kernel:         Kernel used to descale (see :py:class:`lvsfunc.kernels.Kernel`,
+                           Default: kernels.Bicubic(b=0, c=1/2))
     :param show_error:     Render PlaneStatsDiff on the reupscaled frame (Default: True)
 
     :return: A tuple containing a clip re-upscaled with the same kernel and

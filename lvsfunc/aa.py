@@ -69,7 +69,8 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: int = 1,
         mask = kgf.retinex_edgemask(clip, 1).std.Binarize()
         merged = clip.std.MaskedMerge(aa, mask, planes=0)
     else:
-        mask = clip.std.Prewitt(planes=0).std.Binarize(planes=0).std.Maximum(planes=0).std.Convolution([1] * 9, planes=0)
+        mask = clip.std.Prewitt(planes=0).std.Binarize(planes=0) \
+            .std.Maximum(planes=0).std.Convolution([1] * 9, planes=0)
         mask = get_y(mask)
         merged = clip.std.MaskedMerge(aa, mask, planes=0)
 
@@ -165,7 +166,8 @@ def upscaled_sraa(clip: vs.VideoNode,
     luma = get_y(clip)
 
     nnargs: Dict[str, Any] = dict(nsize=0, nns=4, qual=2)
-    eeargs: Dict[str, Any] = dict(alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)  # TAAmbk defaults are 0.5, 0.2, 20, 3, 30
+    # TAAmbk defaults are 0.5, 0.2, 20, 3, 30
+    eeargs: Dict[str, Any] = dict(alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
 
     ssw = round(clip.width * rfactor)
     ssh = round(clip.height * rfactor)
@@ -195,7 +197,8 @@ def upscaled_sraa(clip: vs.VideoNode,
     aa_y = core.eedi3m.EEDI3(aa_y, 0, 0, 0, sclip=core.nnedi3.nnedi3(aa_y, 0, 0, 0, **nnargs), **eeargs)
 
     # Back to source clip height or given height
-    scaled = core.fmtc.resample(aa_y, w, h, kernel='gauss', invks=True, invkstaps=2, taps=1, a1=32) if sharp_downscale else core.resize.Spline36(aa_y, w, h)
+    scaled = (core.fmtc.resample(aa_y, w, h, kernel='gauss', invks=True, invkstaps=2, taps=1, a1=32)
+              if sharp_downscale else core.resize.Spline36(aa_y, w, h))
 
     if rep:
         scaled = util.pick_repair(scaled)(scaled, luma.resize.Spline36(w, h), rep)

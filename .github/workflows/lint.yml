@@ -23,6 +23,6 @@ jobs:
           pip install .
           pip install -U git+https://github.com/Irrational-Encoding-Wizardry/vsutil.git@stux-switch-to-package#egg=vsutil
       - name: Running flake8
-        run: flake8 lvsfunc --count --ignore=E501,W503,E226 --show-source --statistics
+        run: flake8 lvsfunc
       - name: Running mypy
-        run: mypy -p lvsfunc --show-column-numbers --show-error-codes --hide-error-context --no-error-summary
+        run: mypy -p lvsfunc

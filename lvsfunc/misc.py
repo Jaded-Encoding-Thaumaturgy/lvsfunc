@@ -33,7 +33,8 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
         * vapoursynth-readmpls (optional: mpls sources)
 
     :param file:              Input file
-    :param ref:               Use another clip as reference for the clip's format, resolution, and framerate (Default: None)
+    :param ref:               Use another clip as reference for the clip's format,
+                              resolution, and framerate (Default: None)
     :param force_lsmas:       Force files to be imported with L-SMASH (Default: False)
     :param mpls:              Load in a mpls file (Default: False)
     :param mpls_playlist:     Playlist number, which is the number in mpls file name (Default: 0)
@@ -49,7 +50,7 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
 
     # Error handling for some file types
     if file.endswith('.mpls') and mpls is False:
-        raise ValueError("source: 'Please set \"mpls = True\" and give a path to the base Blu-ray directory when trying to load in mpls files'")
+        raise ValueError("source: 'Please set \"mpls = True\" and give a path to the base Blu-ray directory when trying to load in mpls files'")  # noqa: E501
     if file.endswith('.vob') or file.endswith('.ts'):
         raise ValueError("source: 'Please index VOB and TS files with d2v before importing them'")
 
@@ -81,7 +82,8 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
         if ref.format is None:
             raise ValueError("source: 'Variable-format clips not supported.'")
         clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
-        clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height, format=ref.format.id, matrix_s=str(GetMatrix(ref)))
+        clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height,
+                                   format=ref.format.id, matrix_s=str(GetMatrix(ref)))
         if is_image(file):
             clip = clip * (ref.num_frames - 1)
 
@@ -206,10 +208,11 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
             return clip if psa > threshold else filtered
 
     if threshold_range and threshold_range > threshold:
-        raise ValueError(f"limit_dark: '\"threshold_range\" ({threshold_range}) must be a lower value than \"threshold\" ({threshold})'")
+        raise ValueError(f"limit_dark: '\"threshold_range\" ({threshold_range}) must be a lower value than \"threshold\" ({threshold})'")  # noqa: E501
 
     avg = core.std.PlaneStats(clip)
-    return core.std.FrameEval(clip, partial(_diff, clip=clip, filtered=filtered, threshold=threshold, threshold_range=threshold_range), avg)
+    return core.std.FrameEval(clip, partial(_diff, clip=clip, filtered=filtered,
+                                            threshold=threshold, threshold_range=threshold_range), avg)
 
 
 def wipe_row(clip: vs.VideoNode, secondary: vs.VideoNode = Optional[None],
@@ -424,7 +427,9 @@ def colored_clips(amount: int,
                   **kwargs: Any
                   ) -> List[vs.VideoNode]:
     """
-    Returns a list of BlankClips with unique colors (equally spaced in the HSL's hue domain) in sequential or random order.
+    Returns a list of BlankClips with unique colors in sequential or random order.
+    The colors will be evenly spaced by hue in the HSL colorspace.
+
     Useful maybe for comparison functions or just for getting multiple uniquely colored BlankClips for testing purposes.
 
     Will always return a pure red clip in the list as this is the RGB equivalent of the lowest HSL hue possible (0).
@@ -433,10 +438,13 @@ def colored_clips(amount: int,
 
     :param amount:  Number of ``vapoursynth.VideoNode``s to return
     :param max_hue: Maximum hue (0 < hue <= 360) in degrees to generate colors from (uses the HSL color model).
-                    Setting this higher than ``315`` will result in the clip colors looping back towards red and is not recommended for visually distinct colors.
-                    If the `amount` of clips is higher than the `max_hue` expect there to be identical or visually similar colored clips returned (Default: 300)
+                    Setting this higher than ``315`` will result in the clip colors looping back towards red
+                    and is not recommended for visually distinct colors.
+                    If the `amount` of clips is higher than the `max_hue` expect there to be identical
+                    or visually similar colored clips returned (Default: 300)
     :param rand:    Randomizes order of the returned list (Default: True)
-    :param seed:    Bytes-like object passed to ``random.seed`` which allows for consistent randomized order of the clips (Default: None)
+    :param seed:    Bytes-like object passed to ``random.seed`` which allows for consistent randomized order
+                    of the resulting clips (Default: None)
     :param kwargs:  Arguments passed to ``vapoursynth.core.std.BlankClip`` (Default: keep=1)
 
     :return:        List of uniquely colored clips in sequential or random order.

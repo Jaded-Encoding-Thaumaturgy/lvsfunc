@@ -96,7 +96,8 @@ def decomb(clip: vs.VideoNode,
 
     clip = core.vivtc.VFM(clip, order=VFM_TFF, mode=1)
     combmask = core.comb.CombMask(clip, cthresh=1, mthresh=3)
-    combmask = core.std.Maximum(combmask, threshold=250).std.Maximum(threshold=250).std.Maximum(threshold=250).std.Maximum(threshold=250)
+    combmask = core.std.Maximum(combmask, threshold=250).std.Maximum(threshold=250) \
+        .std.Maximum(threshold=250).std.Maximum(threshold=250)
     combmask = core.std.BoxBlur(combmask, hradius=2, vradius=2)
 
     qtgmc = QTGMC(clip, TFF=TFF, SourceMatch=3, Lossless=2, TR0=1, TR1=2, TR2=3, FPSDivisor=2)
