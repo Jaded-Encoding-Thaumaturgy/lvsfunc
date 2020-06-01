@@ -57,7 +57,8 @@ def _transpose_shift(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
 
 def _perform_descale(resolution: Resolution, clip: vs.VideoNode,
                      kernel: kernels.Kernel) -> ScaleAttempt:
-    descaled = kernel.descale(clip, resolution.width, resolution.height)
+    descaled = kernel.descale(clip, resolution.width, resolution.height) \
+        .std.SetFrameProp('descaleResolution', intval=resolution.height)
     rescaled = kernel.scale(descaled, clip.width, clip.height)
     diff = core.std.Expr([rescaled, clip], 'x y - abs').std.PlaneStats()
     return ScaleAttempt(descaled, rescaled, resolution, diff)
@@ -71,12 +72,11 @@ def _select_descale(n: int, f: Union[vs.VideoFrame, List[vs.VideoFrame]],
         f = [cast(vs.VideoFrame, f)]
     f = cast(List[vs.VideoFrame], f)
     best_res = max(f, key=lambda frame:
-                   math.log(clip.height - frame.height, 2)
+                   math.log(clip.height - util.get_prop(frame, "descaleResolution", int), 2)
                    * round(1 / max(util.get_prop(frame, "PlaneStatsAverage", float), 1e-12))
                    ** 0.2)
 
-    best_attempt = clips_by_resolution.get(best_res.height)
-    assert best_attempt is not None  # mypy thinks the lookup could fail
+    best_attempt = clips_by_resolution[util.get_prop(best_res, "descaleResolution", int)]
     if threshold == 0:
         return best_attempt.descaled
     if util.get_prop(best_res, "PlaneStatsAverage", float) > threshold:
