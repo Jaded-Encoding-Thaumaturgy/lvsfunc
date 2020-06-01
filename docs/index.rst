@@ -86,6 +86,7 @@ Functions
    lvsfunc.denoise.quick_denoise
    lvsfunc.misc.allow_variable
    lvsfunc.misc.chroma_injector
+   lvsfunc.misc.colored_clips
    lvsfunc.misc.edgefixer
    lvsfunc.misc.fix_cr_tint
    lvsfunc.misc.frames_since_bookmark
@@ -176,6 +177,7 @@ lvsfunc.misc
 
    lvsfunc.misc.allow_variable
    lvsfunc.misc.chroma_injector
+   lvsfunc.misc.colored_clips
    lvsfunc.misc.edgefixer
    lvsfunc.misc.fix_cr_tint
    lvsfunc.misc.frames_since_bookmark

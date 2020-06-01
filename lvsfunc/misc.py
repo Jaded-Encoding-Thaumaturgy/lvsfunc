@@ -1,8 +1,10 @@
 """
     Miscellaneous functions and wrappers that didn't really have a place in any other submodules.
 """
+import colorsys
+import random
 from functools import partial, wraps
-from typing import Any, Callable, List, Optional, Tuple, TypeVar, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union, cast
 
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_w, get_y, is_image
@@ -413,6 +415,50 @@ def chroma_injector(func: F) -> F:
             return allow_variable()(get_y)(result)
 
     return cast(F, inner)
+
+
+def colored_clips(amount: int,
+                  max_hue: int = 300,
+                  rand: bool = True,
+                  seed: Optional[Union[bytearray, bytes, float, int, str]] = None,
+                  **kwargs: Any
+                  ) -> List[vs.VideoNode]:
+    """
+    Returns a list of BlankClips with unique colors (equally spaced in the HSL's hue domain) in sequential or random order.
+    Useful maybe for comparison functions or just for getting multiple uniquely colored BlankClips for testing purposes.
+
+    Will always return a pure red clip in the list as this is the RGB equivalent of the lowest HSL hue possible (0).
+
+    Written by Dave <orangechannel@pm.me>.
+
+    :param amount:  Number of ``vapoursynth.VideoNode``s to return
+    :param max_hue: Maximum hue (0 < hue <= 360) in degrees to generate colors from (uses the HSL color model).
+                    Setting this higher than ``315`` will result in the clip colors looping back towards red and is not recommended for visually distinct colors.
+                    If the `amount` of clips is higher than the `max_hue` expect there to be identical or visually similar colored clips returned (Default: 300)
+    :param rand:    Randomizes order of the returned list (Default: True)
+    :param seed:    Bytes-like object passed to ``random.seed`` which allows for consistent randomized order of the clips (Default: None)
+    :param kwargs:  Arguments passed to ``vapoursynth.core.std.BlankClip`` (Default: keep=1)
+
+    :return:        List of uniquely colored clips in sequential or random order.
+    """
+    if amount < 2:
+        raise ValueError("colored_clips: `amount` must be at least 2")
+    if not (0 < max_hue <= 360):
+        raise ValueError("colored_clips: `max_hue` must be greater than 0 and less than 360 degrees")
+
+    blank_clip_args: Dict[str, Any] = {'keep': 1, **kwargs}
+
+    hues: List[Union[float, int]] = [i * max_hue / (amount - 1) for i in range(amount - 1)]
+    hues.append(max_hue)
+
+    hls_color_list: List[Tuple[float, float, float]] = [colorsys.hls_to_rgb(h / 360, 0.5, 1) for h in hues]
+    rgb_color_list = [[int(f * 255) for f in color] for color in hls_color_list]
+
+    if rand:
+        shuffle = random.shuffle if seed is None else random.Random(seed).shuffle
+        shuffle(rgb_color_list)
+
+    return [core.std.BlankClip(color=color, **blank_clip_args) for color in rgb_color_list]
 
 
 # TODO: Write function that only masks px of a certain color/threshold of colors.
