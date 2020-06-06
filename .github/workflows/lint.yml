@@ -14,8 +14,7 @@ jobs:
       - name: Install VapourSynth
         uses: Irrational-Encoding-Wizardry/install-vapoursynth-action@v0.1
         with:
-          version: 50
-          cache: true
+          version: 49
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
