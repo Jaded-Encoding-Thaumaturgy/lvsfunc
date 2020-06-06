@@ -26,4 +26,4 @@ sphinxcontrib-qthelp==1.0.3
 sphinxcontrib-serializinghtml==1.1.4
 urllib3==1.25.9
 VapourSynth>=49
-vsutil>=0.2.0
+vsutil@https://github.com/Irrational-Encoding-Wizardry/vsutil/archive/afc1870a213d02e308fed168ef4021e238a992e3.zip#sha1=0703f1c14fde2f2cc7736eec10d7ebf276e1d78f
