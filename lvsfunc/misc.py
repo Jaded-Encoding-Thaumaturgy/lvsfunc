@@ -504,7 +504,7 @@ def save(clips: Dict[str, vs.VideoNode],
         finally:
             os.chdir(prevdir)
 
-    if None in (clip.height, clip.width for clip in clips.values()):
+    if 0 in (clip.height for clip in clips.values()) or 0 in (clip.width for clip in clips.values()):
         raise ValueError("save: variable-resolution clips not allowed")
     if None in (clip.format for clip in clips.values()):
         raise ValueError("save: variable-format clips not allowed")
