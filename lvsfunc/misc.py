@@ -546,9 +546,9 @@ def save(clips: Dict[str, vs.VideoNode],
     if folder:
         for name, clip in clips.items():
             if clip.format.color_family == vs.ColorFamily.YUV:
-                matrix_in_s='709'
+                matrix_in_s = '709'
             elif clip.format.color_family == vs.ColorFamily.RGB:
-                matrix_in_s='rgb'
+                matrix_in_s = 'rgb'
             else:
                 raise ValueError("save: expected a YUV or RGB clip")
             os.makedirs(name, exist_ok=True)
@@ -570,9 +570,9 @@ def save(clips: Dict[str, vs.VideoNode],
     else:
         for name, clip in clips.items():
             if clip.format.color_family == vs.ColorFamily.YUV:
-                matrix_in_s='709'
+                matrix_in_s = '709'
             elif clip.format.color_family == vs.ColorFamily.RGB:
-                matrix_in_s='rgb'
+                matrix_in_s = 'rgb'
             else:
                 raise ValueError("save: expected a YUV or RGB clip")
             for f in frames:
