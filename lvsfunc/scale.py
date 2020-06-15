@@ -155,7 +155,7 @@ def descale(clip: vs.VideoNode,
             height: Union[int, List[int]] = 720,
             kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
             threshold: float = 0.0,
-            mask: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode]
+            mask: Optional[Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode]]
             = descale_detail_mask, src_left: float = 0.0, src_top: float = 0.0,
             show_mask: bool = False) -> vs.VideoNode:
     """
