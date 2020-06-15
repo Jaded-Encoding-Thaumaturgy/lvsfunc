@@ -2,12 +2,15 @@
     Miscellaneous functions and wrappers that didn't really have a place in any other submodules.
 """
 import colorsys
+import contextlib
+import os
+import pathlib
 import random
 from functools import partial, wraps
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union, cast
 
 import vapoursynth as vs
-from vsutil import depth, get_depth, get_w, get_y, is_image
+from vsutil import Dither, Range, depth, get_depth, get_subsampling, get_w, get_y, is_image
 
 from .util import get_prop
 
@@ -468,6 +471,123 @@ def colored_clips(amount: int,
         shuffle(rgb_color_list)
 
     return [core.std.BlankClip(color=color, **blank_clip_args) for color in rgb_color_list]
+
+
+def save(clips: Dict[str, vs.VideoNode],
+         frames: List[int],
+         random_number: int = 0,
+         folder: bool = False,
+         dither_type: Optional[Union[str, Dither]] = None,
+         zoom: int = 1,
+         save_location: Optional[Union[str, pathlib.Path]] = None
+         ) -> None:
+    """
+    Writes frames as RGB24 PNG files for comparison websites or local comparison.
+
+    :param clips:         Dictionary of name:clip for all clips you want to save frames from. Accepts YUV or RGB clips only.
+                          Assumes all YUV-clips are limited range and all RGB-clips are full range.
+    :param frames:        List of frame numbers to save from each clip.
+    :param random_number: Number of random frames to save from each clip (Default: 0)
+    :param folder:        Whether or not to save clips in named folders instead of prefixing the files with the clip names (Default: ``False``\ )
+    :param dither_type:   ``dither_type`` override for ``vsutil.depth`` for clips >8-bit (Default: ``None``\ )
+    :param zoom:          Zoom factor for image output. Useful for comparison websites
+                          as zooming with a browser is not reliable and might not use point/nearest-neighbor (Default: 1)
+    :param save_location: An optional folder path to save the images/sub-folders to (will normally save in the same folder
+                          as the script is ran in) (Default: ``None``\ )
+    """
+    @contextlib.contextmanager
+    def _cd(newdir):
+        prevdir = os.getcwd()
+        os.chdir(os.path.expanduser(newdir))
+        try:
+            yield
+        finally:
+            os.chdir(prevdir)
+
+    if None in (clip.height, clip.width for clip in clips.values()):
+        raise ValueError("save: variable-resolution clips not allowed")
+    if None in (clip.format for clip in clips.values()):
+        raise ValueError("save: variable-format clips not allowed")
+
+    if save_location is not None:
+        if (save_location := pathlib.Path(save_location)).exists():
+            os.chdir(save_location)
+
+    if len(clips) > 1:
+        if len(set(clip.height for clip in clips.values())) > 1 or len(set(clip.width for clip in clips.values())) > 1:
+            raise ValueError("save: all clips must have same dimensions")
+
+    max_frame = min(clip.num_frames for clip in clips.values()) - 1
+    if not all(f < max_frame for f in frames):
+        raise ValueError("save: specified frame numbers out of range on one or more clips")
+    if len(frames) == 0 and random_number == 0:
+        random_number = 1
+
+    if random_number := abs(random_number):
+        if random_number == 1:
+            while (rand_frame_no := random.randint(0, max_frame)) in frames:  # prevents adding the same random frame number as one specified in `frames`
+                pass
+            frames.append(rand_frame_no)
+        else:
+            random_frame_numbers = random.sample(range(max_frame), random_number)
+            while not all(i not in frames for i in random_frame_numbers):
+                random_frame_numbers = random.sample(range(max_frame), random_number)
+            frames += random_frame_numbers
+
+    for name, clip in clips.items():
+        range_in = Range.LIMITED if clip.format.color_family == vs.ColorFamily.YUV else Range.FULL
+        clips[name] = depth(clip, 8, range_in=range_in, dither_type=dither_type)
+        if (subsampling := get_subsampling(clips[name])) and subsampling not in ('444', None):
+            clips[name] = clips[name].resize.Bicubic(filter_param_a_uv=1/3,
+                                                     filter_param_b_uv=1/3,
+                                                     format=clip.format.replace(subsampling_w=0, subsampling_h=0)
+                                                     )
+
+    if folder:
+        for name, clip in clips.items():
+            if clip.format.color_family == vs.ColorFamily.YUV:
+                matrix_in_s='709'
+            elif clip.format.color_family == vs.ColorFamily.RGB:
+                matrix_in_s='rgb'
+            else:
+                raise ValueError("save: expected a YUV or RGB clip")
+            os.makedirs(name, exist_ok=True)
+            with _cd(name):
+                for f in frames:
+                    out = core.imwri.Write(clip[f].resize.Point(width=(zoom * clip.width),
+                                                                height=(zoom * clip.height),
+                                                                format=vs.RGB24,
+                                                                range=Range.FULL,
+                                                                matrix_in_s=matrix_in_s,
+                                                                dither_type=Dither.ERROR_DIFFUSION.value,
+                                                                prefer_props=True
+                                                                ),
+                                           'PNG',
+                                           '%06d.png',
+                                           firstnum=f
+                                           )
+                    out.get_frame(0)
+    else:
+        for name, clip in clips.items():
+            if clip.format.color_family == vs.ColorFamily.YUV:
+                matrix_in_s='709'
+            elif clip.format.color_family == vs.ColorFamily.RGB:
+                matrix_in_s='rgb'
+            else:
+                raise ValueError("save: expected a YUV or RGB clip")
+            for f in frames:
+                out = core.imwri.Write(clip[f].resize.Point(width=(zoom * clip.width),
+                                                            height=(zoom * clip.height),
+                                                            format=vs.RGB24,
+                                                            range=Range.FULL,
+                                                            matrix_in_s=matrix_in_s,
+                                                            dither_type=Dither.ERROR_DIFFUSION.value,
+                                                            prefer_props=True),
+                                       'PNG',
+                                       f'{name}%06d.png',  # this syntax is picked up by https://slow.pics/ for easy drag-n-drop
+                                       firstnum=f
+                                       )
+                out.get_frame(0)
 
 
 # TODO: Write function that only masks px of a certain color/threshold of colors.
