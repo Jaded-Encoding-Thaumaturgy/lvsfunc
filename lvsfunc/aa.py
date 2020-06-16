@@ -1,10 +1,10 @@
 """
     Functions for various anti-aliasing functions and wrappers.
 """
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 import vapoursynth as vs
-from vsutil import get_w, get_y
+from vsutil import get_w, get_y, join, plane
 
 from . import util
 
@@ -137,8 +137,10 @@ def transpose_aa(clip: vs.VideoNode,
 def upscaled_sraa(clip: vs.VideoNode,
                   rfactor: float = 1.5,
                   rep: Optional[int] = None,
-                  h: Optional[int] = None, ar: Optional[float] = None,
-                  sharp_downscale: bool = False) -> vs.VideoNode:
+                  width: Optional[int] = None, height: Optional[int] = None,
+                  downscaler: Optional[Callable[[vs.VideoNode, int, int], vs.VideoNode]]
+                  = core.resize.Spline36,
+                  **eedi3_args: Any) -> vs.VideoNode:
     """
     A function that performs an upscaled single-rate AA to deal with heavy aliasing and broken-up lineart.
     Useful for Web rips, where the source quality is not good enough to descale,
@@ -151,14 +153,15 @@ def upscaled_sraa(clip: vs.VideoNode,
     Dependencies: fmtconv, rgsf (optional: 32 bit clip), vapoursynth-eedi3, vapoursynth-nnedi3
 
     :param clip:            Input clip
-    :param rfactor:         Image enlargement factor. 1.3..2 makes it comparable in strength to vsTAAmbk.
+    :param rfactor:         Image enlargement factor. 1.3..2 makes it comparable in strength to vsTAAmbk
                             It is not recommended to go below 1.3 (Default: 1.5)
     :param rep:             Repair mode (Default: None)
-    :param h:               Set custom height. Width and aspect ratio are auto-calculated (Default: None)
-    :param ar:              Force custom aspect ratio. Width is auto-calculated (Default: None)
-    :param sharp_downscale: Use a sharper downscaling kernel (inverse gauss) (Default: False)
+    :param width:           Target resolution width. If None, determine from `height`
+    :param height:          Target resolution height (Default: ``clip.height``)
+    :param downscaler:      Resizer used to downscale the AA'd clip
+    :param kwargs:          Arguments passed to znedi3 (Default: alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
 
-    :return:                Antialiased clip
+    :return:                Antialiased and optionally rescaled clip
     """
     if clip.format is None:
         raise ValueError("upscaled_sraa: 'Variable-format clips not supported'")
@@ -168,38 +171,43 @@ def upscaled_sraa(clip: vs.VideoNode,
     nnargs: Dict[str, Any] = dict(nsize=0, nns=4, qual=2)
     # TAAmbk defaults are 0.5, 0.2, 20, 3, 30
     eeargs: Dict[str, Any] = dict(alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
+    eeargs.update(eedi3_args)
 
-    ssw = round(clip.width * rfactor)
+    ssw = round(clip.width  * rfactor)
     ssh = round(clip.height * rfactor)
+
 
     while ssw % 2:
         ssw += 1
     while ssh % 2:
         ssh += 1
 
-    if h:
-        if not ar:
-            ar = clip.width / clip.height
-        w = get_w(h, aspect_ratio=ar)
-    else:
-        w, h = clip.width, clip.height
+    if height is None:
+        height = clip.height
+    if width is None:
+        if height != clip.height:
+            width = get_w(height, aspect_ratio = clip.width / clip.height)
+        else:
+            width = clip.width
 
     # Nnedi3 upscale from source height to source height * rounding (Default 1.5)
     up_y = core.nnedi3.nnedi3(luma, 0, 1, 0, **nnargs)
-    up_y = core.resize.Spline36(up_y, height=ssh, src_top=.5)
+    up_y = core.resize.Spline36(up_y, height = ssh, src_top = .5)
     up_y = core.std.Transpose(up_y)
     up_y = core.nnedi3.nnedi3(up_y, 0, 1, 0, **nnargs)
-    up_y = core.resize.Spline36(up_y, height=ssw, src_top=.5)
+    up_y = core.resize.Spline36(up_y, height = ssw, src_top = .5)
 
     # Single-rate AA
-    aa_y = core.eedi3m.EEDI3(up_y, 0, 0, 0, sclip=core.nnedi3.nnedi3(up_y, 0, 0, 0, **nnargs), **eeargs)
+    aa_y = core.eedi3m.EEDI3(up_y, 0, 0, 0, sclip = core.nnedi3.nnedi3(up_y, 0, 0, 0, **nnargs), **eeargs)
     aa_y = core.std.Transpose(aa_y)
-    aa_y = core.eedi3m.EEDI3(aa_y, 0, 0, 0, sclip=core.nnedi3.nnedi3(aa_y, 0, 0, 0, **nnargs), **eeargs)
+    aa_y = core.eedi3m.EEDI3(aa_y, 0, 0, 0, sclip = core.nnedi3.nnedi3(aa_y, 0, 0, 0, **nnargs), **eeargs)
 
     # Back to source clip height or given height
-    scaled = (core.fmtc.resample(aa_y, w, h, kernel='gauss', invks=True, invkstaps=2, taps=1, a1=32)
-              if sharp_downscale else core.resize.Spline36(aa_y, w, h))
+    scaled = downscaler(aa_y, width, height)
 
     if rep:
-        scaled = util.pick_repair(scaled)(scaled, luma.resize.Spline36(w, h), rep)
-    return scaled if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([scaled, clip], [0, 1, 2], vs.YUV)
+        scaled = util.pick_repair(scaled)(scaled, luma.resize.Bicubic(width, height), mode = rep)
+
+    if clip.format.num_planes == 1:
+        return scaled
+    return join([scaled, plane(clip, 1), plane(clip, 2)])
