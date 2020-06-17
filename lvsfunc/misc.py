@@ -216,7 +216,7 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
 
 
 def wipe_row(clip: vs.VideoNode,
-             secondary: vs.VideoNode = Optional[vs.VideoNode],
+             secondary: Optional[vs.VideoNode] = None,
              width: int = 1, height: int = 1,
              offset_x: int = 0, offset_y: int = 0,
              width2: Optional[int] = None, height2: Optional[int] = None,
