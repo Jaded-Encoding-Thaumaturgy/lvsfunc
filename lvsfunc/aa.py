@@ -138,7 +138,7 @@ def upscaled_sraa(clip: vs.VideoNode,
                   rfactor: float = 1.5,
                   rep: Optional[int] = None,
                   width: Optional[int] = None, height: Optional[int] = None,
-                  downscaler: Optional[Callable[[vs.VideoNode, int, int], vs.VideoNode]]
+                  downscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode]
                   = core.resize.Spline36,
                   **eedi3_args: Any) -> vs.VideoNode:
     """
