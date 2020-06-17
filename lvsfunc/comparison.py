@@ -10,7 +10,7 @@ from enum import IntEnum
 from typing import Any, Dict, List, Optional, Sequence, Set, Union
 
 import vapoursynth as vs
-from vsutil import depth, get_subsampling, get_w, split
+import vsutil
 
 from .util import get_prop
 
@@ -312,7 +312,7 @@ class Split(Stack):
                               or (self.direction == Direction.VERTICAL and (((self.height // self.num_clips) % 2)
                                                                             or ((self.height % self.num_clips) % 2))))
 
-        is_subsampled = not all(get_subsampling(clip) in ('444', None) for clip in self.clips)
+        is_subsampled = not all(vsutil.get_subsampling(clip) in ('444', None) for clip in self.clips)
 
         if breaks_subsampling and is_subsampled:
             raise ValueError("Split: resulting cropped width or height violates subsampling rules; "
@@ -374,7 +374,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     def _resample(clip: vs.VideoNode) -> vs.VideoNode:
         # Resampling to 8 bit and RGB to properly display how it appears on your screen
-        return depth(clip.resize.Point(format=vs.RGB24, matrix_in_s=str(GetMatrix(clip))), 8)
+        return vsutil.depth(clip.resize.Point(format=vs.RGB24, matrix_in_s=str(GetMatrix(clip))), 8)
 
     # Error handling
     if frames and len(frames) > clip_a.num_frames:
