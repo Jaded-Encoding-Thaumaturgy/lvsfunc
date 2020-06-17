@@ -2,8 +2,12 @@
     Functions intended to be used to make comparisons between different sources
     or to be used to analyze something from a single clip.
 """
+import math
 import random
-from typing import List, Optional
+import warnings
+from abc import ABC, abstractmethod
+from enum import IntEnum
+from typing import Any, Dict, List, Optional, Sequence, Set, Union
 
 import vapoursynth as vs
 from vsutil import depth, get_subsampling, get_w, split
@@ -11,6 +15,332 @@ from vsutil import depth, get_subsampling, get_w, split
 from .util import get_prop
 
 core = vs.core
+
+
+class Direction(IntEnum):
+    """
+    Enum to simplify direction argument.
+    """
+    HORIZONTAL = 0
+    VERTICAL = 1
+
+
+class Comparer(ABC):
+    """
+    Base class for comparison functions.
+
+    :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
+                            If specified a dict, the names will be overlayed on the clips using
+                            ``vapoursynth.VideoNode.text.Text``.
+                            If given a simple sequence of clips, the `label_alignment` parameter will have no effect
+                            and the clips will not be labeled.
+                            The order of the clips in either a dict or a sequence will be kept in the comparison.
+    :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
+                            Only used if `clips` is a dict.
+                            Determines where to place clip name using ``vapoursynth.VideoNode.text.Text`` (Default: 7)
+    """
+    def __init__(self,
+                 clips: Union[Dict[str, vs.VideoNode], Sequence[vs.VideoNode]],
+                 /,
+                 *,
+                 label_alignment: int = 7
+                 ) -> None:
+        if len(clips) < 2:
+            raise ValueError("Comparer: compare functions must be used on at least 2 clips")
+        if label_alignment not in list(range(1, 10)):
+            raise ValueError("Comparer: `label_alignment` must be an integer from 1 to 9")
+        if not isinstance(clips, (dict, Sequence)):
+            raise ValueError(f"Comparer: unexpected type {type(clips)} for `clips` argument")
+
+        self.clips: List[vs.VideoNode] = list(clips.values()) if isinstance(clips, dict) else list(clips)
+        self.names: Optional[List[str]] = list(clips.keys()) if isinstance(clips, dict) else None
+
+        self.label_alignment = label_alignment
+
+        self.num_clips = len(clips)
+
+        widths: Set[int] = {clip.width for clip in self.clips}
+        self.width: Optional[int] = w if (w := widths.pop()) != 0 and len(widths) == 0 else None
+
+        heights: Set[int] = {clip.height for clip in self.clips}
+        self.height: Optional[int] = h if (h := heights.pop()) != 0 and len(heights) == 0 else None
+
+        formats: Set[Optional[str]] = {getattr(clip.format, 'name', None) for clip in self.clips}
+        self.format: Optional[str] = formats.pop() if len(formats) == 1 else None
+
+    def _marked_clips(self) -> List[vs.VideoNode]:
+        """
+        If a `name` is only space characters, `'   '`, for example, the name will not be overlayed on the clip.
+        """
+        if self.names:
+            return [clip.text.Text(text=name, alignment=self.label_alignment) if name.strip() else clip
+                    for clip, name in zip(self.clips, self.names)]
+        else:
+            return self.clips.copy()
+
+    @abstractmethod
+    def _compare(self) -> vs.VideoNode:
+        raise NotImplementedError
+
+    @property
+    def clip(self) -> vs.VideoNode:
+        """
+        Returns the comparison as a single VideoNode for further manipulation or attribute inspection.
+
+        `comp_clip = Comparer(...).clip` is the intended use in encoding scripts.
+        """
+        return self._compare()
+
+
+class Stack(Comparer):
+    """
+    Stacks clips horizontally or vertically.
+
+    Acts as a convenience combination function of ``vapoursynth.core.text.Text``
+    and either ``vapoursynth.core.std.StackHorizontal`` or ``vapoursynth.core.std.StackVertical``.
+
+    :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
+                            If specified a dict, the names will be overlayed on the clips using
+                            ``vapoursynth.VideoNode.text.Text``.
+                            If given a simple sequence of clips, the `label_alignment` parameter will have no effect
+                            and the clips will not be labeled.
+                            The order of the clips in either a dict or a sequence will be kept in the comparison.
+    :param direction:       Direction of the stack (Default: :py:attr:`lvsfunc.comparison.Direction.HORIZONTAL` )
+    :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
+                            Only used if `clips` is a dict.
+                            Determines where to place clip name using ``vapoursynth.VideoNode.text.Text`` (Default: 7)
+    """
+
+    def __init__(self,
+                 clips: Union[Dict[str, vs.VideoNode], Sequence[vs.VideoNode]],
+                 /,
+                 *,
+                 direction: Direction = Direction.HORIZONTAL,
+                 label_alignment: int = 7
+                 ) -> None:
+        self.direction = direction
+        super().__init__(clips, label_alignment=label_alignment)
+
+    def _compare(self) -> vs.VideoNode:
+        if self.direction == Direction.HORIZONTAL:
+            if not self.height:
+                raise ValueError("Stack: StackHorizontal requires that all clips be the same height")
+            return core.std.StackHorizontal(self._marked_clips())
+
+        if not self.width:
+            raise ValueError("Stack: StackVertical requires that all clips be the same width")
+        return core.std.StackVertical(self._marked_clips())
+
+
+class Interleave(Comparer):
+    """
+    From the VapourSynth documentation: Returns a clip with the frames from all clips interleaved.
+    For example, Interleave(A=clip1, B=clip2) will return A.Frame 0, B.Frame 0, A.Frame 1, B.Frame 1, ...
+
+    Acts as a convenience combination function of ``vapoursynth.core.text.Text``
+    and ``vapoursynth.core.std.Interleave``.
+
+    :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
+                            If specified a dict, the names will be overlayed on the clips using
+                            ``vapoursynth.VideoNode.text.Text``.
+                            If given a simple sequence of clips, the `label_alignment` parameter will have no effect
+                            and the clips will not be labeled.
+                            The order of the clips in either a dict or a sequence will be kept in the comparison.
+    :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
+                            Only used if `clips` is a dict.
+                            Determines where to place clip name using ``vapoursynth.VideoNode.text.Text`` (Default: 7)
+    """
+
+    def __init__(self,
+                 clips: Union[Dict[str, vs.VideoNode], Sequence[vs.VideoNode]],
+                 /,
+                 *,
+                 label_alignment: int = 7
+                 ) -> None:
+        super().__init__(clips, label_alignment=label_alignment)
+
+    def _compare(self) -> vs.VideoNode:
+        return core.std.Interleave(self._marked_clips(), extend=True, mismatch=True)
+
+
+class Tile(Comparer):
+    """
+    Tiles clips in a mosaic manner, filling rows first left-to-right, then stacking.
+
+    The arrangement of the clips can be specified with the `arrangement` parameter.
+    Rows are specified as lists of ints inside of a larger list specifying the order of the rows.
+    Think of this as a 2-dimensional array of `0` or `1` with `0` representing an empty slot and `1` representing the
+    next clip in the sequence.
+
+    If `arrangement` is not specified, the function will attempt to fill a square with dimensions `n x n`
+    where `n` is equivalent to ``math.ceil(math.sqrt(len(clips))``.::
+
+        For example, for 3 clips, the automatic arrangement becomes:
+        [
+         [1, 1],
+         [1, 0]
+        ].
+
+        For 7 clips, the automatic arrangement becomes:
+        [
+         [1, 1, 1],
+         [1, 1, 1],
+         [1, 0, 0]
+        ].
+
+        For custom arrangements, such as (for 4 clips):
+        [
+         [0, 1, 0, 1],
+         [1],
+         [0, 1]
+        ],
+        the rows will be auto-padded with `0` to be the same length.
+
+    :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
+                            If specified a dict, the names will be overlayed on the clips using
+                            ``vapoursynth.VideoNode.text.Text``.
+                            If given a simple sequence of clips, the `label_alignment` parameter will have no effect
+                            and the clips will not be labeled.
+                            The order of the clips in either a dict or a sequence will be kept in the comparison.
+    :param arrangement:     2-dimension array (list of lists) of 0s and 1s representing a list of rows of clips(1)
+                            or blank spaces(0) (Default: None)
+    :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
+                            Only used if `clips` is a dict.
+                            Determines where to place clip name using ``vapoursynth.VideoNode.text.Text`` (Default: 7)
+    """
+
+    def __init__(self,
+                 clips: Union[Dict[str, vs.VideoNode], Sequence[vs.VideoNode]],
+                 /,
+                 *,
+                 arrangement: Optional[List[List[int]]] = None,
+                 label_alignment: int = 7
+                 ) -> None:
+        super().__init__(clips, label_alignment=label_alignment)
+
+        if not self.width or not self.height:
+            raise ValueError("Tile: all clip widths, and heights must be the same")
+
+        if arrangement is None:
+            self.arrangement = self._auto_arrangement()
+        else:
+            is_one_dim = len(arrangement) < 2 or all(len(row) == 1 for row in arrangement)
+            if is_one_dim:
+                raise ValueError("Tile: use Stack instead if the array is one dimensional")
+            self.arrangement = arrangement
+
+        self.blank_clip = core.std.BlankClip(clip=self.clips[0], keep=1)
+
+        if not all(len(row) == (max_length := max(len(row) for row in self.arrangement)) for row in self.arrangement):
+            for row in self.arrangement:
+                if len(row) != max_length:
+                    diff = max_length - len(row)
+                    for _ in range(diff):
+                        row.append(0)  # padding all rows to the same length
+
+        array_count = 0
+        for list_ in self.arrangement:
+            for elem in list_:
+                if elem:
+                    array_count += 1
+
+        if array_count != self.num_clips:
+            raise ValueError('specified arrangement has an invalid number of clips')
+
+    def _compare(self) -> vs.VideoNode:
+        clips = self._marked_clips()
+        rows = [core.std.StackHorizontal([clips.pop(0) if elem else self.blank_clip for elem in row])
+                for row in self.arrangement]
+        return core.std.StackVertical(rows)
+
+    def _auto_arrangement(self) -> List[List[int]]:
+        dimension = 1 + math.isqrt(self.num_clips - 1)
+        row = [1 for _ in range(dimension)]
+        array = [row.copy() for _ in range(dimension)]
+
+        num_blank_clips = dimension ** 2 - self.num_clips
+
+        if num_blank_clips >= dimension:
+            array.pop(-1)
+            for i in range(1, num_blank_clips - dimension + 1):
+                array[-1][-i] = 0
+        else:
+            for i in range(1, num_blank_clips + 1):
+                array[-1][-i] = 0
+
+        return array
+
+
+class Split(Stack):
+    """
+    Split an unlimited amount of clips into one VideoNode with the same dimensions as the original clips.
+    Handles odd-sized resolutions or resolutions that can't be evenly split by the amount of clips specified.
+
+    The remaining pixel width/height (clip.dimension % number_of_clips) will be always given to the last clip specified.
+    For example, five `104 x 200` clips will result in a `((20 x 200) * 4) + (24 x 200)` horiztonal stack of clips.
+
+    :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
+                            If specified a dict, the names will be overlayed on the clips using
+                            ``vapoursynth.VideoNode.text.Text``.
+                            If given a simple sequence of clips, the `label_alignment` parameter will have no effect
+                            and the clips will not be labeled.
+                            The order of the clips in either a dict or a sequence will be kept in the comparison.
+    :param direction:       Determines the axis to split the clips on
+                            (Default: :py:attr:`lvsfunc.comparison.Direction.HORIZONTAL`)
+    :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
+                            Only used if `clips` is a dict.
+                            Determines where to place clip name using ``vapoursynth.VideoNode.text.Text`` (Default: 7)
+    """
+
+    def __init__(self,
+                 clips: Union[Dict[str, vs.VideoNode], Sequence[vs.VideoNode]],
+                 /,
+                 *,
+                 direction: Direction = Direction.HORIZONTAL,
+                 label_alignment: int = 7
+                 ) -> None:
+        super().__init__(clips, direction=direction, label_alignment=label_alignment)
+        self._smart_crop()
+
+    def _smart_crop(self) -> None:  # has to alter self.clips to send clips to _marked_clips() in Stack's _compare()
+        """Crops self.clips in place accounting for odd resolutions."""
+        if not self.width or not self.height:
+            raise ValueError("Split: all clips must have same width and height")
+
+        breaks_subsampling = ((self.direction == Direction.HORIZONTAL and (((self.width // self.num_clips) % 2)
+                                                                           or ((self.width % self.num_clips) % 2)))
+                              or (self.direction == Direction.VERTICAL and (((self.height // self.num_clips) % 2)
+                                                                            or ((self.height % self.num_clips) % 2))))
+
+        is_subsampled = not all(get_subsampling(clip) in ('444', None) for clip in self.clips)
+
+        if breaks_subsampling and is_subsampled:
+            raise ValueError("Split: resulting cropped width or height violates subsampling rules; "
+                             "consider resampling to YUV444 or RGB before attempting to crop")
+
+        if self.direction == Direction.HORIZONTAL:
+            crop_width, overflow = divmod(self.width, self.num_clips)
+
+            for key, clip in enumerate(self.clips):
+                left_crop = crop_width * key
+                right_crop = crop_width * (self.num_clips - 1 - key)
+
+                if key != (self.num_clips - 1):
+                    right_crop += overflow
+
+                self.clips[key] = clip.std.Crop(left=left_crop, right=right_crop)
+
+        elif self.direction == Direction.VERTICAL:
+            crop_height, overflow = divmod(self.height, self.num_clips)
+
+            for key, clip in enumerate(self.clips):
+                top_crop = crop_height * key
+                bottom_crop = crop_height * (self.num_clips - 1 - key)
+
+                if key != (self.num_clips - 1):
+                    bottom_crop += overflow
+
+                self.clips[key] = clip.std.Crop(top=top_crop, bottom=bottom_crop)
 
 
 def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
