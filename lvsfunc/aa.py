@@ -173,6 +173,9 @@ def upscaled_sraa(clip: vs.VideoNode,
     eeargs: Dict[str, Any] = dict(alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
     eeargs.update(eedi3_args)
 
+    if rfactor < 1:
+        raise ValueError("upscaled_sraa: '\"rfactor\" must be above 1'")
+
     ssw = round(clip.width * rfactor)
     ssh = round(clip.height * rfactor)
 
