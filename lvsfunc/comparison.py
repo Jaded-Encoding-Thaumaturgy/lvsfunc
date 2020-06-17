@@ -484,9 +484,10 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
 
 def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
               thr: float = 72,
+              height: int = 288,
               return_array: bool = False) -> vs.VideoNode:
     """
-    Creates a standard `stack_compare` between frames from two clips that have differences.
+    Creates a standard :py:class:`lvsfunc.comparison.Stack` between frames from two clips that have differences.
     Useful for making comparisons between TV and BD encodes, as well as clean and hardsubbed sources.
 
     There are two methods used here to find differences.
@@ -504,44 +505,51 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
 
     :param tv:            TV clip
     :param bd:            BD clip
-    :param thr:           Threshold, <= 1 uses PlaneStatsDiff, >1 uses Max/Min. Max is 128 (Default: 72)
-    :param return_array:  Return frames as an interleaved comparison (using py:func:`lvsfunc.comparison.compare`)
+    :param thr:           Threshold, <= 1 uses PlaneStatsDiff, >1 uses Max/Min.
+                          Value must be below 128 (Default: 72)
+    :param height:        Height in px to downscale clips to if `return_array` is ``False``
+                          (MakeDiff clip will be twice this resolution) (Default: 288)
+    :param return_array:  Return frames as an interleaved comparison (using py:class:`lvsfunc.comparison.Interleave`)
                           (Default: False)
     """
-    if thr > 128:
-        raise ValueError("tvbd_diff: \"thr\" should neither be nor exceed 128!'")
+    if thr >= 128:
+        raise ValueError("tvbd_diff: `thr` must be below 128")
 
-    tv, bd = depth(tv, 8), depth(bd, 8)
+    if None in (tv.format, bd.format):
+        raise ValueError("tvbd_diff: variable-format clips not supported")
+
+    tv, bd = vsutil.depth(tv, 8), vsutil.depth(bd, 8)
 
     if thr <= 1:
-        diff = core.std.PlaneStats(tv, bd)
-        frames = [i for i, f in enumerate(diff.frames()) if get_prop(f, "PlaneStatsDiff", float) > thr]
+        frames = [i for i, f in enumerate(core.std.PlaneStats(tv, bd).frames())
+                  if get_prop(f, 'PlaneStatsDiff', float) > thr]
+        diff = core.std.MakeDiff(tv, bd)
     else:
         diff = core.std.MakeDiff(tv, bd).std.PlaneStats()
         if diff.format is None:
-            raise ValueError("tvbd_diff: 'Variable-format clips not supported'")
-        t = float if diff.format.sample_type == vs.FLOAT else int
+            raise ValueError("tvbd_diff: variable-format clips not supported")  # this is for mypy
+        t = float if diff.format.sample_type == vs.SampleType.FLOAT else int
         frames = [i for i, f in enumerate(diff.frames())
-                  if get_prop(f, "PlaneStatsMin", t) <= thr
-                  or get_prop(f, "PlaneStatsMax", t) >= 255 - thr]
+                  if get_prop(f, 'PlaneStatsMin', t) <= thr or get_prop(f, 'PlaneStatsMax', t) >= 255 - thr]
 
     if not frames:
-        raise ValueError("tvbd_diff: 'No differences found'")
+        raise ValueError("tvbd_diff: no differences found")
 
     if return_array:
-        return compare(tv.text.FrameNum().text.Text('Clip A', 9),
-                       bd.text.FrameNum().text.Text('Clip B', 9),
-                       frames)
+        tv, bd = tv.text.FrameNum(9), bd.text.FrameNum(9)
+        return Interleave({'TV': core.std.Splice([tv[f] for f in frames]),
+                           'BD': core.std.Splice([bd[f] for f in frames])}).clip
+
     else:
-        if thr <= 1:
-            diff = core.std.MakeDiff(tv, bd)
-        diff = core.resize.Spline36(diff, get_w(576), 576).text.FrameNum(8)
-        tv = core.resize.Spline36(tv, int(diff.width / 2), int(diff.height / 2)).text.Text("Clip A", 3)
-        bd = core.resize.Spline36(bd, int(diff.width / 2), int(diff.height / 2)).text.Text("Clip B", 3)
-        stacked = core.std.StackVertical([core.std.StackHorizontal([tv, bd]), diff])
-        return core.std.Splice([stacked[f] for f in frames])
+        scaled_width = vsutil.get_w(height, only_even=False)
+        diff = diff.resize.Spline36(width=scaled_width * 2, height=height * 2).text.FrameNum(9)
+        tv, bd = (c.resize.Spline36(width=scaled_width, height=height).text.FrameNum(9) for c in (tv, bd))
 
-
+        tvbd_stack = Stack({'TV': core.std.Splice([tv[f] for f in frames]),
+                            'BD': core.std.Splice([bd[f] for f in frames])}).clip
+        diff = diff.text.Text(text='diff', alignment=8)
+        diff = core.std.Splice([diff[f] for f in frames])
+        return Stack((tvbd_stack, diff), direction=Direction.VERTICAL).clip
 
 
 def interleave(*clips: vs.VideoNode) -> vs.VideoNode:
