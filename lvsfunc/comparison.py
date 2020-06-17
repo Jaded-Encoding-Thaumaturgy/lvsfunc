@@ -539,7 +539,65 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
         return core.std.Splice([stacked[f] for f in frames])
 
 
-# TODO: Write a comparison function that displays parts of clips side-by-side, similar to a slider.
-#       It should theoretically accept an infinite amount of clips
-#       and accurately split the width among all clips.
-#       Odd-resolution clips will also need to be taken into account.
+
+
+def interleave(*clips: vs.VideoNode) -> vs.VideoNode:
+    """
+    Small convenience function for interleaving clips.
+
+    :param clips: Clips for comparison (order is kept)
+
+    :return: Returns an interleaved clip of all the clips specified
+    """
+    return Interleave(clips).clip
+
+
+def split(**clips: vs.VideoNode) -> vs.VideoNode:
+    """
+    Small convenience funciton for splitting clips along the x-axis and then stacking (order is kept left to right).
+    Accounts for odd-resolution clips by giving overflow columns to the last clip specified.
+
+    :param clips: Keyword arguments of name=clip for all clips in the comparison.
+                  All clips must have the same dimensions (width and height).
+                  Clips will be labeled at the bottom with their `name`.
+    :return: A clip with the same dimensions as any one of the input clips
+             with all clips represented as individual vertical slices.
+    """
+    return Split(clips, label_alignment=2).clip
+
+
+def stack_horizontal(*clips: vs.VideoNode) -> vs.VideoNode:
+    """
+    Small convenience function for stacking clips horizontally.
+
+    :param clips: Clips for comparison (order is kept left to right)
+
+    :return: Returns a horizontal stack of the clips
+    """
+    return Stack(clips).clip
+
+
+def stack_vertical(*clips: vs.VideoNode) -> vs.VideoNode:
+    """
+    Small convenience function for stacking clips vertically.
+
+    :param clips: Clips for comparison (order is kept top to bottom)
+
+    :return: Returns a vertical stack of the clips
+    """
+    return Stack(clips, direction=Direction.VERTICAL).clip
+
+
+def tile(**clips: vs.VideoNode) -> vs.VideoNode:
+    """
+    Small convenience function for tiling clips in a square pattern.
+
+    :param clips: Keyword arguments of name=clip for all clips in the comparison.
+                  All clips must have the same dimensions (width and height).
+                  Clips will be labeled with their `name`.
+                  If 3 clips are given, a 2x2 square with one blank slot will be returned.
+                  If 5 clips are given, a 3x3 square with four blank slots will be returned.
+
+    :return: A clip with all input clips automatically tiled most optimally into a square arrrangement.
+    """
+    return Tile(clips).clip
