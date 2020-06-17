@@ -439,31 +439,47 @@ def stack_compare(*clips: vs.VideoNode,
 
     return Stack([Stack(resized).clip, diff], direction=Direction.VERTICAL).clip
 
-def stack_planes(clip: vs.VideoNode,
-                 stack_vertical: bool = False) -> vs.VideoNode:
+
+def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.VideoNode:
     """
     Stacks the planes of a clip.
+    For 4:2:0 subsampled clips, the two half-sized planes will be stacked in the opposite direction specified
+    (vertical by default),
+    then stacked with the full-sized plane in the direction specified (horizontal by default).
 
-    :param clip:              Input clip
-    :param stack_vertical:    Stack the planes vertically (Default: False)
+    :param clip:           Input clip (must be in YUV or RGB planar format)
+    :param stack_vertical: Stack the planes vertically (Default: False)
 
-    :return:                  Clip with stacked planes
+    :return:               Clip with stacked planes
     """
+    if clip.num_frames != 3:
+        raise ValueError("stack_planes: input clip must be in YUV or RGB planar format")
+    if clip.format is None:
+        raise ValueError("stack_planes: variable-format clips not allowed")
 
-    planes = split(clip)
-    subsampling = get_subsampling(clip)
+    split_planes = vsutil.split(clip)
 
-    if subsampling == '420':
-        if stack_vertical:
-            stack = core.std.StackHorizontal([planes[1], planes[2]])
-            return core.std.StackVertical([planes[0], stack])
-        else:
-            stack = core.std.StackVertical([planes[1], planes[2]])
-            return core.std.StackHorizontal([planes[0], stack])
-    elif subsampling == '444':
-        return core.std.StackVertical(planes) if stack_vertical else core.std.StackHorizontal(planes)
+    if clip.format.color_family == vs.ColorFamily.YUV:
+        planes: Dict[str, vs.VideoNode] = {'Y': split_planes[0], 'U': split_planes[1], 'V': split_planes[2]}
+    elif clip.format.color_family == vs.ColorFamily.RGB:
+        planes = {'R': split_planes[0], 'G': split_planes[1], 'B': split_planes[2]}
     else:
-        raise ValueError("stack_planes: 'Input clip must be in YUV format with 444 or 420 chroma subsampling'")
+        raise ValueError(f"stack_planes: unexpected color family {clip.format.color_family.name}")
+
+    direction: Direction = Direction.HORIZONTAL if not stack_vertical else Direction.VERTICAL
+
+    if vsutil.get_subsampling(clip) in ('444', None):
+        return Stack(planes, direction=direction).clip
+
+    elif vsutil.get_subsampling(clip) == '420':
+        subsample_direction: Direction = Direction.HORIZONTAL if stack_vertical else Direction.VERTICAL
+        y_plane = planes.pop('Y').text.Text(text='Y')
+        subsampled_planes = Stack(planes, direction=subsample_direction).clip
+
+        return Stack([y_plane, subsampled_planes], direction=direction).clip
+
+    else:
+        raise ValueError(f"stack_planes: unexpected subsampling {vsutil.get_subsampling(clip)}")
 
 
 def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
