@@ -403,54 +403,41 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
 
 def stack_compare(*clips: vs.VideoNode,
-                  make_diff: bool = False,
-                  height: Optional[int] = None,
-                  warn: bool = True) -> vs.VideoNode:
+                  make_diff: bool = True,
+                  height: int = 288,
+                  warn: Any
+                  ) -> vs.VideoNode:
     """
     A simple wrapper that allows you to compare two clips by stacking them.
-    You can stack an infinite amount of clips.
 
-    Best to use when trying to match two sources frame-accurately, however by setting height to the source's
-    height (or None), it can be used for comparing frames.
-
+    Best to use when trying to match two sources frame-accurately.
     Alias for this function is `lvsfunc.scomp`.
 
-    :param clips:             Clips to compare
-    :param make_diff:         Create and stack a diff (only works if two clips are given) (Default: False)
-    :param height:            Output height, determined automatically if None (Default: None)
-    :param warn:              Warns if the length of given clips don't align (Default: True)
+    :param clips:     Clips to compare
+    :param make_diff: Create and stack a diff (only works if two clips are given) (Default: True)
+    :param height:    Height in px to rescale clips to if `make_diff` is ``True``
+                      (MakeDiff clip will be twice this resolution) (Default: 288)
+    :param warn:      Unused parameter kept for backward compatibility
 
-    :return:                  Clip with clips stacked
+    :return:          Clip with clips stacked
     """
-    if len(clips) < 2:
-        raise ValueError("stack_compare: 'Too few clips supplied'")
+    if not make_diff:
+        warnings.warn('stack_compare has been deprecated in favor of `lvsfunc.comparison.Stack` '
+                      'if not using `make_diff`', DeprecationWarning)
+        return core.std.StackHorizontal(clips)
 
-    if len(clips) != 2 and make_diff:
-        raise ValueError("stack_compare: 'You can only create a diff for two clips'")
+    if len(clips) != 2:
+        raise ValueError("stack_compare: `make_diff` only works for exactly 2 clips")
 
-    formats = set()
-    for c in clips:
-        if c.format is None:
-            raise ValueError("stack_compare: 'Variable-format clips not supported'")
-        formats.add(c.format.id)
-    if len(formats) != 1:
-        raise ValueError("stack_compare: 'The format of every clip must be equal'")
+    clipa, clipb = clips[0:2]
+    scaled_width = vsutil.get_w(height, only_even=False)
 
-    if make_diff:
-        diff = core.std.MakeDiff(clips[0], clips[1])
-        diff = core.resize.Spline36(diff, get_w(576), 576).text.FrameNum(8)
-        resize = [core.resize.Spline36(c, int(diff.width / 2), int(diff.height / 2)) for c in clips]
-        resize[0], resize[1] = resize[0].text.Text("Clip A", 3), resize[1].text.Text("Clip B", 1)
-        stack = core.std.StackVertical([core.std.StackHorizontal([resize[0], resize[1]]), diff])
-    else:
-        stack = core.std.StackHorizontal(clips)
-    if warn:
-        if len(set([c.num_frames for c in clips])) != 1:
-            stack = core.text.Text(stack,
-                                   "Clip Length Mismatch Detected!\nPlease make sure the lengths of all clips match!\n"
-                                   + "".join(f"\nClip {i+1}: {c.num_frames} Frames" for i, c in enumerate(clips)), 2)
-    return stack
+    diff = core.std.MakeDiff(clipa=clipa, clipb=clipb)
+    diff = diff.resize.Spline36(width=scaled_width * 2, height=height * 2).text.FrameNum(8)
+    resized = [clips[0].resize.Spline36(width=scaled_width, height=height).text.Text('Clip A', 3),
+               clips[1].resize.Spline36(width=scaled_width, height=height).text.Text('Clip B', 1)]
 
+    return Stack([Stack(resized).clip, diff], direction=Direction.VERTICAL).clip
 
 def stack_planes(clip: vs.VideoNode,
                  stack_vertical: bool = False) -> vs.VideoNode:
