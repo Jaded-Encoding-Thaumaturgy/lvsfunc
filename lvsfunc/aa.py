@@ -188,7 +188,7 @@ def upscaled_sraa(clip: vs.VideoNode,
         height = clip.height
     if width is None:
         if height != clip.height:
-            width = get_w(height, aspect_ratio = clip.width / clip.height)
+            width = get_w(height, aspect_ratio=clip.width / clip.height)
         else:
             width = clip.width
 
