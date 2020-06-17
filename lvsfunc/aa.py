@@ -173,9 +173,8 @@ def upscaled_sraa(clip: vs.VideoNode,
     eeargs: Dict[str, Any] = dict(alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
     eeargs.update(eedi3_args)
 
-    ssw = round(clip.width  * rfactor)
+    ssw = round(clip.width * rfactor)
     ssh = round(clip.height * rfactor)
-
 
     while ssw % 2:
         ssw += 1
@@ -192,21 +191,21 @@ def upscaled_sraa(clip: vs.VideoNode,
 
     # Nnedi3 upscale from source height to source height * rounding (Default 1.5)
     up_y = core.nnedi3.nnedi3(luma, 0, 1, 0, **nnargs)
-    up_y = core.resize.Spline36(up_y, height = ssh, src_top = .5)
+    up_y = core.resize.Spline36(up_y, height=ssh, src_top=.5)
     up_y = core.std.Transpose(up_y)
     up_y = core.nnedi3.nnedi3(up_y, 0, 1, 0, **nnargs)
-    up_y = core.resize.Spline36(up_y, height = ssw, src_top = .5)
+    up_y = core.resize.Spline36(up_y, height=ssw, src_top=.5)
 
     # Single-rate AA
-    aa_y = core.eedi3m.EEDI3(up_y, 0, 0, 0, sclip = core.nnedi3.nnedi3(up_y, 0, 0, 0, **nnargs), **eeargs)
+    aa_y = core.eedi3m.EEDI3(up_y, 0, 0, 0, sclip=core.nnedi3.nnedi3(up_y, 0, 0, 0, **nnargs), **eeargs)
     aa_y = core.std.Transpose(aa_y)
-    aa_y = core.eedi3m.EEDI3(aa_y, 0, 0, 0, sclip = core.nnedi3.nnedi3(aa_y, 0, 0, 0, **nnargs), **eeargs)
+    aa_y = core.eedi3m.EEDI3(aa_y, 0, 0, 0, sclip=core.nnedi3.nnedi3(aa_y, 0, 0, 0, **nnargs), **eeargs)
 
     # Back to source clip height or given height
     scaled = downscaler(aa_y, width, height)
 
     if rep:
-        scaled = util.pick_repair(scaled)(scaled, luma.resize.Bicubic(width, height), mode = rep)
+        scaled = util.pick_repair(scaled)(scaled, luma.resize.Bicubic(width, height), mode=rep)
 
     if clip.format.num_planes == 1:
         return scaled
