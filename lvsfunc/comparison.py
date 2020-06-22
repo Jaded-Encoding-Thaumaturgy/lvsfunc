@@ -335,21 +335,21 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     """
     Allows for the same frames from two different clips to be compared by interleaving them into a single clip.
     Clips are automatically resampled to 8 bit YUV -> RGB24 to emulate how a monitor shows the frame.
-    This can be disabled by setting `disable_resample` to True.
+    This can be disabled by setting `force_resample` to ``False``.
 
     Alias for this function is `lvsfunc.comp`.
 
     Dependencies: mvsfunc
 
-    :param clip_a:              Clip to compare
-    :param clip_b:              Second clip to compare
-    :param frames:              List of frames to compare (Default: None)
-    :param rand_total:          Number of random frames to pick (Default: None)
-    :param force_resample:      Forcibly resamples the clip to RGB24 (Default: True)
-    :param print_frame:         Print frame numbers (Default: True)
-    :param mismatch:            Allow for clips with different formats and dimensions to be compared (Default: False)
+    :param clip_a:         Clip to compare
+    :param clip_b:         Second clip to compare
+    :param frames:         List of frames to compare (Default: ``None``)
+    :param rand_total:     Number of random frames to pick (Default: ``None``)
+    :param force_resample: Forcibly resamples the clip to RGB24 (Default: ``True``)
+    :param print_frame:    Print frame numbers (Default: ``True``)
+    :param mismatch:       Allow for clips with different formats and dimensions to be compared (Default: ``False``)
 
-    :return:                    Interleaved clip containing specified frames from clip_a and clip_b
+    :return:               Interleaved clip containing specified frames from `clip_a` and `clip_b`
     """
     try:
         from mvsfunc import GetMatrix
