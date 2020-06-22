@@ -7,7 +7,8 @@ import random
 import warnings
 from abc import ABC, abstractmethod
 from enum import IntEnum
-from typing import Any, Dict, List, Optional, Sequence, Set, Union
+from itertools import zip_longest
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Set, Union
 
 import vapoursynth as vs
 import vsutil
@@ -231,18 +232,10 @@ class Tile(Comparer):
 
         self.blank_clip = core.std.BlankClip(clip=self.clips[0], keep=1)
 
-        if not all(len(row) == (max_length := max(len(row) for row in self.arrangement)) for row in self.arrangement):
-            for row in self.arrangement:
-                if len(row) != max_length:
-                    diff = max_length - len(row)
-                    for _ in range(diff):
-                        row.append(0)  # padding all rows to the same length
+        max_length = max(map(len, self.arrangement))
+        self.arrangement = [row + [0] * (max_length - len(row)) for row in self.arrangement]
 
-        array_count = 0
-        for list_ in self.arrangement:
-            for elem in list_:
-                if elem:
-                    array_count += 1
+        array_count = sum(map(sum, self.arrangement))
 
         if array_count != self.num_clips:
             raise ValueError('specified arrangement has an invalid number of clips')
@@ -254,21 +247,12 @@ class Tile(Comparer):
         return core.std.StackVertical(rows)
 
     def _auto_arrangement(self) -> List[List[int]]:
+        def _grouper(iterable, n, fillvalue=None) -> Iterator:
+            args = [iter(iterable)] * n
+            return zip_longest(*args, fillvalue=fillvalue)
+
         dimension = 1 + math.isqrt(self.num_clips - 1)
-        row = [1 for _ in range(dimension)]
-        array = [row.copy() for _ in range(dimension)]
-
-        num_blank_clips = dimension ** 2 - self.num_clips
-
-        if num_blank_clips >= dimension:
-            array.pop(-1)
-            for i in range(1, num_blank_clips - dimension + 1):
-                array[-1][-i] = 0
-        else:
-            for i in range(1, num_blank_clips + 1):
-                array[-1][-i] = 0
-
-        return array
+        return list(map(list, _grouper([1] * self.num_clips, dimension, 0)))
 
 
 class Split(Stack):
