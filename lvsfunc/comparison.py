@@ -398,12 +398,12 @@ def stack_compare(*clips: vs.VideoNode,
     Alias for this function is `lvsfunc.scomp`.
 
     :param clips:     Clips to compare
-    :param make_diff: Create and stack a diff (only works if two clips are given) (Default: True)
+    :param make_diff: Create and stack a diff (only works if two clips are given) (Default: ``True``)
     :param height:    Height in px to rescale clips to if `make_diff` is ``True``
                       (MakeDiff clip will be twice this resolution) (Default: 288)
     :param warn:      Unused parameter kept for backward compatibility
 
-    :return:          Clip with clips stacked
+    :return:          Clip with `clips` stacked
     """
     if not make_diff:
         warnings.warn('stack_compare has been deprecated in favor of `lvsfunc.comparison.Stack` '
