@@ -436,10 +436,10 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
 
     :return:               Clip with stacked planes
     """
-    if clip.num_frames != 3:
-        raise ValueError("stack_planes: input clip must be in YUV or RGB planar format")
     if clip.format is None:
         raise ValueError("stack_planes: variable-format clips not allowed")
+    if clip.format.num_planes != 3:
+        raise ValueError("stack_planes: input clip must be in YUV or RGB planar format")
 
     split_planes = vsutil.split(clip)
 
