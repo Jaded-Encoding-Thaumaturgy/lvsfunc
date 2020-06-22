@@ -389,7 +389,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 def stack_compare(*clips: vs.VideoNode,
                   make_diff: bool = True,
                   height: int = 288,
-                  warn: Any
+                  warn: Any = None
                   ) -> vs.VideoNode:
     """
     A simple wrapper that allows you to compare two clips by stacking them.
