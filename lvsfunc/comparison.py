@@ -432,7 +432,7 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
     then stacked with the full-sized plane in the direction specified (horizontal by default).
 
     :param clip:           Input clip (must be in YUV or RGB planar format)
-    :param stack_vertical: Stack the planes vertically (Default: False)
+    :param stack_vertical: Stack the planes vertically (Default: ``False``)
 
     :return:               Clip with stacked planes
     """
