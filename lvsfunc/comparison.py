@@ -8,7 +8,7 @@ import warnings
 from abc import ABC, abstractmethod
 from enum import IntEnum
 from itertools import zip_longest
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Set, Union
+from typing import Any, Dict, List, Optional, Sequence, Set, Union
 
 import vapoursynth as vs
 import vsutil
@@ -247,7 +247,7 @@ class Tile(Comparer):
         return core.std.StackVertical(rows)
 
     def _auto_arrangement(self) -> List[List[int]]:
-        def _grouper(iterable, n, fillvalue=None) -> Iterator:
+        def _grouper(iterable, n, fillvalue=None):  # type: ignore
             args = [iter(iterable)] * n
             return zip_longest(*args, fillvalue=fillvalue)
 
