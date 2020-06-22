@@ -498,6 +498,9 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
                           (MakeDiff clip will be twice this resolution) (Default: 288)
     :param return_array:  Return frames as an interleaved comparison (using :py:class:`lvsfunc.comparison.Interleave`)
                           (Default: ``False``)
+
+    :return: Either an interleaved clip of the differences between the two clips
+             or a stack of both input clips on top of MakeDiff clip
     """
     if thr >= 128:
         raise ValueError("tvbd_diff: `thr` must be below 128")
@@ -545,7 +548,7 @@ def interleave(*clips: vs.VideoNode) -> vs.VideoNode:
 
     :param clips: Clips for comparison (order is kept)
 
-    :return: Returns an interleaved clip of all the `clips` specified
+    :return: An interleaved clip of all the `clips` specified
     """
     return Interleave(clips).clip
 
@@ -558,6 +561,7 @@ def split(**clips: vs.VideoNode) -> vs.VideoNode:
     :param clips: Keyword arguments of `name=clip` for all clips in the comparison.
                   All clips must have the same dimensions (width and height).
                   Clips will be labeled at the bottom with their `name`.
+
     :return: A clip with the same dimensions as any one of the input clips
              with all `clips` represented as individual vertical slices.
     """
@@ -570,7 +574,7 @@ def stack_horizontal(*clips: vs.VideoNode) -> vs.VideoNode:
 
     :param clips: Clips for comparison (order is kept left to right)
 
-    :return: Returns a horizontal stack of the `clips`
+    :return: A horizontal stack of the `clips`
     """
     return Stack(clips).clip
 
@@ -581,7 +585,7 @@ def stack_vertical(*clips: vs.VideoNode) -> vs.VideoNode:
 
     :param clips: Clips for comparison (order is kept top to bottom)
 
-    :return: Returns a vertical stack of the `clips`
+    :return: A vertical stack of the `clips`
     """
     return Stack(clips, direction=Direction.VERTICAL).clip
 
@@ -596,6 +600,6 @@ def tile(**clips: vs.VideoNode) -> vs.VideoNode:
                   If 3 clips are given, a 2x2 square with one blank slot will be returned.
                   If 7 clips are given, a 3x3 square with two blank slots will be returned.
 
-    :return: A clip with all input `clips` automatically tiled most optimally into a rectangular arrrangement.
+    :return: A clip with all input `clips` automatically tiled most optimally into a rectangular arrrangement
     """
     return Tile(clips).clip
