@@ -31,14 +31,14 @@ class Comparer(ABC):
     Base class for comparison functions.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If specified a dict, the names will be overlayed on the clips using
-                            ``vapoursynth.VideoNode.text.Text``.
+                            If given a dict, the names will be overlayed on the clips using
+                            ``VideoNode.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
                             The order of the clips in either a dict or a sequence will be kept in the comparison.
     :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
                             Only used if `clips` is a dict.
-                            Determines where to place clip name using ``vapoursynth.VideoNode.text.Text`` (Default: 7)
+                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7)
     """
     def __init__(self,
                  clips: Union[Dict[str, vs.VideoNode], Sequence[vs.VideoNode]],
@@ -88,7 +88,7 @@ class Comparer(ABC):
         """
         Returns the comparison as a single VideoNode for further manipulation or attribute inspection.
 
-        `comp_clip = Comparer(...).clip` is the intended use in encoding scripts.
+        ``comp_clip = Comparer(...).clip`` is the intended use in encoding scripts.
         """
         return self._compare()
 
@@ -101,15 +101,15 @@ class Stack(Comparer):
     and either ``vapoursynth.core.std.StackHorizontal`` or ``vapoursynth.core.std.StackVertical``.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If specified a dict, the names will be overlayed on the clips using
-                            ``vapoursynth.VideoNode.text.Text``.
+                            If given a dict, the names will be overlayed on the clips using
+                            ``VideoNode.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
                             The order of the clips in either a dict or a sequence will be kept in the comparison.
-    :param direction:       Direction of the stack (Default: :py:attr:`lvsfunc.comparison.Direction.HORIZONTAL` )
+    :param direction:       Direction of the stack (Default: :py:attr:`lvsfunc.comparison.Direction.HORIZONTAL`)
     :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
                             Only used if `clips` is a dict.
-                            Determines where to place clip name using ``vapoursynth.VideoNode.text.Text`` (Default: 7)
+                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7)
     """
 
     def __init__(self,
@@ -135,21 +135,21 @@ class Stack(Comparer):
 
 class Interleave(Comparer):
     """
-    From the VapourSynth documentation: Returns a clip with the frames from all clips interleaved.
-    For example, Interleave(A=clip1, B=clip2) will return A.Frame 0, B.Frame 0, A.Frame 1, B.Frame 1, ...
+    From the VapourSynth documentation: `Returns a clip with the frames from all clips interleaved.
+    For example, Interleave(A=clip1, B=clip2) will return A.Frame 0, B.Frame 0, A.Frame 1, B.Frame 1, ...`
 
     Acts as a convenience combination function of ``vapoursynth.core.text.Text``
     and ``vapoursynth.core.std.Interleave``.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If specified a dict, the names will be overlayed on the clips using
-                            ``vapoursynth.VideoNode.text.Text``.
+                            If given a dict, the names will be overlayed on the clips using
+                            ``VideoNode.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
                             The order of the clips in either a dict or a sequence will be kept in the comparison.
     :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
                             Only used if `clips` is a dict.
-                            Determines where to place clip name using ``vapoursynth.VideoNode.text.Text`` (Default: 7)
+                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7)
     """
 
     def __init__(self,
@@ -170,44 +170,44 @@ class Tile(Comparer):
 
     The arrangement of the clips can be specified with the `arrangement` parameter.
     Rows are specified as lists of ints inside of a larger list specifying the order of the rows.
-    Think of this as a 2-dimensional array of `0` or `1` with `0` representing an empty slot and `1` representing the
+    Think of this as a 2-dimensional array of 0s and 1s with `0` representing an empty slot and `1` representing the
     next clip in the sequence.
 
     If `arrangement` is not specified, the function will attempt to fill a square with dimensions `n x n`
-    where `n` is equivalent to ``math.ceil(math.sqrt(len(clips))``.::
+    where `n` is equivalent to ``math.ceil(math.sqrt(len(clips))``. The bottom rows will be dropped if empty. ::
 
-        For example, for 3 clips, the automatic arrangement becomes:
+        # For example, for 3 clips, the automatic arrangement becomes:
         [
          [1, 1],
          [1, 0]
-        ].
+        ]
 
-        For 7 clips, the automatic arrangement becomes:
+        # For 10 clips, the automatic arrangement becomes:
         [
-         [1, 1, 1],
-         [1, 1, 1],
-         [1, 0, 0]
-        ].
+         [1, 1, 1, 1],
+         [1, 1, 1, 1],
+         [1, 1, 0, 0]
+        ]
 
-        For custom arrangements, such as (for 4 clips):
+        # For custom arrangements, such as (for 4 clips):
         [
          [0, 1, 0, 1],
          [1],
          [0, 1]
-        ],
-        the rows will be auto-padded with `0` to be the same length.
+        ]
+        # the rows will be auto-padded with 0's to be the same length.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If specified a dict, the names will be overlayed on the clips using
-                            ``vapoursynth.VideoNode.text.Text``.
+                            If given a dict, the names will be overlayed on the clips using
+                            ``VideoNode.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
                             The order of the clips in either a dict or a sequence will be kept in the comparison.
-    :param arrangement:     2-dimension array (list of lists) of 0s and 1s representing a list of rows of clips(1)
-                            or blank spaces(0) (Default: None)
+    :param arrangement:     2-dimension array (list of lists) of 0s and 1s representing a list of rows of clips(`1`)
+                            or blank spaces(`0`) (Default: ``None``)
     :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
                             Only used if `clips` is a dict.
-                            Determines where to place clip name using ``vapoursynth.VideoNode.text.Text`` (Default: 7)
+                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7)
     """
 
     def __init__(self,
@@ -260,12 +260,13 @@ class Split(Stack):
     Split an unlimited amount of clips into one VideoNode with the same dimensions as the original clips.
     Handles odd-sized resolutions or resolutions that can't be evenly split by the amount of clips specified.
 
-    The remaining pixel width/height (clip.dimension % number_of_clips) will be always given to the last clip specified.
+    The remaining pixel width/height (``clip.dimension % number_of_clips``)
+    will be always given to the last clip specified.
     For example, five `104 x 200` clips will result in a `((20 x 200) * 4) + (24 x 200)` horiztonal stack of clips.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If specified a dict, the names will be overlayed on the clips using
-                            ``vapoursynth.VideoNode.text.Text``.
+                            If given a dict, the names will be overlayed on the clips using
+                            ``VideoNode.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
                             The order of the clips in either a dict or a sequence will be kept in the comparison.
@@ -273,7 +274,7 @@ class Split(Stack):
                             (Default: :py:attr:`lvsfunc.comparison.Direction.HORIZONTAL`)
     :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
                             Only used if `clips` is a dict.
-                            Determines where to place clip name using ``vapoursynth.VideoNode.text.Text`` (Default: 7)
+                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7)
     """
 
     def __init__(self,
@@ -542,7 +543,7 @@ def interleave(*clips: vs.VideoNode) -> vs.VideoNode:
 
     :param clips: Clips for comparison (order is kept)
 
-    :return: Returns an interleaved clip of all the clips specified
+    :return: Returns an interleaved clip of all the `clips` specified
     """
     return Interleave(clips).clip
 
@@ -552,11 +553,11 @@ def split(**clips: vs.VideoNode) -> vs.VideoNode:
     Small convenience funciton for splitting clips along the x-axis and then stacking (order is kept left to right).
     Accounts for odd-resolution clips by giving overflow columns to the last clip specified.
 
-    :param clips: Keyword arguments of name=clip for all clips in the comparison.
+    :param clips: Keyword arguments of `name=clip` for all clips in the comparison.
                   All clips must have the same dimensions (width and height).
                   Clips will be labeled at the bottom with their `name`.
     :return: A clip with the same dimensions as any one of the input clips
-             with all clips represented as individual vertical slices.
+             with all `clips` represented as individual vertical slices.
     """
     return Split(clips, label_alignment=2).clip
 
@@ -567,7 +568,7 @@ def stack_horizontal(*clips: vs.VideoNode) -> vs.VideoNode:
 
     :param clips: Clips for comparison (order is kept left to right)
 
-    :return: Returns a horizontal stack of the clips
+    :return: Returns a horizontal stack of the `clips`
     """
     return Stack(clips).clip
 
@@ -578,21 +579,21 @@ def stack_vertical(*clips: vs.VideoNode) -> vs.VideoNode:
 
     :param clips: Clips for comparison (order is kept top to bottom)
 
-    :return: Returns a vertical stack of the clips
+    :return: Returns a vertical stack of the `clips`
     """
     return Stack(clips, direction=Direction.VERTICAL).clip
 
 
 def tile(**clips: vs.VideoNode) -> vs.VideoNode:
     """
-    Small convenience function for tiling clips in a square pattern.
+    Small convenience function for tiling clips in a rectangular pattern.
 
-    :param clips: Keyword arguments of name=clip for all clips in the comparison.
+    :param clips: Keyword arguments of `name=clip` for all clips in the comparison.
                   All clips must have the same dimensions (width and height).
                   Clips will be labeled with their `name`.
                   If 3 clips are given, a 2x2 square with one blank slot will be returned.
-                  If 5 clips are given, a 3x3 square with four blank slots will be returned.
+                  If 7 clips are given, a 3x3 square with two blank slots will be returned.
 
-    :return: A clip with all input clips automatically tiled most optimally into a square arrrangement.
+    :return: A clip with all input `clips` automatically tiled most optimally into a rectangular arrrangement.
     """
     return Tile(clips).clip
