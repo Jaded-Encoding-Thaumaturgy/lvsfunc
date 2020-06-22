@@ -475,8 +475,8 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
     Useful for making comparisons between TV and BD encodes, as well as clean and hardsubbed sources.
 
     There are two methods used here to find differences.
-    If thr is below 1, PlaneStatsDiff is used to figure out the differences.
-    Else, if thr is equal than or higher than 1, PlaneStatsMin/Max are used.
+    If `thr` is below 1, PlaneStatsDiff is used to figure out the differences.
+    Else, if `thr` is equal than or higher than 1, PlaneStatsMin/Max are used.
 
     Recommended is PlaneStatsMin/Max, as those seem to catch
     more outrageous differences more easily and not return
@@ -493,8 +493,8 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
                           Value must be below 128 (Default: 72)
     :param height:        Height in px to downscale clips to if `return_array` is ``False``
                           (MakeDiff clip will be twice this resolution) (Default: 288)
-    :param return_array:  Return frames as an interleaved comparison (using py:class:`lvsfunc.comparison.Interleave`)
-                          (Default: False)
+    :param return_array:  Return frames as an interleaved comparison (using :py:class:`lvsfunc.comparison.Interleave`)
+                          (Default: ``False``)
     """
     if thr >= 128:
         raise ValueError("tvbd_diff: `thr` must be below 128")
