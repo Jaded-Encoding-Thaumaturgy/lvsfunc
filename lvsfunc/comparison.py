@@ -8,7 +8,7 @@ import warnings
 from abc import ABC, abstractmethod
 from enum import IntEnum
 from itertools import zip_longest
-from typing import Any, Dict, List, Optional, Sequence, Set, Union
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Set, Tuple, TypeVar, Union
 
 import vapoursynth as vs
 import vsutil
@@ -16,6 +16,8 @@ import vsutil
 from .util import get_prop
 
 core = vs.core
+
+T = TypeVar('T')
 
 
 class Direction(IntEnum):
@@ -247,12 +249,12 @@ class Tile(Comparer):
         return core.std.StackVertical(rows)
 
     def _auto_arrangement(self) -> List[List[int]]:
-        def _grouper(iterable, n, fillvalue=None):  # type: ignore
+        def _grouper(iterable: Iterable[T], n: int, fillvalue: Optional[T] = None) -> Iterator[Tuple[T, ...]]:
             args = [iter(iterable)] * n
             return zip_longest(*args, fillvalue=fillvalue)
 
         dimension = 1 + math.isqrt(self.num_clips - 1)
-        return list(map(list, _grouper([1] * self.num_clips, dimension, 0)))
+        return list(map(lambda x: list(x), _grouper([1] * self.num_clips, dimension, 0)))
 
 
 class Split(Stack):
