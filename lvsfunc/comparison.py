@@ -254,7 +254,7 @@ class Tile(Comparer):
             return zip_longest(*args, fillvalue=fillvalue)
 
         dimension = 1 + math.isqrt(self.num_clips - 1)
-        return list(map(lambda x: list(x), _grouper([1] * self.num_clips, dimension, 0)))
+        return [list(x) for x in _grouper([1] * self.num_clips, dimension, 0)]
 
 
 class Split(Stack):
