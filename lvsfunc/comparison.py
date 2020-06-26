@@ -542,64 +542,83 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
         return Stack((tvbd_stack, diff), direction=Direction.VERTICAL).clip
 
 
-def interleave(*clips: vs.VideoNode) -> vs.VideoNode:
+def interleave(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     """
     Small convenience function for interleaving clips.
 
-    :param clips: Clips for comparison (order is kept)
+    :param clips:      Clips for comparison (order is kept)
+    :param namedclips: Keyword arguments of `name=clip` for all clips in the comparison.
+                       Clips will be labeled at the top left with their `name`.
 
-    :return: An interleaved clip of all the `clips` specified
+    :return: An interleaved clip of all the `clips`/`namedclips` specified
     """
-    return Interleave(clips).clip
+    if clips and namedclips:
+        raise ValueError("interleave: positional clips and named keyword clips cannot both be given")
+    return Interleave(clips if clips else namedclips).clip
 
 
-def split(**clips: vs.VideoNode) -> vs.VideoNode:
+def split(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     """
-    Small convenience funciton for splitting clips along the x-axis and then stacking (order is kept left to right).
+    Small convenience funciton for splitting clips along the x-axis and then stacking.
     Accounts for odd-resolution clips by giving overflow columns to the last clip specified.
+    All clips must have the same dimensions (width and height).
 
-    :param clips: Keyword arguments of `name=clip` for all clips in the comparison.
-                  All clips must have the same dimensions (width and height).
-                  Clips will be labeled at the bottom with their `name`.
+    :param clips:      Clips for comparison (order is kept left to right)
+    :param namedclips: Keyword arguments of `name=clip` for all clips in the comparison.
+                       Clips will be labeled at the bottom with their `name`.
 
     :return: A clip with the same dimensions as any one of the input clips
-             with all `clips` represented as individual vertical slices.
+             with all `clips`/`namedclips` represented as individual vertical slices.
     """
-    return Split(clips, label_alignment=2).clip
+    if clips and namedclips:
+        raise ValueError("split: positional clips and named keyword clips cannot both be given")
+    return Split(clips if clips else namedclips, label_alignment=2).clip
 
 
-def stack_horizontal(*clips: vs.VideoNode) -> vs.VideoNode:
+def stack_horizontal(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     """
     Small convenience function for stacking clips horizontally.
 
-    :param clips: Clips for comparison (order is kept left to right)
+    :param clips:      Clips for comparison (order is kept left to right)
+    :param namedclips: Keyword arguments of `name=clip` for all clips in the comparison.
+                       Clips will be labeled at the top left with their `name`.
 
-    :return: A horizontal stack of the `clips`
+    :return: A horizontal stack of the `clips`/`namedclips`
     """
-    return Stack(clips).clip
+    if clips and namedclips:
+        raise ValueError("stack_horizontal: positional clips and named keyword clips cannot both be given")
+    return Stack(clips if clips else namedclips).clip
 
 
-def stack_vertical(*clips: vs.VideoNode) -> vs.VideoNode:
+def stack_vertical(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     """
     Small convenience function for stacking clips vertically.
 
-    :param clips: Clips for comparison (order is kept top to bottom)
+    :param clips:      Clips for comparison (order is kept top to bottom)
+    :param namedclips: Keyword arguments of `name=clip` for all clips in the comparison.
+                       Clips will be labeled at the top left with their `name`.
 
-    :return: A vertical stack of the `clips`
+    :return: A vertical stack of the `clips`/`namedclips`
     """
-    return Stack(clips, direction=Direction.VERTICAL).clip
+    if clips and namedclips:
+        raise ValueError("stack_vertical: positional clips and named keyword clips cannot both be given")
+    return Stack(clips if clips else namedclips, direction=Direction.VERTICAL).clip
 
 
-def tile(**clips: vs.VideoNode) -> vs.VideoNode:
+def tile(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     """
     Small convenience function for tiling clips in a rectangular pattern.
+    All clips must have the same dimensions (width and height).
+    If 3 clips are given, a 2x2 square with one blank slot will be returned.
+    If 6 clips are given, a 3x2 rectangle will be returned.
 
-    :param clips: Keyword arguments of `name=clip` for all clips in the comparison.
-                  All clips must have the same dimensions (width and height).
-                  Clips will be labeled with their `name`.
-                  If 3 clips are given, a 2x2 square with one blank slot will be returned.
-                  If 7 clips are given, a 3x3 square with two blank slots will be returned.
+    :param clips:      Clips for comparison
+    :param namedclips: Keyword arguments of `name=clip` for all clips in the comparison.
+                       Clips will be labeled at the top left with their `name`.
 
-    :return: A clip with all input `clips` automatically tiled most optimally into a rectangular arrrangement
+    :return: A clip with all input `clips`/`namedclips` automatically tiled most optimally
+             into a rectangular arrrangement
     """
-    return Tile(clips).clip
+    if clips and namedclips:
+        raise ValueError("tile: positional clips and named keyword clips cannot both be given")
+    return Tile(clips if clips else namedclips).clip
