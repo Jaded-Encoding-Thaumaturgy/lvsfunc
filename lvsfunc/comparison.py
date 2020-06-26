@@ -416,13 +416,13 @@ def stack_compare(*clips: vs.VideoNode,
     if len(clips) != 2:
         raise ValueError("stack_compare: `make_diff` only works for exactly 2 clips")
 
-    clipa, clipb = clips[0:2]
+    clipa, clipb = clips
     scaled_width = vsutil.get_w(height, only_even=False)
 
     diff = core.std.MakeDiff(clipa=clipa, clipb=clipb)
     diff = diff.resize.Spline36(width=scaled_width * 2, height=height * 2).text.FrameNum(8)
-    resized = [clips[0].resize.Spline36(width=scaled_width, height=height).text.Text('Clip A', 3),
-               clips[1].resize.Spline36(width=scaled_width, height=height).text.Text('Clip B', 1)]
+    resized = [clipa.resize.Spline36(width=scaled_width, height=height).text.Text('Clip A', 3),
+               clipb.resize.Spline36(width=scaled_width, height=height).text.Text('Clip B', 1)]
 
     return Stack([Stack(resized).clip, diff], direction=Direction.VERTICAL).clip
 
