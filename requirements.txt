@@ -1,3 +1,3 @@
 VapourSynth>=49
-vsutil@https://github.com/Irrational-Encoding-Wizardry/vsutil/archive/afc1870a213d02e308fed168ef4021e238a992e3.zip#sha1=0703f1c14fde2f2cc7736eec10d7ebf276e1d78f
+vsutil>=0.4.0
 toolz>=0.9.0.1
