@@ -138,7 +138,7 @@ def upscaled_sraa(clip: vs.VideoNode,
                   rfactor: float = 1.5,
                   rep: Optional[int] = None,
                   width: Optional[int] = None, height: Optional[int] = None,
-                  downscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode]
+                  downscaler: Optional[Callable[[vs.VideoNode, int, int], vs.VideoNode]]
                   = core.resize.Spline36,
                   **eedi3_args: Any) -> vs.VideoNode:
     """
@@ -159,6 +159,7 @@ def upscaled_sraa(clip: vs.VideoNode,
     :param width:           Target resolution width. If None, determine from `height`
     :param height:          Target resolution height (Default: ``clip.height``)
     :param downscaler:      Resizer used to downscale the AA'd clip
+                            If `None` is passed, the clip will not be downscaled
     :param kwargs:          Arguments passed to znedi3 (Default: alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
 
     :return:                Antialiased and optionally rescaled clip
@@ -205,7 +206,10 @@ def upscaled_sraa(clip: vs.VideoNode,
     aa_y = core.eedi3m.EEDI3(aa_y, 0, 0, 0, sclip=core.nnedi3.nnedi3(aa_y, 0, 0, 0, **nnargs), **eeargs)
 
     # Back to source clip height or given height
-    scaled = downscaler(aa_y, width, height)
+    if downscaler is None:
+        scaled = aa_y
+    else:
+        scaled = downscaler(aa_y, width, height)
 
     if rep:
         scaled = util.pick_repair(scaled)(scaled, luma.resize.Bicubic(width, height), mode=rep)
