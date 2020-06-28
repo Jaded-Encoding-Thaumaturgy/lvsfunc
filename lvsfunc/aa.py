@@ -142,9 +142,14 @@ def upscaled_sraa(clip: vs.VideoNode,
                   = kernels.Spline36().scale,
                   **eedi3_args: Any) -> vs.VideoNode:
     """
-    A function that performs an upscaled single-rate AA to deal with heavy aliasing and broken-up lineart.
+    A function that performs a supersampled single-rate AA to deal with heavy aliasing and broken-up lineart.
     Useful for Web rips, where the source quality is not good enough to descale,
     but you still want to deal with some bad aliasing and lineart.
+
+    It works by supersampling the clip, performing AA, and then downscaling again.
+    Downscaling can be disabled by setting `downscaler` to `None`, returning the supersampled luma clip.
+    The dimensions of the downscaled clip can also be adjusted by setting `height` or `width`.
+    Setting either `height` or `width` will also scale the chroma accordingly.
 
     Original function written by Zastin, heavily modified by LightArrowsEXE.
 
@@ -156,12 +161,9 @@ def upscaled_sraa(clip: vs.VideoNode,
     :param rfactor:         Image enlargement factor. 1.3..2 makes it comparable in strength to vsTAAmbk
                             It is not recommended to go below 1.3 (Default: 1.5)
     :param rep:             Repair mode (Default: None)
-    :param width:           Target resolution width. If None, determine from `height`
-                            If `width` is given, chroma will also be scaled accordingly
+    :param width:           Target resolution width. If None, determined from `height`
     :param height:          Target resolution height (Default: ``clip.height``)
-                            If `height` is given, chroma will also be scaled accordingly
     :param downscaler:      Resizer used to downscale the AA'd clip
-                            If `None` is passed, the clip will not be downscaled and only the luma will be returned
     :param kwargs:          Arguments passed to znedi3 (Default: alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
 
     :return:                Antialiased and optionally rescaled clip
