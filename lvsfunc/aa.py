@@ -217,17 +217,14 @@ def upscaled_sraa(clip: vs.VideoNode,
     if rep:
         scaled = util.pick_repair(scaled)(scaled, luma.resize.Bicubic(width, height), mode=rep)
 
-    if clip.format.num_planes == 1:
+    if clip.format.num_planes == 1 or downscaler is None:
         return scaled
-    elif height is not None or downscaler is None:
-        if downscaler is None and height is clip.height and width is clip.width:
-            pass  # Avoid an unnecessary resizing pass
-        else:
-            if height % 2:
-                raise ValueError("upscaled_sraa: '\"height\" must be an even number when not passing a GRAY clip'")
-            if width % 2:
-                raise ValueError("upscaled_sraa: '\"width\" must be an even number when not passing a GRAY clip'")
+    if height is not clip.height or width is not clip.width:
+        if height % 2:
+            raise ValueError("upscaled_sraa: '\"height\" must be an even number when not passing a GRAY clip'")
+        if width % 2:
+            raise ValueError("upscaled_sraa: '\"width\" must be an even number when not passing a GRAY clip'")
 
-            chr = kernels.Bicubic().scale(clip, width, height)
-            return join([scaled, plane(chr, 1), plane(chr, 2)])
+        chr = kernels.Bicubic().scale(clip, width, height)
+        return join([scaled, plane(chr, 1), plane(chr, 2)])
     return join([scaled, plane(clip, 1), plane(clip, 2)])
