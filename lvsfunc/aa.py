@@ -157,9 +157,12 @@ def upscaled_sraa(clip: vs.VideoNode,
                             It is not recommended to go below 1.3 (Default: 1.5)
     :param rep:             Repair mode (Default: None)
     :param width:           Target resolution width. If None, determine from `height`
+                            If `width` is given, chroma will also be scaled accordingly
     :param height:          Target resolution height (Default: ``clip.height``)
+                            If `height` is given, chroma will also be scaled accordingly
     :param downscaler:      Resizer used to downscale the AA'd clip
                             If `None` is passed, the clip will not be downscaled
+                            If `width` is given, chroma will also be scaled accordingly
     :param kwargs:          Arguments passed to znedi3 (Default: alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
 
     :return:                Antialiased and optionally rescaled clip
@@ -216,7 +219,15 @@ def upscaled_sraa(clip: vs.VideoNode,
 
     if clip.format.num_planes == 1:
         return scaled
-    elif width is not None or height is not None or downscaler is not None:
-        chr = kernels.Bicubic().scale(clip, width, height)
-        return join([scaled, plane(chr, 1), plane(chr, 2)])
+    elif width is not None or height is not None or downscaler is None:
+        if downscaler is None and height is clip.height and width is clip.width:
+            pass  # Avoid an unnecessary resizing pass
+        else:
+            if height % 2:
+                raise ValueError("upscaled_sraa: '\"height\" must be an even number when not passing a GRAY clip'")
+            if width % 2:
+                raise ValueError("upscaled_sraa: '\"width\" must be an even number when not passing a GRAY clip'")
+
+            chr = kernels.Bicubic().scale(clip, width, height)
+            return join([scaled, plane(chr, 1), plane(chr, 2)])
     return join([scaled, plane(clip, 1), plane(clip, 2)])
