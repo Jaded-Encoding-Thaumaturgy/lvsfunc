@@ -162,7 +162,7 @@ def upscaled_sraa(clip: vs.VideoNode,
                             If `height` is given, chroma will also be scaled accordingly
     :param downscaler:      Resizer used to downscale the AA'd clip
                             If `None` is passed, the clip will not be downscaled
-                            If `width` is given, chroma will also be scaled accordingly
+                            If `downscaler` is given, chroma will also be scaled accordingly
     :param kwargs:          Arguments passed to znedi3 (Default: alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
 
     :return:                Antialiased and optionally rescaled clip
@@ -219,7 +219,7 @@ def upscaled_sraa(clip: vs.VideoNode,
 
     if clip.format.num_planes == 1:
         return scaled
-    elif width is not None or height is not None or downscaler is None:
+    elif height is not None or downscaler is None:
         if downscaler is None and height is clip.height and width is clip.width:
             pass  # Avoid an unnecessary resizing pass
         else:
