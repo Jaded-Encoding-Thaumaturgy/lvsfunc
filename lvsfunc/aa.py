@@ -214,6 +214,6 @@ def upscaled_sraa(clip: vs.VideoNode,
     if rep:
         scaled = util.pick_repair(scaled)(scaled, luma.resize.Bicubic(width, height), mode=rep)
 
-    if clip.format.num_planes == 1:
+    if clip.format.num_planes == 1 or downscaler is None:
         return scaled
     return join([scaled, plane(clip, 1), plane(clip, 2)])
