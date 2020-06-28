@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, Optional
 import vapoursynth as vs
 from vsutil import get_w, get_y, join, plane
 
-from . import util
+from . import kernels, util
 
 core = vs.core
 
@@ -139,7 +139,7 @@ def upscaled_sraa(clip: vs.VideoNode,
                   rep: Optional[int] = None,
                   width: Optional[int] = None, height: Optional[int] = None,
                   downscaler: Optional[Callable[[vs.VideoNode, int, int], vs.VideoNode]]
-                  = core.resize.Spline36,
+                  = kernels.Spline36().scale,
                   **eedi3_args: Any) -> vs.VideoNode:
     """
     A function that performs an upscaled single-rate AA to deal with heavy aliasing and broken-up lineart.
@@ -214,6 +214,9 @@ def upscaled_sraa(clip: vs.VideoNode,
     if rep:
         scaled = util.pick_repair(scaled)(scaled, luma.resize.Bicubic(width, height), mode=rep)
 
-    if clip.format.num_planes == 1 or downscaler is None:
+    if clip.format.num_planes == 1:
         return scaled
+    elif width is not None or height is not None or downscaler is not None:
+        chr = kernels.Bicubic().scale(clip, width, height)
+        return join([scaled, plane(chr, 1), plane(chr, 2)])
     return join([scaled, plane(clip, 1), plane(clip, 2)])
