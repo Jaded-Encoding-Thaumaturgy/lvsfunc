@@ -191,7 +191,7 @@ def descale(clip: vs.VideoNode,
     :param threshold:               Error threshold for conditional descaling (Default: 0.0, always descale)
     :param mask:                    Function used to mask detail. If ``None``, no masking.
                                     Function must accept a clip and a reupscaled clip and return a mask.
-                                    (Default: :py:func:`lvsfunc.scale.detail_mask`)
+                                    (Default: :py:func:`lvsfunc.scale.descale_detail_mask`)
     :param src_left:                Horizontal shifting for fractional resolutions (Default: 0.0)
     :param src_top:                 Vertical shifting for fractional resolutions (Default: 0.0)
     :param show_mask:               Return detail mask
