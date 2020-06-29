@@ -19,7 +19,9 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
     """
     A function that clamps eedi3 to nnedi3 for the purpose of reducing eedi3 artifacts.
     This should fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
+
     Original function written by Zastin, modified by LightArrowsEXE.
+
     Dependencies:
     * kagefunc (optional: retinex edgemask)
     * vapoursynth-retinex (optional: retinex edgemask)
@@ -27,8 +29,10 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
     * vapoursynth-eedi3
     * vapoursynth-nnedi3
     * vapoursynth-nnedi3cl (optional: opencl)
+
     :param clip:                Input clip
-    :param strength:            Set threshold strength (Default: 1)
+    :param strength:            Set threshold strength for over/underflow value for clamping eedi3's result
+                                to nnedi3 +/- strength * 256 scaled to 8 bit (Default: 1)
     :param mask:                Clip to use for custom mask (Default: None)
     :param ret_mask:            Replace default mask with a retinex edgemask (Default: False)
     :param mthr:                Binarize threshold for the mask, scaled to float (Default: 0.25)
@@ -36,6 +40,7 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
     :param opencl:              OpenCL acceleration (Default: False)
     :param nnedi3cl:            OpenCL acceleration for nnedi3 (Default: False)
     :param eedi3cl:             OpenCL acceleration for eedi3 (Default: False)
+
     :return:                    Antialiased clip
     """
 
