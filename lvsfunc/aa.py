@@ -64,7 +64,7 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
             ret = depth(clip_y, min(16, bits))
             ret = core.retinex.MSRCP(ret, sigma=[50, 200, 350], upper_thr=0.005)
             ret = depth(ret, bits)
-            tcanny = core.tcanny.TCanny(ret, mode=1, sigma=1)
+            tcanny = core.tcanny.TCanny(ret, mode=1, sigma=[1.0])
             tcanny = core.std.Minimum(tcanny, coordinates=[1, 0, 1, 0, 0, 1, 0, 1])
             # no clamping needed when binarizing
             mask = core.std.Expr([mask, tcanny], 'x y +')
@@ -91,7 +91,9 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
         strong = core.eedi3m.EEDI3(strong, 0, True, mclip=mask, **eedi3_args)
         strong = core.resize.Spline36(strong, height=clip.height, src_top=0.5)
 
-    nnedi3 = core.nnedi3cl.NNEDI3CL if nnedi3cl else core.nnedi3.nnedi3
+    nnedi3: Callable[..., vs.VideoNode] = core.nnedi3.nnedi3
+    if nnedi3cl:
+        nnedi3 = core.nnedi3cl.NNEDI3CL
 
     weak = nnedi3(clip_tra, 0, True, **nnedi3_args)
     weak = core.resize.Spline36(weak, height=clip.width, src_top=0.5)
