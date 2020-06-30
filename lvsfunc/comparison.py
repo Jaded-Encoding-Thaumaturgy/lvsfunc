@@ -386,8 +386,8 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
             raise ValueError("compare: 'The format of both clips must be equal'")
 
     if print_frame:
-        clip_a = clip_a.text.Text("Clip A", alignment=9).text.FrameNum()
-        clip_b = clip_b.text.Text("Clip B", alignment=9).text.FrameNum()
+        clip_a = clip_a.text.Text("Clip A").text.FrameNum(alignment=9)
+        clip_b = clip_b.text.Text("Clip B").text.FrameNum(alignment=9)
 
     if frames is None:
         if not rand_total:
