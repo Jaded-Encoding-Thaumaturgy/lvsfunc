@@ -61,7 +61,8 @@ def decomb(clip: vs.VideoNode,
            decimate: bool = True,
            vinv: bool = False,
            sharpen: bool = False, dir: str = 'v',
-           rep: Optional[int] = None) -> vs.VideoNode:
+           rep: Optional[int] = None,
+           show_mask: bool = False) -> vs.VideoNode:
     """
     Does some aggressive filtering to get rid of the combing on a interlaced/telecined source.
     You can also allow it to decimate the clip, or keep it disabled if you wish to handle the decimating yourself.
@@ -80,6 +81,7 @@ def decomb(clip: vs.VideoNode,
     :param sharpen:       Unsharpen after deinterlacing (Default: False)
     :param dir:           Directional vector. 'v' = Vertical, 'h' = Horizontal (Default: v)
     :param rep:           Repair mode for repairing the decombed clip using the original clip (Default: None)
+    :param show_mask:     Return combmask
 
     :return:              Decombed clip
     """
@@ -99,6 +101,9 @@ def decomb(clip: vs.VideoNode,
     combmask = core.std.Maximum(combmask, threshold=250).std.Maximum(threshold=250) \
         .std.Maximum(threshold=250).std.Maximum(threshold=250)
     combmask = core.std.BoxBlur(combmask, hradius=2, vradius=2)
+
+    if show_mask:
+        return combmask
 
     qtgmc = QTGMC(clip, TFF=TFF, SourceMatch=3, Lossless=2, TR0=1, TR1=2, TR2=3, FPSDivisor=2)
     qtgmc_merged = core.std.MaskedMerge(clip, qtgmc, combmask, first_plane=True)
