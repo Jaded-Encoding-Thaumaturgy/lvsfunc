@@ -354,14 +354,25 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     :return:               Interleaved clip containing specified frames from `clip_a` and `clip_b`
     """
-    try:
-        from mvsfunc import GetMatrix
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("compare: missing dependency 'mvsfunc'")
+    def _GetMatrix(clip: vs.VideoNode) -> vs.VideoNode:
+        w, h = clip.width, clip.height
+        if w * h == 0:
+            frame = clip.get_frame(0)
+            w, h = frame.width, frame.height
+        if clip.format.color_family == vs.RGB:
+            return 0
+        if clip.format.color_family == vs.YCOCG:
+            return 8
+        if w <= 1024 and h <= 576:
+            return 5
+        if w <= 2048 and h <= 1536:
+            return 1
+        return 9
 
     def _resample(clip: vs.VideoNode) -> vs.VideoNode:
         # Resampling to 8 bit and RGB to properly display how it appears on your screen
-        return vsutil.depth(clip.resize.Point(format=vs.RGB24, matrix_in_s=str(GetMatrix(clip))), 8)
+        return core.resize.Point(clip, format=vs.RGB24, matrix_in=_GetMatrix(clip),
+                                 prefer_props=True, dither_type='error_diffusion')
 
     # Error handling
     if frames and len(frames) > clip_a.num_frames:
