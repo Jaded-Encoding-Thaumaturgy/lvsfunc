@@ -354,14 +354,13 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     :return:               Interleaved clip containing specified frames from `clip_a` and `clip_b`
     """
-    def _GetMatrix(clip: vs.VideoNode) -> vs.VideoNode:
-        w, h = clip.width, clip.height
-        if w * h == 0:
-            frame = clip.get_frame(0)
-            w, h = frame.width, frame.height
-        if clip.format.color_family == vs.RGB:
+    def _GetMatrix(clip: vs.VideoNode) -> int:
+        frame = clip.get_frame(0)
+        w, h = frame.width, frame.height
+
+        if frame.format.color_family == vs.RGB:
             return 0
-        if clip.format.color_family == vs.YCOCG:
+        if frame.format.color_family == vs.YCOCG:
             return 8
         if w <= 1024 and h <= 576:
             return 5
@@ -380,14 +379,15 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     if force_resample:
         clip_a, clip_b = _resample(clip_a), _resample(clip_b)
-    else:
+    elif mismatch is False:
         if clip_a.format is None or clip_b.format is None:
             raise ValueError("compare: 'Variable-format clips not supported'")
         if clip_a.format.id != clip_b.format.id:
             raise ValueError("compare: 'The format of both clips must be equal'")
 
     if print_frame:
-        clip_a, clip_b = clip_a.text.FrameNum(), clip_b.text.FrameNum()
+        clip_a = clip_a.text.Text("Clip A", alignment=9).text.FrameNum()
+        clip_b = clip_b.text.Text("Clip B", alignment=9).text.FrameNum()
 
     if frames is None:
         if not rand_total:
@@ -395,8 +395,8 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
             rand_total = int(clip_a.num_frames / 1000) if clip_a.num_frames > 5000 else int(clip_a.num_frames / 100)
         frames = sorted(random.sample(range(1, clip_a.num_frames - 1), rand_total))
 
-    frames_a = core.std.Splice([clip_a[f] for f in frames])
-    frames_b = core.std.Splice([clip_b[f] for f in frames])
+    frames_a = core.std.Splice([clip_a[f] for f in frames]).std.AssumeFPS(fpsnum=1, fpsden=1)
+    frames_b = core.std.Splice([clip_b[f] for f in frames]).std.AssumeFPS(fpsnum=1, fpsden=1)
     return core.std.Interleave([frames_a, frames_b], mismatch=mismatch)
 
 
