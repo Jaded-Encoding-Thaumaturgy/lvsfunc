@@ -484,16 +484,22 @@ def save(clips: Dict[str, vs.VideoNode],
     """
     Writes frames as RGB24 PNG files for comparison websites or local comparison.
 
-    :param clips:         Dictionary of name:clip for all clips you want to save frames from. Accepts YUV or RGB clips only.
+    Written by Dave <orangechannel@pm.me>.
+
+    :param clips:         Dictionary of `name:clip` for all clips you want to save frames from.
+                          Accepts YUV or RGB clips only.
                           Assumes all YUV-clips are limited range and all RGB-clips are full range.
     :param frames:        List of frame numbers to save from each clip.
-    :param random_number: Number of random frames to save from each clip (Default: 0)
-    :param folder:        Whether or not to save clips in named folders instead of prefixing the files with the clip names (Default: ``False``\ )
-    :param dither_type:   ``dither_type`` override for ``vsutil.depth`` for clips >8-bit (Default: ``None``\ )
-    :param zoom:          Zoom factor for image output. Useful for comparison websites
-                          as zooming with a browser is not reliable and might not use point/nearest-neighbor (Default: 1)
-    :param save_location: An optional folder path to save the images/sub-folders to (will normally save in the same folder
-                          as the script is ran in) (Default: ``None``\ )
+    :param random_number: Number of random frames to save from each clip.
+                          Will default to ``1`` if no `frames` are given (Default: ``0``)
+    :param folder:        Whether or not to save clips in named folders
+                          instead of prefixing the files with the clip names (Default: ``False``)
+    :param dither_type:   ``dither_type`` override for ``vsutil.depth`` for clips >8-bit (Default: ``None``)
+    :param zoom:          Zoom factor for image output.
+                          Useful for comparison websites as zooming with a browser is not reliable
+                          and might not use point/nearest-neighbor (Default: ``1``)
+    :param save_location: An optional folder path to save the images/sub-folders to
+                          (will normally save in the same folder as the script is ran in) (Default: ``None``)
     """
     @contextlib.contextmanager
     def _cd(newdir):
