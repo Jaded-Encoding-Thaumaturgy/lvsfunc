@@ -522,7 +522,7 @@ def save(clips: Dict[str, vs.VideoNode],
     widths = [clip.width for clip in clips.values()]
     heights = [clip.height for clip in clips.values()]
 
-    if 0 in (widths, heights):  # because of the zoom resize, input width/height can't be `0`
+    if 0 in widths or 0 in heights:  # because of the zoom resize, input width/height can't be `0`
         raise ValueError("save: variable-resolution clips not allowed")
     if None in [clip.format for clip in clips.values()]:
         raise ValueError("save: variable-format clips not allowed")
