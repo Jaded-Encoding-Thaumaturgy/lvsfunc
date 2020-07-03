@@ -516,19 +516,15 @@ def save(clips: Dict[str, vs.VideoNode],
     else:
         frames = list(set(frames))
         raise ValueError("save: variable-resolution clips not allowed")
-    if None in (clip.format for clip in clips.values()):
+    if None in [clip.format for clip in clips.values()]:
         raise ValueError("save: variable-format clips not allowed")
 
     if save_location is not None:
         if (save_location := pathlib.Path(save_location)).exists():
             os.chdir(save_location)
 
-    if len(clips) > 1:
-        if len(set(clip.height for clip in clips.values())) > 1 or len(set(clip.width for clip in clips.values())) > 1:
-            raise ValueError("save: all clips must have same dimensions")
-
-    max_frame = min(clip.num_frames for clip in clips.values()) - 1
-    if not all(f < max_frame for f in frames):
+    max_frame = min([clip.num_frames for clip in clips.values()]) - 1
+    if not all(f <= max_frame for f in frames):
         raise ValueError("save: specified frame numbers out of range on one or more clips")
     if len(frames) == 0 and random_number == 0:
         random_number = 1
@@ -547,58 +543,49 @@ def save(clips: Dict[str, vs.VideoNode],
             frames += random_frame_numbers
 
     for name, clip in clips.items():
+        subsampled = get_subsampling(clip) not in ('444', None)
+        if subsampled:
+            assert clip.format is not None
+            clip = clip.resize.Bicubic(filter_param_a_uv=1/3,
+                                       filter_param_b_uv=1/3,
+                                       format=clip.format.replace(subsampling_w=0, subsampling_h=0).id,
+                                       )
+
+        assert clip.format is not None
         range_in = Range.LIMITED if clip.format.color_family == vs.ColorFamily.YUV else Range.FULL
         clips[name] = depth(clip, 8, range_in=range_in, dither_type=dither_type)
-        if (subsampling := get_subsampling(clips[name])) and subsampling not in ('444', None):
-            clips[name] = clips[name].resize.Bicubic(filter_param_a_uv=1/3,
-                                                     filter_param_b_uv=1/3,
-                                                     format=clip.format.replace(subsampling_w=0, subsampling_h=0)
-                                                     )
+
+    def _get_matrix_s(clip: vs.VideoNode) -> str:
+        assert clip.format is not None
+        if clip.format.color_family == vs.ColorFamily.YUV:
+            return '709'
+        elif clip.format.color_family == vs.ColorFamily.RGB:
+            return 'rgb'
+        else:
+            raise ValueError("save: expected a YUV or RGB clip")
+
+    def _to_rgb(clip: vs.VideoNode, f: int) -> vs.VideoNode:
+        return clip[f].resize.Point(width=zoom * clip.width,
+                                    height=zoom * clip.height,
+                                    format=vs.RGB24,
+                                    range=Range.FULL,
+                                    matrix_in_s=_get_matrix_s(clip),
+                                    dither_type=Dither.ERROR_DIFFUSION,
+                                    prefer_props=True,
+                                    )
 
     if folder:
         for name, clip in clips.items():
-            if clip.format.color_family == vs.ColorFamily.YUV:
-                matrix_in_s = '709'
-            elif clip.format.color_family == vs.ColorFamily.RGB:
-                matrix_in_s = 'rgb'
-            else:
-                raise ValueError("save: expected a YUV or RGB clip")
             os.makedirs(name, exist_ok=True)
             with _cd(name):
                 for f in frames:
-                    out = core.imwri.Write(clip[f].resize.Point(width=(zoom * clip.width),
-                                                                height=(zoom * clip.height),
-                                                                format=vs.RGB24,
-                                                                range=Range.FULL,
-                                                                matrix_in_s=matrix_in_s,
-                                                                dither_type=Dither.ERROR_DIFFUSION.value,
-                                                                prefer_props=True
-                                                                ),
-                                           'PNG',
-                                           '%06d.png',
-                                           firstnum=f
-                                           )
+                    out = core.imwri.Write(_to_rgb(clip, f), 'PNG', '%06d.png', firstnum=f)
                     out.get_frame(0)
     else:
         for name, clip in clips.items():
-            if clip.format.color_family == vs.ColorFamily.YUV:
-                matrix_in_s = '709'
-            elif clip.format.color_family == vs.ColorFamily.RGB:
-                matrix_in_s = 'rgb'
-            else:
-                raise ValueError("save: expected a YUV or RGB clip")
             for f in frames:
-                out = core.imwri.Write(clip[f].resize.Point(width=(zoom * clip.width),
-                                                            height=(zoom * clip.height),
-                                                            format=vs.RGB24,
-                                                            range=Range.FULL,
-                                                            matrix_in_s=matrix_in_s,
-                                                            dither_type=Dither.ERROR_DIFFUSION.value,
-                                                            prefer_props=True),
-                                       'PNG',
-                                       f'{name}%06d.png',  # this syntax is picked up by https://slow.pics/ for easy drag-n-drop
-                                       firstnum=f
-                                       )
+                # this syntax is picked up by https://slow.pics/ for easy drag-n-drop
+                out = core.imwri.Write(_to_rgb(clip, f), 'PNG', f'{name}%06d.png', firstnum=f)
                 out.get_frame(0)
 
 
