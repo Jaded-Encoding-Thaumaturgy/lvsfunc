@@ -503,7 +503,7 @@ def save(clips: Dict[str, vs.VideoNode],
                           (will normally save in the same folder as the script is ran in) (Default: ``None``)
     """
     @contextlib.contextmanager
-    def _cd(newdir):
+    def _cd(newdir: Union[str, pathlib.Path]) -> None:
         prevdir = os.getcwd()
         os.chdir(os.path.expanduser(newdir))
         try:
