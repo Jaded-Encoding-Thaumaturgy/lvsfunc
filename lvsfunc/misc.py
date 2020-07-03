@@ -6,6 +6,7 @@ import contextlib
 import os
 import pathlib
 import random
+import warnings
 from functools import partial, wraps
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union, cast
 
@@ -515,13 +516,17 @@ def save(clips: Dict[str, vs.VideoNode],
         frames = []
     else:
         frames = list(set(frames))
+
+    widths = [clip.width for clip in clips.values()]
+    heights = [clip.height for clip in clips.values()]
+
+    if 0 in (widths, heights):  # because of the zoom resize, input width/height can't be `0`
         raise ValueError("save: variable-resolution clips not allowed")
     if None in [clip.format for clip in clips.values()]:
         raise ValueError("save: variable-format clips not allowed")
 
-    if save_location is not None:
-        if (save_location := pathlib.Path(save_location)).exists():
-            os.chdir(save_location)
+    if len(set(widths)) > 1 or len(set(heights)) > 1:
+        warnings.warn("save: all clips should have same dimensions for a comparison")
 
     max_frame = min([clip.num_frames for clip in clips.values()]) - 1
     if not all(f <= max_frame for f in frames):
