@@ -533,15 +533,17 @@ def save(clips: Dict[str, vs.VideoNode],
     if len(frames) == 0 and random_number == 0:
         random_number = 1
 
-    if random_number := abs(random_number):
-        if random_number == 1:
-            while (rand_frame_no := random.randint(0, max_frame)) in frames:  # prevents adding the same random frame number as one specified in `frames`
-                pass
-            frames.append(rand_frame_no)
+    if random_number:
+        if len(frames) == max_frame + 1:
+            pass  # every frame possible is already in the `frames` list
         else:
-            random_frame_numbers = random.sample(range(max_frame), random_number)
-            while not all(i not in frames for i in random_frame_numbers):
-                random_frame_numbers = random.sample(range(max_frame), random_number)
+            # makes sure not to generate more random frame numbers than currently missing in `frames`
+            random_number = min([random_number, (max_frame + 1) - len(frames)])
+
+            random_frame_numbers = random.sample(range(max_frame + 1), random_number)
+            while any(f in frames for f in random_frame_numbers):
+                random_frame_numbers = random.sample(range(max_frame + 1), random_number)
+
             frames += random_frame_numbers
 
     for name, clip in clips.items():
