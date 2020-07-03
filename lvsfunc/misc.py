@@ -474,12 +474,12 @@ def colored_clips(amount: int,
 
 
 def save(clips: Dict[str, vs.VideoNode],
-         frames: List[int],
+         frames: Optional[List[int]] = None,
          random_number: int = 0,
-         folder: bool = False,
-         dither_type: Optional[Union[str, Dither]] = None,
          zoom: int = 1,
-         save_location: Optional[Union[str, pathlib.Path]] = None
+         dither_type: Optional[Union[str, Dither]] = None,
+         folder: bool = False,
+         save_location: Optional[Union[str, pathlib.Path]] = None,
          ) -> None:
     """
     Writes frames as RGB24 PNG files for comparison websites or local comparison.
@@ -505,6 +505,10 @@ def save(clips: Dict[str, vs.VideoNode],
             os.chdir(prevdir)
 
     if 0 in (clip.height for clip in clips.values()) or 0 in (clip.width for clip in clips.values()):
+    if frames is None:
+        frames = []
+    else:
+        frames = list(set(frames))
         raise ValueError("save: variable-resolution clips not allowed")
     if None in (clip.format for clip in clips.values()):
         raise ValueError("save: variable-format clips not allowed")
