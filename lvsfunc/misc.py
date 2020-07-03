@@ -581,7 +581,7 @@ def save(clips: Dict[str, vs.VideoNode],
                                     format=vs.RGB24,
                                     range=Range.FULL,
                                     matrix_in_s=_get_matrix_s(clip),
-                                    dither_type=Dither.ERROR_DIFFUSION,
+                                    dither_type=Dither.ERROR_DIFFUSION.value,
                                     prefer_props=True,
                                     )
 
