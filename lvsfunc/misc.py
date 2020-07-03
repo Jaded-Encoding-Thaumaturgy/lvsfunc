@@ -511,7 +511,9 @@ def save(clips: Dict[str, vs.VideoNode],
         finally:
             os.chdir(prevdir)
 
-    if 0 in (clip.height for clip in clips.values()) or 0 in (clip.width for clip in clips.values()):
+    should_cd_back = False
+    cwdir = os.getcwd()
+
     if frames is None:
         frames = []
     else:
@@ -546,6 +548,10 @@ def save(clips: Dict[str, vs.VideoNode],
                 random_frame_numbers = random.sample(range(max_frame + 1), random_number)
 
             frames += random_frame_numbers
+
+    if save_location and os.path.isdir(save_location):
+        should_cd_back = True
+        os.chdir(save_location)
 
     for name, clip in clips.items():
         subsampled = get_subsampling(clip) not in ('444', None)
@@ -592,6 +598,9 @@ def save(clips: Dict[str, vs.VideoNode],
                 # this syntax is picked up by https://slow.pics/ for easy drag-n-drop
                 out = core.imwri.Write(_to_rgb(clip, f), 'PNG', f'{name}%06d.png', firstnum=f)
                 out.get_frame(0)
+
+    if should_cd_back:
+        os.chdir(cwdir)
 
 
 # TODO: Write function that only masks px of a certain color/threshold of colors.
