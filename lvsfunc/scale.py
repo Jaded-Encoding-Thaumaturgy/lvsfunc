@@ -317,7 +317,7 @@ def test_descale(clip: vs.VideoNode,
     clip_y = depth(get_y(clip), 32)
 
     descale = _perform_descale(Resolution(width, height), clip_y, kernel)
-    rescaled = core.std.PlaneStats(descale.rescaled, clip_y)
+    rescaled = depth(core.std.PlaneStats(descale.rescaled, clip_y), get_depth(clip))
 
     if clip.format.num_planes == 1:
         rescaled = core.text.FrameProps(rescaled, "PlaneStatsDiff") if show_error else rescaled
