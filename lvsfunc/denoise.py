@@ -117,23 +117,23 @@ def detail_mask(clip: vs.VideoNode, pre_denoise: Optional[float] = None,
                 rad: int = 3, radc: int = 2,
                 brz_a: float = 0.005, brz_b: float = 0.005) -> vs.VideoNode:
     """
-        A wrapper for creating a detail mask to be used during denoising and/or debanding.
-        The detail mask is created using debandshit's rangemask,
-        and is then merged with Prewitt to catch lines it may have missed.
+    A wrapper for creating a detail mask to be used during denoising and/or debanding.
+    The detail mask is created using debandshit's rangemask,
+    and is then merged with Prewitt to catch lines it may have missed.
 
-        Function is curried to allow parameter tuning when passing to denoisers
-        that allow you to pass your own mask.
+    Function is curried to allow parameter tuning when passing to denoisers
+    that allow you to pass your own mask.
 
-        Dependencies: knlmeans (optional: pre_denoise), debandshit
+    Dependencies: knlmeans (optional: pre_denoise), debandshit
 
-        :param clip:        Input clip
-        :param pre_denoise: Denoise the clip before creating the mask (Default: False)
-        :param rad:         The luma equivalent of gradfun3's "mask" parameter
-        :param radc:        The chroma equivalent of gradfun3's "mask" parameter
-        :brz_a:             Binarizing for the detail mask (Default: 0.05)
-        :brz_b:             Binarizing for the edge mask (Default: 0.05)
+    :param clip:        Input clip
+    :param pre_denoise: Denoise the clip before creating the mask (Default: False)
+    :param rad:         The luma equivalent of gradfun3's "mask" parameter
+    :param radc:        The chroma equivalent of gradfun3's "mask" parameter
+    :param brz_a:       Binarizing for the detail mask (Default: 0.05)
+    :param brz_b:       Binarizing for the edge mask (Default: 0.05)
 
-        :return:            Detail mask
+    :return:            Detail mask
     """
     try:
         from debandshit import rangemask
