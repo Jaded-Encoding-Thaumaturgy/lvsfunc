@@ -196,7 +196,7 @@ def descale(clip: vs.VideoNode,
     :param src_top:                 Vertical shifting for fractional resolutions (Default: 0.0)
     :param show_mask:               Return detail mask
 
-    :return:                       Descaled and re-upscaled clip
+    :return:                       Descaled and re-upscaled clip with float bitdepth
     """
     if clip.format is None:
         raise ValueError("descale: 'Variable-format clips not supported'")
@@ -218,7 +218,8 @@ def descale(clip: vs.VideoNode,
 
     resolutions = [Resolution(*r) for r in zip(width, height)]
 
-    clip_y = depth(get_y(clip), 32) \
+    clip = depth(clip, 32)
+    clip_y = get_y(clip) \
         .std.SetFrameProp('descaleResolution', intval=clip.height)
 
     variable_res_clip = core.std.Splice([
