@@ -16,7 +16,8 @@ core = vs.core
 
 def source(file: str, ref: Optional[vs.VideoNode] = None,
            force_lsmas: bool = False,
-           mpls: bool = False, mpls_playlist: int = 0, mpls_angle: int = 0) -> vs.VideoNode:
+           mpls: bool = False, mpls_playlist: int = 0, mpls_angle: int = 0,
+           **index_args) -> vs.VideoNode:
     """
     Generic clip import function.
     Automatically determines if ffms2 or L-SMASH should be used to import a clip, but L-SMASH can be forced.
@@ -39,6 +40,7 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
     :param mpls:              Load in a mpls file (Default: False)
     :param mpls_playlist:     Playlist number, which is the number in mpls file name (Default: 0)
     :param mpls_angle:        Angle number to select in the mpls playlist (Default: 0)
+    :param kwargs:            Arguments passed to the indexing filter
 
     :return:                  Vapoursynth clip representing input file
     """
@@ -55,23 +57,24 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
         raise ValueError("source: 'Please index VOB and TS files with d2v before importing them'")
 
     if force_lsmas:
-        return core.lsmas.LWLibavSource(file)
+        return core.lsmas.LWLibavSource(file, **index_args)
 
     elif mpls:
         mpls_in = core.mpls.Read(file, mpls_playlist, mpls_angle)
-        clip = core.std.Splice([core.lsmas.LWLibavSource(mpls_in['clip'][i]) for i in range(mpls_in['count'])])
+        clip = core.std.Splice([core.lsmas.LWLibavSource(mpls_in['clip'][i], **index_args)
+                                for i in range(mpls_in['count'])])
 
     elif file.endswith('.d2v'):
-        clip = core.d2v.Source(file)
+        clip = core.d2v.Source(file, **index_args)
     elif file.endswith('.dgi'):
-        clip = core.dgdecodenv.DGSource(file)
+        clip = core.dgdecodenv.DGSource(file, **index_args)
     elif is_image(file):
-        clip = core.imwri.Read(file)
+        clip = core.imwri.Read(file, **index_args)
     else:
         if file.endswith('.m2ts'):
-            clip = core.lsmas.LWLibavSource(file)
+            clip = core.lsmas.LWLibavSource(file, **index_args)
         else:
-            clip = core.ffms2.Source(file)
+            clip = core.ffms2.Source(file, **index_args)
 
     if ref:
         try:
