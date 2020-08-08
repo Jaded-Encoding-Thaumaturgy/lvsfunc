@@ -2,6 +2,7 @@
     Miscellaneous functions and wrappers that didn't really have a place in any other submodules.
 """
 import colorsys
+import os
 import random
 from functools import partial, wraps
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union, cast
@@ -14,10 +15,14 @@ from .util import get_prop
 core = vs.core
 
 
+# List of containers that are better off being indexed externally
+annoying_formats = ['.iso', '.ts', '.vob']
+
+
 def source(file: str, ref: Optional[vs.VideoNode] = None,
            force_lsmas: bool = False,
            mpls: bool = False, mpls_playlist: int = 0, mpls_angle: int = 0,
-           **index_args) -> vs.VideoNode:
+           **index_args: Any) -> vs.VideoNode:
     """
     Generic clip import function.
     Automatically determines if ffms2 or L-SMASH should be used to import a clip, but L-SMASH can be forced.
@@ -53,11 +58,11 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
     # Error handling for some file types
     if file.endswith('.mpls') and mpls is False:
         raise ValueError("source: 'Please set \"mpls = True\" and give a path to the base Blu-ray directory when trying to load in mpls files'")  # noqa: E501
-    if file.endswith('.vob') or file.endswith('.ts'):
-        raise ValueError("source: 'Please index VOB and TS files with d2v before importing them'")
+    if os.path.splitext(file)[1].lower() in annoying_formats:
+        raise ValueError("source: 'Please use an external indexer like d2vwitch or DGIndexNV for this file and import that'")  # noqa: E501
 
     if force_lsmas:
-        return core.lsmas.LWLibavSource(file, **index_args)
+        clip = core.lsmas.LWLibavSource(file, **index_args)
 
     elif mpls:
         mpls_in = core.mpls.Read(file, mpls_playlist, mpls_angle)
