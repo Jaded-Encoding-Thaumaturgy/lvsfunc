@@ -3,7 +3,7 @@
 """
 
 from functools import partial
-from typing import Optional
+from typing import Any, Optional
 
 import vapoursynth as vs
 
@@ -62,7 +62,8 @@ def decomb(clip: vs.VideoNode,
            vinv: bool = False,
            sharpen: bool = False, dir: str = 'v',
            rep: Optional[int] = None,
-           show_mask: bool = False) -> vs.VideoNode:
+           show_mask: bool = False,
+           **kwargs: Any) -> vs.VideoNode:
     """
     Does some aggressive filtering to get rid of the combing on a interlaced/telecined source.
     You can also allow it to decimate the clip, or keep it disabled if you wish to handle the decimating yourself.
@@ -82,6 +83,7 @@ def decomb(clip: vs.VideoNode,
     :param dir:           Directional vector. 'v' = Vertical, 'h' = Horizontal (Default: v)
     :param rep:           Repair mode for repairing the decombed clip using the original clip (Default: None)
     :param show_mask:     Return combmask
+    :param kwargs:        Arguments to pass to QTGMC
 
     :return:              Decombed clip
     """
@@ -89,6 +91,9 @@ def decomb(clip: vs.VideoNode,
         from havsfunc import QTGMC
     except ModuleNotFoundError:
         raise ModuleNotFoundError("decomb: missing dependency 'havsfunc'")
+
+    qtgmc_args = dict(SourceMatch=3, Lossless=2, TR0=1, TR1=2, TR2=3, FPSDivisor=2)
+    qtgmc_args.update(kwargs)
 
     VFM_TFF = int(TFF)
 
@@ -105,7 +110,7 @@ def decomb(clip: vs.VideoNode,
     if show_mask:
         return combmask
 
-    qtgmc = QTGMC(clip, TFF=TFF, SourceMatch=3, Lossless=2, TR0=1, TR1=2, TR2=3, FPSDivisor=2)
+    qtgmc = QTGMC(clip, TFF=TFF, **qtgmc_args)
     qtgmc_merged = core.std.MaskedMerge(clip, qtgmc, combmask, first_plane=True)
 
     decombed = core.std.FrameEval(clip, partial(_pp, clip=clip, pp=qtgmc_merged), clip)
