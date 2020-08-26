@@ -58,6 +58,7 @@ def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:
 
 def decomb(clip: vs.VideoNode,
            TFF: bool,
+           ref: Optional[vs.VideoNode] = None,
            decimate: bool = True,
            vinv: bool = False,
            sharpen: bool = False, dir: str = 'v',
@@ -65,11 +66,13 @@ def decomb(clip: vs.VideoNode,
            show_mask: bool = False,
            **kwargs: Any) -> vs.VideoNode:
     """
-    Does some aggressive filtering to get rid of the combing on a interlaced/telecined source.
-    You can also allow it to decimate the clip, or keep it disabled if you wish to handle the decimating yourself.
+    A filter that performs relatively aggressive filtering to get rid of the combing on a interlaced/telecined source.
+    Decimation can be disabled if the user wishes to decimate the clip themselves.
     Enabling vinverse will result in more aggressive decombing at the cost of potential detail loss.
+    Sharpen will perform a directional unsharpening. Direction can be set using `dir`.
+    A reference clip can be passed with `ref`, which will be used by VFM to create the output frames.
 
-    Function written by Midlifecrisis from the WEEB AUTISM server, and modified by LightArrowsEXE.
+    Base function written by Midlifecrisis from the WEEB AUTISM server, and modified by LightArrowsEXE.
 
     Dependencies: combmask, havsfunc (QTGMC), rgsf (optional: 32bit clip)
 
@@ -77,6 +80,7 @@ def decomb(clip: vs.VideoNode,
 
     :param clip:          Input clip
     :param TFF:           Top-Field-First
+    :param ref:           Reference clip for VFM's `clip2` parameter
     :param decimate:      Decimate the video after deinterlacing (Default: True)
     :param vinv:          Use vinverse to get rid of additional combing (Default: False)
     :param sharpen:       Unsharpen after deinterlacing (Default: False)
@@ -84,8 +88,9 @@ def decomb(clip: vs.VideoNode,
     :param rep:           Repair mode for repairing the decombed clip using the original clip (Default: None)
     :param show_mask:     Return combmask
     :param kwargs:        Arguments to pass to QTGMC
+                          (Default: SourceMatch=3, Lossless=2, TR0=1, TR1=2, TR2=3, FPSDivisor=2)
 
-    :return:              Decombed clip
+    :return:              Decombed and optionally decimated clip
     """
     try:
         from havsfunc import QTGMC
@@ -101,7 +106,9 @@ def decomb(clip: vs.VideoNode,
             ) -> vs.VideoNode:
         return pp if f.props._Combed == 1 else clip
 
-    clip = core.vivtc.VFM(clip, order=VFM_TFF, mode=1)
+    clip = core.vivtc.VFM(clip, order=VFM_TFF, mode=1, clip2=ref) if ref is not None \
+        else core.vivtc.VFM(clip, order=VFM_TFF, mode=1)
+
     combmask = core.comb.CombMask(clip, cthresh=1, mthresh=3)
     combmask = core.std.Maximum(combmask, threshold=250).std.Maximum(threshold=250) \
         .std.Maximum(threshold=250).std.Maximum(threshold=250)
