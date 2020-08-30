@@ -33,6 +33,8 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
 
     Dependencies:
 
+        * ffms2
+        * L-SMASH (optional: m2ts sources or when forcing lsmas)
         * d2vsource (optional: d2v sources)
         * dgdecodenv (optional: dgi sources)
         * mvsfunc (optional: reference clip mode)
