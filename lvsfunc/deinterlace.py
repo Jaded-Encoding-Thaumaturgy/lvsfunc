@@ -58,6 +58,7 @@ def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:
 
 def decomb(clip: vs.VideoNode,
            TFF: bool,
+           mode: int = 1,
            ref: Optional[vs.VideoNode] = None,
            decimate: bool = True,
            vinv: bool = False,
@@ -80,6 +81,7 @@ def decomb(clip: vs.VideoNode,
 
     :param clip:          Input clip
     :param TFF:           Top-Field-First
+    :param mode:          Sets the matching mode or strategy to use for VFM
     :param ref:           Reference clip for VFM's `clip2` parameter
     :param decimate:      Decimate the video after deinterlacing (Default: True)
     :param vinv:          Use vinverse to get rid of additional combing (Default: False)
@@ -106,7 +108,7 @@ def decomb(clip: vs.VideoNode,
             ) -> vs.VideoNode:
         return pp if f.props._Combed == 1 else clip
 
-    clip = core.vivtc.VFM(clip, order=VFM_TFF, mode=1, clip2=ref) if ref is not None \
+    clip = core.vivtc.VFM(clip, order=VFM_TFF, mode=mode, clip2=ref) if ref is not None \
         else core.vivtc.VFM(clip, order=VFM_TFF, mode=1)
 
     combmask = core.comb.CombMask(clip, cthresh=1, mthresh=3)
