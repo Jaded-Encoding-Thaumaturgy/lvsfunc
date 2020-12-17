@@ -1,10 +1,11 @@
 """
     Wrappers and masks for denoising.
 """
+from functools import partial
 from typing import Any, Optional, cast
 
 import vapoursynth as vs
-from vsutil import depth, get_y, join, split
+from vsutil import depth, get_depth, get_y, join, scale_value, split
 
 from . import util
 
@@ -113,7 +114,7 @@ def adaptive_mask(clip: vs.VideoNode, luma_scaling: float = 8.0) -> vs.VideoNode
 
 
 @functoolz.curry
-def detail_mask(clip: vs.VideoNode, pre_denoise: Optional[float] = None,
+def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
                 rad: int = 3, radc: int = 2,
                 brz_a: float = 0.005, brz_b: float = 0.005) -> vs.VideoNode:
     """
@@ -124,10 +125,10 @@ def detail_mask(clip: vs.VideoNode, pre_denoise: Optional[float] = None,
     Function is curried to allow parameter tuning when passing to denoisers
     that allow you to pass your own mask.
 
-    Dependencies: knlmeans (optional: pre_denoise), debandshit
+    Dependencies: VapourSynth-Bilateral (optional: sigma), debandshit
 
     :param clip:        Input clip
-    :param pre_denoise: Denoise the clip before creating the mask (Default: False)
+    :param sigma:       Sigma for Bilateral for pre-blurring (Default: False)
     :param rad:         The luma equivalent of gradfun3's "mask" parameter
     :param radc:        The chroma equivalent of gradfun3's "mask" parameter
     :param brz_a:       Binarizing for the detail mask (Default: 0.05)
@@ -143,10 +144,24 @@ def detail_mask(clip: vs.VideoNode, pre_denoise: Optional[float] = None,
     if clip.format is None:
         raise ValueError("detail_mask: 'Variable-format clips not supported'")
 
-    den_a = (core.knlm.KNLMeansCL(clip, d=2, a=3, h=pre_denoise, device_type='GPU')
-             if pre_denoise is not None else clip)
-    den_b = (core.knlm.KNLMeansCL(clip, d=2, a=3, h=pre_denoise/2, device_type='GPU')
-             if pre_denoise is not None else clip)
+    # Handling correct value scaling if there's a assumed depth mismatch
+    # To the me in the future, long after civilisation has fallen, make sure to check 3.10's pattern matching.
+    if get_depth(clip) != 32:
+        if isinstance(brz_a, float):
+            brz_a = scale_value(brz_a, 32, get_depth(clip))
+        if isinstance(brz_b, float):
+            brz_b = scale_value(brz_b, 32, get_depth(clip))
+    else:
+        if isinstance(brz_a, int):
+            brz_a = scale_value(brz_a, get_depth(clip), 32)
+        if isinstance(brz_b, int):
+            brz_b = scale_value(brz_b, get_depth(clip), 32)
+
+
+    den_a = (util.quick_resample(clip, partial(core.bilateral.Gaussian, sigma=sigma))
+             if sigma else clip)
+    den_b = (util.quick_resample(clip, partial(core.bilateral.Gaussian, sigma=sigma))
+             if sigma else clip)
 
     mask_a = depth(get_y(den_a), 16) if clip.format.bits_per_sample < 32 else get_y(den_a)
     mask_a = rangemask(mask_a, rad=rad, radc=radc)
