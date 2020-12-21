@@ -14,6 +14,7 @@ import vapoursynth as vs
 import vsutil
 
 from .util import get_prop
+from .misc import get_ranges
 
 core = vs.core
 
@@ -542,21 +543,10 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
         raise ValueError("tvbd_diff: no differences found")
 
     if write_log:
-        from itertools import groupby, count
-
-        def intervals(frames: list) -> list:
-            out = []
-            counter = count()
-
-            for key, group in groupby(frames, key=lambda x: x - next(counter)):
-                block = tuple(group)
-                out.append((block[0], block[-1]))
-            return out
-
         with open('./diff.log', 'a') as log:
             if ep_name:
                 log.write(f"{ep_name}: ")
-            log.write(f"{str(intervals(frames))} \n\n")
+            log.write(f"{str(get_ranges(frames))} \n\n")
 
     if return_array:
         tv, bd = tv.text.FrameNum(9), bd.text.FrameNum(9)

@@ -5,6 +5,7 @@ import colorsys
 import os
 import random
 from functools import partial, wraps
+from itertools import groupby, count
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union, cast
 
 import vapoursynth as vs
@@ -133,6 +134,26 @@ def replace_ranges(clip_a: vs.VideoNode,
             tmp = tmp + out[end + 1:]
         out = tmp
     return out
+
+
+def get_ranges(frames: List[int]) -> List[Union[int, Tuple[int, int]]]:
+    """
+    Identify groups of continuous frames intervals in a list
+
+    :param frames:     List of frames
+
+    :return:           Ranges of frames.
+                       Integer values in the list indicate single frames,
+                       Tuple values indicate inclusive ranges.
+    """
+    ranges = []
+    counter = count()
+
+    for _, group in groupby(frames, key=lambda x: x - next(counter)):
+        block = tuple(group)
+        ranges.append((block[0], block[-1]))
+
+    return ranges
 
 
 def edgefixer(clip: vs.VideoNode,
