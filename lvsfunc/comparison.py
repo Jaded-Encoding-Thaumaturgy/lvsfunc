@@ -483,7 +483,9 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
 def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
               thr: float = 72,
               height: int = 288,
-              return_array: bool = False) -> vs.VideoNode:
+              return_array: bool = False,
+              write_log: bool = False,
+              ep_name: str = None) -> vs.VideoNode:
     """
     Creates a standard :py:class:`lvsfunc.comparison.Stack` between frames from two clips that have differences.
     Useful for making comparisons between TV and BD encodes, as well as clean and hardsubbed sources.
@@ -509,6 +511,9 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
                           (MakeDiff clip will be twice this resolution) (Default: 288)
     :param return_array:  Return frames as an interleaved comparison (using :py:class:`lvsfunc.comparison.Interleave`)
                           (Default: ``False``)
+    :param write_log:     Writes sequences of frames that have differences to diff.log in PWD
+                          (usually in the same folder as the executable vpy-script).
+    :param ep_name:       Name to be written in diff.log
 
     :return: Either an interleaved clip of the differences between the two clips
              or a stack of both input clips on top of MakeDiff clip
@@ -535,6 +540,23 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
 
     if not frames:
         raise ValueError("tvbd_diff: no differences found")
+
+    if write_log:
+        from itertools import groupby, count
+
+        def intervals(frames: list) -> list:
+            out = []
+            counter = count()
+
+            for key, group in groupby(frames, key=lambda x: x - next(counter)):
+                block = tuple(group)
+                out.append((block[0], block[-1]))
+            return out
+
+        with open('./diff.log', 'a') as log:
+            if ep_name:
+                log.write(f"{ep_name}: ")
+            log.write(f"{str(intervals(frames))} \n\n")
 
     if return_array:
         tv, bd = tv.text.FrameNum(9), bd.text.FrameNum(9)
