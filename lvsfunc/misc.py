@@ -151,7 +151,11 @@ def get_ranges(frames: List[int]) -> List[Union[int, Tuple[int, int]]]:
 
     for _, group in groupby(frames, key=lambda x: x - next(counter)):
         block = tuple(group)
-        ranges.append((block[0], block[-1]))
+        
+        if (start := block[0]) == (end := block[-1]):
+            ranges.append(start)
+        else:
+            ranges.append((start, end))
 
     return ranges
 
