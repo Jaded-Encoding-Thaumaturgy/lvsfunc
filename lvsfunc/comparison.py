@@ -483,7 +483,8 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
 def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
               thr: float = 72,
               height: int = 288,
-              return_array: bool = False) -> vs.VideoNode:
+              return_array: bool = False,
+              return_frames: bool = False) -> Union[vs.VideoNode, Tuple[vs.VideoNode, List[int]]]:
     """
     Creates a standard :py:class:`lvsfunc.comparison.Stack` between frames from two clips that have differences.
     Useful for making comparisons between TV and BD encodes, as well as clean and hardsubbed sources.
@@ -509,9 +510,11 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
                           (MakeDiff clip will be twice this resolution) (Default: 288)
     :param return_array:  Return frames as an interleaved comparison (using :py:class:`lvsfunc.comparison.Interleave`)
                           (Default: ``False``)
+    :param return_frames: Adds `frames list` to the return. (Default: ``False``)
 
     :return: Either an interleaved clip of the differences between the two clips
-             or a stack of both input clips on top of MakeDiff clip
+             or a stack of both input clips on top of MakeDiff clip.
+             Optionally, you can add `frames list` to the return.
     """
     if thr >= 128:
         raise ValueError("tvbd_diff: `thr` must be below 128")
@@ -538,8 +541,9 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
 
     if return_array:
         tv, bd = tv.text.FrameNum(9), bd.text.FrameNum(9)
-        return Interleave({'TV': core.std.Splice([tv[f] for f in frames]),
-                           'BD': core.std.Splice([bd[f] for f in frames])}).clip
+        comparison = Interleave({'TV': core.std.Splice([tv[f] for f in frames]),
+                                 'BD': core.std.Splice([bd[f] for f in frames])}).clip
+        return comparison if not return_frames else comparison, frames
 
     else:
         scaled_width = vsutil.get_w(height, only_even=False)
@@ -550,7 +554,9 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
                             'BD': core.std.Splice([bd[f] for f in frames])}).clip
         diff = diff.text.Text(text='diff', alignment=8)
         diff = core.std.Splice([diff[f] for f in frames])
-        return Stack((tvbd_stack, diff), direction=Direction.VERTICAL).clip
+
+        comparison = Stack((tvbd_stack, diff), direction=Direction.VERTICAL).clip
+        return comparison if not return_frames else comparison, frames
 
 
 def interleave(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
