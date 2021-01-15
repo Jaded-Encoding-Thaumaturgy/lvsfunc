@@ -157,7 +157,6 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
         if isinstance(brz_b, int):
             brz_b = scale_value(brz_b, get_depth(clip), 32)
 
-
     den_a = (util.quick_resample(clip, partial(core.bilateral.Gaussian, sigma=sigma))
              if sigma else clip)
     den_b = (util.quick_resample(clip, partial(core.bilateral.Gaussian, sigma=sigma))
