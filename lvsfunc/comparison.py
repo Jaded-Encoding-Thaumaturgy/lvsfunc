@@ -480,11 +480,12 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
         raise ValueError(f"stack_planes: unexpected subsampling {vsutil.get_subsampling(clip)}")
 
 
-def diff(tv: vs.VideoNode, bd: vs.VideoNode,
-              thr: float = 72,
-              height: int = 288,
-              return_array: bool = False,
-              return_frames: bool = False) -> Union[vs.VideoNode, Tuple[vs.VideoNode, List[int]]]:
+def diff(*clips: vs.VideoNode,
+         thr: float = 72,
+         height: int = 288,
+         return_array: bool = False,
+         return_frames: bool = False,
+         **namedclips: vs.VideoNode) -> Union[vs.VideoNode, Tuple[vs.VideoNode, List[int]]]:
     """
     Creates a standard :py:class:`lvsfunc.comparison.Stack` between frames from two clips that have differences.
     Useful for making comparisons between TV and BD encodes, as well as clean and hardsubbed sources.
@@ -502,8 +503,9 @@ def diff(tv: vs.VideoNode, bd: vs.VideoNode,
 
     Alias for this function is `lvsfunc.diff`.
 
-    :param tv:            TV clip
-    :param bd:            BD clip
+    :param clips:         Clips for comparison (order is kept)
+    :param namedclips:    Keyword arguments of `name=clip` for all clips in the comparison.
+                          Clips will be labeled at the top left with their `name`.
     :param thr:           Threshold, <= 1 uses PlaneStatsDiff, >1 uses Max/Min.
                           Value must be below 128 (Default: 72)
     :param height:        Height in px to downscale clips to if `return_array` is ``False``
@@ -516,23 +518,37 @@ def diff(tv: vs.VideoNode, bd: vs.VideoNode,
              or a stack of both input clips on top of MakeDiff clip.
              Optionally, you can allow the function to also return a list of frames as well.
     """
+    if clips and namedclips:
+        raise ValueError("diff: positional clips and named keyword clips cannot both be given")
+
+    if (clips and len(clips) != 2) or (namedclips and len(namedclips) != 2):
+        raise ValueError("diff: must pass exactly 2 `clips` or `namedclips`")
+
     if thr >= 128:
         raise ValueError("diff: `thr` must be below 128")
 
-    if None in (tv.format, bd.format):
-        raise ValueError("diff: variable-format clips not supported")
+    if clips:
+        if any(c.format is None for c in clips):
+            raise ValueError("diff: variable-format clips not supported")
+    elif namedclips:
+        if any(nc.format is None for nc in namedclips.values()):
+            raise ValueError("diff: variable-format namedclips not supported")
 
-    tv, bd = vsutil.depth(tv, 8), vsutil.depth(bd, 8)
+    if clips:
+        a, b = vsutil.depth(clips[0], 8), vsutil.depth(clips[1], 8)
+    elif namedclips:
+        nc = list(namedclips.values())
+        a, b = vsutil.depth(nc[0], 8), vsutil.depth(nc[1], 8)
 
     frames = []
     if thr <= 1:
-        for i, f in enumerate(core.std.PlaneStats(tv, bd).frames()):
-            print(f"Progress: {i}/{tv.num_frames} frames", end="\r")
+        for i, f in enumerate(core.std.PlaneStats(a, b).frames()):
+            print(f"Progress: {i}/{a.num_frames} frames", end="\r")
             if get_prop(f, 'PlaneStatsDiff', float) > thr:
                 frames.append(i)
-        diff = core.std.MakeDiff(tv, bd)
+        diff = core.std.MakeDiff(a, b)
     else:
-        diff = core.std.MakeDiff(tv, bd).std.PlaneStats()
+        diff = core.std.MakeDiff(a, b).std.PlaneStats()
         if diff.format is None:
             raise ValueError("diff: variable-format clips not supported")  # this is for mypy
         t = float if diff.format.sample_type == vs.SampleType.FLOAT else int
@@ -544,23 +560,28 @@ def diff(tv: vs.VideoNode, bd: vs.VideoNode,
     if not frames:
         raise ValueError("diff: no differences found")
 
+    if clips:
+        name_a, name_b = "Clip A", "Clip B"
+    else:
+        name_a, name_b = namedclips.keys()
+
     if return_array:
-        tv, bd = tv.text.FrameNum(9), bd.text.FrameNum(9)
-        comparison = Interleave({'TV': core.std.Splice([tv[f] for f in frames]),
-                                 'BD': core.std.Splice([bd[f] for f in frames])}).clip
+        a, b = a.text.FrameNum(9), b.text.FrameNum(9)
+        comparison = Interleave({f'{name_a}': core.std.Splice([a[f] for f in frames]),
+                                 f'{name_b}': core.std.Splice([b[f] for f in frames])}).clip
         return comparison if not return_frames else (comparison, frames)
 
     else:
         scaled_width = vsutil.get_w(height, only_even=False)
         diff = diff.resize.Spline36(width=scaled_width * 2, height=height * 2).text.FrameNum(9)
-        tv, bd = (c.resize.Spline36(width=scaled_width, height=height).text.FrameNum(9) for c in (tv, bd))
+        a, b = (c.resize.Spline36(width=scaled_width, height=height).text.FrameNum(9) for c in (a, b))
 
-        tvbd_stack = Stack({'TV': core.std.Splice([tv[f] for f in frames]),
-                            'BD': core.std.Splice([bd[f] for f in frames])}).clip
+        diff_stack = Stack({f'{name_a}': core.std.Splice([a[f] for f in frames]),
+                            f'{name_b}': core.std.Splice([b[f] for f in frames])}).clip
         diff = diff.text.Text(text='diff', alignment=8)
         diff = core.std.Splice([diff[f] for f in frames])
 
-        comparison = Stack((tvbd_stack, diff), direction=Direction.VERTICAL).clip
+        comparison = Stack((diff_stack, diff), direction=Direction.VERTICAL).clip
         return comparison if not return_frames else (comparison, frames)
 
 
