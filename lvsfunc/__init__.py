@@ -11,7 +11,7 @@ from . import aa, comparison, deinterlace, denoise, misc, scale
 
 # Aliases:
 comp = comparison.compare
-diff = comparison.tvbd_diff
+diff = comparison.diff
 ef = misc.edgefixer
 qden = denoise.quick_denoise
 rfs = misc.replace_ranges

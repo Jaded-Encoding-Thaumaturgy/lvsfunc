@@ -74,6 +74,7 @@ Functions
    lvsfunc.aa.transpose_aa
    lvsfunc.aa.upscaled_sraa
    lvsfunc.comparison.compare
+   lvsfunc.comparison.diff
    lvsfunc.comparison.interleave
    lvsfunc.comparison.split
    lvsfunc.comparison.stack_compare
@@ -81,7 +82,6 @@ Functions
    lvsfunc.comparison.stack_planes
    lvsfunc.comparison.stack_vertical
    lvsfunc.comparison.tile
-   lvsfunc.comparison.tvbd_diff
    lvsfunc.deinterlace.deblend
    lvsfunc.deinterlace.decomb
    lvsfunc.deinterlace.dir_deshimmer
@@ -128,6 +128,7 @@ lvsfunc.comparison
 .. autosummary::
 
    lvsfunc.comparison.compare
+   lvsfunc.comparison.diff
    lvsfunc.comparison.interleave
    lvsfunc.comparison.split
    lvsfunc.comparison.stack_compare
@@ -135,7 +136,6 @@ lvsfunc.comparison
    lvsfunc.comparison.stack_planes
    lvsfunc.comparison.stack_vertical
    lvsfunc.comparison.tile
-   lvsfunc.comparison.tvbd_diff
 
 .. automodule:: lvsfunc.comparison
    :members:
