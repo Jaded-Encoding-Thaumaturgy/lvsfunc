@@ -200,7 +200,7 @@ def upscaled_sraa(clip: vs.VideoNode,
     :param width:           Target resolution width. If None, determined from `height`
     :param height:          Target resolution height (Default: ``clip.height``)
     :param downscaler:      Resizer used to downscale the AA'd clip
-    :param kwargs:          Arguments passed to znedi3 (Default: alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
+    :param eedi3_args:      Arguments passed to eedi3 (Default: alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
 
     :return:                Antialiased and optionally rescaled clip
     """
