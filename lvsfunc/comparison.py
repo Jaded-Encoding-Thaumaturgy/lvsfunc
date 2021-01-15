@@ -560,12 +560,15 @@ def diff(*clips: vs.VideoNode,
     if not frames:
         raise ValueError("diff: no differences found")
 
+    if clips:
+        name_a, name_b = "Clip A", "Clip B"
+    else:
+        name_a, name_b = namedclips.keys()
+
     if return_array:
         a, b = a.text.FrameNum(9), b.text.FrameNum(9)
-        comparison = Interleave({f'{"Clip A" if clips else list(namedclips.keys())[0]}':
-                                    core.std.Splice([a[f] for f in frames]),
-                                    f'{"Clip B" if clips else list(namedclips.keys())[1]}':
-                                    core.std.Splice([b[f] for f in frames])}).clip
+        comparison = Interleave({f'{name_a}': core.std.Splice([a[f] for f in frames]),
+                                 f'{name_b}': core.std.Splice([b[f] for f in frames])}).clip
         return comparison if not return_frames else (comparison, frames)
 
     else:
@@ -573,10 +576,8 @@ def diff(*clips: vs.VideoNode,
         diff = diff.resize.Spline36(width=scaled_width * 2, height=height * 2).text.FrameNum(9)
         a, b = (c.resize.Spline36(width=scaled_width, height=height).text.FrameNum(9) for c in (a, b))
 
-        diff_stack = Stack({f'{"Clip A" if clips else list(namedclips.keys())[0]}':
-                            core.std.Splice([a[f] for f in frames]),
-                            f'{"Clip B" if clips else list(namedclips.keys())[1]}':
-                            core.std.Splice([b[f] for f in frames])}).clip
+        diff_stack = Stack({f'{name_a}': core.std.Splice([a[f] for f in frames]),
+                            f'{name_b}': core.std.Splice([b[f] for f in frames])}).clip
         diff = diff.text.Text(text='diff', alignment=8)
         diff = core.std.Splice([diff[f] for f in frames])
 
