@@ -561,12 +561,11 @@ def diff(*clips: vs.VideoNode,
         raise ValueError("diff: no differences found")
 
     if return_array:
-        if clips:
-            a, b = a.text.FrameNum(9), b.text.FrameNum(9)
-            comparison = Interleave({f'{"Clip A" if clips else list(namedclips.keys())[0]}':
-                                     core.std.Splice([a[f] for f in frames]),
-                                     f'{"Clip B" if clips else list(namedclips.keys())[1]}':
-                                     core.std.Splice([b[f] for f in frames])}).clip
+        a, b = a.text.FrameNum(9), b.text.FrameNum(9)
+        comparison = Interleave({f'{"Clip A" if clips else list(namedclips.keys())[0]}':
+                                    core.std.Splice([a[f] for f in frames]),
+                                    f'{"Clip B" if clips else list(namedclips.keys())[1]}':
+                                    core.std.Splice([b[f] for f in frames])}).clip
         return comparison if not return_frames else (comparison, frames)
 
     else:
