@@ -524,17 +524,22 @@ def tvbd_diff(tv: vs.VideoNode, bd: vs.VideoNode,
 
     tv, bd = vsutil.depth(tv, 8), vsutil.depth(bd, 8)
 
+    frames = []
     if thr <= 1:
-        frames = [i for i, f in enumerate(core.std.PlaneStats(tv, bd).frames())
-                  if get_prop(f, 'PlaneStatsDiff', float) > thr]
+        for i, f in enumerate(core.std.PlaneStats(tv, bd).frames()):
+            print(f"Progress: {i}/{tv.num_frames} frames", end="\r")
+            if get_prop(f, 'PlaneStatsDiff', float) > thr:
+                frames.append(i)
         diff = core.std.MakeDiff(tv, bd)
     else:
         diff = core.std.MakeDiff(tv, bd).std.PlaneStats()
         if diff.format is None:
             raise ValueError("tvbd_diff: variable-format clips not supported")  # this is for mypy
         t = float if diff.format.sample_type == vs.SampleType.FLOAT else int
-        frames = [i for i, f in enumerate(diff.frames())
-                  if get_prop(f, 'PlaneStatsMin', t) <= thr or get_prop(f, 'PlaneStatsMax', t) >= 255 - thr]
+        for i, f in enumerate(diff.frames()):
+            print(f"Progress: {i}/{diff.num_frames} frames", end='\r')
+            if get_prop(f, 'PlaneStatsMin', t) <= thr or get_prop(f, 'PlaneStatsMax', t) >= 255 - thr > thr:
+                frames.append(i)
 
     if not frames:
         raise ValueError("tvbd_diff: no differences found")
