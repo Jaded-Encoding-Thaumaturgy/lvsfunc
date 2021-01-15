@@ -528,10 +528,10 @@ def diff(*clips: vs.VideoNode,
         raise ValueError("diff: `thr` must be below 128")
 
     if clips:
-        if any(c.format == None for c in clips):
+        if any(c.format is None for c in clips):
             raise ValueError("diff: variable-format clips not supported")
     elif namedclips:
-        if any(nc.format == None for nc in namedclips.values()):
+        if any(nc.format is None for nc in namedclips.values()):
             raise ValueError("diff: variable-format namedclips not supported")
 
     if clips:
