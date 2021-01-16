@@ -173,6 +173,8 @@ def transpose_aa(clip: vs.VideoNode,
 def upscaled_sraa(clip: vs.VideoNode,
                   rfactor: float = 1.5,
                   rep: Optional[int] = None,
+                  nnedi3_cl: Optional[bool] = None,
+                  eedi3_cl: Optional[bool] = None,
                   width: Optional[int] = None, height: Optional[int] = None,
                   downscaler: Optional[Callable[[vs.VideoNode, int, int], vs.VideoNode]]
                   = kernels.Spline36().scale,
@@ -197,6 +199,8 @@ def upscaled_sraa(clip: vs.VideoNode,
     :param rfactor:         Image enlargement factor. 1.3..2 makes it comparable in strength to vsTAAmbk
                             It is not recommended to go below 1.3 (Default: 1.5)
     :param rep:             Repair mode (Default: None)
+    :param nnedi3_cl:       Use CL alternative of nnedi3
+    :param eedi3_cl:        Use CL alternative of eedi3
     :param width:           Target resolution width. If None, determined from `height`
     :param height:          Target resolution height (Default: ``clip.height``)
     :param downscaler:      Resizer used to downscale the AA'd clip
@@ -232,18 +236,21 @@ def upscaled_sraa(clip: vs.VideoNode,
             width = get_w(height, aspect_ratio=clip.width / clip.height)
         else:
             width = clip.width
-
+            
+    nnedi3 = core.nnedi3cl.NNEDI3CL if nnedi3_cl else core.nnedi3.nnedi3
+    eedi3 = core.eedi3m.EEDI3CL if eedi3_cl else core.eedi3m.EEDI3
+    
     # Nnedi3 upscale from source height to source height * rounding (Default 1.5)
-    up_y = core.nnedi3.nnedi3(luma, 0, 1, 0, **nnargs)
+    up_y = nnedi3(luma, 0, 1, 0, **nnargs)
     up_y = core.resize.Spline36(up_y, height=ssh, src_top=.5)
     up_y = core.std.Transpose(up_y)
-    up_y = core.nnedi3.nnedi3(up_y, 0, 1, 0, **nnargs)
+    up_y = nnedi3(up_y, 0, 1, 0, **nnargs)
     up_y = core.resize.Spline36(up_y, height=ssw, src_top=.5)
 
     # Single-rate AA
-    aa_y = core.eedi3m.EEDI3(up_y, 0, 0, 0, sclip=core.nnedi3.nnedi3(up_y, 0, 0, 0, **nnargs), **eeargs)
+    aa_y = eedi3(up_y, 0, 0, 0, sclip=core.nnedi3.nnedi3(up_y, 0, 0, 0, **nnargs), **eeargs)
     aa_y = core.std.Transpose(aa_y)
-    aa_y = core.eedi3m.EEDI3(aa_y, 0, 0, 0, sclip=core.nnedi3.nnedi3(aa_y, 0, 0, 0, **nnargs), **eeargs)
+    aa_y = eedi3(aa_y, 0, 0, 0, sclip=core.nnedi3.nnedi3(aa_y, 0, 0, 0, **nnargs), **eeargs)
 
     # Back to source clip height or given height
     if downscaler is None:
