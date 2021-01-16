@@ -248,9 +248,9 @@ def upscaled_sraa(clip: vs.VideoNode,
     up_y = core.resize.Spline36(up_y, height=ssw, src_top=.5)
 
     # Single-rate AA
-    aa_y = eedi3(up_y, 0, 0, 0, sclip=core.nnedi3.nnedi3(up_y, 0, 0, 0, **nnargs), **eeargs)
+    aa_y = eedi3(up_y, 0, 0, 0, sclip=nnedi3(up_y, 0, 0, 0, **nnargs), **eeargs)
     aa_y = core.std.Transpose(aa_y)
-    aa_y = eedi3(aa_y, 0, 0, 0, sclip=core.nnedi3.nnedi3(aa_y, 0, 0, 0, **nnargs), **eeargs)
+    aa_y = eedi3(aa_y, 0, 0, 0, sclip=nnedi3(aa_y, 0, 0, 0, **nnargs), **eeargs)
 
     # Back to source clip height or given height
     if downscaler is None:
