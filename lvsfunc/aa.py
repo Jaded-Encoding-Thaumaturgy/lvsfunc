@@ -246,8 +246,8 @@ def upscaled_sraa(clip: vs.VideoNode,
     nnedi3cl = fallback(nnedi3cl, opencl)
     eedi3cl = fallback(eedi3cl, opencl)
 
-    nnedi3 = core.nnedi3cl.NNEDI3CL if nnedi3_cl else core.nnedi3.nnedi3
-    eedi3 = core.eedi3m.EEDI3CL if eedi3_cl else core.eedi3m.EEDI3
+    nnedi3 = core.nnedi3cl.NNEDI3CL if nnedi3cl else core.nnedi3.nnedi3
+    eedi3 = core.eedi3m.EEDI3CL if eedi3cl else core.eedi3m.EEDI3
 
     # Nnedi3 upscale from source height to source height * rounding (Default 1.5)
     up_y = nnedi3(luma, 0, 1, 0, **nnargs)
