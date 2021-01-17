@@ -177,7 +177,7 @@ def upscaled_sraa(clip: vs.VideoNode,
                   downscaler: Optional[Callable[[vs.VideoNode, int, int], vs.VideoNode]]
                   = kernels.Spline36().scale,
                   opencl: bool = False, nnedi3cl: Optional[bool] = None,
-                  eedi3cl: Optional[bool] = None
+                  eedi3cl: Optional[bool] = None,
                   **eedi3_args: Any) -> vs.VideoNode:
     """
     A function that performs a supersampled single-rate AA to deal with heavy aliasing and broken-up lineart.
