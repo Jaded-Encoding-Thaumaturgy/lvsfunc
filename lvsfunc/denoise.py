@@ -157,17 +157,14 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
         if isinstance(brz_b, int):
             brz_b = scale_value(brz_b, get_depth(clip), 32)
 
-    den_a = (util.quick_resample(clip, partial(core.bilateral.Gaussian, sigma=sigma))
-             if sigma else clip)
-    den_b = (util.quick_resample(clip, partial(core.bilateral.Gaussian, sigma=sigma))
-             if sigma else clip)
+    blur = (util.quick_resample(clip, partial(core.bilateral.Gaussian, sigma=sigma))
+            if sigma else clip)
 
-    mask_a = depth(get_y(den_a), 16) if clip.format.bits_per_sample < 32 else get_y(den_a)
-    mask_a = rangemask(mask_a, rad=rad, radc=radc)
+    mask_a = rangemask(get_y(blur), rad=rad, radc=radc)
     mask_a = depth(mask_a, clip.format.bits_per_sample)
     mask_a = core.std.Binarize(mask_a, brz_a)
 
-    mask_b = core.std.Prewitt(get_y(den_b))
+    mask_b = core.std.Prewitt(get_y(blur))
     mask_b = core.std.Binarize(mask_b, brz_b)
 
     mask = core.std.Expr([mask_a, mask_b], 'x y max')
