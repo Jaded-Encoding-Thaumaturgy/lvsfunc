@@ -173,11 +173,11 @@ def transpose_aa(clip: vs.VideoNode,
 def upscaled_sraa(clip: vs.VideoNode,
                   rfactor: float = 1.5,
                   rep: Optional[int] = None,
-                  nnedi3_cl: Optional[bool] = None,
-                  eedi3_cl: Optional[bool] = None,
                   width: Optional[int] = None, height: Optional[int] = None,
                   downscaler: Optional[Callable[[vs.VideoNode, int, int], vs.VideoNode]]
                   = kernels.Spline36().scale,
+                  opencl: bool = False, nnedi3cl: Optional[bool] = None,
+                  eedi3cl: Optional[bool] = None
                   **eedi3_args: Any) -> vs.VideoNode:
     """
     A function that performs a supersampled single-rate AA to deal with heavy aliasing and broken-up lineart.
@@ -193,17 +193,23 @@ def upscaled_sraa(clip: vs.VideoNode,
 
     Alias for this function is `lvsfunc.sraa`.
 
-    Dependencies: fmtconv, rgsf (optional: 32 bit clip), vapoursynth-eedi3, vapoursynth-nnedi3
+    Dependencies:
+    * fmtconv
+    * rgsf (optional: 32 bit clip),
+    * vapoursynth-eedi3
+    * vapoursynth-nnedi3
+    * vapoursynth-nnedi3cl (optional: opencl)
 
     :param clip:            Input clip
     :param rfactor:         Image enlargement factor. 1.3..2 makes it comparable in strength to vsTAAmbk
                             It is not recommended to go below 1.3 (Default: 1.5)
     :param rep:             Repair mode (Default: None)
-    :param nnedi3_cl:       Use CL alternative of nnedi3
-    :param eedi3_cl:        Use CL alternative of eedi3
     :param width:           Target resolution width. If None, determined from `height`
     :param height:          Target resolution height (Default: ``clip.height``)
     :param downscaler:      Resizer used to downscale the AA'd clip
+    :param opencl:          OpenCL acceleration (Default: False)
+    :param nnedi3cl:        OpenCL acceleration for nnedi3 (Default: False)
+    :param eedi3cl:         OpenCL acceleration for eedi3 (Default: False)
     :param eedi3_args:      Arguments passed to eedi3 (Default: alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
 
     :return:                Antialiased and optionally rescaled clip
@@ -236,10 +242,13 @@ def upscaled_sraa(clip: vs.VideoNode,
             width = get_w(height, aspect_ratio=clip.width / clip.height)
         else:
             width = clip.width
-            
+
+    nnedi3cl = fallback(nnedi3cl, opencl)
+    eedi3cl = fallback(eedi3cl, opencl)
+
     nnedi3 = core.nnedi3cl.NNEDI3CL if nnedi3_cl else core.nnedi3.nnedi3
     eedi3 = core.eedi3m.EEDI3CL if eedi3_cl else core.eedi3m.EEDI3
-    
+
     # Nnedi3 upscale from source height to source height * rounding (Default 1.5)
     up_y = nnedi3(luma, 0, 1, 0, **nnargs)
     up_y = core.resize.Spline36(up_y, height=ssh, src_top=.5)
