@@ -530,9 +530,13 @@ def diff(*clips: vs.VideoNode,
     if clips:
         if any(c.format is None for c in clips):
             raise ValueError("diff: variable-format clips not supported")
+        if any(c.num_frames != c[0].num_frames for c in clips):
+            raise ValueError("diff: frame lengths between clips don't match")
     elif namedclips:
         if any(nc.format is None for nc in namedclips.values()):
             raise ValueError("diff: variable-format namedclips not supported")
+        if any(nc.num_frames != nc[0].num_frames for nc in namedclips.values()):
+            raise ValueError("diff: frame lengths between namedclips don't match")
 
     if clips:
         a, b = vsutil.depth(clips[0], 8), vsutil.depth(clips[1], 8)
