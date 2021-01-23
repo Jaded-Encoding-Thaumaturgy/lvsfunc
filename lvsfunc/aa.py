@@ -246,8 +246,12 @@ def upscaled_sraa(clip: vs.VideoNode,
     nnedi3cl = fallback(nnedi3cl, opencl)
     eedi3cl = fallback(eedi3cl, opencl)
 
-    nnedi3 = core.nnedi3cl.NNEDI3CL if nnedi3cl else core.nnedi3.nnedi3
-    eedi3 = core.eedi3m.EEDI3CL if eedi3cl else core.eedi3m.EEDI3
+    # there doesn't seem to be a cleaner way to do this that makes mypy happy
+    def nnedi3(*args: Any, **kwargs: Any) -> vs.VideoNode:
+        return core.nnedi3cl.NNEDI3CL(*args, **kwargs) if nnedi3cl else core.nnedi3.nnedi3(*args, **kwargs)
+
+    def eedi3(*args: Any, **kwargs: Any) -> vs.VideoNode:
+        return core.eedi3m.EEDI3CL(*args, **kwargs) if nnedi3cl else core.eedi3m.EEDI3(*args, **kwargs)
 
     # Nnedi3 upscale from source height to source height * rounding (Default 1.5)
     up_y = nnedi3(luma, 0, 1, 0, **nnargs)
@@ -260,6 +264,8 @@ def upscaled_sraa(clip: vs.VideoNode,
     aa_y = eedi3(up_y, 0, 0, 0, sclip=nnedi3(up_y, 0, 0, 0, **nnargs), **eeargs)
     aa_y = core.std.Transpose(aa_y)
     aa_y = eedi3(aa_y, 0, 0, 0, sclip=nnedi3(aa_y, 0, 0, 0, **nnargs), **eeargs)
+
+    scaled: vs.VideoNode
 
     # Back to source clip height or given height
     if downscaler is None:

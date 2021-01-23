@@ -219,6 +219,7 @@ def descale(clip: vs.VideoNode,
     resolutions = [Resolution(*r) for r in zip(width, height)]
 
     clip = depth(clip, 32)
+    assert clip.format is not None  # clip was modified by depth, but that wont make it variable
     clip_y = get_y(clip) \
         .std.SetFrameProp('descaleResolution', intval=clip.height)
 
