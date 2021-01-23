@@ -62,6 +62,7 @@ Modules
    lvsfunc.denoise
    lvsfunc.kernels
    lvsfunc.misc
+   lvsfunc.recon
    lvsfunc.scale
    lvsfunc.util
 
@@ -100,6 +101,7 @@ Functions
    lvsfunc.misc.replace_ranges
    lvsfunc.misc.source
    lvsfunc.misc.wipe_row
+   lvsfunc.recon.ChromaReconstruct
    lvsfunc.scale.descale
    lvsfunc.scale.descale_detail_mask
    lvsfunc.scale.reupscale
@@ -198,6 +200,18 @@ lvsfunc.misc
    lvsfunc.misc.wipe_row
 
 .. automodule:: lvsfunc.misc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+lvsfunc.recon
+-------------------
+
+.. autosummary::
+
+   lvsfunc.recon.ChromaReconstruct
+
+.. automodule:: lvsfunc.recon
    :members:
    :undoc-members:
    :show-inheritance:
