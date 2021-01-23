@@ -2,7 +2,7 @@
     Wrappers and functions for chroma reconstruction.
     Original functions written by shane on Discord,
     but since he doesn't seem to be releasing them,
-    so I will be the one to do it.
+    I will be the one to do it.
 """
 from functools import partial
 from typing import List, NamedTuple
@@ -21,13 +21,13 @@ class RegressClips(NamedTuple):
 
 def ChromaReconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) -> vs.VideoNode:
     """
-    A function to demangle messed up chroma, like for example chroma
-    that wasdownscaled using Nearest Neighbour, or the chroma found on DVD.
-    This function should be used with care, and not blindly applied.
+    A function to demangle messed-up chroma, like for example chroma
+    that was downscaled using Nearest Neighbour, or the chroma found on DVDs.
+    This function should be used with care, and not blindly applied to anything.
 
     This function can also return a 4:4:4 clip. This is not recommended
     except for very specific cases, like for example where you're
-    dealing with a razor sharp 1080p source with a lot of bright colours.
+    dealing with a razor-sharp 1080p source with a lot of bright colours.
     Otherwise, have it return the 4:2:0 clip instead.
 
     Original function by shane, modified by Ichunjo and LightArrowsEXE.
