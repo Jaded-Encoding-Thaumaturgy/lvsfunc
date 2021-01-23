@@ -5,7 +5,7 @@
     so I will be the one to do it.
 """
 from functools import partial
-from typing import NamedTuple
+from typing import List, NamedTuple
 
 import vapoursynth as vs
 from vsutil import depth, get_depth, join, split
@@ -38,6 +38,9 @@ def ChromaReconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) -
 
     :return:        Clip with demangled chroma in either 4:2:0 or 4:4:4
     """
+    if clip.format is None:
+        raise ValueError("recon: 'Variable-format clips not supported'")
+
     def dmgl(clip: vs.VideoNode) -> vs.VideoNode:
         # TO-DO: Add auto shift calculator
         return core.resize.Bicubic(clip, w, h, src_left=.25)
@@ -59,11 +62,11 @@ def ChromaReconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) -
     planes[2] = core.std.MergeDiff(planes[2], v_fix)
 
     merged = join([clip_y, planes[1], planes[2]])
-    return core.resize.Bicubic(merged, format=clip.format) if not i444 \
+    return core.resize.Bicubic(merged, format=clip.format.id) if not i444 \
         else depth(merged, get_depth(clip))
 
 
-def _Regress(x, *ys, radius=1, eps=1e-7):
+def _Regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 1, eps: float = 1e-7) -> List[RegressClips]:
     """
     Fit a line for every neighborhood of values of a given size in a clip
     with corresponding neighborhoods in one or more other clips.
@@ -74,13 +77,13 @@ def _Regress(x, *ys, radius=1, eps=1e-7):
     if not radius > 0:
         raise ValueError("radius must be greater than zero")
 
-    Expr = vs.core.std.Expr
+    Expr = core.std.Expr
     E = partial(vs.core.std.BoxBlur, hradius=radius, vradius=radius)
 
-    def mul(*c):
+    def mul(*c: vs.VideoNode) -> vs.VideoNode:
         return Expr(c, "x y *")
 
-    def sq(c):
+    def sq(c: vs.VideoNode) -> vs.VideoNode:
         return mul(c, c)
 
     Ex = E(x)
@@ -100,10 +103,10 @@ def _Regress(x, *ys, radius=1, eps=1e-7):
         for cov_xy, var_y in zip(cov_xys, var_ys)
     ]
 
-    return list(map(RegressClips._make, zip(slopes, intercepts, corrs)))
+    return [RegressClips(*x) for x in zip(slopes, intercepts, corrs)]
 
 
-def _ReconstructMulti(c, r, radius=2):
+def _ReconstructMulti(c: vs.VideoNode, r: RegressClips, radius: int = 2) -> vs.VideoNode:
     weights = core.std.Expr(r.correlation, 'x 0.5 - 0.5 / 0 max')
     slope_pm = core.std.Expr((r.slope, weights), 'x y *')
     slope_pm_sum = _mean(slope_pm, radius)
@@ -111,7 +114,7 @@ def _ReconstructMulti(c, r, radius=2):
     return recons
 
 
-def _mean(c, radius):
+def _mean(c: vs.VideoNode, radius: int) -> vs.VideoNode:
     return core.std.BoxBlur(c, hradius=radius, vradius=radius)
 
 
