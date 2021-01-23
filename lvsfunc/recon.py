@@ -32,6 +32,8 @@ def ChromaReconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) -
 
     Original function by shane, modified by Ichunjo and LightArrowsEXE.
 
+    Aliases for this function are `lvsfunc.demangle` and `lvsfunc.crecon`.
+
     :param clip:    Input clip
     :param radius:  Boxblur radius
     :param i444:    Return a 4:4:4 clip
@@ -116,8 +118,3 @@ def _ReconstructMulti(c: vs.VideoNode, r: RegressClips, radius: int = 2) -> vs.V
 
 def _mean(c: vs.VideoNode, radius: int) -> vs.VideoNode:
     return core.std.BoxBlur(c, hradius=radius, vradius=radius)
-
-
-# Aliases
-demangle = ChromaReconstruct
-crecon = ChromaReconstruct

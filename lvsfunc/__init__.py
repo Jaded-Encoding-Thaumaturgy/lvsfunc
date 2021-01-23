@@ -18,3 +18,5 @@ rfs = misc.replace_ranges
 scomp = comparison.stack_compare
 sraa = aa.upscaled_sraa
 src = misc.source
+demangle = recon.ChromaReconstruct
+crecon = recon.ChromaReconstruct

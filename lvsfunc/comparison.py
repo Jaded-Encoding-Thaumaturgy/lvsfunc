@@ -665,7 +665,3 @@ def tile(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     if clips and namedclips:
         raise ValueError("tile: positional clips and named keyword clips cannot both be given")
     return Tile(clips if clips else namedclips).clip
-
-
-# Aliases
-tvbd_diff = diff
