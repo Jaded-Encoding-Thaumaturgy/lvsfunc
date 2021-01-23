@@ -372,6 +372,25 @@ class _Plugin_adg_Bound(Plugin):
 # end implementation
 
 
+# implementation: bilateral
+class _Plugin_bilateral_Unbound(Plugin):
+    """
+    This class implements the module definitions for the corresponding VapourSynth plugin.
+    This class cannot be imported.
+    """
+    def Bilateral(self, input: "VideoNode", ref: typing.Optional["VideoNode"] = None, sigmaS: typing.Optional[SingleAndSequence[float]] = None, sigmaR: typing.Optional[SingleAndSequence[float]] = None, planes: typing.Optional[SingleAndSequence[int]] = None, algorithm: typing.Optional[SingleAndSequence[int]] = None, PBFICnum: typing.Optional[SingleAndSequence[int]] = None) -> "VideoNode": ...
+    def Gaussian(self, input: "VideoNode", sigma: typing.Optional[SingleAndSequence[float]] = None, sigmaV: typing.Optional[SingleAndSequence[float]] = None) -> "VideoNode": ...
+
+
+class _Plugin_bilateral_Bound(Plugin):
+    """
+    This class implements the module definitions for the corresponding VapourSynth plugin.
+    This class cannot be imported.
+    """
+    def Bilateral(self, ref: typing.Optional["VideoNode"] = None, sigmaS: typing.Optional[SingleAndSequence[float]] = None, sigmaR: typing.Optional[SingleAndSequence[float]] = None, planes: typing.Optional[SingleAndSequence[int]] = None, algorithm: typing.Optional[SingleAndSequence[int]] = None, PBFICnum: typing.Optional[SingleAndSequence[int]] = None) -> "VideoNode": ...
+    def Gaussian(self, sigma: typing.Optional[SingleAndSequence[float]] = None, sigmaV: typing.Optional[SingleAndSequence[float]] = None) -> "VideoNode": ...
+# end implementation
+
 # implementation: comb
 class _Plugin_comb_Unbound(Plugin):
     """
@@ -464,7 +483,7 @@ class _Plugin_dgdecodenv_Unbound(Plugin):
     This class implements the module definitions for the corresponding VapourSynth plugin.
     This class cannot be imported.
     """
-    def DGSource(self, source: typing.Union[str, bytes, bytearray]) -> "VideoNode": ...
+    def DGSource(self, source: typing.Union[str, bytes, bytearray], i420: typing.Optional[int] = None, deinterlace: typing.Optional[int] = None, use_top_field: typing.Optional[int] = None, use_pf: typing.Optional[int] = None, ct: typing.Optional[int] = None, cb: typing.Optional[int] = None, cl: typing.Optional[int] = None, cr: typing.Optional[int] = None, rw: typing.Optional[int] = None, rh: typing.Optional[int] = None, fieldop: typing.Optional[int] = None, show: typing.Optional[int] = None, show2: typing.Union[str, bytes, bytearray, None] = None) -> "VideoNode": ...
 
 
 class _Plugin_dgdecodenv_Bound(Plugin):
@@ -472,7 +491,7 @@ class _Plugin_dgdecodenv_Bound(Plugin):
     This class implements the module definitions for the corresponding VapourSynth plugin.
     This class cannot be imported.
     """
-    def DGSource(self) -> "VideoNode": ...
+    def DGSource(self, i420: typing.Optional[int] = None, deinterlace: typing.Optional[int] = None, use_top_field: typing.Optional[int] = None, use_pf: typing.Optional[int] = None, ct: typing.Optional[int] = None, cb: typing.Optional[int] = None, cl: typing.Optional[int] = None, cr: typing.Optional[int] = None, rw: typing.Optional[int] = None, rh: typing.Optional[int] = None, fieldop: typing.Optional[int] = None, show: typing.Optional[int] = None, show2: typing.Union[str, bytes, bytearray, None] = None) -> "VideoNode": ...
 # end implementation
 
 
@@ -1049,6 +1068,13 @@ class VideoNode:
         Adaptive grain
         """
 # end instance
+# instance_bound: bilateral
+    @property
+    def bilateral(self) -> _Plugin_bilateral_Bound:
+        """
+        Bilateral filter and Gaussian filter for VapourSynth.
+        """
+# end instance
 # instance_bound: comb
     @property
     def comb(self) -> _Plugin_comb_Bound:
@@ -1272,6 +1298,13 @@ class Core:
     def adg(self) -> _Plugin_adg_Unbound:
         """
         Adaptive grain
+        """
+# end instance
+# instance_unbound: bilateral
+    @property
+    def bilateral(self) -> _Plugin_bilateral_Unbound:
+        """
+        Bilateral filter and Gaussian filter for VapourSynth.
         """
 # end instance
 # instance_unbound: comb
