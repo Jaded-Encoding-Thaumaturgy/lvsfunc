@@ -39,7 +39,7 @@ def ChromaReconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) -
     :return:        Clip with demangled chroma in either 4:2:0 or 4:4:4
     """
     if clip.format is None:
-        raise ValueError("descale: 'Variable-format clips not supported'")
+        raise ValueError("recon: 'Variable-format clips not supported'")
 
     def dmgl(clip: vs.VideoNode) -> vs.VideoNode:
         # TO-DO: Add auto shift calculator
