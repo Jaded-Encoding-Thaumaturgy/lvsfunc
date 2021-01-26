@@ -59,7 +59,7 @@ Modules
    lvsfunc.aa
    lvsfunc.comparison
    lvsfunc.deinterlace
-   lvsfunc.denoise
+   lvsfunc.mask
    lvsfunc.kernels
    lvsfunc.misc
    lvsfunc.recon
@@ -87,9 +87,8 @@ Functions
    lvsfunc.deinterlace.decomb
    lvsfunc.deinterlace.dir_deshimmer
    lvsfunc.deinterlace.dir_unsharp
-   lvsfunc.denoise.adaptive_mask
-   lvsfunc.denoise.detail_mask
-   lvsfunc.denoise.quick_denoise
+   lvsfunc.mask.adaptive_mask
+   lvsfunc.mask.detail_mask
    lvsfunc.misc.allow_variable
    lvsfunc.misc.chroma_injector
    lvsfunc.misc.colored_clips
@@ -160,16 +159,15 @@ lvsfunc.deinterlace
    :show-inheritance:
 
 
-lvsfunc.denoise
+lvsfunc.mask
 -------------------
 
 .. autosummary::
 
-   lvsfunc.denoise.adaptive_mask
-   lvsfunc.denoise.detail_mask
-   lvsfunc.denoise.quick_denoise
+   lvsfunc.mask.adaptive_mask
+   lvsfunc.mask.detail_mask
 
-.. automodule:: lvsfunc.denoise
+.. automodule:: lvsfunc.mask
    :members:
    :undoc-members:
    :show-inheritance:
