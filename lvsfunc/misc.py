@@ -5,7 +5,7 @@ import colorsys
 import os
 import random
 from functools import partial, wraps
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, TypeVar, Union, cast
 
 import vapoursynth as vs
 from vsutil import get_depth, get_w, get_y, is_image, scale_value
@@ -178,7 +178,7 @@ def edgefixer(clip: vs.VideoNode,
     return ef if full_range else core.std.Limiter(ef, 16.0, [235, 240])
 
 
-def shift_tint(clip: vs.VideoNode, values: Union[int, List[int]] = 16) -> vs.VideoNode:
+def shift_tint(clip: vs.VideoNode, values: Union[int, Sequence[int]] = 16) -> vs.VideoNode:
     """
     A function for forcibly adding pixel values to a clip.
     Can be used to fix green tints in Crunchyroll sources, for example.
@@ -189,25 +189,31 @@ def shift_tint(clip: vs.VideoNode, values: Union[int, List[int]] = 16) -> vs.Vid
 
     If you only pass 1 value, it will copied to every plane.
     If you pass 2, the 2nd one will be copied over to the 3rd.
+    Don't pass more than three.
 
     :param clip:   Input clip
     :param value:  Value added to every pixel, scales accordingly to your clip's depth (Default: 16)
 
     :return:       Clip with pixel values added
     """
-    if isinstance(values, int):
-        values = [values, values, values]
-    elif len(values) == 2:
-        values = [values[0], values[1], values[1]]
+    val: Tuple[float, float, float]
 
-    if any(v > 255 or v < -255 for v in values):
+    if isinstance(values, int):
+        val = (values, values, values)
+    elif len(values) == 2:
+        val = (values[0], values[1], values[1])
+    elif len(values) == 3:
+        val = (values[0], values[1], values[2])
+    else:
+        raise ValueError("shift_tint: 'Too many values supplied'")
+
+    if any(v > 255 or v < -255 for v in val):
         raise ValueError("shift_tint: 'Every value in \"values\" must be below 255'")
 
     cdepth = get_depth(clip)
-    if cdepth != 8:
-        values = [scale_value(v, 8, cdepth) for v in values]
+    cv: List[float] = [scale_value(v, 8, cdepth) for v in val] if cdepth != 8 else list(val)
 
-    return core.std.Expr(clip, expr=[f'x {values[0]} +', f'x {values[1]} +', f'x {values[2]} +'])
+    return core.std.Expr(clip, expr=[f'x {cv[0]} +', f'x {cv[1]} +', f'x {cv[2]} +'])
 
 
 def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
