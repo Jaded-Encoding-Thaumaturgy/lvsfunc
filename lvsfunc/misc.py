@@ -8,7 +8,7 @@ from functools import partial, wraps
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union, cast
 
 import vapoursynth as vs
-from vsutil import depth, get_depth, get_w, get_y, is_image
+from vsutil import get_depth, get_w, get_y, is_image, scale_value
 
 from .util import get_prop
 
@@ -178,18 +178,37 @@ def edgefixer(clip: vs.VideoNode,
     return ef if full_range else core.std.Limiter(ef, 16.0, [235, 240])
 
 
-def fix_cr_tint(clip: vs.VideoNode, value: int = 128) -> vs.VideoNode:
+def shift_tint(clip: vs.VideoNode, values: Union[int, List[int]] = 16) -> vs.VideoNode:
     """
-    Tries to forcibly fix Crunchyroll's green tint by adding pixel values.
+    A function for forcibly adding pixel values to a clip.
+    Can be used to fix green tints in CrunchyRoll sources, for example.
+
+    Values passed should mimic those of an 8bit clip.
+    If your clip is not 8bit, they will be scaled accordingly.
+
+    If you only pass 1 value, it will copied to every plane.
+    If you pass 2, the 2nd one will be copied over to the 3rd.
+
+    Alias for this function is `lvsfunc.misc.fix_cr_tint`.
 
     :param clip:   Input clip
-    :param value:  Value added to every pixel (Default: 128)
+    :param value:  Value added to every pixel, scales accordingly to your clip's depth (Default: 16)
 
-    :return:       Clip with CR tint fixed
+    :return:       Clip with pixel values added
     """
-    if get_depth(clip) != 16:
-        clip = depth(clip, 16)
-    return core.std.Expr(clip, f'x {value} +')
+    if isinstance(values, int):
+        values = [values, values, values]
+    elif len(values) == 2:
+        values = [values[0], values[1], values[1]]
+
+    if any(v > 255 or v < -255 for v in values):
+        raise ValueError("shift_tint: 'Every value in \"values\" must be below 255'")
+
+    cdepth = get_depth(clip)
+    if cdepth != 8:
+        values = [scale_value(v, 8, cdepth) for v in values]
+
+    return core.std.Expr(clip, expr=[f'x {values[0]} +', f'x {values[1]} +', f'x {values[2]} +'])
 
 
 def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
@@ -488,3 +507,7 @@ def colored_clips(amount: int,
 #       It should optimally be able to accept anything and accurately reconstruct it,
 #       so long as the user gives it the right clips. Otherwise, it should assume
 #       that the chroma was scaled down using Nearest Neighbor or something alike.
+
+
+# Aliases
+fix_cr_tint = shift_tint

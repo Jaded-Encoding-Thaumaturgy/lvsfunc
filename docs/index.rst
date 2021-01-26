@@ -93,7 +93,7 @@ Functions
    lvsfunc.misc.chroma_injector
    lvsfunc.misc.colored_clips
    lvsfunc.misc.edgefixer
-   lvsfunc.misc.fix_cr_tint
+   lvsfunc.misc.shift_tint
    lvsfunc.misc.frames_since_bookmark
    lvsfunc.misc.limit_dark
    lvsfunc.misc.load_bookmarks
@@ -189,7 +189,7 @@ lvsfunc.misc
    lvsfunc.misc.chroma_injector
    lvsfunc.misc.colored_clips
    lvsfunc.misc.edgefixer
-   lvsfunc.misc.fix_cr_tint
+   lvsfunc.misc.shift_tint
    lvsfunc.misc.frames_since_bookmark
    lvsfunc.misc.limit_dark
    lvsfunc.misc.load_bookmarks
