@@ -182,6 +182,7 @@ def shift_tint(clip: vs.VideoNode, values: Union[int, List[int]] = 16) -> vs.Vid
     """
     A function for forcibly adding pixel values to a clip.
     Can be used to fix green tints in CrunchyRoll sources, for example.
+    Only use this if you know what you're doing!
 
     Values passed should mimic those of an 8bit clip.
     If your clip is not 8bit, they will be scaled accordingly.
@@ -206,7 +207,7 @@ def shift_tint(clip: vs.VideoNode, values: Union[int, List[int]] = 16) -> vs.Vid
 
     cdepth = get_depth(clip)
     if cdepth != 8:
-        values = [scale_value(v, 8, cdepth) for v in values]
+        values: List[float, int] = [scale_value(v, 8, cdepth) for v in values]
 
     return core.std.Expr(clip, expr=[f'x {values[0]} +', f'x {values[1]} +', f'x {values[2]} +'])
 
