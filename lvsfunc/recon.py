@@ -119,5 +119,6 @@ def _ReconstructMulti(c: vs.VideoNode, r: RegressClips, radius: int = 2) -> vs.V
 def _mean(c: vs.VideoNode, radius: int) -> vs.VideoNode:
     return core.std.BoxBlur(c, hradius=radius, vradius=radius)
 
+
 # Aliases
 ChromaReconstruct = chroma_reconstruct
