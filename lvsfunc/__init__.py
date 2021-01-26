@@ -7,13 +7,12 @@
 
 # flake8: noqa
 
-from . import aa, comparison, deinterlace, denoise, misc, recon, scale
+from . import aa, comparison, deinterlace, mask, misc, recon, scale
 
 # Aliases:
 comp = comparison.compare
 diff = comparison.diff
 ef = misc.edgefixer
-qden = denoise.quick_denoise
 rfs = misc.replace_ranges
 scomp = comparison.stack_compare
 sraa = aa.upscaled_sraa
