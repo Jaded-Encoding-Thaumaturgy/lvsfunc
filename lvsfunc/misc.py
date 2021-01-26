@@ -181,7 +181,7 @@ def edgefixer(clip: vs.VideoNode,
 def shift_tint(clip: vs.VideoNode, values: Union[int, List[int]] = 16) -> vs.VideoNode:
     """
     A function for forcibly adding pixel values to a clip.
-    Can be used to fix green tints in CrunchyRoll sources, for example.
+    Can be used to fix green tints in Crunchyroll sources, for example.
     Only use this if you know what you're doing!
 
     Values passed should mimic those of an 8bit clip.
@@ -189,8 +189,6 @@ def shift_tint(clip: vs.VideoNode, values: Union[int, List[int]] = 16) -> vs.Vid
 
     If you only pass 1 value, it will copied to every plane.
     If you pass 2, the 2nd one will be copied over to the 3rd.
-
-    Alias for this function is `lvsfunc.misc.fix_cr_tint`.
 
     :param clip:   Input clip
     :param value:  Value added to every pixel, scales accordingly to your clip's depth (Default: 16)
@@ -207,7 +205,7 @@ def shift_tint(clip: vs.VideoNode, values: Union[int, List[int]] = 16) -> vs.Vid
 
     cdepth = get_depth(clip)
     if cdepth != 8:
-        values: List[float, int] = [scale_value(v, 8, cdepth) for v in values]
+        values = [scale_value(v, 8, cdepth) for v in values]
 
     return core.std.Expr(clip, expr=[f'x {values[0]} +', f'x {values[1]} +', f'x {values[2]} +'])
 
@@ -508,7 +506,3 @@ def colored_clips(amount: int,
 #       It should optimally be able to accept anything and accurately reconstruct it,
 #       so long as the user gives it the right clips. Otherwise, it should assume
 #       that the chroma was scaled down using Nearest Neighbor or something alike.
-
-
-# Aliases
-fix_cr_tint = shift_tint
