@@ -100,7 +100,7 @@ Functions
    lvsfunc.misc.replace_ranges
    lvsfunc.misc.source
    lvsfunc.misc.wipe_row
-   lvsfunc.recon.ChromaReconstruct
+   lvsfunc.recon.chroma_reconstruct
    lvsfunc.scale.descale
    lvsfunc.scale.descale_detail_mask
    lvsfunc.scale.reupscale
@@ -207,7 +207,7 @@ lvsfunc.recon
 
 .. autosummary::
 
-   lvsfunc.recon.ChromaReconstruct
+   lvsfunc.recon.chroma_reconstruct
 
 .. automodule:: lvsfunc.recon
    :members:

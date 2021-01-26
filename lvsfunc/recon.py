@@ -19,7 +19,7 @@ class RegressClips(NamedTuple):
     correlation: vs.VideoNode
 
 
-def ChromaReconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) -> vs.VideoNode:
+def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) -> vs.VideoNode:
     """
     A function to demangle messed-up chroma, like for example chroma
     that was downscaled using Nearest Neighbour, or the chroma found on DVDs.
@@ -118,3 +118,6 @@ def _ReconstructMulti(c: vs.VideoNode, r: RegressClips, radius: int = 2) -> vs.V
 
 def _mean(c: vs.VideoNode, radius: int) -> vs.VideoNode:
     return core.std.BoxBlur(c, hradius=radius, vradius=radius)
+
+# Aliases
+ChromaReconstruct = chroma_reconstruct
