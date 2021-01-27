@@ -184,6 +184,7 @@ def shift_tint(clip: vs.VideoNode, values: Union[int, Sequence[int]] = 16) -> vs
     Can be used to fix green tints in Crunchyroll sources, for example.
     Only use this if you know what you're doing!
 
+    This function accepts a single integer or a list of integers.
     Values passed should mimic those of an 8bit clip.
     If your clip is not 8bit, they will be scaled accordingly.
 
@@ -191,10 +192,10 @@ def shift_tint(clip: vs.VideoNode, values: Union[int, Sequence[int]] = 16) -> vs
     If you pass 2, the 2nd one will be copied over to the 3rd.
     Don't pass more than three.
 
-    :param clip:   Input clip
-    :param value:  Value added to every pixel, scales accordingly to your clip's depth (Default: 16)
+    :param clip:    Input clip
+    :param values:  Value added to every pixel, scales accordingly to your clip's depth (Default: 16)
 
-    :return:       Clip with pixel values added
+    :return:        Clip with pixel values added
     """
     val: Tuple[float, float, float]
 
