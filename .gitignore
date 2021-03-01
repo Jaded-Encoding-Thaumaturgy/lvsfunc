@@ -1,5 +1,6 @@
-# Vapoursynth
+.mypy_cache/
 .vscode
+*.cfg
 *.pyc
 *.vpy
 BACK-UP/
@@ -10,4 +11,3 @@ doc/_static
 doc/_templates
 lvsfunc.egg-info/
 venv/
-.mypy_cache/
