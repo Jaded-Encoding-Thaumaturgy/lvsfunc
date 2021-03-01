@@ -89,6 +89,7 @@ Functions
    lvsfunc.deinterlace.dir_unsharp
    lvsfunc.mask.adaptive_mask
    lvsfunc.mask.detail_mask
+   lvsfunc.mask.halo_mask
    lvsfunc.misc.allow_variable
    lvsfunc.misc.chroma_injector
    lvsfunc.misc.colored_clips
@@ -166,6 +167,7 @@ lvsfunc.mask
 
    lvsfunc.mask.adaptive_mask
    lvsfunc.mask.detail_mask
+   lvsfunc.mask.halo_mask
 
 .. automodule:: lvsfunc.mask
    :members:
