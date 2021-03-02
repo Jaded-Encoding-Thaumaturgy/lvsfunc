@@ -45,7 +45,7 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
                 brz_a: float = 0.005, brz_b: float = 0.005) -> vs.VideoNode:
     """
     A wrapper for creating a detail mask to be used during denoising and/or debanding.
-    The detail mask is created using debandshit's rangemask,
+    The detail mask is created using debandshit's range mask,
     and is then merged with Prewitt to catch lines it may have missed.
 
     Function is curried to allow parameter tuning when passing to denoisers
@@ -62,11 +62,6 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
 
     :return:            Detail mask
     """
-    try:
-        from debandshit import rangemask
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("detail_mask: missing dependency 'debandshit'")
-
     if clip.format is None:
         raise ValueError("detail_mask: 'Variable-format clips not supported'")
 
@@ -86,7 +81,7 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
     blur = (util.quick_resample(clip, partial(core.bilateral.Gaussian, sigma=sigma))
             if sigma else clip)
 
-    mask_a = rangemask(get_y(blur), rad=rad, radc=radc)
+    mask_a = range_mask(get_y(blur), rad=rad, radc=radc)
     mask_a = depth(mask_a, clip.format.bits_per_sample)
     mask_a = core.std.Binarize(mask_a, brz_a)
 
@@ -156,7 +151,54 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2, sigma: float = 1.0,
     return core.std.Expr(mask, expr="x 2 *")
 
 
-# Helper function taken and modified from havsfunc to reduce dependencies
+@functoolz.curry
+def range_mask(clip: vs.VideoNode, rad: int = 2, radc: Optional[int] = None) -> vs.VideoNode:
+    """
+    Min/max mask with separate luma/chroma radii.
+
+    rad/radc are the luma/chroma equivalent of gradfun3's "mask" parameter.
+    The way gradfun3's mask works is on an 8 bit scale, with rounded dithering of high depth input.
+    As such, when following this filter with a Binarize, use the following conversion steps based on input:
+        -  8 bit = Binarize(2) or Binarize(thr_det)
+        - 16 bit = Binarize(384) or Binarize((thr_det - 0.5) * 256)
+        - floats = Binarize(0.005859375) or Binarize((thr_det - 0.5) / 256)
+    When radii are equal to 1, this filter becomes identical to mt_edge("min/max", 0, 255, 0, 255).
+
+    :param clip:    Input clip
+    :param rad:     Depth in pixels of the detail/edge masking
+    :param radc:    Chroma equivalent to `rad`
+
+    :return:        Range mask
+    """
+    radc = rad if radc is None else radc
+    if radc == 0:
+        clip = get_y(clip)
+    ma = _minmax(clip, rad, radc, maximum=True)
+    mi = _minmax(clip, rad, radc, maximum=False)
+
+    return core.std.Expr([ma, mi], expr='x y -')
+
+
+# Helper functions
 def _scale(value: int, peak: int) -> int:
     x = value * peak / 255
     return math.floor(x + 0.5) if x > 0 else math.ceil(x - 0.5)
+
+
+def _minmax(clip: vs.VideoNode, sy: int = 2, sc: int = 2, maximum: bool = False) -> vs.VideoNode:
+    yp = sy >= sc
+    yiter = 1 if yp else 0
+    cp = sc >= sy
+    citer = 1 if cp else 0
+    planes = [0] if yp and not cp else [1, 2] if cp and not yp else [0, 1, 2]
+
+    if max(sy, sc) % 3 != 1:
+        coor = [0, 1, 0, 1, 1, 0, 1, 0]
+    else:
+        coor = [1] * 8
+
+    if sy > 0 or sc > 0:
+        func = clip.std.Maximum if maximum else clip.std.Minimum
+        return _minmax(func(planes=planes, coordinates=coor), sy=sy-yiter, sc=sc-citer)
+    else:
+        return clip

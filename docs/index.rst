@@ -90,6 +90,7 @@ Functions
    lvsfunc.mask.adaptive_mask
    lvsfunc.mask.detail_mask
    lvsfunc.mask.halo_mask
+   lvsfunc.mask.range_mask
    lvsfunc.misc.allow_variable
    lvsfunc.misc.chroma_injector
    lvsfunc.misc.colored_clips
@@ -168,6 +169,7 @@ lvsfunc.mask
    lvsfunc.mask.adaptive_mask
    lvsfunc.mask.detail_mask
    lvsfunc.mask.halo_mask
+   lvsfunc.mask.range_mask
 
 .. automodule:: lvsfunc.mask
    :members:
