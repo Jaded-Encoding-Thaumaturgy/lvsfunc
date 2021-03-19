@@ -15,14 +15,14 @@ core = vs.core
 def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:
     """
     A simple function to fix deblending for interlaced video with an AABBA blending pattern,
-    where A is a normal frame and B is a blended frame.
+    where A is a regular frame and B is a blended frame.
 
     Assuming there's a constant pattern of frames (labeled A, B, C, CD, and DA in this function),
-    blending can be fixed by calculating the C frame by getting halves of CD and DA, and using that
-    to fix up CD. DA can then be dropped due to it being an interlaced frame.
+    blending can be fixed by calculating the D frame by getting halves of CD and DA, and using that
+    to fix up CD. DA is then dropped because it's a duplicated frame.
 
-    However, doing this will result in some of the artifacting being added to the deblended frame.
-    We can mitigate this by repairing the frame with the non-blended frame before it.
+    Doing this will result in some of the artifacting being added to the deblended frame,
+    but we can mitigate that by repairing the frame with the non-blended frame before it.
 
     For more information, please refer to this blogpost by torchlight:
     https://mechaweaponsvidya.wordpress.com/2012/09/13/adventures-in-deblending/
@@ -49,8 +49,7 @@ def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:
                 c, cd, da, a = clip[n - 1], clip[n], clip[n + 1], clip[n + 2]
                 debl = core.std.Expr([c, cd, da, a], expr_cd)
                 return util.pick_repair(clip)(debl, c, rep) if rep else debl
-            else:
-                return clip
+            return clip
 
     debl = core.std.FrameEval(clip, partial(deblend, clip=clip, rep=rep))
     return core.std.DeleteFrames(debl, blends_b).std.AssumeFPS(fpsnum=24000, fpsden=1001)
