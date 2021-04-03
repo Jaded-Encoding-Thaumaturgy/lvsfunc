@@ -370,8 +370,8 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     def _resample(clip: vs.VideoNode) -> vs.VideoNode:
         # Resampling to 8 bit and RGB to properly display how it appears on your screen
-        return core.resize.Point(clip, format=vs.RGB24, matrix_in=_GetMatrix(clip),
-                                 prefer_props=True, dither_type='error_diffusion')
+        return core.resize.Bicubic(clip, format=vs.RGB24, matrix_in=_GetMatrix(clip),
+                                   prefer_props=True, dither_type='error_diffusion')
 
     # Error handling
     if frames and len(frames) > clip_a.num_frames:
