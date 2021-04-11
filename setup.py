@@ -22,6 +22,9 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     packages=["lvsfunc"],
     url="https://github.com/Irrational-Encoding-Wizardry/lvsfunc",
+    package_data={
+        'lvsfunc': ['py.typed'],
+    },
     install_requires=install_requires,
     classifiers=[
         "Programming Language :: Python :: 3",
