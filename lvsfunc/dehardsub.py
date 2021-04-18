@@ -62,8 +62,8 @@ class HardsubSign():
             raise ValueError("get_all_masks: 'Variable-format clips not supported'")
 
         mask = kgf.hardsubmask_fades(hrdsb, ref, highpass=self.highpass, expand_n=self.expand)
-        assert isinstance(mask, vs.VideoNode)
-        return vsutil.depth(mask, hrdsb.format.bits_per_sample)
+
+        return vsutil.depth(mask, hrdsb.format.bits_per_sample, range=vsutil.Range.FULL, range_in=vsutil.Range.FULL)
 
     def get_mask(self, hrdsb: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
         """
