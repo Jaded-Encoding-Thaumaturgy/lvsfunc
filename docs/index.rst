@@ -58,12 +58,14 @@ Modules
 
    lvsfunc.aa
    lvsfunc.comparison
+   lvsfunc.dehardsub
    lvsfunc.deinterlace
    lvsfunc.mask
    lvsfunc.kernels
    lvsfunc.misc
    lvsfunc.recon
    lvsfunc.scale
+   lvsfunc.types
    lvsfunc.util
 
 Functions
@@ -145,6 +147,27 @@ lvsfunc.comparison
    :undoc-members:
    :show-inheritance:
 
+
+lvsfunc.dehardsub
+-----------------
+
+.. autosummary::
+
+   lvsfunc.dehardsub.get_all_masks
+   lvsfunc.dehardsub.bounded_dehardsub
+
+.. autoclass:: lvsfunc.dehardsub.HardsubSign
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
+.. automodule:: lvsfunc.dehardsub
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :exclude-members: HardsubSign
+
 lvsfunc.deinterlace
 -------------------
 
@@ -171,10 +194,17 @@ lvsfunc.mask
    lvsfunc.mask.halo_mask
    lvsfunc.mask.range_mask
 
+.. autoclass:: lvsfunc.mask.BoundingBox
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
 .. automodule:: lvsfunc.mask
    :members:
    :undoc-members:
    :show-inheritance:
+   :exclude-members: BoundingBox
 
 lvsfunc.kernels
 -------------------
@@ -245,6 +275,14 @@ lvsfunc.scale
    :undoc-members:
    :show-inheritance:
    :exclude-members: Resolution, ScaleAttempt
+
+lvsfunc.types
+-------------
+
+.. automodule:: lvsfunc.types
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 lvsfunc.util
 -------------------

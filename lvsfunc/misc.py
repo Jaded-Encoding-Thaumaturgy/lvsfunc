@@ -11,6 +11,7 @@ import vapoursynth as vs
 from vsutil import get_depth, get_w, get_y, is_image, scale_value
 
 from .util import get_prop
+from .types import Range
 
 core = vs.core
 
@@ -102,7 +103,7 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
 
 def replace_ranges(clip_a: vs.VideoNode,
                    clip_b: vs.VideoNode,
-                   ranges: List[Union[int, Tuple[int, int]]]) -> vs.VideoNode:
+                   ranges: Union[Range, List[Range]]) -> vs.VideoNode:
     """
     A replacement for ReplaceFramesSimple that uses ints and tuples rather than a string.
     Frame ranges are inclusive.
@@ -119,7 +120,11 @@ def replace_ranges(clip_a: vs.VideoNode,
 
     :return:           Clip with ranges from clip_a replaced with clip_b
     """
+    if not isinstance(ranges, list):
+        ranges = [ranges]
+
     out = clip_a
+
     for r in ranges:
         if type(r) is tuple:
             start, end = cast(Tuple[int, int], r)

@@ -3,12 +3,13 @@
 """
 import math
 from functools import partial
-from typing import Callable, Optional
+from typing import Callable, Optional, Tuple, Union
 
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_y, iterate, scale_value
 
 from . import util
+from .types import Position, Size
 
 try:
     from cytoolz import functoolz
@@ -202,3 +203,47 @@ def _minmax(clip: vs.VideoNode, sy: int = 2, sc: int = 2, maximum: bool = False)
         return _minmax(func(planes=planes, coordinates=coor), sy=sy-yiter, sc=sc-citer)
     else:
         return clip
+
+
+class BoundingBox():
+    """
+    A positional bounding box.
+    Basically kagefunc.squaremask but can be configured then deferred.
+
+    Uses Position + Size, like provided by GIMP's rectangle selection tool.
+
+    :param pos:  Offset of top-left corner of the bounding box from the top-left corner of the frame.
+                 Supports either a :py:class:`lvsfunc.types.Position` or a tuple that will be converted.
+    :param size: Offset of the bottom-right corner of the bounding box from the top-left corner of the bounding box.
+                 Supports either a :py:class:`lvsfunc.types.Size` or a tuple that will be converted.
+    """
+    pos: Position
+    size: Size
+
+    def __init__(self, pos: Union[Position, Tuple[int, int]], size: Union[Size, Tuple[int, int]]):
+        self.pos = pos if isinstance(pos, Position) else Position(pos[0], pos[1])
+        self.size = size if isinstance(size, Size) else Size(size[0], size[1])
+
+    def get_mask(self, ref: vs.VideoNode) -> vs.VideoNode:
+        """
+        Get a mask representing the bounding box
+
+        :param ref: Reference clip for format, resolution, and length.
+
+        :return:    Square mask representing the bounding box.
+        """
+        if ref.format is None:
+            raise ValueError("get_all_masks: 'Variable-format clips not supported'")
+
+        if self.pos.x + self.size.x > ref.width or self.pos.y + self.size.y > ref.height:
+            raise ValueError("BoundingBox: Bounds exceed clip size!")
+
+        mask_fmt: vs.Format = ref.format.replace(color_family=vs.GRAY, subsampling_w=0, subsampling_h=0)
+        white: float = 1 if mask_fmt.sample_type == vs.FLOAT else (1 << ref.format.bits_per_sample) - 1
+        mask: vs.VideoNode = core.std.BlankClip(ref, color=white, length=1, format=mask_fmt.id)
+        mask = mask.std.Crop(self.pos.x, ref.width - (self.pos.x + self.size.x),
+                             self.pos.y, ref.height - (self.pos.y + self.size.y))
+        mask = mask.std.AddBorders(self.pos.x, ref.width - (self.pos.x + self.size.x),
+                                   self.pos.y, ref.height - (self.pos.y + self.size.y))
+
+        return mask
