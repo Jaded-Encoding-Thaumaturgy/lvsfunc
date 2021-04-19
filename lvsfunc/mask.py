@@ -2,14 +2,17 @@
     Wrappers and masks for denoising.
 """
 import math
+from abc import ABC, abstractmethod
 from functools import partial
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, List, Optional, Tuple, Union
 
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_y, iterate, scale_value
+from vsutil import Range as CRange
 
 from . import util
-from .types import Position, Size
+from .misc import replace_ranges
+from .types import Position, Range, Size
 
 try:
     from cytoolz import functoolz
@@ -247,3 +250,82 @@ class BoundingBox():
                                    self.pos.y, ref.height - (self.pos.y + self.size.y))
 
         return mask
+
+
+class DeferredMask(ABC):
+    """
+    Deferred masking interface.
+
+    Provides an interface to use different preconfigured masking functions.
+    Provides support for ranges, reference frames, and bounding.
+
+    :param range:    A single range or list of ranges to replace,
+                     compatible with :py:class:`lvsfunc.misc.replace_ranges`
+    :param bound:    A :py:class:`lvsfunc.mask.BoundingBox` or a tuple that will be converted.
+                     (Default: ``None``, no bounding)
+    :param blur:     Blur the bounding mask (Default: False)
+    :param refframe: A single frame number to use to generate the mask
+                     or a list of frame numbers with the same length as ``range``
+
+    """
+    ranges: List[Range]
+    bound: Optional[BoundingBox]
+    refframes: List[int]
+    blur: bool
+
+    def __init__(self, ranges: Union[Range, List[Range]],
+                 bound: Union[BoundingBox, Tuple[Tuple[int, int], Tuple[int, int]], None] = None,
+                 *,
+                 blur: bool = False, refframes: Union[int, List[int], None] = None):
+        self.ranges = ranges if isinstance(ranges, list) else [ranges]
+        self.blur = blur
+
+        if bound is None:
+            self.bound = None
+        elif isinstance(bound, BoundingBox):
+            self.bound = bound
+        else:
+            self.bound = BoundingBox(bound[0], bound[1])
+
+        if refframes is None:
+            self.refframes = []
+        elif isinstance(refframes, int):
+            self.refframes = [refframes] * len(self.ranges)
+        else:
+            self.refframes = refframes
+
+        if len(self.refframes) > 0 and len(self.refframes) != len(self.ranges):
+            raise ValueError("Mask: 'Received reference frame and range list size mismatch!'")
+
+    def get_mask(self, clip: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
+        """
+        Get the bounded mask.
+
+        :param clip:  Source
+        :param ref:   Reference clip
+
+        :return:      Bounded mask
+        """
+        if ref.format is None or clip.format is None:
+            raise ValueError("get_all_masks: 'Variable-format clips not supported'")
+
+        if self.bound:
+            bm = self.bound.get_mask(ref)
+            bm = bm if not self.blur else bm.std.BoxBlur(hradius=5, vradius=5, hpasses=5, vpasses=5)
+
+        if len(self.refframes) == 0:
+            hm = depth(self._mask(clip, ref), clip.format.bits_per_sample,
+                       range=CRange.FULL, range_in=CRange.FULL)
+        else:
+            hm = core.std.BlankClip(ref, format=ref.format.replace(color_family=vs.GRAY,
+                                                                   subsampling_h=0, subsampling_w=0).id)
+            for range, rf in zip(self.ranges, self.refframes):
+                mask = depth(self._mask(clip[rf], ref[rf]), clip.format.bits_per_sample,
+                             range=CRange.FULL, range_in=CRange.FULL)
+                hm = replace_ranges(hm, mask*len(hm), range)
+
+        return hm if self.bound is None else core.std.MaskedMerge(core.std.BlankClip(hm), hm, bm)
+
+    @abstractmethod
+    def _mask(self, clip: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
+        pass

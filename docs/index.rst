@@ -85,6 +85,8 @@ Functions
    lvsfunc.comparison.stack_planes
    lvsfunc.comparison.stack_vertical
    lvsfunc.comparison.tile
+   lvsfunc.dehardsub.bounded_dehardsub
+   lvsfunc.dehardsub.get_all_masks
    lvsfunc.deinterlace.deblend
    lvsfunc.deinterlace.decomb
    lvsfunc.deinterlace.dir_deshimmer
@@ -156,7 +158,25 @@ lvsfunc.dehardsub
    lvsfunc.dehardsub.get_all_masks
    lvsfunc.dehardsub.bounded_dehardsub
 
+.. autoclass:: lvsfunc.dehardsub.HardsubMask
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
 .. autoclass:: lvsfunc.dehardsub.HardsubSign
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
+.. autoclass:: lvsfunc.dehardsub.HardsubLine
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
+.. autoclass:: lvsfunc.dehardsub.HardsubLineFade
    :members:
    :undoc-members:
    :show-inheritance:
@@ -166,7 +186,7 @@ lvsfunc.dehardsub
    :members:
    :undoc-members:
    :show-inheritance:
-   :exclude-members: HardsubSign
+   :exclude-members: HardsubMask, HardsubSign, HardsubLine, HardsubLineFade
 
 lvsfunc.deinterlace
 -------------------
@@ -200,11 +220,17 @@ lvsfunc.mask
    :show-inheritance:
    :member-order: bysource
 
+.. autoclass:: lvsfunc.mask.DeferredMask
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
 .. automodule:: lvsfunc.mask
    :members:
    :undoc-members:
    :show-inheritance:
-   :exclude-members: BoundingBox
+   :exclude-members: BoundingBox, DeferredMask
 
 lvsfunc.kernels
 -------------------
