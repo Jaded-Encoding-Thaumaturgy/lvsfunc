@@ -11,8 +11,30 @@ from . import kernels, util
 core = vs.core
 
 
+def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, strength: float = 1) -> vs.VideoNode:
+    """
+    Clamp stronger AAs to weaker AAs.
+
+    Stolen from Zastin.
+
+    :param src:      Non-AA'd source clip.
+    :param weak:     Weakly-AA'd clip (eg: nnedi3)
+    :param strong:   Strongly-AA'd clip (eg: eedi3)
+    :param strength: Clamping strength (Default: 1)
+
+    :return:       Clip with clamped anti-aliasing.
+    """
+    if src.format is None or weak.format is None or strong.format is None:
+        raise ValueError("nneedi3_clamp: 'Variable-format clips not supported'")
+    thr = strength * (1 << (src.format.bits_per_sample - 8)) if src.format.sample_type == vs.INTEGER \
+        else strength/219
+    return core.std.Expr([src, weak, strong],
+                         expr=f"x y - x z - xor x x y - abs x z - abs < z y {thr} + min y {thr} - max z ? ?" if thr != 0
+                         else "x y z min max y z max min")
+
+
 def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
-                  mask: Optional[vs.VideoNode] = None, ret_mask: bool = False,
+                  mask: Optional[vs.VideoNode] = None, retinex_mask: bool = False,
                   mthr: float = 0.25, show_mask: bool = False,
                   opencl: bool = False, nnedi3cl: Optional[bool] = None,
                   eedi3cl: Optional[bool] = None) -> vs.VideoNode:
@@ -23,7 +45,7 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
     Original function written by Zastin, modified by LightArrowsEXE.
 
     Dependencies:
-    * kagefunc (optional: retinex edgemask)
+    * kagefunc (optional: automatic masking, otherwise mask must be user-supplied)
     * vapoursynth-retinex (optional: retinex edgemask)
     * vapoursynth-tcanny (optional: retinex edgemask)
     * vapoursynth-eedi3
@@ -43,20 +65,27 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
 
     :return:                    Antialiased clip
     """
-
     if clip.format is None:
         raise ValueError("nneedi3_clamp: 'Variable-format clips not supported'")
 
+    nnedi3cl = fallback(nnedi3cl, opencl)
+    eedi3cl = fallback(eedi3cl, opencl)
+
+    nnedi3_args: Dict[str, Any] = dict(field=0, dh=True, nsize=3, nns=3, qual=1)
+    eedi3_args: Dict[str, Any] = dict(field=0, dh=True, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20)
+
+    def _eedi3(clip: vs.VideoNode, mclip: Optional[vs.VideoNode] = None) -> vs.VideoNode:
+        return clip.eedi3m.EEDI3CL(**eedi3_args) if eedi3cl \
+            else clip.eedi3m.EEDI3(mclip=mclip, **eedi3_args)
+
+    def _nnedi3(clip: vs.VideoNode) -> vs.VideoNode:
+        return clip.nnedi3cl.NNEDI3CL(**nnedi3_args) if nnedi3cl \
+            else clip.nnedi3.nnedi3(**nnedi3_args)
+
     clip_y = get_y(clip)
 
-    bits = clip.format.bits_per_sample
-    sample_type = clip.format.sample_type
-    shift = bits - 8
-    thr = strength * (1 >> shift) if sample_type == vs.INTEGER else strength/219
-    expr = 'x z - y z - xor y x y {0} + min y {0} - max ?'.format(thr)
-
-    if sample_type == vs.INTEGER:
-        mthr = round(mthr * ((1 >> shift) - 1))
+    if clip.format.sample_type == vs.INTEGER:
+        mthr = round(mthr * ((1 << clip.format.bits_per_sample) - 1))
 
     if mask is None:
         try:
@@ -64,54 +93,34 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
         except ModuleNotFoundError:
             raise ModuleNotFoundError("nnedi3_clamp: missing dependency 'kagefunc'")
         mask = kirsch(clip_y)
-        if ret_mask:
+        if retinex_mask:
             # workaround to support float input
-            ret = depth(clip_y, min(16, bits))
+            ret = depth(clip_y, min(16, clip.format.bits_per_sample))
             ret = core.retinex.MSRCP(ret, sigma=[50, 200, 350], upper_thr=0.005)
-            ret = depth(ret, bits)
+            ret = depth(ret, clip.format.bits_per_sample)
             tcanny = core.tcanny.TCanny(ret, mode=1, sigma=[1.0])
             tcanny = core.std.Minimum(tcanny, coordinates=[1, 0, 1, 0, 0, 1, 0, 1])
             # no clamping needed when binarizing
             mask = core.std.Expr([mask, tcanny], 'x y +')
-        mask = mask.std.Binarize(thr).std.Maximum().std.Convolution([1] * 9)
-
-    nnedi3cl = fallback(nnedi3cl, opencl)
-    eedi3cl = fallback(eedi3cl, opencl)
-
-    nnedi3_args: Dict[str, Any] = dict(nsize=3, nns=3, qual=1)
-    eedi3_args: Dict[str, Any] = dict(alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20)
-
-    clip_tra = core.std.Transpose(clip_y)
-
-    if eedi3cl:
-        strong = core.eedi3m.EEDI3CL(clip_tra, 0, True, **eedi3_args)
-        strong = core.resize.Spline36(strong, height=clip.width, src_top=0.5)
-        strong = core.std.Transpose(strong)
-        strong = core.eedi3m.EEDI3CL(strong, 0, True, **eedi3_args)
-        strong = core.resize.Spline36(strong, height=clip.height, src_top=0.5)
-    else:
-        strong = core.eedi3m.EEDI3(clip_tra, 0, True, mclip=mask.std.Transpose(), **eedi3_args)
-        strong = core.resize.Spline36(strong, height=clip.width, src_top=0.5)
-        strong = core.std.Transpose(strong)
-        strong = core.eedi3m.EEDI3(strong, 0, True, mclip=mask, **eedi3_args)
-        strong = core.resize.Spline36(strong, height=clip.height, src_top=0.5)
-
-    nnedi3: Callable[..., vs.VideoNode] = core.nnedi3.nnedi3
-    if nnedi3cl:
-        nnedi3 = core.nnedi3cl.NNEDI3CL
-
-    weak = nnedi3(clip_tra, 0, True, **nnedi3_args)
-    weak = core.resize.Spline36(weak, height=clip.width, src_top=0.5)
-    weak = core.std.Transpose(weak)
-    weak = nnedi3(weak, 0, True, **nnedi3_args)
-    weak = core.resize.Spline36(weak, height=clip.height, src_top=0.5)
-
-    aa = core.std.Expr([strong, weak, clip_y], expr)
-
-    merged = core.std.MaskedMerge(clip_y, aa, mask)
+        mask = mask.std.Binarize(mthr).std.Maximum().std.Convolution([1] * 9)
 
     if show_mask:
         return mask
+
+    clip_tra = core.std.Transpose(clip_y)
+
+    strong = _eedi3(clip_tra, mclip=mask.std.Transpose())
+    strong = strong.resize.Spline36(height=clip.width, src_top=0.5).std.Transpose()
+    strong = _eedi3(strong, mclip=mask)
+    strong = strong.resize.Spline36(height=clip.height, src_top=0.5)
+
+    weak = _nnedi3(clip_tra)
+    weak = weak.resize.Spline36(height=clip.width, src_top=0.5).std.Transpose()
+    weak = _nnedi3(weak)
+    weak = weak.resize.Spline36(height=clip.height, src_top=0.5)
+
+    aa = clamp_aa(clip_y, weak, strong)
+    merged = core.std.MaskedMerge(clip_y, aa, mask)
     return merged if clip.format.color_family == vs.GRAY else core.std.ShufflePlanes([merged, clip], [0, 1, 2], vs.YUV)
 
 
