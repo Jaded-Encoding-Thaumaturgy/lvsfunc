@@ -47,10 +47,11 @@ class HardsubMask(DeferredMask, ABC):
         dmasks = []
         partials = partials + [ref]
         assert masks[-1].format is not None
-        thresh = round((1 << masks[-1].format.bits_per_sample) * 0.75)
+        thresh = 0.75 if masks[-1].format.sample_type == vs.FLOAT \
+            else round(((1 << masks[-1].format.bits_per_sample) - 1) * 0.75)
         for p in partials:
             masks.append(core.std.Expr([masks[-1], self.get_mask(p, ref)], expr="x y -"))
-            dmasks.append(vsutil.iterate(core.std.Expr([masks[-1]], "x {} < 0 x ?".format(thresh)),
+            dmasks.append(vsutil.iterate(core.std.Expr([masks[-1]], f"x {thresh} < 0 x ?"),
                                          core.std.Maximum,
                                          4).std.Inflate())
             pdhs.append(core.std.MaskedMerge(pdhs[-1], p, dmasks[-1]))
