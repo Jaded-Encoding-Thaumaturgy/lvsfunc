@@ -12,6 +12,26 @@ from . import util
 core = vs.core
 
 
+def sivtc(clip: vs.VideoNode, TFF: bool, pattern: int = 0) -> vs.VideoNode:
+    """
+    A very simple fieldmatching function.
+
+    This is essentially a stripped-down JIVTC offering JUST the basic fieldmatching part.
+    As such, you may need to combine multiple instances if patterns change throughout the clip.
+
+    :param clip:        Input clip
+    :param TFF:         Top-Field-First
+    :param pattern:     First frame of any clean-combed-combed-clean-clean sequence
+
+    :return:            IVTC'd clip
+    """
+    pattern = pattern % 5
+
+    defivtc = core.std.SeparateFields(clip, tff=TFF).std.DoubleWeave()
+    selectlist = [[0, 3, 6, 8], [0, 2, 5, 8], [0, 2, 4, 7], [2, 4, 6, 9], [1, 4, 6, 8]]
+    return core.std.SelectEvery(defivtc, 10, selectlist[pattern])
+
+
 def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:
     """
     A simple function to fix deblending for interlaced video with an AABBA blending pattern,

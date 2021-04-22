@@ -60,8 +60,8 @@ Modules
    lvsfunc.comparison
    lvsfunc.dehardsub
    lvsfunc.deinterlace
-   lvsfunc.mask
    lvsfunc.kernels
+   lvsfunc.mask
    lvsfunc.misc
    lvsfunc.recon
    lvsfunc.scale
@@ -92,6 +92,7 @@ Functions
    lvsfunc.deinterlace.decomb
    lvsfunc.deinterlace.dir_deshimmer
    lvsfunc.deinterlace.dir_unsharp
+   lvsfunc.deinterlace.sivtc
    lvsfunc.mask.adaptive_mask
    lvsfunc.mask.detail_mask
    lvsfunc.mask.halo_mask
@@ -100,12 +101,12 @@ Functions
    lvsfunc.misc.chroma_injector
    lvsfunc.misc.colored_clips
    lvsfunc.misc.edgefixer
-   lvsfunc.misc.shift_tint
    lvsfunc.misc.frames_since_bookmark
    lvsfunc.misc.limit_dark
    lvsfunc.misc.load_bookmarks
    lvsfunc.misc.replace_ranges
    lvsfunc.misc.scale_thresh
+   lvsfunc.misc.shift_tint
    lvsfunc.misc.source
    lvsfunc.misc.wipe_row
    lvsfunc.recon.chroma_reconstruct
@@ -158,8 +159,8 @@ lvsfunc.dehardsub
 
 .. autosummary::
 
-   lvsfunc.dehardsub.get_all_masks
    lvsfunc.dehardsub.bounded_dehardsub
+   lvsfunc.dehardsub.get_all_masks
 
 .. autoclass:: lvsfunc.dehardsub.HardsubMask
    :members:
@@ -206,6 +207,7 @@ lvsfunc.deinterlace
    lvsfunc.deinterlace.decomb
    lvsfunc.deinterlace.dir_deshimmer
    lvsfunc.deinterlace.dir_unsharp
+   lvsfunc.deinterlace.sivtc
 
 .. automodule:: lvsfunc.deinterlace
    :members:
@@ -258,12 +260,12 @@ lvsfunc.misc
    lvsfunc.misc.chroma_injector
    lvsfunc.misc.colored_clips
    lvsfunc.misc.edgefixer
-   lvsfunc.misc.shift_tint
    lvsfunc.misc.frames_since_bookmark
    lvsfunc.misc.limit_dark
    lvsfunc.misc.load_bookmarks
    lvsfunc.misc.replace_ranges
    lvsfunc.misc.scale_thresh
+   lvsfunc.misc.shift_tint
    lvsfunc.misc.source
    lvsfunc.misc.wipe_row
 
