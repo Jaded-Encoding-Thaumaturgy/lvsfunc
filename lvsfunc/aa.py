@@ -28,9 +28,11 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
         raise ValueError("nneedi3_clamp: 'Variable-format clips not supported'")
     thr = strength * (1 << (src.format.bits_per_sample - 8)) if src.format.sample_type == vs.INTEGER \
         else strength/219
-    return core.std.Expr([src, weak, strong],
-                         expr=f"x y - x z - xor x x y - abs x z - abs < z y {thr} + min y {thr} - max z ? ?" if thr != 0
-                         else "x y z min max y z max min")
+    clamp = core.std.Expr([get_y(src), get_y(weak), get_y(strong)],
+                          expr=f"x y - x z - xor x x y - abs x z - abs < z y {thr} + min y {thr} - max z ? ?"
+                          if thr != 0 else "x y z min max y z max min")
+    return clamp if src.format.color_family == vs.GRAY \
+        else core.std.ShufflePlanes([clamp, src], planes=[0, 1, 2], colorfamily=vs.YUV)
 
 
 def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,

@@ -79,7 +79,7 @@ class HardsubMask(DeferredMask, ABC):
                                   self.ranges)
 
 
-class HardsubSign(HardsubMask):
+class HardsubSignKgf(HardsubMask):
     """
     Hardsub scenefiltering helper using kgf.hardsubmask_fades.
 
@@ -96,6 +96,37 @@ class HardsubSign(HardsubMask):
 
     def _mask(self, clip: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
         return kgf.hardsubmask_fades(clip, ref, highpass=self.highpass, expand_n=self.expand)
+
+
+class HardsubSign(HardsubMask):
+    """
+    Hardsub scenefiltering helper using Zastin's hardsub mask.
+
+    :param thresh:  Binarization threshold, [0, 1] (Default: 0.06)
+    :param expand:  std.Maximum iterations (Default: 8)
+    :param inflate: std.Inflate iterations (Default: 7)
+    """
+    thresh: float
+    expand: int
+    inflate: int
+
+    def __init__(self, *args: Any, thresh: float = 0.06, expand: int = 8, inflate: int = 7, **kwargs: Any) -> None:
+        self.thresh = thresh
+        self.expand = expand
+        self.inflate = inflate
+        super().__init__(*args, **kwargs)
+
+    def _mask(self, clip: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
+        assert clip.format is not None
+        hsmf = core.std.Expr(vsutil.split(core.std.Expr([clip, ref], 'x y - abs')
+                                          .resize.Point(format=clip.format.replace(subsampling_w=0,
+                                                                                   subsampling_h=0).id)),
+                             "x y x max max")
+        hsmf = vsutil.iterate(vsutil.iterate(hsmf.std.Binarize(self.thresh * ((1 << clip.format.bits_per_sample) - 1))
+                                             .std.Minimum(),
+                                             core.std.Maximum, self.expand),
+                              core.std.Inflate, self.inflate)
+        return hsmf
 
 
 class HardsubLine(HardsubMask):
