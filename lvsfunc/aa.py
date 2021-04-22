@@ -23,7 +23,7 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
     :param strong:   Strongly-AA'd clip (eg: eedi3)
     :param strength: Clamping strength (Default: 1)
 
-    :return:       Clip with clamped anti-aliasing.
+    :return:         Clip with clamped anti-aliasing.
     """
     if src.format is None or weak.format is None or strong.format is None:
         raise ValueError("nneedi3_clamp: 'Variable-format clips not supported'")
@@ -43,7 +43,7 @@ def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode]) -> vs
     :param clip:   Input clip.
     :param aafun:  Antialiasing function
 
-    :return:      Antialiased clip
+    :return:       Antialiased clip
     """
     if clip.format is None:
         raise ValueError("taa: 'Variable-format clips not supported'")
@@ -89,9 +89,6 @@ def eedi3(clip: vs.VideoNode, opencl: bool = False, **override: Any) -> vs.Video
 
     :return:         Antialiased clip
     """
-    if clip.format is None:
-        raise ValueError("nnedi3: 'Variable-format clips not supported'")
-
     eedi3_args: Dict[str, Any] = dict(field=0, dh=True, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20)
     eedi3_args.update(override)
 
@@ -113,8 +110,7 @@ def kirsch_aa_mask(clip: vs.VideoNode, mthr: float = 0.25) -> vs.VideoNode:
         from kagefunc import kirsch
     except ModuleNotFoundError:
         raise ModuleNotFoundError("nnedi3_clamp: missing dependency 'kagefunc'")
-    mthr = scale_thresh(mthr, clip)
-    return kirsch(get_y(clip)).std.Binarize(mthr).std.Maximum().std.Convolution([1] * 9)
+    return kirsch(get_y(clip)).std.Binarize(scale_thresh(mthr, clip)).std.Maximum().std.Convolution([1] * 9)
 
 
 def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
@@ -243,61 +239,48 @@ def upscaled_sraa(clip: vs.VideoNode,
 
     luma = get_y(clip)
 
-    nnargs: Dict[str, Any] = dict(nsize=0, nns=4, qual=2)
+    nnargs: Dict[str, Any] = dict(field=0, nsize=0, nns=4, qual=2)
     # TAAmbk defaults are 0.5, 0.2, 20, 3, 30
-    eeargs: Dict[str, Any] = dict(alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
+    eeargs: Dict[str, Any] = dict(field=0, dh=False, alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
     eeargs.update(eedi3_args)
 
     if rfactor < 1:
         raise ValueError("upscaled_sraa: '\"rfactor\" must be above 1'")
 
     ssw = round(clip.width * rfactor)
+    ssw = (ssw + 1) & ~1
     ssh = round(clip.height * rfactor)
+    ssh = (ssh + 1) & ~1
 
-    while ssw % 2:
-        ssw += 1
-    while ssh % 2:
-        ssh += 1
+    height = height or clip.height
 
-    if height is None:
-        height = clip.height
     if width is None:
-        if height != clip.height:
-            width = get_w(height, aspect_ratio=clip.width / clip.height)
-        else:
-            width = clip.width
+        width = clip.width if height == clip.height else get_w(height, aspect_ratio=clip.width / clip.height)
 
     nnedi3cl = fallback(nnedi3cl, opencl)
     eedi3cl = fallback(eedi3cl, opencl)
 
-    # there doesn't seem to be a cleaner way to do this that makes mypy happy
-    def _nnedi3(*args: Any, **kwargs: Any) -> vs.VideoNode:
-        return core.nnedi3cl.NNEDI3CL(*args, **kwargs) if nnedi3cl else core.nnedi3.nnedi3(*args, **kwargs)
+    def _nnedi3(clip: vs.VideoNode, dh: bool = False) -> vs.VideoNode:
+        return clip.nnedi3cl.NNEDI3CL(dh=dh, **nnargs) if nnedi3cl \
+            else clip.nnedi3.nnedi3(dh=dh, **nnargs)
 
-    def _eedi3(*args: Any, **kwargs: Any) -> vs.VideoNode:
-        return core.eedi3m.EEDI3CL(*args, **kwargs) if nnedi3cl else core.eedi3m.EEDI3(*args, **kwargs)
+    def _eedi3(clip: vs.VideoNode, sclip: vs.VideoNode) -> vs.VideoNode:
+        return clip.eedi3m.EEDI3CL(sclip=sclip, **eeargs) if eedi3cl \
+            else clip.eedi3m.EEDI3(sclip=sclip, **eeargs)
 
     # Nnedi3 upscale from source height to source height * rounding (Default 1.5)
-    up_y = _nnedi3(luma, 0, 1, 0, **nnargs)
-    up_y = up_y.resize.Spline36(height=ssh, src_top=.5).std.Transpose()
-    up_y = _nnedi3(up_y, 0, 1, 0, **nnargs)
-    up_y = up_y.resize.Spline36(height=ssw, src_top=.5)
+    up_y = _nnedi3(luma, dh=True)
+    up_y = up_y.resize.Spline36(height=ssh, src_top=0.5).std.Transpose()
+    up_y = _nnedi3(up_y, dh=True)
+    up_y = up_y.resize.Spline36(height=ssw, src_top=0.5)
 
     # Single-rate AA
-    aa_y = _eedi3(up_y, 0, 0, 0, sclip=_nnedi3(up_y, 0, 0, 0, **nnargs), **eeargs)
+    aa_y = _eedi3(up_y, sclip=_nnedi3(up_y))
     aa_y = core.std.Transpose(aa_y)
-    aa_y = _eedi3(aa_y, 0, 0, 0, sclip=_nnedi3(aa_y, 0, 0, 0, **nnargs), **eeargs)
+    aa_y = _eedi3(aa_y, sclip=_nnedi3(aa_y))
 
-    scaled: vs.VideoNode
-
-    # Back to source clip height or given height
-    if downscaler is None:
-        scaled = aa_y
-    else:
-        scaled = downscaler(aa_y, width, height)
-
-    if rep:
-        scaled = util.pick_repair(scaled)(scaled, luma.resize.Bicubic(width, height), mode=rep)
+    scaled = aa_y if downscaler is None else downscaler(aa_y, width, height)
+    scaled = util.pick_repair(scaled)(scaled, luma.resize.Bicubic(width, height), mode=rep) if rep else scaled
 
     if clip.format.num_planes == 1 or downscaler is None:
         return scaled
@@ -307,6 +290,6 @@ def upscaled_sraa(clip: vs.VideoNode,
         if width % 2:
             raise ValueError("upscaled_sraa: '\"width\" must be an even number when not passing a GRAY clip'")
 
-        chr = kernels.Bicubic().scale(clip, width, height)
-        return join([scaled, plane(chr, 1), plane(chr, 2)])
+        chroma = kernels.Bicubic().scale(clip, width, height)
+        return join([scaled, plane(chroma, 1), plane(chroma, 2)])
     return join([scaled, plane(clip, 1), plane(clip, 2)])

@@ -120,7 +120,7 @@ class HardsubSign(HardsubMask):
         hsmf = core.std.Expr(vsutil.split(core.std.Expr([clip, ref], 'x y - abs')
                                           .resize.Point(format=clip.format.replace(subsampling_w=0,
                                                                                    subsampling_h=0).id)),
-                             "x y x max max")
+                             "x y z max max")
         hsmf = vsutil.iterate(vsutil.iterate(hsmf.std.Binarize(scale_thresh(self.thresh, clip))
                                              .std.Minimum(),
                                              core.std.Maximum, self.expand),
