@@ -74,7 +74,11 @@ Functions
 .. autosummary::
 
    lvsfunc.aa.clamp_aa
+   lvsfunc.aa.eedi3
+   lvsfunc.aa.kirsch_aa_mask
+   lvsfunc.aa.nnedi3
    lvsfunc.aa.nneedi3_clamp
+   lvsfunc.aa.taa
    lvsfunc.aa.transpose_aa
    lvsfunc.aa.upscaled_sraa
    lvsfunc.comparison.compare
@@ -124,7 +128,11 @@ lvsfunc.aa
 .. autosummary::
 
    lvsfunc.aa.clamp_aa
+   lvsfunc.aa.eedi3
+   lvsfunc.aa.kirsch_aa_mask
+   lvsfunc.aa.nnedi3
    lvsfunc.aa.nneedi3_clamp
+   lvsfunc.aa.taa
    lvsfunc.aa.transpose_aa
    lvsfunc.aa.upscaled_sraa
 

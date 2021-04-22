@@ -4,7 +4,7 @@
 from typing import Any, Callable, Dict, Optional
 
 import vapoursynth as vs
-from vsutil import depth, fallback, get_w, get_y, join, plane
+from vsutil import fallback, get_w, get_y, join, plane
 
 from . import kernels, util
 from .misc import scale_thresh
@@ -36,11 +36,90 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
         else core.std.ShufflePlanes([clamp, src], planes=[0, 1, 2], colorfamily=vs.YUV)
 
 
+def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode]) -> vs.VideoNode:
+    """
+    Perform transpose AA.
+
+    :param clip:   Input clip.
+    :param aafun:  Antialiasing function
+
+    :return:      Antialiased clip
+    """
+    if clip.format is None:
+        raise ValueError("taa: 'Variable-format clips not supported'")
+
+    y = get_y(clip)
+
+    aa = aafun(y.std.Transpose())
+    aa = aa.resize.Spline36(height=clip.width, src_top=0.5).std.Transpose()
+    aa = aafun(aa)
+    aa = aa.resize.Spline36(height=clip.height, src_top=0.5)
+
+    return aa if clip.format.color_family == vs.GRAY \
+        else core.std.ShufflePlanes([aa, clip], planes=[0, 1, 2], colorfamily=vs.YUV)
+
+
+def nnedi3(clip: vs.VideoNode, opencl: bool = False, **override: Any) -> vs.VideoNode:
+    """
+    Standard nnedi3 antialiasing.
+
+    :param clip:     Input clip
+    :param opencl:   Use OpenCL (Default: False)
+    :param override: nnedi3 parameter overrides
+
+    :return:         Antialiased clip
+    """
+    nnedi3_args: Dict[str, Any] = dict(field=0, dh=True, nsize=3, nns=3, qual=1)
+    nnedi3_args.update(override)
+
+    def _nnedi3(clip: vs.VideoNode) -> vs.VideoNode:
+        return clip.nnedi3cl.NNEDI3CL(**nnedi3_args) if opencl \
+            else clip.nnedi3.nnedi3(**nnedi3_args)
+
+    return taa(clip, _nnedi3)
+
+
+def eedi3(clip: vs.VideoNode, opencl: bool = False, **override: Any) -> vs.VideoNode:
+    """
+    Standard eedi3 antialiasing.
+
+    :param clip:     Input clip
+    :param opencl:   Use OpenCL (Default: False)
+    :param override: eedi3 parameter overrides
+
+    :return:         Antialiased clip
+    """
+    if clip.format is None:
+        raise ValueError("nnedi3: 'Variable-format clips not supported'")
+
+    eedi3_args: Dict[str, Any] = dict(field=0, dh=True, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20)
+    eedi3_args.update(override)
+
+    def _eedi3(clip: vs.VideoNode) -> vs.VideoNode:
+        return clip.eedi3m.EEDI3CL(**eedi3_args) if opencl \
+            else clip.eedi3m.EEDI3(**eedi3_args)
+
+    return taa(clip, _eedi3)
+
+
+def kirsch_aa_mask(clip: vs.VideoNode, mthr: float = 0.25) -> vs.VideoNode:
+    """
+    Kirsh-based AA mask.
+
+    :param clip: Input clip
+    :param mthr: Mask threshold [0, 1] (Default: 0.25)
+    """
+    try:
+        from kagefunc import kirsch
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("nnedi3_clamp: missing dependency 'kagefunc'")
+    mthr = scale_thresh(mthr, clip)
+    return kirsch(get_y(clip)).std.Binarize(mthr).std.Maximum().std.Convolution([1] * 9)
+
+
 def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
-                  mask: Optional[vs.VideoNode] = None, retinex_mask: bool = False,
-                  mthr: float = 0.25, show_mask: bool = False,
-                  opencl: bool = False, nnedi3cl: Optional[bool] = None,
-                  eedi3cl: Optional[bool] = None) -> vs.VideoNode:
+                  mask: Optional[vs.VideoNode] = None,
+                  mthr: float = 0.25, opencl: bool = False) -> vs.VideoNode:
     """
     A function that clamps eedi3 to nnedi3 for the purpose of reducing eedi3 artifacts.
     This should fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
@@ -49,7 +128,6 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
 
     Dependencies:
     * kagefunc (optional: automatic masking, otherwise mask must be user-supplied)
-    * vapoursynth-retinex (optional: retinex edgemask)
     * vapoursynth-tcanny (optional: retinex edgemask)
     * vapoursynth-eedi3
     * vapoursynth-nnedi3
@@ -59,70 +137,16 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
     :param strength:            Set threshold strength for over/underflow value for clamping eedi3's result
                                 to nnedi3 +/- strength * 256 scaled to 8 bit (Default: 1)
     :param mask:                Clip to use for custom mask (Default: None)
-    :param ret_mask:            Replace default mask with a retinex edgemask (Default: False)
     :param mthr:                Binarize threshold for the mask, scaled to float (Default: 0.25)
-    :param show_mask:           Return mask instead of clip (Default: False)
     :param opencl:              OpenCL acceleration (Default: False)
-    :param nnedi3cl:            OpenCL acceleration for nnedi3 (Default: False)
-    :param eedi3cl:             OpenCL acceleration for eedi3 (Default: False)
 
     :return:                    Antialiased clip
     """
     if clip.format is None:
         raise ValueError("nneedi3_clamp: 'Variable-format clips not supported'")
-
-    nnedi3cl = fallback(nnedi3cl, opencl)
-    eedi3cl = fallback(eedi3cl, opencl)
-
-    nnedi3_args: Dict[str, Any] = dict(field=0, dh=True, nsize=3, nns=3, qual=1)
-    eedi3_args: Dict[str, Any] = dict(field=0, dh=True, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20)
-
-    def _eedi3(clip: vs.VideoNode, mclip: Optional[vs.VideoNode] = None) -> vs.VideoNode:
-        return clip.eedi3m.EEDI3CL(**eedi3_args) if eedi3cl \
-            else clip.eedi3m.EEDI3(mclip=mclip, **eedi3_args)
-
-    def _nnedi3(clip: vs.VideoNode) -> vs.VideoNode:
-        return clip.nnedi3cl.NNEDI3CL(**nnedi3_args) if nnedi3cl \
-            else clip.nnedi3.nnedi3(**nnedi3_args)
-
-    clip_y = get_y(clip)
-
-    mthr = scale_thresh(mthr, clip)
-
-    if mask is None:
-        try:
-            from kagefunc import kirsch
-        except ModuleNotFoundError:
-            raise ModuleNotFoundError("nnedi3_clamp: missing dependency 'kagefunc'")
-        mask = kirsch(clip_y)
-        if retinex_mask:
-            # workaround to support float input
-            ret = depth(clip_y, min(16, clip.format.bits_per_sample))
-            ret = core.retinex.MSRCP(ret, sigma=[50, 200, 350], upper_thr=0.005)
-            ret = depth(ret, clip.format.bits_per_sample)
-            tcanny = core.tcanny.TCanny(ret, mode=1, sigma=[1.0])
-            tcanny = core.std.Minimum(tcanny, coordinates=[1, 0, 1, 0, 0, 1, 0, 1])
-            # no clamping needed when binarizing
-            mask = core.std.Expr([mask, tcanny], 'x y +')
-        mask = mask.std.Binarize(mthr).std.Maximum().std.Convolution([1] * 9)
-
-    if show_mask:
-        return mask
-
-    clip_tra = core.std.Transpose(clip_y)
-
-    strong = _eedi3(clip_tra, mclip=mask.std.Transpose())
-    strong = strong.resize.Spline36(height=clip.width, src_top=0.5).std.Transpose()
-    strong = _eedi3(strong, mclip=mask)
-    strong = strong.resize.Spline36(height=clip.height, src_top=0.5)
-
-    weak = _nnedi3(clip_tra)
-    weak = weak.resize.Spline36(height=clip.width, src_top=0.5).std.Transpose()
-    weak = _nnedi3(weak)
-    weak = weak.resize.Spline36(height=clip.height, src_top=0.5)
-
-    aa = clamp_aa(clip_y, weak, strong)
-    merged = core.std.MaskedMerge(clip_y, aa, mask)
+    y = get_y(clip)
+    merged = core.std.MaskedMerge(y, clamp_aa(y, nnedi3(y, opencl=opencl), eedi3(y, opencl=opencl)),
+                                  mask or kirsch_aa_mask(y))
     return merged if clip.format.color_family == vs.GRAY else core.std.ShufflePlanes([merged, clip], [0, 1, 2], vs.YUV)
 
 
@@ -149,32 +173,21 @@ def transpose_aa(clip: vs.VideoNode,
 
     clip_y = get_y(clip)
 
-    if eedi3:
-        def _aa(clip_y: vs.VideoNode) -> vs.VideoNode:
-            clip_y = clip_y.std.Transpose()
-            clip_y = clip_y.eedi3m.EEDI3(0, 1, 0, 0.5, 0.2)
-            clip_y = clip_y.znedi3.nnedi3(1, 0, 0, 3, 4, 2)
-            clip_y = clip_y.resize.Bicubic(clip.height, clip.width, src_top=.5)
-            clip_y = clip_y.std.Transpose()
-            clip_y = clip_y.eedi3m.EEDI3(0, 1, 0, 0.5, 0.2)
-            clip_y = clip_y.znedi3.nnedi3(1, 0, 0, 3, 4, 2)
-            return clip_y.resize.Bicubic(clip.width, clip.height, src_top=.5)
-    else:
-        def _aa(clip_y: vs.VideoNode) -> vs.VideoNode:
-            clip_y = clip_y.std.Transpose()
-            clip_y = clip_y.nnedi3.nnedi3(0, 1, 0, 3, 3, 2)
-            clip_y = clip_y.nnedi3.nnedi3(1, 0, 0, 3, 3, 2)
-            clip_y = clip_y.resize.Bicubic(clip.height, clip.width, src_top=.5)
-            clip_y = clip_y.std.Transpose()
-            clip_y = clip_y.nnedi3.nnedi3(0, 1, 0, 3, 3, 2)
-            clip_y = clip_y.nnedi3.nnedi3(1, 0, 0, 3, 3, 2)
-            return clip_y.resize.Bicubic(clip.width, clip.height, src_top=.5)
+    def _aafun(clip: vs.VideoNode) -> vs.VideoNode:
+        return clip.eedi3m.EEDI3(0, 1, 0, 0.5, 0.2).znedi3.nnedi3(1, 0, 0, 3, 4, 2) if eedi3 \
+            else clip.nnedi3.nnedi3(0, 1, 0, 3, 3, 2).nnedi3.nnedi3(1, 0, 0, 3, 3, 2)
+
+    def _taa(clip: vs.VideoNode) -> vs.VideoNode:
+        aa = _aafun(clip.std.Transpose())
+        aa = aa.resize.Bicubic(clip.height, clip.width, src_top=.5).std.Transpose()
+        aa = _aafun(aa)
+        return aa.resize.Bicubic(clip.width, clip.height, src_top=.5)
 
     def _csharp(flt: vs.VideoNode, clip: vs.VideoNode) -> vs.VideoNode:
         blur = core.std.Convolution(flt, [1] * 9)
         return core.std.Expr([flt, clip, blur], 'x y < x x + z - x max y min x x + z - x min y max ?')
 
-    aaclip = _aa(clip_y)
+    aaclip = _taa(clip_y)
     aaclip = _csharp(aaclip, clip_y)
     aaclip = util.pick_repair(clip_y)(aaclip, clip_y, rep)
 
@@ -258,23 +271,22 @@ def upscaled_sraa(clip: vs.VideoNode,
     eedi3cl = fallback(eedi3cl, opencl)
 
     # there doesn't seem to be a cleaner way to do this that makes mypy happy
-    def nnedi3(*args: Any, **kwargs: Any) -> vs.VideoNode:
+    def _nnedi3(*args: Any, **kwargs: Any) -> vs.VideoNode:
         return core.nnedi3cl.NNEDI3CL(*args, **kwargs) if nnedi3cl else core.nnedi3.nnedi3(*args, **kwargs)
 
-    def eedi3(*args: Any, **kwargs: Any) -> vs.VideoNode:
+    def _eedi3(*args: Any, **kwargs: Any) -> vs.VideoNode:
         return core.eedi3m.EEDI3CL(*args, **kwargs) if nnedi3cl else core.eedi3m.EEDI3(*args, **kwargs)
 
     # Nnedi3 upscale from source height to source height * rounding (Default 1.5)
-    up_y = nnedi3(luma, 0, 1, 0, **nnargs)
-    up_y = core.resize.Spline36(up_y, height=ssh, src_top=.5)
-    up_y = core.std.Transpose(up_y)
-    up_y = nnedi3(up_y, 0, 1, 0, **nnargs)
-    up_y = core.resize.Spline36(up_y, height=ssw, src_top=.5)
+    up_y = _nnedi3(luma, 0, 1, 0, **nnargs)
+    up_y = up_y.resize.Spline36(height=ssh, src_top=.5).std.Transpose()
+    up_y = _nnedi3(up_y, 0, 1, 0, **nnargs)
+    up_y = up_y.resize.Spline36(height=ssw, src_top=.5)
 
     # Single-rate AA
-    aa_y = eedi3(up_y, 0, 0, 0, sclip=nnedi3(up_y, 0, 0, 0, **nnargs), **eeargs)
+    aa_y = _eedi3(up_y, 0, 0, 0, sclip=_nnedi3(up_y, 0, 0, 0, **nnargs), **eeargs)
     aa_y = core.std.Transpose(aa_y)
-    aa_y = eedi3(aa_y, 0, 0, 0, sclip=nnedi3(aa_y, 0, 0, 0, **nnargs), **eeargs)
+    aa_y = _eedi3(aa_y, 0, 0, 0, sclip=_nnedi3(aa_y, 0, 0, 0, **nnargs), **eeargs)
 
     scaled: vs.VideoNode
 
