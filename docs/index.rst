@@ -73,6 +73,7 @@ Functions
 
 .. autosummary::
 
+   lvsfunc.aa.clamp_aa
    lvsfunc.aa.nneedi3_clamp
    lvsfunc.aa.transpose_aa
    lvsfunc.aa.upscaled_sraa
@@ -120,6 +121,7 @@ lvsfunc.aa
 
 .. autosummary::
 
+   lvsfunc.aa.clamp_aa
    lvsfunc.aa.nneedi3_clamp
    lvsfunc.aa.transpose_aa
    lvsfunc.aa.upscaled_sraa
@@ -170,6 +172,12 @@ lvsfunc.dehardsub
    :show-inheritance:
    :member-order: bysource
 
+.. autoclass:: lvsfunc.dehardsub.HardsubSignKgf
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
 .. autoclass:: lvsfunc.dehardsub.HardsubLine
    :members:
    :undoc-members:
@@ -186,7 +194,7 @@ lvsfunc.dehardsub
    :members:
    :undoc-members:
    :show-inheritance:
-   :exclude-members: HardsubMask, HardsubSign, HardsubLine, HardsubLineFade
+   :exclude-members: HardsubMask, HardsubSign, HardsubSignKgf, HardsubLine, HardsubLineFade
 
 lvsfunc.deinterlace
 -------------------
