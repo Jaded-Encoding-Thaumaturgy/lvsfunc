@@ -7,6 +7,7 @@ import vapoursynth as vs
 from vsutil import depth, fallback, get_w, get_y, join, plane
 
 from . import kernels, util
+from .misc import scale_thresh
 
 core = vs.core
 
@@ -86,8 +87,7 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
 
     clip_y = get_y(clip)
 
-    if clip.format.sample_type == vs.INTEGER:
-        mthr = round(mthr * ((1 << clip.format.bits_per_sample) - 1))
+    mthr = scale_thresh(mthr, clip)
 
     if mask is None:
         try:

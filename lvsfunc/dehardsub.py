@@ -10,7 +10,7 @@ from abc import ABC
 from typing import Any, List, Optional, Tuple, Union
 
 from .mask import DeferredMask
-from .misc import replace_ranges
+from .misc import replace_ranges, scale_thresh
 from .types import Range
 
 core = vs.core
@@ -47,8 +47,7 @@ class HardsubMask(DeferredMask, ABC):
         dmasks = []
         partials = partials + [ref]
         assert masks[-1].format is not None
-        thresh = 0.75 if masks[-1].format.sample_type == vs.FLOAT \
-            else round(((1 << masks[-1].format.bits_per_sample) - 1) * 0.75)
+        thresh = scale_thresh(0.75, masks[-1])
         for p in partials:
             masks.append(core.std.Expr([masks[-1], self.get_mask(p, ref)], expr="x y -"))
             dmasks.append(vsutil.iterate(core.std.Expr([masks[-1]], f"x {thresh} < 0 x ?"),
@@ -122,7 +121,7 @@ class HardsubSign(HardsubMask):
                                           .resize.Point(format=clip.format.replace(subsampling_w=0,
                                                                                    subsampling_h=0).id)),
                              "x y x max max")
-        hsmf = vsutil.iterate(vsutil.iterate(hsmf.std.Binarize(self.thresh * ((1 << clip.format.bits_per_sample) - 1))
+        hsmf = vsutil.iterate(vsutil.iterate(hsmf.std.Binarize(scale_thresh(self.thresh, clip))
                                              .std.Minimum(),
                                              core.std.Maximum, self.expand),
                               core.std.Inflate, self.inflate)

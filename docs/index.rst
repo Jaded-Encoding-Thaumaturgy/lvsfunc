@@ -105,6 +105,7 @@ Functions
    lvsfunc.misc.limit_dark
    lvsfunc.misc.load_bookmarks
    lvsfunc.misc.replace_ranges
+   lvsfunc.misc.scale_thresh
    lvsfunc.misc.source
    lvsfunc.misc.wipe_row
    lvsfunc.recon.chroma_reconstruct
@@ -262,6 +263,7 @@ lvsfunc.misc
    lvsfunc.misc.limit_dark
    lvsfunc.misc.load_bookmarks
    lvsfunc.misc.replace_ranges
+   lvsfunc.misc.scale_thresh
    lvsfunc.misc.source
    lvsfunc.misc.wipe_row
 

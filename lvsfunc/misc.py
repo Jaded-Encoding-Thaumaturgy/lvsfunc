@@ -510,6 +510,20 @@ def colored_clips(amount: int,
     return [core.std.BlankClip(color=color, **blank_clip_args) for color in rgb_color_list]
 
 
+def scale_thresh(thresh: float, clip: vs.VideoNode) -> float:
+    """
+    Scale binarization thresholds from float to int.
+
+    :param thresh: Threshold [0, 1]
+    :param clip:   Clip to scale to
+
+    :return:       Threshold scaled to [0, 2^clip.depth - 1]
+    """
+    if clip.format is None:
+        raise ValueError("scale_thresh: 'Variable-format clips not supported.'")
+    return thresh if clip.format.sample_type == vs.FLOAT else round(thresh * ((1 << clip.format.bits_per_sample) - 1))
+
+
 # TODO: Write function that only masks px of a certain color/threshold of colors.
 #       Think the magic wand tool in various image-editing programs.
 
