@@ -7,11 +7,11 @@ from functools import partial
 from typing import Callable, List, Optional, Tuple, Union
 
 import vapoursynth as vs
-from vsutil import depth, get_depth, get_y, iterate, scale_value
+from vsutil import depth, get_depth, get_y, iterate
 from vsutil import Range as CRange
 
 from . import util
-from .misc import replace_ranges
+from .misc import replace_ranges, scale_thresh
 from .types import Position, Range, Size
 
 try:
@@ -46,7 +46,7 @@ def adaptive_mask(clip: vs.VideoNode, luma_scaling: float = 8.0) -> vs.VideoNode
 @functoolz.curry
 def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
                 rad: int = 3, radc: int = 2,
-                brz_a: float = 0.005, brz_b: float = 0.005) -> vs.VideoNode:
+                brz_a: float = 0.025, brz_b: float = 0.045) -> vs.VideoNode:
     """
     A wrapper for creating a detail mask to be used during denoising and/or debanding.
     The detail mask is created using debandshit's range mask,
@@ -61,32 +61,22 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
     :param sigma:       Sigma for Bilateral for pre-blurring (Default: False)
     :param rad:         The luma equivalent of gradfun3's "mask" parameter
     :param radc:        The chroma equivalent of gradfun3's "mask" parameter
-    :param brz_a:       Binarizing for the detail mask (Default: 0.05)
-    :param brz_b:       Binarizing for the edge mask (Default: 0.05)
+    :param brz_a:       Binarizing for the detail mask (Default: 0.025)
+    :param brz_b:       Binarizing for the edge mask (Default: 0.045)
 
     :return:            Detail mask
     """
     if clip.format is None:
         raise ValueError("detail_mask: 'Variable-format clips not supported'")
 
-    # Handling correct value scaling if there's a assumed depth mismatch
-    # To the me in the future, long after civilisation has fallen, make sure to check 3.10's pattern matching.
-    if get_depth(clip) != 32:
-        if isinstance(brz_a, float):
-            brz_a = scale_value(brz_a, 32, get_depth(clip))
-        if isinstance(brz_b, float):
-            brz_b = scale_value(brz_b, 32, get_depth(clip))
-    else:
-        if isinstance(brz_a, int):
-            brz_a = scale_value(brz_a, get_depth(clip), 32)
-        if isinstance(brz_b, int):
-            brz_b = scale_value(brz_b, get_depth(clip), 32)
+    brz_a = scale_thresh(brz_a, clip)
+    brz_b = scale_thresh(brz_b, clip)
 
     blur = (util.quick_resample(clip, partial(core.bilateral.Gaussian, sigma=sigma))
             if sigma else clip)
 
     mask_a = range_mask(get_y(blur), rad=rad, radc=radc)
-    mask_a = depth(mask_a, clip.format.bits_per_sample)
+    mask_a = depth(mask_a, clip.format.bits_per_sample, range=CRange.FULL, range_in=CRange.FULL)
     mask_a = core.std.Binarize(mask_a, brz_a)
 
     mask_b = core.std.Prewitt(get_y(blur))
@@ -98,7 +88,8 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
 
 
 @functoolz.curry
-def halo_mask(clip: vs.VideoNode, rad: int = 2, sigma: float = 1.0,
+def halo_mask(clip: vs.VideoNode, rad: int = 2,
+              sigma: float = 1.0, brz: float = 0.35,
               thmi: int = 80, thma: int = 128,
               thlimi: int = 50, thlima: int = 100,
               edgemasking: Callable[[vs.VideoNode, float], vs.VideoNode]
@@ -114,6 +105,7 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2, sigma: float = 1.0,
     :param clip:            Input clip
     :param rad:             Radius for the mask
     :param scale:           Multiply all pixels by scale before outputting. Sigma if `edgemask` with a sigma is passed
+    :param brz:             Binarizing for shrinking mask (Default: 0.35)
     :param thmi:            Minimum threshold for sharp edges; keep only the sharpest edges
     :param thma:            Maximum threshold for sharp edges; keep only the sharpest edges
     :param thlimi:          Minimum limiting threshold; includes more edges than previously, but ignores simple details
@@ -142,7 +134,7 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2, sigma: float = 1.0,
     # Having too many intersecting lines will oversmooth the mask. We get rid of those here.
     light = core.std.Expr(edgemask, expr=f"x {thlimi} - {thma-thmi} / {smax} *")
     shrink = iterate(light, core.std.Maximum, rad)
-    shrink = core.std.Binarize(shrink, scale_value(.25, 32, get_depth(clip)))
+    shrink = core.std.Binarize(shrink, scale_thresh(brz, clip))
     shrink = iterate(shrink, core.std.Minimum, rad)
     shrink = iterate(shrink, partial(core.std.Convolution, matrix=matrix), 2)
 
