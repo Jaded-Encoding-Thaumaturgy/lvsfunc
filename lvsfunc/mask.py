@@ -46,7 +46,7 @@ def adaptive_mask(clip: vs.VideoNode, luma_scaling: float = 8.0) -> vs.VideoNode
 @functoolz.curry
 def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
                 rad: int = 3, radc: int = 2,
-                brz_a: float = 0.005, brz_b: float = 0.005) -> vs.VideoNode:
+                brz_a: float = 0.025, brz_b: float = 0.045) -> vs.VideoNode:
     """
     A wrapper for creating a detail mask to be used during denoising and/or debanding.
     The detail mask is created using debandshit's range mask,
@@ -61,8 +61,8 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
     :param sigma:       Sigma for Bilateral for pre-blurring (Default: False)
     :param rad:         The luma equivalent of gradfun3's "mask" parameter
     :param radc:        The chroma equivalent of gradfun3's "mask" parameter
-    :param brz_a:       Binarizing for the detail mask (Default: 0.05)
-    :param brz_b:       Binarizing for the edge mask (Default: 0.05)
+    :param brz_a:       Binarizing for the detail mask (Default: 0.025)
+    :param brz_b:       Binarizing for the edge mask (Default: 0.045)
 
     :return:            Detail mask
     """
