@@ -88,7 +88,8 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
 
 
 @functoolz.curry
-def halo_mask(clip: vs.VideoNode, rad: int = 2, sigma: float = 1.0,
+def halo_mask(clip: vs.VideoNode, rad: int = 2,
+              sigma: float = 1.0, brz: float = 0.35,
               thmi: int = 80, thma: int = 128,
               thlimi: int = 50, thlima: int = 100,
               edgemasking: Callable[[vs.VideoNode, float], vs.VideoNode]
@@ -104,6 +105,7 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2, sigma: float = 1.0,
     :param clip:            Input clip
     :param rad:             Radius for the mask
     :param scale:           Multiply all pixels by scale before outputting. Sigma if `edgemask` with a sigma is passed
+    :param brz:             Binarizing for shrinking mask (Default: 0.35)
     :param thmi:            Minimum threshold for sharp edges; keep only the sharpest edges
     :param thma:            Maximum threshold for sharp edges; keep only the sharpest edges
     :param thlimi:          Minimum limiting threshold; includes more edges than previously, but ignores simple details
@@ -132,7 +134,7 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2, sigma: float = 1.0,
     # Having too many intersecting lines will oversmooth the mask. We get rid of those here.
     light = core.std.Expr(edgemask, expr=f"x {thlimi} - {thma-thmi} / {smax} *")
     shrink = iterate(light, core.std.Maximum, rad)
-    shrink = core.std.Binarize(shrink, scale_value(.25, 32, get_depth(clip)))
+    shrink = core.std.Binarize(shrink, scale_thresh(brz, clip))
     shrink = iterate(shrink, core.std.Minimum, rad)
     shrink = iterate(shrink, partial(core.std.Convolution, matrix=matrix), 2)
 
