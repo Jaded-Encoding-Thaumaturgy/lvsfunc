@@ -7,7 +7,7 @@ from functools import partial
 from typing import Callable, List, Optional, Tuple, Union
 
 import vapoursynth as vs
-from vsutil import depth, get_depth, get_y, iterate, scale_value
+from vsutil import depth, get_depth, get_y, iterate
 from vsutil import Range as CRange
 
 from . import util
