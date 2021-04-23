@@ -155,9 +155,11 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: Optional[int] = None) -> 
     rad/radc are the luma/chroma equivalent of gradfun3's "mask" parameter.
     The way gradfun3's mask works is on an 8 bit scale, with rounded dithering of high depth input.
     As such, when following this filter with a Binarize, use the following conversion steps based on input:
-        -  8 bit = Binarize(2) or Binarize(thr_det)
-        - 16 bit = Binarize(384) or Binarize((thr_det - 0.5) * 256)
-        - floats = Binarize(0.005859375) or Binarize((thr_det - 0.5) / 256)
+
+    -  8 bit = Binarize(2) or Binarize(thr_det)
+    - 16 bit = Binarize(384) or Binarize((thr_det - 0.5) * 256)
+    - floats = Binarize(0.005859375) or Binarize((thr_det - 0.5) / 256)
+
     When radii are equal to 1, this filter becomes identical to mt_edge("min/max", 0, 255, 0, 255).
 
     :param clip:    Input clip

@@ -2,7 +2,6 @@
 Dehardsubbing helpers.
 """
 import vapoursynth as vs
-import kagefunc as kgf
 
 import vsutil
 
@@ -89,12 +88,17 @@ class HardsubSignKgf(HardsubMask):
     expand: int
 
     def __init__(self, *args: Any, highpass: int = 5000, expand: int = 8, **kwargs: Any) -> None:
+        try:
+            from kagefunc import hardsubmask_fades
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("HardsubSignKgf: missing dependency 'kagefunc'")
+        self.hardsubmask_fades = hardsubmask_fades
         self.highpass = highpass
         self.expand = expand
         super().__init__(*args, **kwargs)
 
     def _mask(self, clip: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
-        return kgf.hardsubmask_fades(clip, ref, highpass=self.highpass, expand_n=self.expand)
+        return self.hardsubmask_fades(clip, ref, highpass=self.highpass, expand_n=self.expand)
 
 
 class HardsubSign(HardsubMask):
@@ -138,10 +142,15 @@ class HardsubLine(HardsubMask):
 
     def __init__(self, *args: Any, expand: Optional[int] = None, **kwargs: Any) -> None:
         self.expand = expand
+        try:
+            from kagefunc import hardsubmask
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("HardsubLine: missing dependency 'kagefunc'")
+        self.hardsubmask = hardsubmask
         super().__init__(*args, **kwargs)
 
     def _mask(self, clip: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
-        return kgf.hardsubmask(clip, ref, expand_n=self.expand)
+        return self.hardsubmask(clip, ref, expand_n=self.expand)
 
 
 class HardsubLineFade(HardsubLine):

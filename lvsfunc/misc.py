@@ -477,7 +477,7 @@ def colored_clips(amount: int,
 
     Written by Dave <orangechannel@pm.me>.
 
-    :param amount:  Number of ``vapoursynth.VideoNode``s to return
+    :param amount:  Number of ``vapoursynth.VideoNode``\\s to return
     :param max_hue: Maximum hue (0 < hue <= 360) in degrees to generate colors from (uses the HSL color model).
                     Setting this higher than ``315`` will result in the clip colors looping back towards red
                     and is not recommended for visually distinct colors.
