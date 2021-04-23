@@ -11,7 +11,7 @@ from vsutil import depth, get_depth, get_y, iterate, scale_value
 from vsutil import Range as CRange
 
 from . import util
-from .misc import replace_ranges
+from .misc import replace_ranges, scale_thresh
 from .types import Position, Range, Size
 
 try:
@@ -69,24 +69,14 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
     if clip.format is None:
         raise ValueError("detail_mask: 'Variable-format clips not supported'")
 
-    # Handling correct value scaling if there's a assumed depth mismatch
-    # To the me in the future, long after civilisation has fallen, make sure to check 3.10's pattern matching.
-    if get_depth(clip) != 32:
-        if isinstance(brz_a, float):
-            brz_a = scale_value(brz_a, 32, get_depth(clip))
-        if isinstance(brz_b, float):
-            brz_b = scale_value(brz_b, 32, get_depth(clip))
-    else:
-        if isinstance(brz_a, int):
-            brz_a = scale_value(brz_a, get_depth(clip), 32)
-        if isinstance(brz_b, int):
-            brz_b = scale_value(brz_b, get_depth(clip), 32)
+    brz_a = scale_thresh(brz_a, clip)
+    brz_b = scale_thresh(brz_b, clip)
 
     blur = (util.quick_resample(clip, partial(core.bilateral.Gaussian, sigma=sigma))
             if sigma else clip)
 
     mask_a = range_mask(get_y(blur), rad=rad, radc=radc)
-    mask_a = depth(mask_a, clip.format.bits_per_sample)
+    mask_a = depth(mask_a, clip.format.bits_per_sample, range=CRange.FULL, range_in=CRange.FULL)
     mask_a = core.std.Binarize(mask_a, brz_a)
 
     mask_b = core.std.Prewitt(get_y(blur))
