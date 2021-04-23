@@ -521,6 +521,8 @@ def scale_thresh(thresh: float, clip: vs.VideoNode) -> float:
     """
     if clip.format is None:
         raise ValueError("scale_thresh: 'Variable-format clips not supported.'")
+    if thresh < 0 or thresh > 1:
+        raise ValueError("scale_thresh: 'Thresholds must be between 0 and 1 (inclusive).'")
     return thresh if clip.format.sample_type == vs.FLOAT else round(thresh * ((1 << clip.format.bits_per_sample) - 1))
 
 
