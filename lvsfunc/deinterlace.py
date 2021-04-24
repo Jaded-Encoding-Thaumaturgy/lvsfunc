@@ -17,7 +17,7 @@ def sivtc(clip: vs.VideoNode, TFF: bool, pattern: int = 0) -> vs.VideoNode:
     A very simple fieldmatching function.
 
     This is essentially a stripped-down JIVTC offering JUST the basic fieldmatching part.
-    As such, you may need to combine multiple instances of patterns change throughout the clip.
+    As such, you may need to combine multiple instances if patterns change throughout the clip.
 
     :param clip:        Input clip
     :param TFF:         Top-Field-First
