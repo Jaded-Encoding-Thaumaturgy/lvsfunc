@@ -171,6 +171,25 @@ class HardsubLineFade(HardsubLine):
         super().__init__(ranges, *args, refframes=refframes, **kwargs)
 
 
+# TODO: find a more idiomatic way to do this
+class HardsubSignFade(HardsubSign):
+    """
+    Hardsub scenefiltering helper using Zastin's sign mask.
+    Similar to :py:class:`lvsfunc.dehardsub.HardsubSign` but
+    automatically sets the reference frame to the range's midpoint.
+
+    :param refframe: Desired reference point as a percent of the frame range.
+                     0 = first frame, 1 = last frame, 0.5 = midpoint (Default)
+    """
+    def __init__(self, ranges: Union[Range, List[Range]], *args: Any,
+                 refframe: float = 0.5, **kwargs: Any) -> None:
+        if refframe < 0 or refframe > 1:
+            raise ValueError("HardsubSignFade: 'refframe must be between 0 and 1!'")
+        ranges = ranges if isinstance(ranges, list) else [ranges]
+        refframes = [r[0]+round((r[1]-r[0])*refframe) if isinstance(r, tuple) else r for r in ranges]
+        super().__init__(ranges, *args, refframes=refframes, **kwargs)
+
+
 def get_all_masks(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[HardsubMask]) -> vs.VideoNode:
     """
     Get a clip of :py:class:`lvsfunc.dehardsub.HardsubSign` masks.

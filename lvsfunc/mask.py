@@ -316,7 +316,7 @@ class DeferredMask(ABC):
             for range, rf in zip(self.ranges, self.refframes):
                 mask = depth(self._mask(clip[rf], ref[rf]), clip.format.bits_per_sample,
                              range=CRange.FULL, range_in=CRange.FULL)
-                hm = replace_ranges(hm, mask*len(hm), range)
+                hm = replace_ranges(hm, core.std.Expr([hm, mask*len(hm)], expr="x y max"), range)
 
         return hm if self.bound is None else core.std.MaskedMerge(core.std.BlankClip(hm), hm, bm)
 
