@@ -12,16 +12,18 @@ from . import util
 core = vs.core
 
 
-def sivtc(clip: vs.VideoNode, TFF: bool, pattern: int = 0) -> vs.VideoNode:
+def SIVTC(clip: vs.VideoNode, pattern: int = 0,
+          TFF: bool = True, decimate: bool = True) -> vs.VideoNode:
     """
     A very simple fieldmatching function.
 
-    This is essentially a stripped-down JIVTC offering JUST the basic fieldmatching part.
+    This is essentially a stripped-down JIVTC offering JUST the basic fieldmatching and decimation part.
     As such, you may need to combine multiple instances if patterns change throughout the clip.
 
     :param clip:        Input clip
-    :param TFF:         Top-Field-First
     :param pattern:     First frame of any clean-combed-combed-clean-clean sequence
+    :param TFF:         Top-Field-First
+    :param decimate:    Drop a frame every 5 frames to get down to 24000/1001
 
     :return:            IVTC'd clip
     """
@@ -29,7 +31,8 @@ def sivtc(clip: vs.VideoNode, TFF: bool, pattern: int = 0) -> vs.VideoNode:
 
     defivtc = core.std.SeparateFields(clip, tff=TFF).std.DoubleWeave()
     selectlist = [[0, 3, 6, 8], [0, 2, 5, 8], [0, 2, 4, 7], [2, 4, 6, 9], [1, 4, 6, 8]]
-    return core.std.SelectEvery(defivtc, 10, selectlist[pattern])
+    dec = core.std.SelectEvery(defivtc, 10, selectlist[pattern]) if decimate else defivtc
+    return core.std.SetFrameProp(dec, prop='_FieldBased', intval=0)
 
 
 def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:
