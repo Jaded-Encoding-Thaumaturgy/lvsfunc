@@ -92,6 +92,7 @@ Functions
    lvsfunc.comparison.tile
    lvsfunc.dehardsub.bounded_dehardsub
    lvsfunc.dehardsub.get_all_masks
+   lvsfunc.dehardsub.hardsub_mask
    lvsfunc.deinterlace.deblend
    lvsfunc.deinterlace.decomb
    lvsfunc.deinterlace.dir_deshimmer
@@ -169,6 +170,7 @@ lvsfunc.dehardsub
 
    lvsfunc.dehardsub.bounded_dehardsub
    lvsfunc.dehardsub.get_all_masks
+   lvsfunc.dehardsub.hardsub_mask
 
 .. autoclass:: lvsfunc.dehardsub.HardsubMask
    :members:

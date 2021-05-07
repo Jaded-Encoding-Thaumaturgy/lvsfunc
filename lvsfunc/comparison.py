@@ -8,16 +8,20 @@ import warnings
 from abc import ABC, abstractmethod
 from enum import IntEnum
 from itertools import zip_longest
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Set, Tuple, TypeVar, Union
+from typing import (Any, Callable, Dict, Iterable, Iterator, List,
+                    Optional, Sequence, Set, Tuple, TypeVar, Union)
 
 import vapoursynth as vs
 import vsutil
 
 from .util import get_prop
+from .progress import Progress, BarColumn, FPSColumn, TextColumn, TimeRemainingColumn
 
-core = vs.core
 
 T = TypeVar('T')
+
+
+core = vs.core
 
 
 class Direction(IntEnum):
@@ -485,6 +489,7 @@ def diff(*clips: vs.VideoNode,
          height: int = 288,
          return_array: bool = False,
          return_frames: bool = False,
+         diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a, b: core.std.MakeDiff(a, b),
          **namedclips: vs.VideoNode) -> Union[vs.VideoNode, Tuple[vs.VideoNode, List[int]]]:
     """
     Creates a standard :py:class:`lvsfunc.comparison.Stack` between frames from two clips that have differences.
@@ -513,6 +518,8 @@ def diff(*clips: vs.VideoNode,
     :param return_array:  Return frames as an interleaved comparison (using :py:class:`lvsfunc.comparison.Interleave`)
                           (Default: ``False``)
     :param return_frames: Adds `frames list` to the return. (Default: ``False``)
+    :param diff_func:     Function for calculating diff in PlaneStatsMin/Max mode.
+                          (Default: core.std.MakeDiff)
 
     :return: Either an interleaved clip of the differences between the two clips
              or a stack of both input clips on top of MakeDiff clip.
@@ -540,22 +547,33 @@ def diff(*clips: vs.VideoNode,
         nc = list(namedclips.values())
         a, b = vsutil.depth(nc[0], 8), vsutil.depth(nc[1], 8)
 
+    progress = Progress(TextColumn("{task.description}"),
+                        BarColumn(),
+                        TextColumn("{task.completed}/{task.total}"),
+                        TextColumn("{task.percentage:>3.02f}%"),
+                        FPSColumn(),
+                        TimeRemainingColumn())
+
     frames = []
     if thr <= 1:
-        for i, f in enumerate(core.std.PlaneStats(a, b).frames()):
-            print(f"Progress: {i}/{a.num_frames} frames", end="\r")
-            if get_prop(f, 'PlaneStatsDiff', float) > thr:
-                frames.append(i)
+        with progress:
+            for i, f in progress.track(enumerate(core.std.PlaneStats(a, b).frames()),
+                                       description="Diffing clips...",
+                                       total=a.num_frames):
+                if get_prop(f, 'PlaneStatsDiff', float) > thr:
+                    frames.append(i)
         diff = core.std.MakeDiff(a, b)
     else:
-        diff = core.std.MakeDiff(a, b).std.PlaneStats()
+        diff = diff_func(a, b).std.PlaneStats()
         if diff.format is None:
             raise ValueError("diff: variable-format clips not supported")  # this is for mypy
         t = float if diff.format.sample_type == vs.SampleType.FLOAT else int
-        for i, f in enumerate(diff.frames()):
-            print(f"Progress: {i}/{diff.num_frames} frames", end='\r')
-            if get_prop(f, 'PlaneStatsMin', t) <= thr or get_prop(f, 'PlaneStatsMax', t) >= 255 - thr > thr:
-                frames.append(i)
+        with progress:
+            for i, f in progress.track(enumerate(diff.frames()),
+                                       description="Diffing clips...",
+                                       total=diff.num_frames):
+                if get_prop(f, 'PlaneStatsMin', t) <= thr or get_prop(f, 'PlaneStatsMax', t) >= 255 - thr > thr:
+                    frames.append(i)
 
     if not frames:
         raise ValueError("diff: no differences found")
