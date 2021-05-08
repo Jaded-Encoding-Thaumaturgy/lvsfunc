@@ -104,7 +104,8 @@ def kirsch_aa_mask(clip: vs.VideoNode, mthr: float = 0.25) -> vs.VideoNode:
     Kirsh-based AA mask.
 
     :param clip: Input clip
-    :param mthr: Mask threshold [0, 1] (Default: 0.25)
+    :param mthr: Mask threshold, scaled to clip range if between 0 and 1 (inclusive).
+                 (Default: 0.25)
     """
     try:
         from kagefunc import kirsch

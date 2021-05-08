@@ -61,8 +61,12 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
     :param sigma:       Sigma for Bilateral for pre-blurring (Default: False)
     :param rad:         The luma equivalent of gradfun3's "mask" parameter
     :param radc:        The chroma equivalent of gradfun3's "mask" parameter
-    :param brz_a:       Binarizing for the detail mask (Default: 0.025)
-    :param brz_b:       Binarizing for the edge mask (Default: 0.045)
+    :param brz_a:       Binarizing thresh for the detail mask.
+                        Scaled to clip's depth if between 0 and 1 (inclusive),
+                        else assumed to be in native range. (Default: 0.025)
+    :param brz_b:       Binarizing thresh for the edge mask.
+                        Scaled to clip's depth if between 0 and 1 (inclusive),
+                        else assumed to be in native range. (Default: 0.045)
 
     :return:            Detail mask
     """
@@ -76,7 +80,6 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
             if sigma else clip)
 
     mask_a = range_mask(get_y(blur), rad=rad, radc=radc)
-    mask_a = depth(mask_a, clip.format.bits_per_sample, range=CRange.FULL, range_in=CRange.FULL)
     mask_a = core.std.Binarize(mask_a, brz_a)
 
     mask_b = core.std.Prewitt(get_y(blur))
