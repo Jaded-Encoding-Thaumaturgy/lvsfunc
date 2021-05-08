@@ -110,17 +110,21 @@ class HardsubSign(HardsubMask):
     :param inflate: std.Inflate iterations (Default: 7)
     """
     thresh: float
+    minimum: int
     expand: int
     inflate: int
 
-    def __init__(self, *args: Any, thresh: float = 0.06, expand: int = 8, inflate: int = 7, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, thresh: float = 0.06, minimum: int = 1,
+                 expand: int = 8, inflate: int = 7, **kwargs: Any) -> None:
         self.thresh = thresh
+        self.minimum = minimum
         self.expand = expand
         self.inflate = inflate
         super().__init__(*args, **kwargs)
 
     def _mask(self, clip: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
-        return hardsub_mask(clip, ref)
+        return hardsub_mask(clip, ref, thresh=self.thresh, minimum=self.minimum,
+                            expand=self.expand, inflate=self.inflate)
 
 
 class HardsubLine(HardsubMask):
@@ -219,15 +223,18 @@ def bounded_dehardsub(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[Hardsu
 
 
 def hardsub_mask(hrdsb: vs.VideoNode, ref: vs.VideoNode, thresh: float = 0.06,
-                 expand: int = 8, inflate: int = 7) -> vs.VideoNode:
+                 minimum: int = 1, expand: int = 8, inflate: int = 7) -> vs.VideoNode:
     """
     Zastin's spatially-aware hardsub mask.
 
     :param hrdsb:   Hardsubbed source
     :param ref:     Reference clip
     :param thresh:  Binarization threshold, [0, 1] (Default: 0.06)
+    :param minimum: Times to minimize the max (Default: 1)
     :param expand:  Times to maximize the mask (Default: 8)
     :param inflate: Times to inflate the mask (Default: 7)
+
+    :return:        Hardsub mask
     """
     if hrdsb.format is None:
         raise ValueError("hardsub_mask: 'Variable-format clips not supported'")
@@ -235,7 +242,8 @@ def hardsub_mask(hrdsb: vs.VideoNode, ref: vs.VideoNode, thresh: float = 0.06,
     hsmf = core.std.Expr([hrdsb, ref], 'x y - abs') \
         .resize.Point(format=hrdsb.format.replace(subsampling_w=0, subsampling_h=0).id)
     hsmf = core.std.Expr(vsutil.split(hsmf), "x y z max max")
-    hsmf = hsmf.std.Binarize(scale_thresh(thresh, hsmf)).std.Minimum()
+    hsmf = hsmf.std.Binarize(scale_thresh(thresh, hsmf))
+    hsmf = vsutil.iterate(hsmf, core.std.Minimum, minimum)
     hsmf = vsutil.iterate(hsmf, core.std.Maximum, expand)
     hsmf = vsutil.iterate(hsmf, core.std.Inflate, inflate)
 

@@ -14,14 +14,13 @@ from typing import (Any, Callable, Dict, Iterable, Iterator, List,
 import vapoursynth as vs
 import vsutil
 
-from .util import get_prop
+from .dehardsub import hardsub_mask
 from .progress import Progress, BarColumn, FPSColumn, TextColumn, TimeRemainingColumn
-
-
-T = TypeVar('T')
-
+from .util import get_prop
 
 core = vs.core
+
+T = TypeVar('T')
 
 
 class Direction(IntEnum):
@@ -484,6 +483,19 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
         raise ValueError(f"stack_planes: unexpected subsampling {vsutil.get_subsampling(clip)}")
 
 
+def diff_hardsub_mask(a: vs.VideoNode, b: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
+    """
+    Diff func for :py:func:`lvsfunc.comparison.diff` to use a hardsub mask.
+    This is kinda slow.
+
+    :param a: Clip A
+    :param b: Clip B
+
+    :return:  Diff masked with :py:func:`lvsfunc.dehardsub.hardsub_mask`
+    """
+    return core.std.MaskedMerge(core.std.MakeDiff(a, a), core.std.MakeDiff(a, b), hardsub_mask(a, b))
+
+
 def diff(*clips: vs.VideoNode,
          thr: float = 72,
          height: int = 288,
@@ -565,8 +577,7 @@ def diff(*clips: vs.VideoNode,
         diff = core.std.MakeDiff(a, b)
     else:
         diff = diff_func(a, b).std.PlaneStats()
-        if diff.format is None:
-            raise ValueError("diff: variable-format clips not supported")  # this is for mypy
+        assert diff.format is not None
         t = float if diff.format.sample_type == vs.SampleType.FLOAT else int
         with progress:
             for i, f in progress.track(enumerate(diff.frames()),
