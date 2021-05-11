@@ -93,8 +93,8 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
 @functoolz.curry
 def halo_mask(clip: vs.VideoNode, rad: int = 2,
               sigma: float = 1.0, brz: float = 0.35,
-              thmi: int = 80, thma: int = 128,
-              thlimi: int = 50, thlima: int = 100,
+              thmi: Union[int, float] = 80, thma: Union[int, float] = 128,
+              thlimi: Union[int, float] = 50,
               edgemasking: Callable[[vs.VideoNode, float], vs.VideoNode]
               = lambda clip, sigma: core.std.Prewitt(clip, scale=sigma)) -> vs.VideoNode:
     """
