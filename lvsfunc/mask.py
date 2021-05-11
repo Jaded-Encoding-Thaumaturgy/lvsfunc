@@ -1,13 +1,12 @@
 """
     Wrappers and masks for denoising.
 """
-import math
 from abc import ABC, abstractmethod
 from functools import partial
 from typing import Callable, List, Optional, Tuple, Union
 
 import vapoursynth as vs
-from vsutil import depth, get_depth, get_y, iterate
+from vsutil import depth, get_depth, get_y, iterate, scale_value
 from vsutil import Range as CRange
 
 from . import util
@@ -112,18 +111,16 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
     :param thmi:            Minimum threshold for sharp edges; keep only the sharpest edges
     :param thma:            Maximum threshold for sharp edges; keep only the sharpest edges
     :param thlimi:          Minimum limiting threshold; includes more edges than previously, but ignores simple details
-    :param thlima:          Maximum limiting threshold; includes more edges than previously, but ignores simple details
     :param edgemasking:     Callable function with signature edgemask(clip, scale/sigma)
 
     :return:                Halo mask
     """
-    peak = (1 << get_depth(clip)) - 1
-    smax = _scale(255, peak)
+    bits = get_depth(clip)
+    smax = scale_value(255, 8, bits, CRange.FULL, CRange.FULL)
 
-    thmi = _scale(thmi, peak)
-    thma = _scale(thma, peak)
-    thlimi = _scale(thlimi, peak)
-    thlima = _scale(thlima, peak)
+    thmi = scale_value(thmi, 8, bits, CRange.FULL, CRange.FULL)
+    thma = scale_value(thma, 8, bits, CRange.FULL, CRange.FULL)
+    thlimi = scale_value(thlimi, 8, bits, CRange.FULL, CRange.FULL)
 
     matrix = [1, 2, 1, 2, 4, 2, 1, 2, 1]
 
@@ -178,12 +175,6 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: Optional[int] = None) -> 
     mi = _minmax(clip, rad, radc, maximum=False)
 
     return core.std.Expr([ma, mi], expr='x y -')
-
-
-# Helper functions
-def _scale(value: int, peak: int) -> int:
-    x = value * peak / 255
-    return math.floor(x + 0.5) if x > 0 else math.ceil(x - 0.5)
 
 
 def _minmax(clip: vs.VideoNode, sy: int = 2, sc: int = 2, maximum: bool = False) -> vs.VideoNode:
