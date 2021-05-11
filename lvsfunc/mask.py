@@ -179,6 +179,9 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: Optional[int] = None) -> 
     if radc == 0:
         clip = get_y(clip)
 
+    if clip.format is None:
+        raise ValueError("range_mask: 'Variable-format clips not supported'")
+
     if clip.format.color_family == vs.GRAY:
         ma = _minmax(clip, rad, True)
         mi = _minmax(clip, rad, False)
