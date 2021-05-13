@@ -129,7 +129,7 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
     edgemask = edgemasking(get_y(clip), sigma)
 
     # Preserve just the strongest edges
-    strong = core.std.Expr(edgemask, expr=f"x {thmi} - {thma-thmi} / {smax} *")
+    strong = core.std.Expr(edgemask, expr=f"x {thmi} - {thlima-thlimi} / {smax} *")
     # Expand to pick up additional halos
     expand = iterate(strong, core.std.Maximum, rad)
 
