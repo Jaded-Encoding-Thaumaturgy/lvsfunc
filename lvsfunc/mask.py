@@ -1,7 +1,6 @@
 """
     Wrappers and masks for denoising.
 """
-import math
 from abc import ABC, abstractmethod
 from functools import partial
 from typing import Callable, List, Optional, Tuple, Union
@@ -198,11 +197,6 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: Optional[int] = None) -> 
 
 
 # Helper functions
-def _scale(value: int, peak: int) -> int:
-    x = value * peak / 255
-    return math.floor(x + 0.5) if x > 0 else math.ceil(x - 0.5)
-
-
 def _minmax(clip: vs.VideoNode, iterations: int, maximum: bool) -> vs.VideoNode:
     func = core.std.Maximum if maximum else core.std.Minimum
     for i in range(1, iterations + 1):
