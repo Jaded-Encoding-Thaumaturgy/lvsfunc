@@ -93,7 +93,7 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
 def halo_mask(clip: vs.VideoNode, rad: int = 2,
               sigma: float = 1.0, brz: float = 0.35,
               thmi: float = 80, thma: float = 128,
-              thlimi: float = 50,
+              thlimi: float = 50, thlima: float = 100,
               edgemasking: Callable[[vs.VideoNode, float], vs.VideoNode]
               = lambda clip, sigma: core.std.Prewitt(clip, scale=sigma)) -> vs.VideoNode:
     """
@@ -111,6 +111,7 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
     :param thmi:            Minimum threshold for sharp edges; keep only the sharpest edges
     :param thma:            Maximum threshold for sharp edges; keep only the sharpest edges
     :param thlimi:          Minimum limiting threshold; includes more edges than previously, but ignores simple details
+    :param thlima:          Maximum limiting threshold; includes more edges than previously, but ignores simple details
     :param edgemasking:     Callable function with signature edgemask(clip, scale/sigma)
 
     :return:                Halo mask
@@ -121,6 +122,7 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
     thmi = scale_value(thmi, 8, bits, CRange.FULL, CRange.FULL)
     thma = scale_value(thma, 8, bits, CRange.FULL, CRange.FULL)
     thlimi = scale_value(thlimi, 8, bits, CRange.FULL, CRange.FULL)
+    thlima = scale_value(thlima, 8, bits, CRange.FULL, CRange.FULL)
 
     matrix = [1, 2, 1, 2, 4, 2, 1, 2, 1]
 
