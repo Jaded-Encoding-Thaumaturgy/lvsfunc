@@ -31,6 +31,19 @@ class Kernel(ABC):
         pass
 
 
+class Point(Kernel):
+    """ Built-in point resizer. """
+    def scale(self, clip: vs.VideoNode, width: int, height: int,
+              shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
+        return core.resize.Point(clip, width, height, src_top=shift[0],
+                                 src_left=shift[1], **self.kwargs)
+
+    def descale(self, clip: vs.VideoNode, width: int, height: int,
+                shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
+        return core.resize.Point(clip, width, height, src_top=shift[0],
+                                 src_left=shift[1])
+
+
 class Bilinear(Kernel):
     """ Built-in bilinear resizer. """
     def scale(self, clip: vs.VideoNode, width: int, height: int,
