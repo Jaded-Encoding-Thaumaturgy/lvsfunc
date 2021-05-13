@@ -50,7 +50,7 @@ def bm3d(clip: vs.VideoNode, matrix_s: str = "709", sigma: Union[float, List[flo
             else clip.bm3d.VFinal(sigma=sigmal, ref=refv, radius=radiusl[1], matrix=100, **final_args) \
             .bm3d.VAggregate(radius=radiusl[1], sample=1)
 
-    den = vsutil.vsutil.iterate(clip_in, final, refine)
+    den = vsutil.iterate(clip_in, final, refine)
 
     # boil everything back down to whatever input we had
     den = den.bm3d.OPP2RGB(sample=1).resize.Bicubic(format=clip.format.id, matrix_s=matrix_s) if not isGray \
