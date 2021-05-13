@@ -1,6 +1,7 @@
 """
     Wrappers and masks for denoising.
 """
+import math
 from abc import ABC, abstractmethod
 from functools import partial
 from typing import Callable, List, Optional, Tuple, Union
@@ -194,7 +195,6 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: Optional[int] = None) -> 
         mask = join(planes)
 
     return mask
-
 
 
 # Helper functions
