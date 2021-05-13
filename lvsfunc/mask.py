@@ -6,7 +6,7 @@ from functools import partial
 from typing import Callable, List, Optional, Tuple, Union
 
 import vapoursynth as vs
-from vsutil import depth, get_depth, get_y, iterate, scale_value
+from vsutil import depth, get_depth, get_y, iterate, join, scale_value, split
 from vsutil import Range as CRange
 
 from . import util
@@ -170,32 +170,45 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: Optional[int] = None) -> 
 
     :return:        Range mask
     """
-    radc = rad if radc is None else radc
+    if not rad:
+        rad = 0
+    if not radc:
+        radc = 0
+
     if radc == 0:
         clip = get_y(clip)
-    ma = _minmax(clip, rad, radc, maximum=True)
-    mi = _minmax(clip, rad, radc, maximum=False)
 
-    return core.std.Expr([ma, mi], expr='x y -')
+    if clip.format is None:
+        raise ValueError("range_mask: 'Variable-format clips not supported'")
 
-
-def _minmax(clip: vs.VideoNode, sy: int = 2, sc: int = 2, maximum: bool = False) -> vs.VideoNode:
-    yp = sy >= sc
-    yiter = 1 if yp else 0
-    cp = sc >= sy
-    citer = 1 if cp else 0
-    planes = [0] if yp and not cp else [1, 2] if cp and not yp else [0, 1, 2]
-
-    if max(sy, sc) % 3 != 1:
-        coor = [0, 1, 0, 1, 1, 0, 1, 0]
+    if clip.format.color_family == vs.GRAY:
+        ma = _minmax(clip, rad, True)
+        mi = _minmax(clip, rad, False)
+        mask = core.std.Expr([ma, mi], 'x y -')
     else:
-        coor = [1] * 8
+        planes = split(clip)
+        for i, rad_ in enumerate([rad, radc, radc]):
+            ma = _minmax(planes[i], rad_, True)
+            mi = _minmax(planes[i], rad_, False)
+            planes[i] = core.std.Expr([ma, mi], 'x y -')
+        mask = join(planes)
 
-    if sy > 0 or sc > 0:
-        func = clip.std.Maximum if maximum else clip.std.Minimum
-        return _minmax(func(planes=planes, coordinates=coor), sy=sy-yiter, sc=sc-citer)
-    else:
-        return clip
+    return mask
+
+
+
+# Helper functions
+def _scale(value: int, peak: int) -> int:
+    x = value * peak / 255
+    return math.floor(x + 0.5) if x > 0 else math.ceil(x - 0.5)
+
+
+def _minmax(clip: vs.VideoNode, iterations: int, maximum: bool) -> vs.VideoNode:
+    func = core.std.Maximum if maximum else core.std.Minimum
+    for i in range(1, iterations + 1):
+        coord = [0, 1, 0, 1, 1, 0, 1, 0] if (i % 3) != 1 else [1] * 8
+        clip = func(clip, coordinates=coord)
+    return clip
 
 
 class BoundingBox():
