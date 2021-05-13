@@ -60,6 +60,7 @@ Modules
    lvsfunc.comparison
    lvsfunc.dehardsub
    lvsfunc.deinterlace
+   lvsfunc.denoise
    lvsfunc.kernels
    lvsfunc.mask
    lvsfunc.misc
@@ -99,6 +100,7 @@ Functions
    lvsfunc.deinterlace.dir_deshimmer
    lvsfunc.deinterlace.dir_unsharp
    lvsfunc.deinterlace.sivtc
+   lvsfunc.denoise.bm3d
    lvsfunc.mask.adaptive_mask
    lvsfunc.mask.detail_mask
    lvsfunc.mask.halo_mask
@@ -222,6 +224,18 @@ lvsfunc.deinterlace
    lvsfunc.deinterlace.sivtc
 
 .. automodule:: lvsfunc.deinterlace
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+lvsfunc.denoise
+-------------------
+
+.. autosummary::
+
+   lvsfunc.denoise.bm3d
+
+.. automodule:: lvsfunc.denoise
    :members:
    :undoc-members:
    :show-inheritance:
