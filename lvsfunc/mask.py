@@ -1,13 +1,12 @@
 """
     Wrappers and masks for denoising.
 """
-import math
 from abc import ABC, abstractmethod
 from functools import partial
 from typing import Callable, List, Optional, Tuple, Union
 
 import vapoursynth as vs
-from vsutil import depth, get_depth, get_y, iterate, join, split
+from vsutil import depth, get_depth, get_y, iterate, join, scale_value, split
 from vsutil import Range as CRange
 
 from . import util
@@ -93,8 +92,8 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
 @functoolz.curry
 def halo_mask(clip: vs.VideoNode, rad: int = 2,
               sigma: float = 1.0, brz: float = 0.35,
-              thmi: int = 80, thma: int = 128,
-              thlimi: int = 50, thlima: int = 100,
+              thmi: float = 80, thma: float = 128,
+              thlimi: float = 50, thlima: float = 100,
               edgemasking: Callable[[vs.VideoNode, float], vs.VideoNode]
               = lambda clip, sigma: core.std.Prewitt(clip, scale=sigma)) -> vs.VideoNode:
     """
@@ -117,20 +116,20 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
 
     :return:                Halo mask
     """
-    peak = (1 << get_depth(clip)) - 1
-    smax = _scale(255, peak)
+    bits = get_depth(clip)
+    smax = scale_value(255, 8, bits, CRange.FULL, CRange.FULL)
 
-    thmi = _scale(thmi, peak)
-    thma = _scale(thma, peak)
-    thlimi = _scale(thlimi, peak)
-    thlima = _scale(thlima, peak)
+    thmi = scale_value(thmi, 8, bits, CRange.FULL, CRange.FULL)
+    thma = scale_value(thma, 8, bits, CRange.FULL, CRange.FULL)
+    thlimi = scale_value(thlimi, 8, bits, CRange.FULL, CRange.FULL)
+    thlima = scale_value(thlima, 8, bits, CRange.FULL, CRange.FULL)
 
     matrix = [1, 2, 1, 2, 4, 2, 1, 2, 1]
 
     edgemask = edgemasking(get_y(clip), sigma)
 
     # Preserve just the strongest edges
-    strong = core.std.Expr(edgemask, expr=f"x {thmi} - {thma-thmi} / {smax} *")
+    strong = core.std.Expr(edgemask, expr=f"x {thmi} - {thlima-thlimi} / {smax} *")
     # Expand to pick up additional halos
     expand = iterate(strong, core.std.Maximum, rad)
 
@@ -195,6 +194,7 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: Optional[int] = None) -> 
         mask = join(planes)
 
     return mask
+
 
 
 # Helper functions
