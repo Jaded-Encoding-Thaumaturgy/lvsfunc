@@ -39,5 +39,5 @@ comp = lvf.comparison.compare(...)
 
 ## Requirements
 
-- Python 3.8 or newer
-- Vapoursynth R49 or newer
+- Python 3.9 or newer
+- Vapoursynth R53 or newer
