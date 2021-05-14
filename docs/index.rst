@@ -65,6 +65,7 @@ Modules
    lvsfunc.mask
    lvsfunc.misc
    lvsfunc.recon
+   lvsfunc.render
    lvsfunc.scale
    lvsfunc.types
    lvsfunc.util
@@ -118,6 +119,7 @@ Functions
    lvsfunc.misc.source
    lvsfunc.misc.wipe_row
    lvsfunc.recon.chroma_reconstruct
+   lvsfunc.render.clip_async_render
    lvsfunc.scale.descale
    lvsfunc.scale.descale_detail_mask
    lvsfunc.scale.reupscale
@@ -308,6 +310,18 @@ lvsfunc.recon
    lvsfunc.recon.chroma_reconstruct
 
 .. automodule:: lvsfunc.recon
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+lvsfunc.render
+-------------------
+
+.. autosummary::
+
+   lvsfunc.render.clip_async_render
+
+.. automodule:: lvsfunc.render
    :members:
    :undoc-members:
    :show-inheritance:
