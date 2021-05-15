@@ -102,7 +102,6 @@ Functions
    lvsfunc.deinterlace.dir_unsharp
    lvsfunc.deinterlace.SIVTC
    lvsfunc.denoise.bm3d
-   lvsfunc.mask.adaptive_mask
    lvsfunc.mask.detail_mask
    lvsfunc.mask.halo_mask
    lvsfunc.mask.range_mask
@@ -248,7 +247,6 @@ lvsfunc.mask
 
 .. autosummary::
 
-   lvsfunc.mask.adaptive_mask
    lvsfunc.mask.detail_mask
    lvsfunc.mask.halo_mask
    lvsfunc.mask.range_mask
