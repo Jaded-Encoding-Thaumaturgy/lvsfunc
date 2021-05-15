@@ -510,12 +510,14 @@ def colored_clips(amount: int,
     return [core.std.BlankClip(color=color, **blank_clip_args) for color in rgb_color_list]
 
 
-def scale_thresh(thresh: float, clip: vs.VideoNode) -> float:
+def scale_thresh(thresh: float, clip: vs.VideoNode, assume: Optional[int] = None) -> float:
     """
     Scale binarization thresholds from float to int.
 
     :param thresh: Threshold [0, 1]. If greater than 1, assumed to be in native clip range
     :param clip:   Clip to scale to
+    :param assume: Assume input is this depth when given input >1. If ``None``\\, assume ``clip``\\'s format.
+                   (Default: None)
 
     :return:       Threshold scaled to [0, 2^clip.depth - 1] (if vs.INTEGER)
     """
@@ -523,6 +525,9 @@ def scale_thresh(thresh: float, clip: vs.VideoNode) -> float:
         raise ValueError("scale_thresh: 'Variable-format clips not supported.'")
     if thresh < 0:
         raise ValueError("scale_thresh: 'Thresholds must be positive.'")
+    if thresh > 1:
+        return thresh if not assume \
+            else round(thresh/((1 << assume) - 1) * ((1 << clip.format.bits_per_sample) - 1))
     return thresh if clip.format.sample_type == vs.FLOAT or thresh > 1 \
         else round(thresh * ((1 << clip.format.bits_per_sample) - 1))
 

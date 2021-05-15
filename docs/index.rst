@@ -100,7 +100,7 @@ Functions
    lvsfunc.deinterlace.decomb
    lvsfunc.deinterlace.dir_deshimmer
    lvsfunc.deinterlace.dir_unsharp
-   lvsfunc.deinterlace.sivtc
+   lvsfunc.deinterlace.SIVTC
    lvsfunc.denoise.bm3d
    lvsfunc.mask.adaptive_mask
    lvsfunc.mask.detail_mask
@@ -223,7 +223,7 @@ lvsfunc.deinterlace
    lvsfunc.deinterlace.decomb
    lvsfunc.deinterlace.dir_deshimmer
    lvsfunc.deinterlace.dir_unsharp
-   lvsfunc.deinterlace.sivtc
+   lvsfunc.deinterlace.SIVTC
 
 .. automodule:: lvsfunc.deinterlace
    :members:

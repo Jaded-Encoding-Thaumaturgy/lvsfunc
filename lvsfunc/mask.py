@@ -3,46 +3,19 @@
 """
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Callable, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import vapoursynth as vs
-from vsutil import depth, get_depth, get_y, iterate, join, scale_value, split
+from vsutil import depth, get_y, iterate, join, split
 from vsutil import Range as CRange
 
 from . import util
 from .misc import replace_ranges, scale_thresh
 from .types import Position, Range, Size
 
-try:
-    from cytoolz import functoolz
-except ModuleNotFoundError:
-    try:
-        from toolz import functoolz  # type: ignore
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("Cannot find functoolz: Please install toolz or cytoolz")
-
 core = vs.core
 
 
-@functoolz.curry
-def adaptive_mask(clip: vs.VideoNode, luma_scaling: float = 8.0) -> vs.VideoNode:
-    """
-    A wrapper to create a luma mask for denoising and/or debanding.
-
-    Function is curried to allow parameter tuning when passing to denoisers
-    that allow you to pass your own mask.
-
-    Dependencies: adaptivegrain
-
-    :param clip:         Input clip
-    :param luma_scaling: Luma scaling factor (Default: 8.0)
-
-    :return:             Luma mask
-    """
-    return core.adg.Mask(clip.std.PlaneStats(), luma_scaling)
-
-
-@functoolz.curry
 def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
                 rad: int = 3, radc: int = 2,
                 brz_a: float = 0.025, brz_b: float = 0.045) -> vs.VideoNode:
@@ -89,13 +62,11 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
     return util.pick_removegrain(mask)(mask, 11)
 
 
-@functoolz.curry
 def halo_mask(clip: vs.VideoNode, rad: int = 2,
-              sigma: float = 1.0, brz: float = 0.35,
-              thmi: float = 80, thma: float = 128,
-              thlimi: float = 50, thlima: float = 100,
-              edgemasking: Callable[[vs.VideoNode, float], vs.VideoNode]
-              = lambda clip, sigma: core.std.Prewitt(clip, scale=sigma)) -> vs.VideoNode:
+              brz: float = 0.35,
+              thmi: float = 0.315, thma: float = 0.5,
+              thlimi: float = 0.195, thlima: float = 0.392,
+              edgemask: Optional[vs.VideoNode] = None) -> vs.VideoNode:
     """
     A halo mask to catch basic haloing, inspired by the mask from FineDehalo.
     Most was copied from there, but some key adjustments were made to center it specifically around masking.
@@ -104,29 +75,27 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
     Float made sense for FineDehalo since it uses DeHalo_alpha for dehaloing,
     but the masks themselves use rounded rx/ry values, so there's no reason to bother with floats here.
 
+    All thresholds are float and will be scaled to ``clip``\\'s format.
+    If thresholds are greater than 1, they will be asummed to be in 8-bit and scaled accordingly.
+
     :param clip:            Input clip
     :param rad:             Radius for the mask
-    :param scale:           Multiply all pixels by scale before outputting. Sigma if `edgemask` with a sigma is passed
     :param brz:             Binarizing for shrinking mask (Default: 0.35)
     :param thmi:            Minimum threshold for sharp edges; keep only the sharpest edges
     :param thma:            Maximum threshold for sharp edges; keep only the sharpest edges
     :param thlimi:          Minimum limiting threshold; includes more edges than previously, but ignores simple details
     :param thlima:          Maximum limiting threshold; includes more edges than previously, but ignores simple details
-    :param edgemasking:     Callable function with signature edgemask(clip, scale/sigma)
+    :param edgemask:        Edgemask to use. If None, uses ``clip.std.Prewitt()`` (Default: None).
 
     :return:                Halo mask
     """
-    bits = get_depth(clip)
-    smax = scale_value(255, 8, bits, CRange.FULL, CRange.FULL)
+    smax = scale_thresh(1.0, clip)
 
-    thmi = scale_value(thmi, 8, bits, CRange.FULL, CRange.FULL)
-    thma = scale_value(thma, 8, bits, CRange.FULL, CRange.FULL)
-    thlimi = scale_value(thlimi, 8, bits, CRange.FULL, CRange.FULL)
-    thlima = scale_value(thlima, 8, bits, CRange.FULL, CRange.FULL)
+    thmi, thma, thlimi, thlima = (scale_thresh(t, clip, assume=8) for t in [thmi, thma, thlimi, thlima])
 
     matrix = [1, 2, 1, 2, 4, 2, 1, 2, 1]
 
-    edgemask = edgemasking(get_y(clip), sigma)
+    edgemask = edgemask or get_y(clip).std.Prewitt()
 
     # Preserve just the strongest edges
     strong = core.std.Expr(edgemask, expr=f"x {thmi} - {thlima-thlimi} / {smax} *")
@@ -149,8 +118,7 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
     return core.std.Expr(mask, expr="x 2 *")
 
 
-@functoolz.curry
-def range_mask(clip: vs.VideoNode, rad: int = 2, radc: Optional[int] = None) -> vs.VideoNode:
+def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
     """
     Min/max mask with separate luma/chroma radii.
 
@@ -166,15 +134,10 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: Optional[int] = None) -> 
 
     :param clip:    Input clip
     :param rad:     Depth in pixels of the detail/edge masking
-    :param radc:    Chroma equivalent to `rad`
+    :param radc:    Chroma equivalent to ``rad``
 
     :return:        Range mask
     """
-    if not rad:
-        rad = 0
-    if not radc:
-        radc = 0
-
     if radc == 0:
         clip = get_y(clip)
 
