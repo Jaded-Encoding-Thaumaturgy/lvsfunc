@@ -183,6 +183,28 @@ def edgefixer(clip: vs.VideoNode,
     return ef if full_range else core.std.Limiter(ef, 16.0, [235, 240])
 
 
+def getMatrix(clip: vs.VideoNode) -> int:
+    """
+    Helper function to get the matrix for a clip.
+
+    :param clip:    src clip
+
+    :return:        Value representing a matrix
+    """
+    frame = clip.get_frame(0)
+    w, h = frame.width, frame.height
+
+    if frame.format.color_family == vs.RGB:
+        return 0
+    if frame.format.color_family == vs.YCOCG:
+        return 8
+    if w <= 1024 and h <= 576:
+        return 5
+    if w <= 2048 and h <= 1536:
+        return 1
+    return 9
+
+
 def shift_tint(clip: vs.VideoNode, values: Union[int, Sequence[int]] = 16) -> vs.VideoNode:
     """
     A function for forcibly adding pixel values to a clip.
