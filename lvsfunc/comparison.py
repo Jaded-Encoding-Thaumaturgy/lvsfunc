@@ -18,7 +18,7 @@ from .dehardsub import hardsub_mask
 from .progress import Progress, BarColumn, FPSColumn, TextColumn, TimeRemainingColumn
 from .render import clip_async_render
 from .util import get_prop
-from .misc import getMatrix
+from .misc import get_matrix
 
 core = vs.core
 
@@ -359,7 +359,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     """
     def _resample(clip: vs.VideoNode) -> vs.VideoNode:
         # Resampling to 8 bit and RGB to properly display how it appears on your screen
-        return core.resize.Bicubic(clip, format=vs.RGB24, matrix_in=getMatrix(clip),
+        return core.resize.Bicubic(clip, format=vs.RGB24, matrix_in=get_matrix(clip),
                                    prefer_props=True, dither_type='error_diffusion')
 
     # Error handling

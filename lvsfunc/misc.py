@@ -38,7 +38,6 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
         * L-SMASH (optional: m2ts sources or when forcing lsmas)
         * d2vsource (optional: d2v sources)
         * dgdecodenv (optional: dgi sources)
-        * mvsfunc (optional: reference clip mode)
         * vapoursynth-readmpls (optional: mpls sources)
 
     :param file:              Input file
@@ -85,16 +84,11 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
             clip = core.ffms2.Source(file, **index_args)
 
     if ref:
-        try:
-            from mvsfunc import GetMatrix
-        except ModuleNotFoundError:
-            raise ModuleNotFoundError("source: missing dependency 'mvsfunc'")
-
         if ref.format is None:
             raise ValueError("source: 'Variable-format clips not supported.'")
         clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
         clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height,
-                                   format=ref.format.id, matrix_s=str(GetMatrix(ref)))
+                                   format=ref.format.id, matrix_s=str(get_matrix(ref)))
         if is_image(file):
             clip = clip * (ref.num_frames - 1)
 
@@ -183,7 +177,7 @@ def edgefixer(clip: vs.VideoNode,
     return ef if full_range else core.std.Limiter(ef, 16.0, [235, 240])
 
 
-def getMatrix(clip: vs.VideoNode) -> int:
+def get_matrix(clip: vs.VideoNode) -> int:
     """
     Helper function to get the matrix for a clip.
 

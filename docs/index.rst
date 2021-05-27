@@ -23,7 +23,6 @@ lvsfunc depends on the following third-party scripts:
 * `edi_rpow2 <https://gist.github.com/YamashitaRen/020c497524e794779d9c>`_
 * `havsfunc <https://github.com/HomeOfVapourSynthEvolution/havsfunc>`_
 * `kagefunc <https://github.com/Irrational-Encoding-Wizardry/kagefunc>`_
-* `mvsfunc <https://github.com/HomeOfVapourSynthEvolution/mvsfunc>`_
 * `vsTAAmbk <https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk>`_
 * `vsutil <https://github.com/Irrational-Encoding-Wizardry/vsutil>`_
 
@@ -110,6 +109,7 @@ Functions
    lvsfunc.misc.colored_clips
    lvsfunc.misc.edgefixer
    lvsfunc.misc.frames_since_bookmark
+   lvsfunc.misc.get_matrix
    lvsfunc.misc.limit_dark
    lvsfunc.misc.load_bookmarks
    lvsfunc.misc.replace_ranges
@@ -287,6 +287,7 @@ lvsfunc.misc
    lvsfunc.misc.colored_clips
    lvsfunc.misc.edgefixer
    lvsfunc.misc.frames_since_bookmark
+   lvsfunc.misc.get_matrix
    lvsfunc.misc.limit_dark
    lvsfunc.misc.load_bookmarks
    lvsfunc.misc.replace_ranges
