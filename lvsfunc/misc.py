@@ -52,8 +52,7 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
     :return:                  Vapoursynth clip representing input file
     """
 
-    # TODO: Consider adding kwargs for additional options,
-    #       find a way to NOT have to rely on a million elif's
+    # TODO: find a way to NOT have to rely on a million elif's
     if file.startswith('file:///'):
         file = file[8::]
 
@@ -550,9 +549,3 @@ def scale_thresh(thresh: float, clip: vs.VideoNode, assume: Optional[int] = None
 
 # TODO: Write function that only masks px of a certain color/threshold of colors.
 #       Think the magic wand tool in various image-editing programs.
-
-
-# TODO: Write a wrapper for duplex's Chroma Reconstructor.
-#       It should optimally be able to accept anything and accurately reconstruct it,
-#       so long as the user gives it the right clips. Otherwise, it should assume
-#       that the chroma was scaled down using Nearest Neighbor or something alike.

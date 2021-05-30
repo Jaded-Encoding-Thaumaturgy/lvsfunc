@@ -44,8 +44,7 @@ def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) 
         raise ValueError("recon: 'Variable-format clips not supported'")
 
     def dmgl(clip: vs.VideoNode) -> vs.VideoNode:
-        # TO-DO: Add auto shift calculator
-        return core.resize.Bicubic(clip, w, h, src_left=.25)
+        return core.resize.Bicubic(clip, w, h, src_left=0.25)
 
     w, h = clip.width, clip.height
 
