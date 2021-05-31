@@ -27,7 +27,9 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
     Function is curried to allow parameter tuning when passing to denoisers
     that allow you to pass your own mask.
 
-    Dependencies: VapourSynth-Bilateral (optional: sigma), debandshit
+    Dependencies:
+    * VapourSynth-Bilateral (optional: sigma)
+    * RGSF (optional: 32 bit clip)
 
     :param clip:        Input clip
     :param sigma:       Sigma for Bilateral for pre-blurring (Default: False)

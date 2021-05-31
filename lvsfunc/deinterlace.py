@@ -50,7 +50,8 @@ def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:
     For more information, please refer to this blogpost by torchlight:
     https://mechaweaponsvidya.wordpress.com/2012/09/13/adventures-in-deblending/
 
-    Dependencies: rgsf (optional: 32bit clip)
+    Dependencies:
+    * RGSF (optional: 32 bit clip)
 
     :param clip:     Input clip
     :param rep:      Repair mode for the deblended frames, no repair if None (Default: None)
@@ -97,9 +98,10 @@ def decomb(clip: vs.VideoNode,
 
     Base function written by Midlifecrisis from the WEEB AUTISM server, and modified by LightArrowsEXE.
 
-    Dependencies: combmask, havsfunc (QTGMC), rgsf (optional: 32bit clip)
-
-    Deciphering havsfunc's dependencies is left as an exercise for the user.
+    Dependencies:
+    * combmask
+    * havsfunc
+    * RGSF (optional: 32 bit clip)
 
     :param clip:          Input clip
     :param TFF:           Top-Field-First
@@ -162,7 +164,8 @@ def dir_deshimmer(clip: vs.VideoNode, TFF: bool = True,
     Only works (in the few instances it does, anyway) for obvious horizontal and vertical shimmering.
     Odds of success are low. But if you're desperate, it's worth a shot.
 
-    Dependencies: vapoursynth-nnedi3
+    Dependencies:
+    * vapoursynth-nnedi3
 
     :param clip:         Input clip
     :param TFF:          Top Field First. Set to False if TFF doesn't work (Default: True)
@@ -189,7 +192,8 @@ def dir_unsharp(clip: vs.VideoNode,
 
     Special thanks to thebombzen and kageru for writing the bulk of this.
 
-    Dependencies: knlmeanscl
+    Dependencies:
+    * knlmeanscl
 
     :param clip:            Input clip
     :param strength:        Amount to multiply blurred clip with original clip by (Default: 1.0)

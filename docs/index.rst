@@ -19,29 +19,28 @@ Dependencies
 
 lvsfunc depends on the following third-party scripts:
 
-* `debandshit <https://github.com/LightArrowsEXE/debandshit>`_
-* `edi_rpow2 <https://gist.github.com/YamashitaRen/020c497524e794779d9c>`_
 * `havsfunc <https://github.com/HomeOfVapourSynthEvolution/havsfunc>`_
 * `kagefunc <https://github.com/Irrational-Encoding-Wizardry/kagefunc>`_
-* `vsTAAmbk <https://github.com/HomeOfVapourSynthEvolution/vsTAAmbk>`_
-* `vsutil <https://github.com/Irrational-Encoding-Wizardry/vsutil>`_
+* `vsutil <https://pypi.org/project/vsutil/>`_
 
-The following Vapoursynth libraries are also required for full functionality:
+The following VapourSynth libraries are also required for full functionality:
 
-* `adaptivegrain <https://git.kageru.moe/kageru/adaptivegrain>`_
 * `combmask <https://mega.nz/#!whtkTShS!JsDhi-_QGs-kZkzWqgcXHX2MQII4Bl9Y4Ft0zHnXDvk>`_
 * `d2vsource <https://github.com/dwbuiten/d2vsource>`_
 * `dgdecnv <http://rationalqm.us/dgdecnv/dgdecnv.html>`_
-* `fmtconv <https://github.com/EleonoreMizo/fmtconv>`_
-* `knlmeanscl <https://github.com/Khanattila/KNLMeansCL>`_
-* `rgsf <https://github.com/IFeelBloated/RGSF>`_
-* `vapoursynth-descale <https://github.com/Irrational-Encoding-Wizardry/vapoursynth-descale>`_
-* `vapoursynth-nnedi3 <https://github.com/dubhater/vapoursynth-nnedi3>`_
-* `vapoursynth-eedi3 <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-EEDI3>`_
-* `vapoursynth-readmpls <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-ReadMpls>`_
-* `vapoursynth-retinex <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-Retinex>`_
-* `vapoursynth-tcanny <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-TCanny>`_
-* `vs-continuityfixer <https://github.com/MonoS/VS-ContinuityFixer>`_
+* `ffms2 <https://github.com/FFMS/ffms2>`_
+* `KNLMeansCL <https://github.com/Khanattila/KNLMeansCL>`_
+* `L-SMASH-Works <https://github.com/VFR-maniac/L-SMASH-Works>`_
+* `RGSF <https://github.com/IFeelBloated/RGSF>`_
+* `VapourSynth-Bilateral <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-Bilateral>`_
+* `VapourSynth-BM3D <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-BM3D>`_
+* `VapourSynth-descale <https://github.com/Irrational-Encoding-Wizardry/VapourSynth-descale>`_
+* `VapourSynth-EEDI3 <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-EEDI3>`_
+* `VapourSynth-nnedi3 <https://github.com/dubhater/VapourSynth-nnedi3>`_
+* `VapourSynth-NNEDI3CL <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-NNEDI3CL3>`_
+* `VapourSynth-ReadMpls <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-ReadMpls>`_
+* `VapourSynth-Retinex <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-Retinex>`_
+* `vs-ContinuityFixer <https://github.com/MonoS/VS-ContinuityFixer>`_
 * `zimg <https://github.com/sekrit-twc/zimg>`_
 * `znedi3 <https://github.com/sekrit-twc/znedi3>`_
 

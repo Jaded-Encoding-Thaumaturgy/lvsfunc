@@ -96,7 +96,8 @@ def reupscale(clip: vs.VideoNode,
 
     Stolen from Varde with some adjustments made.
 
-    Dependencies: znedi3
+    Dependencies:
+    * znedi3
 
     :param clip:         Input clip
     :param width:        Upscale width. If None, determine from `height` assuming 16:9 aspect ratio (Default: None)
@@ -171,7 +172,9 @@ def descale(clip: vs.VideoNode,
 
     If you want to conditionally descale, specify a non-zero threshold.
 
-    Dependencies: vapoursynth-descale, znedi3
+    Dependencies:
+    * vapoursynth-descale
+    * znedi3
 
     :param clip:                    Clip to descale
     :param upscaler:                Callable function with signature upscaler(clip, width, height)
@@ -299,7 +302,8 @@ def test_descale(clip: vs.VideoNode,
 
     Some of this code was leveraged from DescaleAA found in fvsfunc.
 
-    Dependencies: vapoursynth-descale
+    Dependencies:
+    * vapoursynth-descale
 
     :param clip:           Input clip
     :param width:          Target descale width. If None, determine from `height`

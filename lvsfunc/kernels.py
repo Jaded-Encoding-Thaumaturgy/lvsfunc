@@ -61,6 +61,9 @@ class Bicubic(Kernel):
     """
     Built-in bicubic resizer.
 
+    Dependencies:
+    * VapourSynth-descale
+
     :param b: B-param for bicubic kernel
     :param c: C-param for bicubic kernel
     """
@@ -88,6 +91,9 @@ class Lanczos(Kernel):
     """
     Built-in lanczos resizer.
 
+    Dependencies:
+    * VapourSynth-descale
+
     :param taps: taps param for lanczos kernel
     """
     def __init__(self, taps: int = 4, **kwargs: Any) -> None:
@@ -107,7 +113,12 @@ class Lanczos(Kernel):
 
 
 class Spline16(Kernel):
-    """ Built-in spline16 resizer. """
+    """
+    Built-in spline16 resizer.
+
+    Dependencies:
+    * VapourSynth-descale
+    """
     def scale(self, clip: vs.VideoNode, width: int, height: int,
               shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
         return core.resize.Spline16(clip, width, height, src_top=shift[0],
@@ -120,7 +131,12 @@ class Spline16(Kernel):
 
 
 class Spline36(Kernel):
-    """ Built-in spline36 resizer. """
+    """
+    Built-in spline36 resizer.
+
+    Dependencies:
+    * VapourSynth-descale
+    """
     def scale(self, clip: vs.VideoNode, width: int, height: int,
               shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
         return core.resize.Spline36(clip, width, height, src_top=shift[0],
@@ -133,7 +149,12 @@ class Spline36(Kernel):
 
 
 class Spline64(Kernel):
-    """ Built-in spline64 resizer. """
+    """
+    Built-in spline64 resizer.
+
+    Dependencies:
+    * VapourSynth-descale
+    """
     def scale(self, clip: vs.VideoNode, width: int, height: int,
               shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
         return core.resize.Spline64(clip, width, height, src_top=shift[0],

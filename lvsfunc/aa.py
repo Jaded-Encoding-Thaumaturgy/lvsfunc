@@ -63,6 +63,10 @@ def nnedi3(clip: vs.VideoNode, opencl: bool = False, **override: Any) -> vs.Vide
     """
     Standard nnedi3 antialiasing.
 
+    Dependencies:
+    * vapoursynth-nnedi3
+    * vapoursynth-NNEDI3CL (Optional: opencl)
+
     :param clip:     Input clip
     :param opencl:   Use OpenCL (Default: False)
     :param override: nnedi3 parameter overrides
@@ -82,6 +86,9 @@ def nnedi3(clip: vs.VideoNode, opencl: bool = False, **override: Any) -> vs.Vide
 def eedi3(clip: vs.VideoNode, opencl: bool = False, **override: Any) -> vs.VideoNode:
     """
     Standard eedi3 antialiasing.
+
+    Dependencies:
+    * vapoursynth-EEDI3
 
     :param clip:     Input clip
     :param opencl:   Use OpenCL (Default: False)
@@ -103,6 +110,9 @@ def kirsch_aa_mask(clip: vs.VideoNode, mthr: float = 0.25) -> vs.VideoNode:
     """
     Kirsh-based AA mask.
 
+    Dependencies:
+    * kagefunc
+
     :param clip: Input clip
     :param mthr: Mask threshold, scaled to clip range if between 0 and 1 (inclusive).
                  (Default: 0.25)
@@ -111,6 +121,7 @@ def kirsch_aa_mask(clip: vs.VideoNode, mthr: float = 0.25) -> vs.VideoNode:
         from kagefunc import kirsch
     except ModuleNotFoundError:
         raise ModuleNotFoundError("nnedi3_clamp: missing dependency 'kagefunc'")
+
     return kirsch(get_y(clip)).std.Binarize(scale_thresh(mthr, clip)).std.Maximum().std.Convolution([1] * 9)
 
 
@@ -122,13 +133,6 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
     This should fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
 
     Original function written by Zastin, modified by LightArrowsEXE.
-
-    Dependencies:
-    * kagefunc (optional: automatic masking, otherwise mask must be user-supplied)
-    * vapoursynth-tcanny (optional: retinex edgemask)
-    * vapoursynth-eedi3
-    * vapoursynth-nnedi3
-    * vapoursynth-nnedi3cl (optional: opencl)
 
     :param clip:                Input clip
     :param strength:            Set threshold strength for over/underflow value for clamping eedi3's result
@@ -157,7 +161,11 @@ def transpose_aa(clip: vs.VideoNode,
 
     Original function written by Zastin, modified by LightArrowsEXE.
 
-    Dependencies: rgsf (optional: 32 bit clip), vapoursynth-eedi3, vapoursynth-nnedi3, znedi3
+    Dependencies:
+    * RGSF (optional: 32 bit clip)
+    * vapoursynth-EEDI3
+    * vapoursynth-nnedi3
+    * znedi3
 
     :param clip:      Input clip
     :param eedi3:     Use eedi3 for the interpolation (Default: False)
@@ -215,8 +223,7 @@ def upscaled_sraa(clip: vs.VideoNode,
     Alias for this function is `lvsfunc.sraa`.
 
     Dependencies:
-    * fmtconv
-    * rgsf (optional: 32 bit clip),
+    * RGSF (optional: 32 bit clip)
     * vapoursynth-eedi3
     * vapoursynth-nnedi3
     * vapoursynth-nnedi3cl (optional: opencl)

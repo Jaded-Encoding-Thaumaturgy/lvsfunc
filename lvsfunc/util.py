@@ -53,7 +53,8 @@ def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
     Returns rgvs.RemoveGrain if the clip is 16 bit or lower, else rgsf.RemoveGrain.
     This is done because rgvs doesn't work with float, but rgsf does for whatever reason.
 
-    Dependencies: rgsf
+    Dependencies:
+    * RGSF
 
     :param clip: Input clip
 

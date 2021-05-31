@@ -33,12 +33,11 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
     Alias for this function is `lvsfunc.src`.
 
     Dependencies:
-
-        * ffms2
-        * L-SMASH (optional: m2ts sources or when forcing lsmas)
-        * d2vsource (optional: d2v sources)
-        * dgdecodenv (optional: dgi sources)
-        * vapoursynth-readmpls (optional: mpls sources)
+    * ffms2
+    * L-SMASH-Works (optional: m2ts sources or when forcing lsmas)
+    * d2vsource (optional: d2v sources)
+    * dgdecodenv (optional: dgi sources)
+    * VapourSynth-ReadMpls (optional: mpls sources)
 
     :param file:              Input file
     :param ref:               Use another clip as reference for the clip's format,
@@ -150,7 +149,8 @@ def edgefixer(clip: vs.VideoNode,
 
     Alias for this function is `lvsfunc.ef`.
 
-    Dependencies: vs-continuityfixer
+    Dependencies:
+    * VS-ContinuityFixer
 
     :param clip:        Input clip
     :param left:        Number of pixels to fix on the left (Default: None)
@@ -283,7 +283,8 @@ def wipe_row(clip: vs.VideoNode,
 
     if width2, height2, etc. are given, it will merge the two masks.
 
-    Dependencies: kagefunc
+    Dependencies:
+    * kagefunc
 
     :param clip:           Input clip
     :param secondary:      Clip to replace wiped rows with (Default: None)

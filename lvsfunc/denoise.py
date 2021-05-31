@@ -13,6 +13,27 @@ def bm3d(clip: vs.VideoNode, sigma: Union[float, List[float]] = 0.75,
          radius: Union[int, List[int], None] = None, ref: Optional[vs.VideoNode] = None,
          pre: Optional[vs.VideoNode] = None, refine: int = 1, matrix_s: str = "709",
          basic_args: Dict[str, Any] = {}, final_args: Dict[str, Any] = {}) -> vs.VideoNode:
+    """
+    A wrapper function for the BM3D denoiser.
+
+    Dependencies:
+    * VapourSynth-BM3D
+
+    :param clip:            Input clip
+    :param sigma:           Denoising strength for both basic and final estimations
+    :param radius:          Temporal radius for both basic and final estimations
+    :param ref:             Reference clip for the final estimation
+    :param pre:             Prefiltered clip for the basic estimation
+    :param refine:          Iteration of the final clip.
+                            0 = basic estimation only
+                            1 = basic + final estimation
+                            n = basic + n final estimations
+    :param matrix_s:        Color matrix of the input clip
+    :param basic_args:      Args to pass to the basic estimation
+    :param final_args:      Args to pass to the final estimation
+
+    :return:                Denoised clip
+    """
     if clip.format is None:
         raise ValueError("bm3d: Variable format clips not supported")
     is_gray = clip.format.color_family == vs.GRAY
