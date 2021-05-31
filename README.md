@@ -1,9 +1,9 @@
 # lvsfunc
 
 A collection of VapourSynth functions and wrappers
-written and/or "borrowed" by LightArrowsEXE.
+written and/or modified by LightArrowsEXE.
 Full information on how every function/wrapper works,
-as well as specific dependencies
+as well as a list of dependencies
 can be found in the [documentation](https://lvsfunc.readthedocs.io/).
 
 ## How to install
@@ -12,6 +12,7 @@ If you have the old `lvsfunc.py` module,
 remove that from your system first.
 
 Install `lvsfunc` with the following command:
+
 ```sh
 $ pip install lvsfunc
 ```
@@ -32,12 +33,7 @@ After installation, functions can be loaded and used as follows:
 import lvsfunc as lvf
 
 src = lvf.misc.source(...)
-aa = lvf.aa.nneedi3_clamp(...)
+aa = lvf.aa.clamp_aa(...)
 comp = lvf.comparison.compare(...)
 ...
 ```
-
-## Requirements
-
-- Python 3.9 or newer
-- Vapoursynth R53 or newer
