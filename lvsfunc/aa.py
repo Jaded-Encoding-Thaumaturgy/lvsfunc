@@ -4,7 +4,7 @@
 from typing import Any, Callable, Dict, Optional
 
 import vapoursynth as vs
-from vsutil import fallback, get_w, get_y, join, plane
+from vsutil import get_w, get_y
 
 from . import kernels, util
 from .misc import scale_thresh
@@ -15,6 +15,7 @@ core = vs.core
 def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, strength: float = 1) -> vs.VideoNode:
     """
     Clamp stronger AAs to weaker AAs.
+    Useful for clamping upscaled_sraa or eedi3 to nnedi3 for a strong but precise AA.
 
     Stolen from Zastin.
 
@@ -39,6 +40,7 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
 def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode]) -> vs.VideoNode:
     """
     Perform transpose AA.
+    Example for nnedi3cl: taa(clip, nnedi3(opencl=True))
 
     :param clip:   Input clip.
     :param aafun:  Antialiasing function
@@ -59,19 +61,18 @@ def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode]) -> vs
         else core.std.ShufflePlanes([aa, clip], planes=[0, 1, 2], colorfamily=vs.YUV)
 
 
-def nnedi3(clip: vs.VideoNode, opencl: bool = False, **override: Any) -> vs.VideoNode:
+def nnedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs.VideoNode]:
     """
-    Standard nnedi3 antialiasing.
+    Generate nnedi3 antialiaser.
 
     Dependencies:
     * vapoursynth-nnedi3
     * vapoursynth-NNEDI3CL (Optional: opencl)
 
-    :param clip:     Input clip
     :param opencl:   Use OpenCL (Default: False)
     :param override: nnedi3 parameter overrides
 
-    :return:         Antialiased clip
+    :return:         Configured nnedi3 function
     """
     nnedi3_args: Dict[str, Any] = dict(field=0, dh=True, nsize=3, nns=3, qual=1)
     nnedi3_args.update(override)
@@ -80,21 +81,20 @@ def nnedi3(clip: vs.VideoNode, opencl: bool = False, **override: Any) -> vs.Vide
         return clip.nnedi3cl.NNEDI3CL(**nnedi3_args) if opencl \
             else clip.nnedi3.nnedi3(**nnedi3_args)
 
-    return taa(clip, _nnedi3)
+    return _nnedi3
 
 
-def eedi3(clip: vs.VideoNode, opencl: bool = False, **override: Any) -> vs.VideoNode:
+def eedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs.VideoNode]:
     """
-    Standard eedi3 antialiasing.
+    Generate eedi3 antialiaser.
 
     Dependencies:
     * vapoursynth-EEDI3
 
-    :param clip:     Input clip
     :param opencl:   Use OpenCL (Default: False)
     :param override: eedi3 parameter overrides
 
-    :return:         Antialiased clip
+    :return:         Configured eedi3 function
     """
     eedi3_args: Dict[str, Any] = dict(field=0, dh=True, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20)
     eedi3_args.update(override)
@@ -103,7 +103,7 @@ def eedi3(clip: vs.VideoNode, opencl: bool = False, **override: Any) -> vs.Video
         return clip.eedi3m.EEDI3CL(**eedi3_args) if opencl \
             else clip.eedi3m.EEDI3(**eedi3_args)
 
-    return taa(clip, _eedi3)
+    return _eedi3
 
 
 def kirsch_aa_mask(clip: vs.VideoNode, mthr: float = 0.25) -> vs.VideoNode:
@@ -146,7 +146,7 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
     if clip.format is None:
         raise ValueError("nneedi3_clamp: 'Variable-format clips not supported'")
     y = get_y(clip)
-    merged = core.std.MaskedMerge(y, clamp_aa(y, nnedi3(y, opencl=opencl), eedi3(y, opencl=opencl)),
+    merged = core.std.MaskedMerge(y, clamp_aa(y, taa(y, nnedi3(opencl=opencl)), taa(y, eedi3(opencl=opencl))),
                                   mask or kirsch_aa_mask(y))
     return merged if clip.format.color_family == vs.GRAY else core.std.ShufflePlanes([merged, clip], [0, 1, 2], vs.YUV)
 
@@ -199,19 +199,33 @@ def transpose_aa(clip: vs.VideoNode,
     return aaclip if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
 
 
+def _nnedi3_supersample(clip: vs.VideoNode, width: int, height: int, opencl: bool = False) -> vs.VideoNode:
+    nnargs: Dict[str, Any] = dict(field=0, dh=True, nsize=0, nns=4, qual=2)
+    _nnedi3 = nnedi3(opencl=opencl, **nnargs)
+    up_y = _nnedi3(get_y(clip))
+    up_y = up_y.resize.Spline36(height=height, src_top=0.5).std.Transpose()
+    up_y = _nnedi3(up_y)
+    up_y = up_y.resize.Spline36(height=width, src_top=0.5)
+    return up_y
+
+
+def _eedi3_singlerate(clip: vs.VideoNode) -> vs.VideoNode:
+    eeargs: Dict[str, Any] = dict(field=0, dh=False, alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
+    nnargs: Dict[str, Any] = dict(field=0, dh=False, nsize=0, nns=4, qual=2)
+    y = get_y(clip)
+    return eedi3(sclip=nnedi3(**nnargs)(y), **eeargs)(y)
+
+
 def upscaled_sraa(clip: vs.VideoNode,
                   rfactor: float = 1.5,
-                  rep: Optional[int] = None,
                   width: Optional[int] = None, height: Optional[int] = None,
+                  supersampler: Callable[[vs.VideoNode, int, int], vs.VideoNode] = _nnedi3_supersample,
                   downscaler: Optional[Callable[[vs.VideoNode, int, int], vs.VideoNode]]
-                  = kernels.Spline36().scale,
-                  opencl: bool = False, nnedi3cl: Optional[bool] = None,
-                  eedi3cl: Optional[bool] = None,
-                  **eedi3_args: Any) -> vs.VideoNode:
+                  = kernels.Bicubic(b=0, c=1/2).scale,
+                  aafun: Callable[[vs.VideoNode], vs.VideoNode] = _eedi3_singlerate) -> vs.VideoNode:
     """
     A function that performs a supersampled single-rate AA to deal with heavy aliasing and broken-up lineart.
-    Useful for Web rips, where the source quality is not good enough to descale,
-    but you still want to deal with some bad aliasing and lineart.
+    Useful for heavy antialiasing.
 
     It works by supersampling the clip, performing AA, and then downscaling again.
     Downscaling can be disabled by setting `downscaler` to `None`, returning the supersampled luma clip.
@@ -223,34 +237,24 @@ def upscaled_sraa(clip: vs.VideoNode,
     Alias for this function is `lvsfunc.sraa`.
 
     Dependencies:
-    * RGSF (optional: 32 bit clip)
-    * vapoursynth-eedi3
-    * vapoursynth-nnedi3
-    * vapoursynth-nnedi3cl (optional: opencl)
+    * vapoursynth-eedi3 (default aafun)
+    * vapoursynth-nnedi3 (default supersampler and aafun)
 
     :param clip:            Input clip
     :param rfactor:         Image enlargement factor. 1.3..2 makes it comparable in strength to vsTAAmbk
                             It is not recommended to go below 1.3 (Default: 1.5)
-    :param rep:             Repair mode (Default: None)
     :param width:           Target resolution width. If None, determined from `height`
     :param height:          Target resolution height (Default: ``clip.height``)
-    :param downscaler:      Resizer used to downscale the AA'd clip
-    :param opencl:          OpenCL acceleration (Default: False)
-    :param nnedi3cl:        OpenCL acceleration for nnedi3 (Default: False)
-    :param eedi3cl:         OpenCL acceleration for eedi3 (Default: False)
-    :param eedi3_args:      Arguments passed to eedi3 (Default: alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
+    :param supersampler:    Supersampler used for upscaling before AA (Default: nnedi3 supersampler)
+    :param downscaler:      Downscaler to use after supersampling (Default: Bicubic(b=0, c=1/2)
+    :param aafun:           Function used to antialias after supersampling (Default: eedi3 with nnedi3 sclip)
 
-    :return:                Antialiased and optionally rescaled clip
+    :return:                Antialiased clip
     """
     if clip.format is None:
         raise ValueError("upscaled_sraa: 'Variable-format clips not supported'")
 
     luma = get_y(clip)
-
-    nnargs: Dict[str, Any] = dict(field=0, nsize=0, nns=4, qual=2)
-    # TAAmbk defaults are 0.5, 0.2, 20, 3, 30
-    eeargs: Dict[str, Any] = dict(field=0, dh=False, alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
-    eeargs.update(eedi3_args)
 
     if rfactor < 1:
         raise ValueError("upscaled_sraa: '\"rfactor\" must be above 1'")
@@ -265,39 +269,13 @@ def upscaled_sraa(clip: vs.VideoNode,
     if width is None:
         width = clip.width if height == clip.height else get_w(height, aspect_ratio=clip.width / clip.height)
 
-    nnedi3cl = fallback(nnedi3cl, opencl)
-    eedi3cl = fallback(eedi3cl, opencl)
+    up_y = supersampler(luma, ssw, ssh)
 
-    def _nnedi3(clip: vs.VideoNode, dh: bool = False) -> vs.VideoNode:
-        return clip.nnedi3cl.NNEDI3CL(dh=dh, **nnargs) if nnedi3cl \
-            else clip.nnedi3.nnedi3(dh=dh, **nnargs)
-
-    def _eedi3(clip: vs.VideoNode, sclip: vs.VideoNode) -> vs.VideoNode:
-        return clip.eedi3m.EEDI3CL(sclip=sclip, **eeargs) if eedi3cl \
-            else clip.eedi3m.EEDI3(sclip=sclip, **eeargs)
-
-    # Nnedi3 upscale from source height to source height * rounding (Default 1.5)
-    up_y = _nnedi3(luma, dh=True)
-    up_y = up_y.resize.Spline36(height=ssh, src_top=0.5).std.Transpose()
-    up_y = _nnedi3(up_y, dh=True)
-    up_y = up_y.resize.Spline36(height=ssw, src_top=0.5)
-
-    # Single-rate AA
-    aa_y = _eedi3(up_y, sclip=_nnedi3(up_y))
-    aa_y = core.std.Transpose(aa_y)
-    aa_y = _eedi3(aa_y, sclip=_nnedi3(aa_y))
+    aa_y = aafun(aafun(up_y).std.Transpose())
 
     scaled = aa_y if downscaler is None else downscaler(aa_y, width, height)
-    scaled = util.pick_repair(scaled)(scaled, luma.resize.Bicubic(width, height), mode=rep) if rep else scaled
 
-    if clip.format.num_planes == 1 or downscaler is None:
+    if clip.format.num_planes == 1 or downscaler is None or height != clip.height or width != clip.width:
         return scaled
-    if height is not clip.height or width is not clip.width:
-        if height % 2:
-            raise ValueError("upscaled_sraa: '\"height\" must be an even number when not passing a GRAY clip'")
-        if width % 2:
-            raise ValueError("upscaled_sraa: '\"width\" must be an even number when not passing a GRAY clip'")
 
-        chroma = kernels.Bicubic().scale(clip, width, height)
-        return join([scaled, plane(chroma, 1), plane(chroma, 2)])
-    return join([scaled, plane(clip, 1), plane(clip, 2)])
+    return core.std.ShufflePlanes([scaled, clip], planes=[0, 1, 2], colorfamily=vs.YUV)
