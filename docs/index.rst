@@ -56,6 +56,7 @@ Modules
 
    lvsfunc.aa
    lvsfunc.comparison
+   lvsfunc.dehalo
    lvsfunc.dehardsub
    lvsfunc.deinterlace
    lvsfunc.denoise
@@ -91,6 +92,7 @@ Functions
    lvsfunc.comparison.stack_planes
    lvsfunc.comparison.stack_vertical
    lvsfunc.comparison.tile
+   lvsfunc.dehalo.bidehalo
    lvsfunc.dehardsub.bounded_dehardsub
    lvsfunc.dehardsub.get_all_masks
    lvsfunc.dehardsub.hardsub_mask
@@ -162,6 +164,18 @@ lvsfunc.comparison
    lvsfunc.comparison.tile
 
 .. automodule:: lvsfunc.comparison
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+lvsfunc.dehalo
+-------------------
+
+.. autosummary::
+
+   lvsfunc.dehalo.bidehalo
+
+.. automodule:: lvsfunc.dehalo
    :members:
    :undoc-members:
    :show-inheritance:
