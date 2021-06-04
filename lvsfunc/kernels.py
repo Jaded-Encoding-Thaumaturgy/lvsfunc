@@ -3,6 +3,7 @@ Kernels for vapoursynth internal resizers. Intended for use by
 :py:mod:`lvsfunc.scale` functions.
 """
 from abc import ABC, abstractmethod
+from math import sqrt
 from typing import Any, Tuple
 
 import vapoursynth as vs
@@ -164,3 +165,49 @@ class Spline64(Kernel):
                 shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
         return core.descale.Despline64(clip, width, height, src_top=shift[0],
                                        src_left=shift[1])
+
+
+class BSpline(Bicubic):
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(b=1, c=0, **kwargs)
+
+
+class Hermite(Bicubic):
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(b=0, c=0, **kwargs)
+
+
+class Mitchell(Bicubic):
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(b=1/3, c=1/3, **kwargs)
+
+
+class Catrom(Bicubic):
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(b=0, c=1/2, **kwargs)
+
+
+class BicubicSharp(Bicubic):
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(b=0, c=1, **kwargs)
+
+
+class RobidouxSoft(Bicubic):
+    def __init__(self, **kwargs: Any) -> None:
+        b = (9 - 3 * sqrt(2)) / 7
+        c = (1 - b) / 2
+        super().__init__(b=b, c=c, **kwargs)
+
+
+class Robidoux(Bicubic):
+    def __init__(self, **kwargs: Any) -> None:
+        b = 12 / (19 + 9 * sqrt(2))
+        c = 113 / (58 + 216 * sqrt(2))
+        super().__init__(b=b, c=c, **kwargs)
+
+
+class RobidouxSharp(Bicubic):
+    def __init__(self, **kwargs: Any) -> None:
+        b = 6 / (13 + 7 * sqrt(2))
+        c = 7 / (2 + 12 * sqrt(2))
+        super().__init__(b=b, c=c, **kwargs)
