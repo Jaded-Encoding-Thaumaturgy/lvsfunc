@@ -8,6 +8,7 @@ from typing import BinaryIO, Callable, Dict, List, Optional, TextIO, Union
 from concurrent.futures import Future
 from functools import partial
 
+from .progress import Progress, BarColumn, FPSColumn, TextColumn, TimeRemainingColumn
 from .util import get_prop
 
 core = vs.core
@@ -153,3 +154,34 @@ def clip_async_render(clip: vs.VideoNode,
         ctx.condition.wait()
 
     return ctx.timecodes  # might as well
+
+
+def find_scene_changes(clip: vs.VideoNode) -> List[int]:
+    """
+    Generate a list of scene changes (keyframes).
+
+    Dependencies:
+    * vapoursynth-wwxd
+
+    :param clip: Clip to search for scene changes. Will be rendered in its entirety.
+
+    :return:     List of scene changes.
+    """
+    progress = Progress(TextColumn("{task.description}"),
+                        BarColumn(),
+                        TextColumn("{task.completed}/{task.total}"),
+                        TextColumn("{task.percentage:>3.02f}%"),
+                        FPSColumn(),
+                        TimeRemainingColumn())
+    frames = []
+    clip = clip.resize.Bilinear(640, 360, format=vs.YUV420P8).wwxd.WWXD()
+    with progress:
+        task = progress.add_task("Detecting scene changes...", total=clip.num_frames)
+
+        def _cb(n: int, f: vs.VideoFrame) -> None:
+            progress.update(task, advance=1)
+            if get_prop(f, "Scenechange", int) == 1:
+                frames.append(n)
+
+        clip_async_render(clip, callback=_cb)
+    return frames
