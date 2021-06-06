@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 import vapoursynth as vs
 from vsutil import depth
 
-from . import denoise, mask
+from . import denoise
 
 core = vs.core
 
@@ -14,7 +14,6 @@ core = vs.core
 def bidehalo(clip: vs.VideoNode, ref: Optional[vs.VideoNode] = None,
              sigmaS: float = 1.5, sigmaR: float = 5/255,
              bilateral_args: Dict[str, Any] = {},
-             mask_args: Dict[str, Any] = {},
              bm3d_args: Dict[str, Any] = {},
              ) -> vs.VideoNode:
     """
@@ -26,7 +25,6 @@ def bidehalo(clip: vs.VideoNode, ref: Optional[vs.VideoNode] = None,
     :param sigmaS:              Bilateral's spatial weight sigma
     :param sigmaS:              Bilateral's range weight sigma
     :param bilateral_args:      Additional parameters to pass to bilateral
-    :param mask_args:           Additional parameters to pass to mask.halo_mask
     :param bm3d_args:           Additional parameters to pass to denoise.bm3d
 
     :return:                    Dehalo'd clip
@@ -37,18 +35,13 @@ def bidehalo(clip: vs.VideoNode, ref: Optional[vs.VideoNode] = None,
     if clip.format is None:
         raise ValueError("lfdeband: 'Variable-format clips not supported'")
 
-    bits = clip.format.bits_per_sample
-    clip = depth(clip, 16)
-
     if ref is None:
-        bm3ddh = denoise.bm3d(clip, **bm3ddh_args)
+        bm3ddh = depth(denoise.bm3d(clip, **bm3ddh_args), 16)
         bidh_ref = core.bilateral.Bilateral(bm3ddh, sigmaS=sigmaS, sigmaR=sigmaR, **bilateral_args)
         bidh = core.bilateral.Bilateral(bm3ddh, ref=bidh_ref, sigmaS=sigmaS, sigmaR=sigmaR, **bilateral_args)
+        bidh = depth(bidh, clip.format.bits_per_sample)
     else:
-        bidh = depth(ref, 16)
+        bidh = depth(ref, clip.format.bits_per_sample)
 
-    halo_mask = mask.halo_mask(clip, **mask_args)
-    dehalo = core.std.MaskedMerge(clip, bidh, halo_mask)
-
-    restore_dark = core.std.Expr([clip, dehalo], "x y < x y ?")
-    return depth(restore_dark, bits) if bits != 16 else restore_dark
+    restore_dark = core.std.Expr([clip, bidh], "x y < x y ?")
+    return restore_dark
