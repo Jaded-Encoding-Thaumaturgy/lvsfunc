@@ -156,16 +156,18 @@ def clip_async_render(clip: vs.VideoNode,
     return ctx.timecodes  # might as well
 
 
-def find_scene_changes(clip: vs.VideoNode) -> List[int]:
+def find_scene_changes(clip: vs.VideoNode, scxvid: bool = False) -> List[int]:
     """
     Generate a list of scene changes (keyframes).
 
     Dependencies:
     * vapoursynth-wwxd
+    * vapoursynth-scxvid (Optional: scxvid mode)
 
-    :param clip: Clip to search for scene changes. Will be rendered in its entirety.
+    :param clip:   Clip to search for scene changes. Will be rendered in its entirety.
+    :param scxvid: Use scxvid instead of wwxd.
 
-    :return:     List of scene changes.
+    :return:       List of scene changes.
     """
     progress = Progress(TextColumn("{task.description}"),
                         BarColumn(),
@@ -174,14 +176,16 @@ def find_scene_changes(clip: vs.VideoNode) -> List[int]:
                         FPSColumn(),
                         TimeRemainingColumn())
     frames = []
-    clip = clip.resize.Bilinear(640, 360, format=vs.YUV420P8).wwxd.WWXD()
+    clip = clip.resize.Bilinear(640, 360, format=vs.YUV420P8)
+    clip = clip.scxvid.Scxvid() if scxvid else clip.wwxd.WWXD()
     with progress:
         task = progress.add_task("Detecting scene changes...", total=clip.num_frames)
 
         def _cb(n: int, f: vs.VideoFrame) -> None:
             progress.update(task, advance=1)
-            if get_prop(f, "Scenechange", int) == 1:
+            p = get_prop(f, "_SceneChangePrev", int) if scxvid else get_prop(f, "Scenechange", int)
+            if p == 1:
                 frames.append(n)
 
         clip_async_render(clip, callback=_cb)
-    return frames
+    return sorted(frames)
