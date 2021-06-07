@@ -86,7 +86,7 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
             raise ValueError("source: 'Variable-format clips not supported.'")
         clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
         clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height,
-                                   format=ref.format.id, matrix_s=str(get_matrix(ref)))
+                                   format=ref.format.id, matrix=get_matrix(ref))
         if is_image(file):
             clip = clip * (ref.num_frames - 1)
 
