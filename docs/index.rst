@@ -113,8 +113,6 @@ Functions
    lvsfunc.misc.get_matrix
    lvsfunc.misc.limit_dark
    lvsfunc.misc.load_bookmarks
-   lvsfunc.misc.replace_ranges
-   lvsfunc.misc.scale_thresh
    lvsfunc.misc.shift_tint
    lvsfunc.misc.source
    lvsfunc.misc.wipe_row
@@ -127,6 +125,8 @@ Functions
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
    lvsfunc.util.quick_resample
+   lvsfunc.util.replace_ranges
+   lvsfunc.util.scale_thresh
 
 lvsfunc.aa
 ---------------
@@ -303,8 +303,6 @@ lvsfunc.misc
    lvsfunc.misc.get_matrix
    lvsfunc.misc.limit_dark
    lvsfunc.misc.load_bookmarks
-   lvsfunc.misc.replace_ranges
-   lvsfunc.misc.scale_thresh
    lvsfunc.misc.shift_tint
    lvsfunc.misc.source
    lvsfunc.misc.wipe_row
@@ -383,6 +381,8 @@ lvsfunc.util
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
    lvsfunc.util.quick_resample
+   lvsfunc.util.replace_ranges
+   lvsfunc.util.scale_thresh
 
 .. automodule:: lvsfunc.util
    :members:

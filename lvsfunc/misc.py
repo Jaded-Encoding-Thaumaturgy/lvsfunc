@@ -11,9 +11,11 @@ from typing import (Any, Callable, Dict, List, Optional, Sequence, Tuple,
 import vapoursynth as vs
 from vsutil import get_depth, get_w, get_y, is_image, scale_value
 
-from .mask import BoundingBox, Position, Size
-from .types import Range
+from .mask import BoundingBox
+from .types import Position, Size
 from .util import get_prop
+from .util import replace_ranges as _replace_ranges
+from .util import scale_thresh as _scale_thresh
 
 core = vs.core
 
@@ -93,45 +95,6 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
             clip = clip * (ref.num_frames - 1)
 
     return clip
-
-
-def replace_ranges(clip_a: vs.VideoNode,
-                   clip_b: vs.VideoNode,
-                   ranges: Union[Range, List[Range]]) -> vs.VideoNode:
-    """
-    A replacement for ReplaceFramesSimple that uses ints and tuples rather than a string.
-    Frame ranges are inclusive.
-
-    Written by louis.
-
-    Alias for this function is `lvsfunc.rfs`.
-
-    :param clip_a:     Original clip
-    :param clip_b:     Replacement clip
-    :param ranges:     Ranges to replace clip_a (original clip) with clip_b (replacement clip).
-                       Integer values in the list indicate single frames,
-                       Tuple values indicate inclusive ranges.
-
-    :return:           Clip with ranges from clip_a replaced with clip_b
-    """
-    if not isinstance(ranges, list):
-        ranges = [ranges]
-
-    out = clip_a
-
-    for r in ranges:
-        if type(r) is tuple:
-            start, end = cast(Tuple[int, int], r)
-        else:
-            start = cast(int, r)
-            end = cast(int, r)
-        tmp = clip_b[start:end + 1]
-        if start != 0:
-            tmp = out[: start] + tmp
-        if end < out.num_frames - 1:
-            tmp = tmp + out[end + 1:]
-        out = tmp
-    return out
 
 
 def edgefixer(clip: vs.VideoNode,
@@ -274,7 +237,7 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
 
 def wipe_row(clip: vs.VideoNode,
              ref: Optional[vs.VideoNode] = None,
-             pos: Union[Position, Tuple[int, int]] = [1, 1],
+             pos: Union[Position, Tuple[int, int]] = (1, 1),
              size: Optional[Union[Size, Tuple[int, int]]] = None,
              show_mask: bool = False
              ) -> vs.VideoNode:
@@ -294,7 +257,7 @@ def wipe_row(clip: vs.VideoNode,
     ref = ref or core.std.BlankClip(clip)
 
     if size is None:
-        size = [clip.width-2, clip.height-2]
+        size = (clip.width-2, clip.height-2)
     sqmask = BoundingBox(pos, size).get_mask(clip)
 
     if show_mask:
@@ -510,27 +473,9 @@ def colored_clips(amount: int,
     return [core.std.BlankClip(color=color, **blank_clip_args) for color in rgb_color_list]
 
 
-def scale_thresh(thresh: float, clip: vs.VideoNode, assume: Optional[int] = None) -> float:
-    """
-    Scale binarization thresholds from float to int.
-
-    :param thresh: Threshold [0, 1]. If greater than 1, assumed to be in native clip range
-    :param clip:   Clip to scale to
-    :param assume: Assume input is this depth when given input >1. If ``None``\\, assume ``clip``\\'s format.
-                   (Default: None)
-
-    :return:       Threshold scaled to [0, 2^clip.depth - 1] (if vs.INTEGER)
-    """
-    if clip.format is None:
-        raise ValueError("scale_thresh: 'Variable-format clips not supported.'")
-    if thresh < 0:
-        raise ValueError("scale_thresh: 'Thresholds must be positive.'")
-    if thresh > 1:
-        return thresh if not assume \
-            else round(thresh/((1 << assume) - 1) * ((1 << clip.format.bits_per_sample) - 1))
-    return thresh if clip.format.sample_type == vs.FLOAT or thresh > 1 \
-        else round(thresh * ((1 << clip.format.bits_per_sample) - 1))
-
+# compatibility since these were moved to util
+replace_ranges = _replace_ranges
+scale_thresh = _scale_thresh
 
 # TODO: Write function that only masks px of a certain color/threshold of colors.
 #       Think the magic wand tool in various image-editing programs.

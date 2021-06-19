@@ -1,10 +1,12 @@
 """
     Helper functions for the main functions in the script.
 """
-from typing import Any, Callable, Sequence, Type, TypeVar, Union, cast
+from typing import Any, Callable, List, Optional, Sequence, Tuple, Type, TypeVar, Union, cast
 
 import vapoursynth as vs
 from vsutil import depth
+
+from .types import Range
 
 core = vs.core
 
@@ -97,3 +99,64 @@ def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
         raise ValueError(f"get_prop: 'Key {key} did not contain expected type: Expected {t} got {real_type}'")
 
     return cast(T, prop)
+
+
+def replace_ranges(clip_a: vs.VideoNode,
+                   clip_b: vs.VideoNode,
+                   ranges: Union[Range, List[Range]]) -> vs.VideoNode:
+    """
+    A replacement for ReplaceFramesSimple that uses ints and tuples rather than a string.
+    Frame ranges are inclusive.
+
+    Written by louis.
+
+    Alias for this function is `lvsfunc.rfs`.
+
+    :param clip_a:     Original clip
+    :param clip_b:     Replacement clip
+    :param ranges:     Ranges to replace clip_a (original clip) with clip_b (replacement clip).
+                       Integer values in the list indicate single frames,
+                       Tuple values indicate inclusive ranges.
+
+    :return:           Clip with ranges from clip_a replaced with clip_b
+    """
+    if not isinstance(ranges, list):
+        ranges = [ranges]
+
+    out = clip_a
+
+    for r in ranges:
+        if type(r) is tuple:
+            start, end = cast(Tuple[int, int], r)
+        else:
+            start = cast(int, r)
+            end = cast(int, r)
+        tmp = clip_b[start:end + 1]
+        if start != 0:
+            tmp = out[: start] + tmp
+        if end < out.num_frames - 1:
+            tmp = tmp + out[end + 1:]
+        out = tmp
+    return out
+
+
+def scale_thresh(thresh: float, clip: vs.VideoNode, assume: Optional[int] = None) -> float:
+    """
+    Scale binarization thresholds from float to int.
+
+    :param thresh: Threshold [0, 1]. If greater than 1, assumed to be in native clip range
+    :param clip:   Clip to scale to
+    :param assume: Assume input is this depth when given input >1. If ``None``\\, assume ``clip``\\'s format.
+                   (Default: None)
+
+    :return:       Threshold scaled to [0, 2^clip.depth - 1] (if vs.INTEGER)
+    """
+    if clip.format is None:
+        raise ValueError("scale_thresh: 'Variable-format clips not supported.'")
+    if thresh < 0:
+        raise ValueError("scale_thresh: 'Thresholds must be positive.'")
+    if thresh > 1:
+        return thresh if not assume \
+            else round(thresh/((1 << assume) - 1) * ((1 << clip.format.bits_per_sample) - 1))
+    return thresh if clip.format.sample_type == vs.FLOAT or thresh > 1 \
+        else round(thresh * ((1 << clip.format.bits_per_sample) - 1))

@@ -9,8 +9,8 @@ from abc import ABC
 from typing import Any, List, Optional, Tuple, Union
 
 from .mask import DeferredMask
-from .misc import replace_ranges, scale_thresh
 from .types import Range
+from .util import replace_ranges, scale_thresh
 
 core = vs.core
 

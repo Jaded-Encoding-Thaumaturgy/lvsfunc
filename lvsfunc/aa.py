@@ -7,7 +7,7 @@ import vapoursynth as vs
 from vsutil import get_w, get_y
 
 from . import kernels, util
-from .misc import scale_thresh
+from .util import scale_thresh
 
 core = vs.core
 

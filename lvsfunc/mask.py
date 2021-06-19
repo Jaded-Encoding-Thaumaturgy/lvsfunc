@@ -10,7 +10,7 @@ from vsutil import depth, get_y, iterate, join, split
 from vsutil import Range as CRange
 
 from . import util
-from .misc import replace_ranges, scale_thresh
+from .util import replace_ranges, scale_thresh
 from .types import Position, Range, Size
 
 core = vs.core
