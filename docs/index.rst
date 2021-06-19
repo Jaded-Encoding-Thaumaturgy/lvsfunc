@@ -122,6 +122,7 @@ Functions
    lvsfunc.scale.descale_detail_mask
    lvsfunc.scale.reupscale
    lvsfunc.scale.test_descale
+   lvsfunc.util.normalize_ranges
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
    lvsfunc.util.quick_resample
@@ -378,6 +379,8 @@ lvsfunc.util
 
 .. autosummary::
 
+   lvsfunc.util.get_prop
+   lvsfunc.util.normalize_ranges
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
    lvsfunc.util.quick_resample

@@ -232,7 +232,7 @@ class DeferredMask(ABC):
     """
     ranges: List[Range]
     bound: Optional[BoundingBox]
-    refframes: List[int]
+    refframes: List[Optional[int]]
     blur: bool
 
     def __init__(self, ranges: Union[Range, List[Range]],
@@ -254,7 +254,7 @@ class DeferredMask(ABC):
         elif isinstance(refframes, int):
             self.refframes = [refframes] * len(self.ranges)
         else:
-            self.refframes = refframes
+            self.refframes = [x for x in refframes]  # wtf mypy
 
         if len(self.refframes) > 0 and len(self.refframes) != len(self.ranges):
             raise ValueError("DeferredMask: 'Received reference frame and range list size mismatch!'")
@@ -282,6 +282,10 @@ class DeferredMask(ABC):
             hm = core.std.BlankClip(ref, format=ref.format.replace(color_family=vs.GRAY,
                                                                    subsampling_h=0, subsampling_w=0).id)
             for range, rf in zip(self.ranges, self.refframes):
+                if rf is None:
+                    rf = ref.num_frames - 1
+                elif rf < 0:
+                    rf = ref.num_frames - 1 + rf
                 mask = depth(self._mask(clip[rf], ref[rf]), clip.format.bits_per_sample,
                              range=CRange.FULL, range_in=CRange.FULL)
                 hm = replace_ranges(hm, core.std.Expr([hm, mask*len(hm)], expr="x y max"), range)

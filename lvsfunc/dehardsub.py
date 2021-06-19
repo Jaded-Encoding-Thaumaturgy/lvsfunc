@@ -10,7 +10,7 @@ from typing import Any, List, Optional, Tuple, Union
 
 from .mask import DeferredMask
 from .types import Range
-from .util import replace_ranges, scale_thresh
+from .util import normalize_ranges, replace_ranges, scale_thresh
 
 core = vs.core
 
@@ -163,13 +163,19 @@ class HardsubLineFade(HardsubLine):
     :param refframe: Desired reference point as a percent of the frame range.
                      0 = first frame, 1 = last frame, 0.5 = midpoint (Default)
     """
+    ref_float: float
+
     def __init__(self, ranges: Union[Range, List[Range]], *args: Any,
                  refframe: float = 0.5, **kwargs: Any) -> None:
         if refframe < 0 or refframe > 1:
             raise ValueError("HardsubLineFade: 'refframe must be between 0 and 1!'")
         ranges = ranges if isinstance(ranges, list) else [ranges]
-        refframes = [r[0]+round((r[1]-r[0])*refframe) if isinstance(r, tuple) else r for r in ranges]
-        super().__init__(ranges, *args, refframes=refframes, **kwargs)
+        self.ref_float = refframe
+        super().__init__(ranges, *args, refframes=None, **kwargs)
+
+    def get_mask(self, clip: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
+        self.refframes = [r[0]+round((r[1]-r[0])*self.ref_float) for r in normalize_ranges(ref, self.ranges)]
+        return super().get_mask(clip, ref)
 
 
 # TODO: find a more idiomatic way to do this
@@ -182,13 +188,19 @@ class HardsubSignFade(HardsubSign):
     :param refframe: Desired reference point as a percent of the frame range.
                      0 = first frame, 1 = last frame, 0.5 = midpoint (Default)
     """
+    ref_float: float
+
     def __init__(self, ranges: Union[Range, List[Range]], *args: Any,
                  refframe: float = 0.5, **kwargs: Any) -> None:
         if refframe < 0 or refframe > 1:
             raise ValueError("HardsubSignFade: 'refframe must be between 0 and 1!'")
         ranges = ranges if isinstance(ranges, list) else [ranges]
-        refframes = [r[0]+round((r[1]-r[0])*refframe) if isinstance(r, tuple) else r for r in ranges]
-        super().__init__(ranges, *args, refframes=refframes, **kwargs)
+        self.ref_float = refframe
+        super().__init__(ranges, *args, refframes=None, **kwargs)
+
+    def get_mask(self, clip: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
+        self.refframes = [r[0]+round((r[1]-r[0])*self.ref_float) for r in normalize_ranges(ref, self.ranges)]
+        return super().get_mask(clip, ref)
 
 
 def get_all_masks(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[HardsubMask]) -> vs.VideoNode:

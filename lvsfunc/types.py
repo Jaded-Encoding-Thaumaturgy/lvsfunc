@@ -1,6 +1,6 @@
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
-Range = Union[int, Tuple[int, int]]
+Range = Union[Optional[int], Tuple[Optional[int], Optional[int]]]
 
 
 class Coordinate():
