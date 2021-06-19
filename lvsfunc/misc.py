@@ -5,13 +5,15 @@ import colorsys
 import os
 import random
 from functools import partial, wraps
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, TypeVar, Union, cast
+from typing import (Any, Callable, Dict, List, Optional, Sequence, Tuple,
+                    TypeVar, Union, cast)
 
 import vapoursynth as vs
 from vsutil import get_depth, get_w, get_y, is_image, scale_value
 
-from .util import get_prop
+from .mask import BoundingBox, Position, Size
 from .types import Range
+from .util import get_prop
 
 core = vs.core
 
@@ -271,20 +273,14 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
 
 
 def wipe_row(clip: vs.VideoNode,
-             secondary: Optional[vs.VideoNode] = None,
-             width: int = 1, height: int = 1,
-             offset_x: int = 0, offset_y: int = 0,
-             width2: Optional[int] = None, height2: Optional[int] = None,
-             offset_x2: Optional[int] = None, offset_y2: Optional[int] = None,
-             show_mask: bool = False) -> vs.VideoNode:
+             ref: Optional[vs.VideoNode] = None,
+             pos: Union[Position, Tuple[int, int]] = [1, 1],
+             size: Optional[Union[Size, Tuple[int, int]]] = None,
+             show_mask: bool = False
+             ) -> vs.VideoNode:
     """
-    Simple function to wipe a row with a blank clip.
+    Simple function to wipe a row or column with a blank clip.
     You can also give it a different clip to replace a row with.
-
-    if width2, height2, etc. are given, it will merge the two masks.
-
-    Dependencies:
-    * kagefunc
 
     :param clip:           Input clip
     :param secondary:      Clip to replace wiped rows with (Default: None)
@@ -292,30 +288,18 @@ def wipe_row(clip: vs.VideoNode,
     :param height:         Height of row (Default: 1)
     :param offset_x:       X-offset of row (Default: 0)
     :param offset_y:       Y-offset of row (Default: 0)
-    :param width2:         Width of row 2 (Default: None)
-    :param height2:        Height of row 2 (Default: None)
-    :param offset_x2:      X-offset of row 2 (Default: None)
-    :param offset_y2:      Y-offset of row 2 (Default: None)
 
-    :return:               Clip with rows wiped
+    :return:               Clip with given rows or columns wiped
     """
-    try:
-        from kagefunc import squaremask
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("wipe_row: missing dependency 'kagefunc'")
+    ref = ref or core.std.BlankClip(clip)
 
-    secondary = secondary or core.std.BlankClip(clip)
-
-    sqmask = squaremask(clip, width, height, offset_x, offset_y)
-    if width2 and height2:
-        if offset_x2 is None:
-            raise TypeError("wipe_row: 'offset_x2 cannot be None if using two masks'")
-        sqmask2 = squaremask(clip, width2, height2, offset_x2, offset_y - 1 if offset_y2 is None else offset_y2)
-        sqmask = core.std.Expr([sqmask, sqmask2], "x y +")
+    if size is None:
+        size = [clip.width-2, clip.height-2]
+    sqmask = BoundingBox(pos, size).get_mask(clip)
 
     if show_mask:
         return sqmask
-    return core.std.MaskedMerge(clip, secondary, sqmask)
+    return core.std.MaskedMerge(clip, ref, sqmask)
 
 
 def load_bookmarks(bookmark_path: str) -> List[int]:
