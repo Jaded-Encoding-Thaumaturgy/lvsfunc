@@ -245,7 +245,7 @@ class Tile(Comparer):
         array_count = sum(map(sum, self.arrangement))
 
         if array_count != self.num_clips:
-            raise ValueError('specified arrangement has an invalid number of clips')
+            raise ValueError('Tile: specified arrangement has an invalid number of clips')
 
     def _compare(self) -> vs.VideoNode:
         clips = self._marked_clips()

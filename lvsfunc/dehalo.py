@@ -33,7 +33,7 @@ def bidehalo(clip: vs.VideoNode, ref: Optional[vs.VideoNode] = None,
     bm3ddh_args.update(bm3d_args)
 
     if clip.format is None:
-        raise ValueError("lfdeband: 'Variable-format clips not supported'")
+        raise ValueError("bidehalo: 'Variable-format clips not supported'")
 
     if ref is None:
         bm3ddh = depth(denoise.bm3d(clip, **bm3ddh_args), 16)

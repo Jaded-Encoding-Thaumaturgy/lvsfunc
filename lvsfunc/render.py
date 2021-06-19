@@ -114,9 +114,9 @@ def clip_async_render(clip: vs.VideoNode,
 
     if outfile:
         if clip.format is None:
-            raise ValueError("Cannot render a variable format clip to y4m!")
+            raise ValueError("clip_async_render: 'Cannot render a variable format clip to y4m!'")
         if clip.format.color_family not in (vs.YUV, vs.GRAY):
-            raise ValueError("Can only render YUV and GRAY clips to y4m!")
+            raise ValueError("clip_async_render: 'Can only render YUV and GRAY clips to y4m!'")
         if clip.format.color_family == vs.GRAY:
             y4mformat = "mono"
         else:
@@ -134,7 +134,7 @@ def clip_async_render(clip: vs.VideoNode,
             elif ss == (0, 1):
                 y4mformat = "440"
             else:
-                raise ValueError("What have you done")
+                raise ValueError("clip_async_render: 'What have you done'")
 
         y4mformat = f"{y4mformat}p{clip.format.bits_per_sample}" if clip.format.bits_per_sample > 8 else y4mformat
 

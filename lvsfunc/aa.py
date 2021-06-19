@@ -27,7 +27,7 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
     :return:         Clip with clamped anti-aliasing.
     """
     if src.format is None or weak.format is None or strong.format is None:
-        raise ValueError("nneedi3_clamp: 'Variable-format clips not supported'")
+        raise ValueError("clamp_aa: 'Variable-format clips not supported'")
     thr = strength * (1 << (src.format.bits_per_sample - 8)) if src.format.sample_type == vs.INTEGER \
         else strength/219
     clamp = core.std.Expr([get_y(src), get_y(weak), get_y(strong)],
@@ -120,7 +120,7 @@ def kirsch_aa_mask(clip: vs.VideoNode, mthr: float = 0.25) -> vs.VideoNode:
     try:
         from kagefunc import kirsch
     except ModuleNotFoundError:
-        raise ModuleNotFoundError("nnedi3_clamp: missing dependency 'kagefunc'")
+        raise ModuleNotFoundError("kirsch_aa_mask: missing dependency 'kagefunc'")
 
     return kirsch(get_y(clip)).std.Binarize(scale_thresh(mthr, clip)).std.Maximum().std.Convolution([1] * 9)
 

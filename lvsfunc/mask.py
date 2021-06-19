@@ -198,7 +198,7 @@ class BoundingBox():
         :return:    Square mask representing the bounding box.
         """
         if ref.format is None:
-            raise ValueError("get_all_masks: 'Variable-format clips not supported'")
+            raise ValueError("BoundingBox: 'Variable-format clips not supported'")
 
         if self.pos.x + self.size.x > ref.width or self.pos.y + self.size.y > ref.height:
             raise ValueError("BoundingBox: Bounds exceed clip size!")
@@ -257,7 +257,7 @@ class DeferredMask(ABC):
             self.refframes = refframes
 
         if len(self.refframes) > 0 and len(self.refframes) != len(self.ranges):
-            raise ValueError("Mask: 'Received reference frame and range list size mismatch!'")
+            raise ValueError("DeferredMask: 'Received reference frame and range list size mismatch!'")
 
     def get_mask(self, clip: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
         """
@@ -269,7 +269,7 @@ class DeferredMask(ABC):
         :return:      Bounded mask
         """
         if ref.format is None or clip.format is None:
-            raise ValueError("get_all_masks: 'Variable-format clips not supported'")
+            raise ValueError("get_mask: 'Variable-format clips not supported'")
 
         if self.bound:
             bm = self.bound.get_mask(ref)

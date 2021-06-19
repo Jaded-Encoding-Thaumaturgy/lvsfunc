@@ -67,7 +67,7 @@ def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) 
         else depth(merged, get_depth(clip))
 
 
-def _Regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 1, eps: float = 1e-7) -> List[RegressClips]:
+def _Regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1e-7) -> List[RegressClips]:
     """
     Fit a line for every neighborhood of values of a given size in a clip
     with corresponding neighborhoods in one or more other clips.
@@ -76,7 +76,7 @@ def _Regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 1, eps: float = 1
     """
 
     if not radius > 0:
-        raise ValueError("radius must be greater than zero")
+        raise ValueError("Regress: 'radius must be greater than zero'")
 
     Expr = core.std.Expr
     E = partial(vs.core.std.BoxBlur, hradius=radius, vradius=radius)

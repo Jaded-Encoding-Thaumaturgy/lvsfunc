@@ -57,9 +57,9 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
 
     # Error handling for some file types
     if file.endswith('.mpls') and mpls is False:
-        raise ValueError("source: 'Please set \"mpls = True\" and give a path to the base Blu-ray directory when trying to load in mpls files'")  # noqa: E501
+        raise ValueError("source: 'Set \"mpls = True\" and pass a path to the base Blu-ray directory for this kind of file'")  # noqa: E501
     if os.path.splitext(file)[1].lower() in annoying_formats:
-        raise ValueError("source: 'Please use an external indexer like d2vwitch or DGIndexNV for this file and import that'")  # noqa: E501
+        raise ValueError("source: 'Use an external indexer like d2vwitch or DGIndexNV for this kind of file'")  # noqa: E501
 
     if force_lsmas:
         clip = core.lsmas.LWLibavSource(file, **index_args)
@@ -300,17 +300,17 @@ def wipe_row(clip: vs.VideoNode,
     :return:               Clip with rows wiped
     """
     try:
-        import kagefunc as kgf
+        from kagefunc import squaremask
     except ModuleNotFoundError:
         raise ModuleNotFoundError("wipe_row: missing dependency 'kagefunc'")
 
     secondary = secondary or core.std.BlankClip(clip)
 
-    sqmask = kgf.squaremask(clip, width, height, offset_x, offset_y)
+    sqmask = squaremask(clip, width, height, offset_x, offset_y)
     if width2 and height2:
         if offset_x2 is None:
             raise TypeError("wipe_row: 'offset_x2 cannot be None if using two masks'")
-        sqmask2 = kgf.squaremask(clip, width2, height2, offset_x2, offset_y - 1 if offset_y2 is None else offset_y2)
+        sqmask2 = squaremask(clip, width2, height2, offset_x2, offset_y - 1 if offset_y2 is None else offset_y2)
         sqmask = core.std.Expr([sqmask, sqmask2], "x y +")
 
     if show_mask:
