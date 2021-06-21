@@ -3,8 +3,10 @@
 A collection of VapourSynth functions and wrappers
 written and/or modified by LightArrowsEXE.
 Full information on how every function/wrapper works,
-as well as a list of dependencies
+as well as a list of dependencies and links,
 can be found in the [documentation](https://lvsfunc.readthedocs.io/).
+For further support,
+drop by `#lvsfunc` in the [IEW Discord server](https://discord.gg/qxTxVJGtst).
 
 ## How to install
 
@@ -37,3 +39,10 @@ aa = lvf.aa.clamp_aa(...)
 comp = lvf.comparison.compare(...)
 ...
 ```
+
+## Disclaimer
+
+Anything **MAY** change at any time.
+The public API **SHOULD NOT** be considered stable.
+If you use lvsfunc in any of your projects,
+consider hardcoding a version requirement.
