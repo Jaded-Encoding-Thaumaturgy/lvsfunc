@@ -4,7 +4,7 @@ A collection of VapourSynth functions and wrappers
 written and/or modified by LightArrowsEXE.
 Full information on how every function/wrapper works,
 as well as a list of dependencies and links,
-can be found in the [documentation](https://lvsfunc.readthedocs.io/).
+can be found in the [documentation](https://lvsfunc.encode.moe/en/latest/).
 For further support,
 drop by `#lvsfunc` in the [IEW Discord server](https://discord.gg/qxTxVJGtst).
 
@@ -16,7 +16,13 @@ remove that from your system first.
 Install `lvsfunc` with the following command:
 
 ```sh
-$ pip install lvsfunc
+$ pip3 install lvsfunc
+```
+
+Or if you want the latest git version, install it with this command:
+
+```sh
+$ pip3 install git+https://github.com/Irrational-Encoding-Wizardry/lvsfunc.git
 ```
 
 ### Arch Linux
