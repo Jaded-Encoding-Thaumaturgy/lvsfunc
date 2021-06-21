@@ -81,7 +81,7 @@ T = TypeVar("T", bound=VideoProp)
 
 def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
     """
-    Gets gets FrameProp ``prop`` from frame ``frame`` with expected type ``t``
+    Gets FrameProp ``prop`` from frame ``frame`` with expected type ``t``
     to satisfy the type checker.
 
     :param frame:   Frame containing props
