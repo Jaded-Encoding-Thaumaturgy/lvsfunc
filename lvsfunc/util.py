@@ -1,7 +1,7 @@
 """
     Helper functions for the main functions in the script.
 """
-from typing import Any, Callable, List, Optional, Sequence, Type, TypeVar, Tuple, Union, cast
+from typing import Any, Callable, List, Optional, Sequence, Type, TypeVar, Tuple, Union
 
 import vapoursynth as vs
 from vsutil import depth
@@ -94,11 +94,11 @@ def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
         prop = frame.props[key]
     except KeyError:
         raise KeyError(f"get_prop: 'Key {key} not present in props'")
-    real_type = type(prop)
-    if real_type is not t:
-        raise ValueError(f"get_prop: 'Key {key} did not contain expected type: Expected {t} got {real_type}'")
 
-    return cast(T, prop)
+    if not isinstance(prop, t):
+        raise ValueError(f"get_prop: 'Key {key} did not contain expected type: Expected {t} got {type(prop)}'")
+
+    return prop
 
 
 def normalize_ranges(clip: vs.VideoNode, ranges: Union[Range, List[Range]]) -> List[Tuple[int, int]]:
@@ -110,10 +110,7 @@ def normalize_ranges(clip: vs.VideoNode, ranges: Union[Range, List[Range]]) -> L
 
     :return:       List of inclusive positive ranges.
     """
-    ranges = ranges if isinstance(ranges, list) else ranges
-
-    if not isinstance(ranges, list):
-        ranges = [ranges]
+    ranges = ranges if isinstance(ranges, list) else [ranges]
 
     out = []
     for r in ranges:
