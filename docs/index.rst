@@ -49,6 +49,14 @@ An attempt has been made to document major dependencies on a per-function basis.
 Unfortunately, \*func family modules have complex dependency graphs and documenting
 them is beyond the scope of this module.
 
+Disclaimer
+----------------
+
+Anything **MAY** change at any time.
+The public API **SHOULD NOT** be considered stable.
+If you use lvsfunc in any of your projects,
+consider hardcoding a version requirement.
+
 Modules
 -------
 
