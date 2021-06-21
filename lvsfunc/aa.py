@@ -146,7 +146,7 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
     if clip.format is None:
         raise ValueError("nneedi3_clamp: 'Variable-format clips not supported'")
     y = get_y(clip)
-    merged = core.std.MaskedMerge(y, clamp_aa(y, taa(y, nnedi3(opencl=opencl)), taa(y, eedi3(opencl=opencl))),
+    merged = core.std.MaskedMerge(y, clamp_aa(y, taa(y, nnedi3(opencl=opencl)), taa(y, eedi3(opencl=opencl)), strength),
                                   mask or kirsch_aa_mask(y))
     return merged if clip.format.color_family == vs.GRAY else core.std.ShufflePlanes([merged, clip], [0, 1, 2], vs.YUV)
 
