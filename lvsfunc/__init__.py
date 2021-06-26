@@ -7,8 +7,8 @@
 
 # flake8: noqa
 
-from . import (aa, comparison, dehardsub, deinterlace, denoise, kernels, mask,
-               misc, recon, scale, types, util)
+from . import (aa, comparison, dehalo, dehardsub, deinterlace, denoise,
+               kernels, mask, misc, recon, scale, types, util)
 
 # Aliases:
 comp = comparison.compare
