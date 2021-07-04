@@ -1,9 +1,10 @@
 
 import os
 from abc import ABC, abstractmethod
+from io import BufferedReader
 from pathlib import Path
 from subprocess import run
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List, Optional, cast
 
 import vapoursynth as vs
 from vsutil import is_image
@@ -141,7 +142,7 @@ def dvd_source(vob_folder: AnyPath, idx: DVDIndexer = D2VWitch(), ifo_file: Opti
     if not ifo_file:
         ifo_file = vob_folder / 'VTS_01_0.IFO'
     with open(ifo_file, 'rb') as file:
-        pgci = vts_ifo.load_vts_pgci(file)
+        pgci = vts_ifo.load_vts_pgci(cast(BufferedReader, file))
 
     durations: List[int] = [0]
     for prog in pgci.program_chains:

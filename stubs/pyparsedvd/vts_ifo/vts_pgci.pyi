@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ..sector import Sector
 from enum import IntEnum
 from fractions import Fraction
@@ -39,6 +41,6 @@ class VTSPGCI(Sector):
     program_chains: List[ProgramChain]
     chain_offset: int
     def __init__(self, ifo: BufferedReader) -> None: ...
-    def load(self): ...
+    def load(self) -> VTSPGCI: ...
 
 FRAMERATE: Dict[int, Fraction]
