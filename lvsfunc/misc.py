@@ -11,12 +11,16 @@ import vapoursynth as vs
 from vsutil import get_depth, get_w, get_y, scale_value
 
 from .mask import BoundingBox
+from .source import source as src
 from .types import Position, Size
 from .util import get_prop
 from .util import replace_ranges as _replace_ranges
 from .util import scale_thresh as _scale_thresh
 
 core = vs.core
+
+
+source = src
 
 
 def edgefixer(clip: vs.VideoNode,
