@@ -1,11 +1,15 @@
 
 import os
-from typing import Any, Optional
+from abc import ABC, abstractmethod
+from pathlib import Path
+from subprocess import run
+from typing import Any, Callable, List, Optional
 
 import vapoursynth as vs
 from vsutil import is_image
 
 from .misc import get_matrix
+from .types import AnyPath
 
 core = vs.core
 
@@ -86,3 +90,92 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
             clip = clip * (ref.num_frames - 1)
 
     return clip
+
+
+class DVDIndexer(ABC):
+    path: AnyPath
+    vps_indexer: Callable[..., vs.VideoNode]
+    ext: str
+
+    @abstractmethod
+    def get_cmd(self, files: List[Path], output: Path) -> List[Any]:
+        raise NotImplementedError
+
+
+class D2VWitch(DVDIndexer):
+    path = 'd2vwitch'
+    vps_indexer = core.d2v.Source
+    ext = '.d2v'
+
+    def get_cmd(self, files: List[Path], output: Path) -> List[Any]:
+        return [self.path, '--output', output, *files]
+
+
+class DGIndexNV(DVDIndexer):
+    path = 'DGIndexNV'
+    vps_indexer = core.dgdecodenv.DGSource
+    ext = '.dgi'
+
+    def get_cmd(self, files: List[Path], output: Path) -> List[Any]:
+        return [self.path, '-i', ','.join(map(str, files)), '-o', output, '-h']
+
+
+def dvd_source(vob_folder: AnyPath, idx: DVDIndexer = D2VWitch(), ifo_file: Optional[AnyPath] = None, extra: bool = False, **kwargs: Any) -> List[vs.VideoNode]:
+    try:
+        from pyparsedvd import vts_ifo
+    except ModuleNotFoundError as mod_err:
+        raise ModuleNotFoundError("dvd_source: missing dependency 'pyparsedvd'") from mod_err
+
+    vob_folder = Path(vob_folder)
+
+    # Index vob files using idx
+    vob_files = sorted(vob_folder.glob('*.vob'))
+
+    if not (output := Path(vob_files[0].with_suffix(idx.ext))).exists():
+        run(idx.get_cmd(vob_files, output), check=True, text=True, encoding='utf-8')
+
+    all_titles = idx.vps_indexer(str(output), **kwargs)
+
+    # Parse IFO info
+    if not ifo_file:
+        ifo_file = vob_folder / 'VTS_01_0.IFO'
+    with open(ifo_file, 'rb') as file:
+        pgci = vts_ifo.load_vts_pgci(file)
+
+    durations: List[int] = [0]
+    for prog in pgci.program_chains:
+        dvd_fps_s = [pb_time.fps for pb_time in prog.playback_times]
+        if all(dvd_fps_s[0] == dvd_fps for dvd_fps in dvd_fps_s):
+            fps = vts_ifo.FRAMERATE[dvd_fps_s[0]]
+        else:
+            raise ValueError('parse_ifo: No VFR allowed!')
+
+        raw_fps = 30 if fps.numerator == 30000 else 25
+
+        durations.append(
+            prog.duration.frames
+            + (prog.duration.hours * 3600 + prog.duration.minutes * 60 + prog.duration.seconds) * raw_fps
+        )
+
+    # Remove splash screen and DVD Menu
+    duration_all = sum(durations)
+    clip = all_titles[-duration_all:]
+
+    durations_chained = [
+        duration + sum(durations[:-(len(durations) - i)])
+        for i, duration in enumerate(durations[:-1])
+    ]
+
+    # Trim per title
+    clips = [
+        clip[s:e]
+        for s, e in zip(
+            durations_chained,
+            durations_chained[1:] + [duration_all]
+        )
+    ]
+
+    if extra:
+        clips.insert(0, all_titles[:-duration_all])
+
+    return clips

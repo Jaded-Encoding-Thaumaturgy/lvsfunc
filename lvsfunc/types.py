@@ -1,6 +1,9 @@
+from os import PathLike
 from typing import Optional, Tuple, Union
 
 Range = Union[Optional[int], Tuple[Optional[int], Optional[int]]]
+
+AnyPath = Union[PathLike, str]
 
 
 class Coordinate():
