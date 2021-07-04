@@ -120,7 +120,8 @@ class DGIndexNV(DVDIndexer):
         return [self.path, '-i', ','.join(map(str, files)), '-o', output, '-h']
 
 
-def dvd_source(vob_folder: AnyPath, idx: DVDIndexer = D2VWitch(), ifo_file: Optional[AnyPath] = None, extra: bool = False, **kwargs: Any) -> List[vs.VideoNode]:
+def dvd_source(vob_folder: AnyPath, idx: DVDIndexer = D2VWitch(), ifo_file: Optional[AnyPath] = None,
+               extra: bool = False, **kwargs: Any) -> List[vs.VideoNode]:
     try:
         from pyparsedvd import vts_ifo
     except ModuleNotFoundError as mod_err:
