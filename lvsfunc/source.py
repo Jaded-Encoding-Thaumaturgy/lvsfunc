@@ -2,9 +2,10 @@
 import os
 from abc import ABC, abstractmethod
 from io import BufferedReader
+from itertools import accumulate
 from pathlib import Path
 from subprocess import run
-from typing import Any, Callable, List, Optional, cast
+from typing import Any, Callable, List, Optional, Tuple, cast
 
 import vapoursynth as vs
 from vsutil import is_image
@@ -122,7 +123,7 @@ class DGIndexNV(DVDIndexer):
 
 
 def dvd_source(vob_folder: AnyPath, idx: DVDIndexer = D2VWitch(), ifo_file: Optional[AnyPath] = None,
-               extra: bool = False, **kwargs: Any) -> List[vs.VideoNode]:
+               extra: bool = False, **kwargs: Any) -> Tuple[List[vs.VideoNode], List[List[int]]]:
     try:
         from pyparsedvd import vts_ifo
     except ModuleNotFoundError as mod_err:
@@ -144,40 +145,40 @@ def dvd_source(vob_folder: AnyPath, idx: DVDIndexer = D2VWitch(), ifo_file: Opti
     with open(ifo_file, 'rb') as file:
         pgci = vts_ifo.load_vts_pgci(cast(BufferedReader, file))
 
-    durations: List[int] = [0]
+    chapters_frames: List[List[int]] = []
     for prog in pgci.program_chains:
         dvd_fps_s = [pb_time.fps for pb_time in prog.playback_times]
         if all(dvd_fps_s[0] == dvd_fps for dvd_fps in dvd_fps_s):
             fps = vts_ifo.FRAMERATE[dvd_fps_s[0]]
         else:
-            raise ValueError('parse_ifo: No VFR allowed!')
+            raise ValueError('dvd_source: No VFR allowed!')
 
         raw_fps = 30 if fps.numerator == 30000 else 25
 
-        durations.append(
-            prog.duration.frames
-            + (prog.duration.hours * 3600 + prog.duration.minutes * 60 + prog.duration.seconds) * raw_fps
+        # Convert in frames
+        chapters_frames.append([0] + [
+            pb_time.frames
+            + (pb_time.hours * 3600 + pb_time.minutes * 60 + pb_time.seconds) * raw_fps
+            for pb_time in prog.playback_times]
         )
+
+    chapters_frames = [
+        list(accumulate(chapter_frames))
+        for chapter_frames in chapters_frames
+    ]
+
+    durations = list(accumulate([0] + [frame[-1] for frame in chapters_frames]))
 
     # Remove splash screen and DVD Menu
-    duration_all = sum(durations)
-    clip = all_titles[-duration_all:]
-
-    durations_chained = [
-        duration + sum(durations[:-(len(durations) - i)])
-        for i, duration in enumerate(durations[:-1])
-    ]
+    clip = all_titles[-durations[-1]:]
 
     # Trim per title
-    clips = [
-        clip[s:e]
-        for s, e in zip(
-            durations_chained,
-            durations_chained[1:] + [duration_all]
-        )
-    ]
+    clips = [clip[s:e] for s, e in zip(durations[:-1], durations[1:])]
 
     if extra:
-        clips.insert(0, all_titles[:-duration_all])
+        clips.insert(0, all_titles[:-durations[-1]])
+
+    return clips, chapters_frames
+
 
     return clips
