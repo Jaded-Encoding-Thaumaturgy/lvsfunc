@@ -181,4 +181,6 @@ def dvd_source(vob_folder: AnyPath, idx: DVDIndexer = D2VWitch(), ifo_file: Opti
     return clips, chapters_frames
 
 
-    return clips
+def trim_clips_per_chapters(clips: List[vs.VideoNode], chapters_frames: List[List[int]]) -> List[List[vs.VideoNode]]:
+    return [[clip[start:end] for start, end in zip(chapter_frames[:-1], chapter_frames[1:])]
+            for clip, chapter_frames in zip(clips, chapters_frames)]
