@@ -8,7 +8,7 @@
 # flake8: noqa
 
 from . import (aa, comparison, dehalo, dehardsub, deinterlace, denoise,
-               kernels, mask, misc, recon, scale, types, util)
+               kernels, mask, misc, recon, scale, source, types, util)
 
 # Aliases:
 comp = comparison.compare
@@ -17,6 +17,6 @@ ef = misc.edgefixer
 rfs = util.replace_ranges
 scomp = comparison.stack_compare
 sraa = aa.upscaled_sraa
-src = misc.source
+src = source.source
 demangle = recon.ChromaReconstruct
 crecon = recon.ChromaReconstruct
