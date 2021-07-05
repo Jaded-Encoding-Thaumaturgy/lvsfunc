@@ -19,7 +19,6 @@ from .util import scale_thresh as _scale_thresh
 core = vs.core
 
 
-
 def edgefixer(clip: vs.VideoNode,
               left: Union[int, List[int], None] = None,
               right: Union[int, List[int], None] = None,
