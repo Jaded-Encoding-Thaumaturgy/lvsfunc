@@ -203,6 +203,36 @@ class HardsubSignFade(HardsubSign):
         return super().get_mask(clip, ref)
 
 
+class HardsubASS(HardsubMask):
+    """
+    Generate a mask using an ass script, such as for dehardubbing AoD with CR DE.
+
+    :param filename: Path to ASS script.
+    :param fontdir:  Extra fonts path.
+    :param shift:    Offset to apply to the script, in frames.
+                     May misbehave due to timestamp rounding.
+    """
+    filename: str
+    fontdir: Optional[str]
+    shift: Optional[int]
+
+    def __init__(self, filename: str, *args: Any, fontdir: Optional[str] = None,
+                 shift: Optional[int] = None, **kwargs: Any) -> None:
+        self.filename = filename
+        self.fontdir = fontdir
+        self.shift = shift
+        super().__init__(*args, **kwargs)
+
+    def _mask(self, clip: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
+        ref = ref[0] * self.shift + ref if self.shift else ref
+        mask = ref.sub.TextFile(self.filename, fontdir=self.fontdir, blend=False)[1]  # horrific abuse of typechecker
+        mask = mask[self.shift:] if self.shift else mask
+        mask = mask.std.Binarize(1)
+        mask = vsutil.iterate(mask, core.std.Maximum, 3)
+        mask = vsutil.iterate(mask, core.std.Inflate, 3)
+        return mask
+
+
 def get_all_masks(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[HardsubMask]) -> vs.VideoNode:
     """
     Get a clip of :py:class:`lvsfunc.dehardsub.HardsubSign` masks.

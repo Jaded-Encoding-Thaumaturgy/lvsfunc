@@ -235,11 +235,11 @@ class DeferredMask(ABC):
     refframes: List[Optional[int]]
     blur: bool
 
-    def __init__(self, ranges: Union[Range, List[Range]],
+    def __init__(self, ranges: Union[Range, List[Range], None] = None,
                  bound: Union[BoundingBox, Tuple[Tuple[int, int], Tuple[int, int]], None] = None,
                  *,
                  blur: bool = False, refframes: Union[int, List[int], None] = None):
-        self.ranges = ranges if isinstance(ranges, list) else [ranges]
+        self.ranges = ranges if isinstance(ranges, list) else [(0, None)] if ranges is None else [ranges]
         self.blur = blur
 
         if bound is None:
