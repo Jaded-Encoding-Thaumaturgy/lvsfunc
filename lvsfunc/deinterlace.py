@@ -39,9 +39,9 @@ def SIVTC(clip: vs.VideoNode, pattern: int = 0,
 
 
 def TIVTC_VFR(clip: vs.VideoNode,
-              tfmIn: Union[Path, str] = ".ivtc/matches.txt",
-              tdecIn: Union[Path, str] = ".ivtc/metrics.txt",
-              mkvOut: Union[Path, str] = ".ivtc/timecodes.txt",
+              tfm_in: Union[Path, str] = ".ivtc/matches.txt",
+              tdec_in: Union[Path, str] = ".ivtc/metrics.txt",
+              timecodes_out: Union[Path, str] = ".ivtc/timecodes.txt",
               tfm_args: Dict[str, Any] = {},
               tdecimate_args: Dict[str, Any] = {}) -> vs.VideoNode:
     """
@@ -65,33 +65,25 @@ def TIVTC_VFR(clip: vs.VideoNode,
     """
     from .render import get_render_progress
 
-    tfm_pass1: Dict[str, Any] = {'output': tfmIn, **tfm_args}
-    tfm_pass2: Dict[str, Any] = {'input': tfmIn, **tfm_args}
-
-    tdec_pass1: Dict[str, Any] = {**tdecimate_args, 'output': tdecIn, 'mode': 4}
-    tdec_pass2: Dict[str, Any] = {
-        'input': tdecIn, 'tfmIn': tfmIn, 'mkvOut': mkvOut,
-        'mode': 5, 'hybrid': 2, 'vfrDec': 1
-    }
-    tdec_pass2 |= tdecimate_args
-
-    tfmIn = Path(tfmIn).resolve()
-    tdecIn = Path(tdecIn).resolve()
-    mkvOut = Path(mkvOut).resolve()
+    tfm_in = Path(tfm_in).resolve()
+    tdec_in = Path(tdec_in).resolve()
+    timecodes_out = Path(timecodes_out).resolve()
 
     # TIVTC can't write files into directories that don't exist
-    for p in (tfmIn, tdecIn, mkvOut):
+    for p in (tfm_in, tdec_in, timecodes_out):
         if not p.parent.exists():
             p.parent.mkdir(parents=True)
 
-    if not (tfmIn.exists() and tdecIn.exists()):
-        ivtc_clip = core.tivtc.TFM(clip, **tfm_pass1)
-        ivtc_clip = core.tivtc.TDecimate(ivtc_clip, **tdec_pass1)
+    if not (tfm_in.exists() and tdec_in.exists()):
+        tfm_analysis: Dict[str, Any] = {**tfm_args, 'output': str(tfm_in)}
+        tdec_analysis: Dict[str, Any] = {**tdecimate_args, 'output': str(tdec_in), 'mode': 4}
+
+        ivtc_clip = core.tivtc.TFM(clip, **tfm_analysis).tivtc.TDecimate(**tdec_analysis)
 
         with get_render_progress() as pr:
             task = pr.add_task("Analysing frames...", total=ivtc_clip.num_frames)
 
-            def _cb(n: int, total: int = ivtc_clip.num_frames) -> None:
+            def _cb(n: int, total: int) -> None:
                 pr.update(task, advance=1)
 
             with open(os.devnull, 'wb') as dn:
@@ -101,7 +93,15 @@ def TIVTC_VFR(clip: vs.VideoNode,
         time.sleep(0.5)  # TO-DO: if possible, make it forcibly refresh the core instance so it stops throwing an error
         raise vs.Error("TIVTC_VFR: vs.core must be refreshed after the analysis pass. Please refresh your preview")
 
-    return clip.tivtc.TFM(**tfm_pass2).tivtc.TDecimate(**tdec_pass2)
+    tfm_args = {**tfm_args, 'input': str(tfm_in)}
+
+    tdecimate_args = {
+        'mode': 5, **tdecimate_args,
+        'input': str(tdec_in), 'tfmIn': str(tfm_in), 'mkvOut': str(timecodes_out),
+        'hybrid': 2, 'vfrDec': 1
+    }
+
+    return clip.tivtc.TFM(**tfm_args).tivtc.TDecimate(**tdecimate_args)
 
 
 def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:
