@@ -17,14 +17,14 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'lvsfunc'
-copyright = '2020, LightArrowsEXE'
+copyright = '2021, LightArrowsEXE'
 author = 'LightArrowsEXE'
 
 # The short X.Y version
-version = '0.3.6'
+version = '0.3.7'
 
 # The full version, including alpha/beta/rc tags
-release = '0.3.6'
+release = '0.3.7'
 
 # -- General configuration ---------------------------------------------------
 

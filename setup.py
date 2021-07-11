@@ -9,8 +9,8 @@ with open("requirements.txt") as fh:
     install_requires = fh.read()
 
 name = "lvsfunc"
-version = "0.3.6"
-release = "0.3.6"
+version = "0.3.7"
+release = "0.3.7"
 
 setuptools.setup(
     name=name,
