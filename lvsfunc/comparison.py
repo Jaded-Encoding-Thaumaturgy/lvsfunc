@@ -15,7 +15,6 @@ import vapoursynth as vs
 import vsutil
 
 from .dehardsub import hardsub_mask
-from .progress import Progress, BarColumn, FPSColumn, TextColumn, TimeRemainingColumn
 from .render import clip_async_render
 from .util import get_prop
 from .misc import get_matrix
@@ -545,34 +544,26 @@ def diff(*clips: vs.VideoNode,
         nc = list(namedclips.values())
         a, b = vsutil.depth(nc[0], 8), vsutil.depth(nc[1], 8)
 
-    progress = Progress(TextColumn("{task.description}"),
-                        BarColumn(),
-                        TextColumn("{task.completed}/{task.total}"),
-                        TextColumn("{task.percentage:>3.02f}%"),
-                        FPSColumn(),
-                        TimeRemainingColumn())
-
     frames = []
     if thr <= 1:
-        with progress:
-            for i, f in progress.track(enumerate(core.std.PlaneStats(a, b).frames()),
-                                       description="Diffing clips...",
-                                       total=a.num_frames):
-                if get_prop(f, 'PlaneStatsDiff', float) > thr:
-                    frames.append(i)
+        ps = core.std.PlaneStats(a, b)
+
+        def _cb(n: int, f: vs.VideoFrame) -> None:
+            if get_prop(f, 'PlaneStatsDiff', float) > thr:
+                frames.append(n)
+
+        clip_async_render(ps, progress="Diffing clips...", callback=_cb)
         diff = core.std.MakeDiff(a, b)
     else:
         diff = diff_func(a, b).std.PlaneStats()
         assert diff.format is not None
         t = float if diff.format.sample_type == vs.FLOAT else int
-        with progress:
-            task = progress.add_task("Diffing clips...", total=diff.num_frames)
 
-            def _cb(n: int, f: vs.VideoFrame) -> None:
-                progress.update(task, advance=1)
-                if get_prop(f, 'PlaneStatsMin', t) <= thr or get_prop(f, 'PlaneStatsMax', t) >= 255 - thr > thr:
-                    frames.append(n)
-            clip_async_render(diff, callback=_cb)
+        def _cb(n: int, f: vs.VideoFrame) -> None:
+            if get_prop(f, 'PlaneStatsMin', t) <= thr or get_prop(f, 'PlaneStatsMax', t) >= 255 - thr > thr:
+                frames.append(n)
+
+        clip_async_render(diff, progress="Diffing clips...", callback=_cb)
 
     if not frames:
         raise ValueError("diff: no differences found")

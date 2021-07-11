@@ -11,6 +11,7 @@ from typing import Any, Optional, Union, Dict
 import vapoursynth as vs
 
 from . import util
+from .render import get_render_progress
 
 core = vs.core
 
@@ -63,8 +64,6 @@ def TIVTC_VFR(clip: vs.VideoNode,
 
     :return:                    IVTC'd VFR clip
     """
-    from .render import get_render_progress
-
     tfm_in = Path(tfm_in).resolve()
     tdec_in = Path(tdec_in).resolve()
     timecodes_out = Path(timecodes_out).resolve()
@@ -81,7 +80,7 @@ def TIVTC_VFR(clip: vs.VideoNode,
         ivtc_clip = core.tivtc.TFM(clip, **tfm_analysis).tivtc.TDecimate(**tdec_analysis)
 
         with get_render_progress() as pr:
-            task = pr.add_task("Analysing frames...", total=ivtc_clip.num_frames)
+            task = pr.add_task("Analyzing frames...", total=ivtc_clip.num_frames)
 
             def _cb(n: int, total: int) -> None:
                 pr.update(task, advance=1)
