@@ -2,8 +2,11 @@
     Functions to help with deinterlacing or deinterlaced content.
 """
 
+import os
+import time
 from functools import partial
-from typing import Any, Optional
+from pathlib import Path
+from typing import Any, Optional, Union, Dict
 
 import vapoursynth as vs
 
@@ -33,6 +36,71 @@ def SIVTC(clip: vs.VideoNode, pattern: int = 0,
     selectlist = [[0, 3, 6, 8], [0, 2, 5, 8], [0, 2, 4, 7], [2, 4, 6, 9], [1, 4, 6, 8]]
     dec = core.std.SelectEvery(defivtc, 10, selectlist[pattern]) if decimate else defivtc
     return core.std.SetFrameProp(dec, prop='_FieldBased', intval=0)
+
+
+def TIVTC_VFR(clip: vs.VideoNode,
+              tfmIn: Union[Path, str] = ".ivtc/matches.txt",
+              tdecIn: Union[Path, str] = ".ivtc/metrics.txt",
+              mkvOut: Union[Path, str] = ".ivtc/timecodes.txt",
+              tfm_args: Dict[str, Any] = {},
+              tdecimate_args: Dict[str, Any] = {}) -> vs.VideoNode:
+    """
+    Wrapper for performing TFM and TDecimate on a clip that is supposed to be VFR,
+    including generating a metrics/matches/timecodes txt file.
+
+    Largely based on, if not basically rewritten from, atomchtools.TIVTC_VFR.
+
+    Dependencies:
+    * TIVTC
+
+    :param clip:                Input clip
+    :param tfmIn:               File location for TFM's matches analysis
+    :param tdecIn:              File location for TDecimate's metrics analysis
+    :param mkvOut:              File location for TDecimate's timecode file output
+    :param tfm_args:            Additional arguments to pass to TFM
+    :param tdecimate_args:      Additional arguments to pass to TDecimate
+
+    :return:                    IVTC'd VFR clip
+    """
+    from .render import get_render_progress
+
+    tfm_pass1: Dict[str, Any] = {'output': tfmIn, **tfm_args}
+    tfm_pass2: Dict[str, Any] = {'input': tfmIn, **tfm_args}
+
+    tdec_pass1: Dict[str, Any] = {**tdecimate_args, 'output': tdecIn, 'mode': 4}
+    tdec_pass2: Dict[str, Any] = {
+        'input': tdecIn, 'tfmIn': tfmIn, 'mkvOut': mkvOut,
+        'mode': 5, 'hybrid': 2, 'vfrDec': 1
+    }
+    tdec_pass2 |= tdecimate_args
+
+    tfmIn = Path(tfmIn).resolve()
+    tdecIn = Path(tdecIn).resolve()
+    mkvOut = Path(mkvOut).resolve()
+
+    # TIVTC can't write files into directories that don't exist
+    for p in (tfmIn, tdecIn, mkvOut):
+        if not p.parent.exists():
+            p.parent.mkdir(parents=True)
+
+    if not (tfmIn.exists() and tdecIn.exists()):
+        ivtc_clip = core.tivtc.TFM(clip, **tfm_pass1)
+        ivtc_clip = core.tivtc.TDecimate(ivtc_clip, **tdec_pass1)
+
+        with get_render_progress() as pr:
+            task = pr.add_task("Analysing frames...", total=ivtc_clip.num_frames)
+
+            def _cb(n: int, total: int = ivtc_clip.num_frames) -> None:
+                pr.update(task, advance=1)
+
+            with open(os.devnull, 'wb') as dn:
+                ivtc_clip.output(dn, progress_update=_cb)
+
+        # Allow it to properly finish writing the logs
+        time.sleep(0.5)  # TO-DO: if possible, make it forcibly refresh the core instance so it stops throwing an error
+        raise vs.Error("TIVTC_VFR: vs.core must be refreshed after the analysis pass. Please refresh your preview")
+
+    return clip.tivtc.TFM(**tfm_pass2).tivtc.TDecimate(**tdec_pass2)
 
 
 def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:

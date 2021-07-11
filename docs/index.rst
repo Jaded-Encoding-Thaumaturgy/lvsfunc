@@ -32,6 +32,7 @@ The following VapourSynth libraries are also required for full functionality:
 * `KNLMeansCL <https://github.com/Khanattila/KNLMeansCL>`_
 * `L-SMASH-Works <https://github.com/VFR-maniac/L-SMASH-Works>`_
 * `RGSF <https://github.com/IFeelBloated/RGSF>`_
+* `TIVTC <https://github.com/dubhater/vapoursynth-tivtc>`_
 * `VapourSynth-Bilateral <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-Bilateral>`_
 * `VapourSynth-BM3D <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-BM3D>`_
 * `VapourSynth-descale <https://github.com/Irrational-Encoding-Wizardry/VapourSynth-descale>`_
@@ -109,6 +110,7 @@ Functions
    lvsfunc.deinterlace.dir_deshimmer
    lvsfunc.deinterlace.dir_unsharp
    lvsfunc.deinterlace.SIVTC
+   lvsfunc.deinterlace.TIVTC_VFR
    lvsfunc.denoise.bm3d
    lvsfunc.mask.detail_mask
    lvsfunc.mask.halo_mask
@@ -246,6 +248,7 @@ lvsfunc.deinterlace
    lvsfunc.deinterlace.dir_deshimmer
    lvsfunc.deinterlace.dir_unsharp
    lvsfunc.deinterlace.SIVTC
+   lvsfunc.deinterlace.TIVTC_VFR
 
 .. automodule:: lvsfunc.deinterlace
    :members:
