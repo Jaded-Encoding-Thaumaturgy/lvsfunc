@@ -97,6 +97,7 @@ def reupscale(clip: vs.VideoNode,
     Stolen from Varde with some adjustments made.
 
     Dependencies:
+
     * znedi3
 
     :param clip:         Input clip
@@ -173,6 +174,7 @@ def descale(clip: vs.VideoNode,
     If you want to conditionally descale, specify a non-zero threshold.
 
     Dependencies:
+
     * vapoursynth-descale
     * znedi3
 
@@ -303,6 +305,7 @@ def test_descale(clip: vs.VideoNode,
     Some of this code was leveraged from DescaleAA found in fvsfunc.
 
     Dependencies:
+
     * vapoursynth-descale
 
     :param clip:           Input clip

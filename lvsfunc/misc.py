@@ -37,6 +37,7 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
     Alias for this function is `lvsfunc.src`.
 
     Dependencies:
+
     * ffms2
     * L-SMASH-Works (optional: m2ts sources or when forcing lsmas)
     * d2vsource (optional: d2v sources)
@@ -115,6 +116,7 @@ def edgefixer(clip: vs.VideoNode,
     Alias for this function is `lvsfunc.ef`.
 
     Dependencies:
+
     * VS-ContinuityFixer
 
     :param clip:        Input clip

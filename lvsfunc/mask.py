@@ -28,6 +28,7 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
     that allow you to pass your own mask.
 
     Dependencies:
+
     * VapourSynth-Bilateral (optional: sigma)
     * RGSF (optional: 32 bit clip)
 

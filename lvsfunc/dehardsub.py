@@ -82,6 +82,7 @@ class HardsubSignKgf(HardsubMask):
     Hardsub scenefiltering helper using kgf.hardsubmask_fades.
 
     Dependencies:
+
     * kagefunc
 
     :param highpass: Highpass filter for hardsub detection (16-bit, Default: 5000)
@@ -135,6 +136,7 @@ class HardsubLine(HardsubMask):
     Hardsub scenefiltering helper using kgf.hardsubmask.
 
     Dependencies:
+
     * kagefunc
 
     :param expand: ``kgf.hardsubmask`` expand parameter (Default: clip.width // 200)

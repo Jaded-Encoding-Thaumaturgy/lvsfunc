@@ -56,6 +56,7 @@ def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
     This is done because rgvs doesn't work with float, but rgsf does for whatever reason.
 
     Dependencies:
+
     * RGSF
 
     :param clip: Input clip

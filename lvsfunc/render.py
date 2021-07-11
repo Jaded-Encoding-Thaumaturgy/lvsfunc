@@ -180,6 +180,7 @@ def find_scene_changes(clip: vs.VideoNode, mode: SceneChangeMode = SceneChangeMo
     Generate a list of scene changes (keyframes).
 
     Dependencies:
+
     * vapoursynth-wwxd
     * vapoursynth-scxvid (Optional: scxvid mode)
 

@@ -51,6 +51,7 @@ def TIVTC_VFR(clip: vs.VideoNode,
     Largely based on, if not basically rewritten from, atomchtools.TIVTC_VFR.
 
     Dependencies:
+
     * TIVTC
 
     :param clip:                Input clip
@@ -119,6 +120,7 @@ def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:
     https://mechaweaponsvidya.wordpress.com/2012/09/13/adventures-in-deblending/
 
     Dependencies:
+
     * RGSF (optional: 32 bit clip)
 
     :param clip:     Input clip
@@ -167,6 +169,7 @@ def decomb(clip: vs.VideoNode,
     Base function written by Midlifecrisis from the WEEB AUTISM server, and modified by LightArrowsEXE.
 
     Dependencies:
+
     * combmask
     * havsfunc
     * RGSF (optional: 32 bit clip)
@@ -233,6 +236,7 @@ def dir_deshimmer(clip: vs.VideoNode, TFF: bool = True,
     Odds of success are low. But if you're desperate, it's worth a shot.
 
     Dependencies:
+
     * vapoursynth-nnedi3
 
     :param clip:         Input clip
@@ -261,6 +265,7 @@ def dir_unsharp(clip: vs.VideoNode,
     Special thanks to thebombzen and kageru for writing the bulk of this.
 
     Dependencies:
+
     * knlmeanscl
 
     :param clip:            Input clip

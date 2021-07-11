@@ -63,6 +63,7 @@ class Bicubic(Kernel):
     Built-in bicubic resizer.
 
     Dependencies:
+
     * VapourSynth-descale
 
     :param b: B-param for bicubic kernel
@@ -93,6 +94,7 @@ class Lanczos(Kernel):
     Built-in lanczos resizer.
 
     Dependencies:
+
     * VapourSynth-descale
 
     :param taps: taps param for lanczos kernel
@@ -118,6 +120,7 @@ class Spline16(Kernel):
     Built-in spline16 resizer.
 
     Dependencies:
+
     * VapourSynth-descale
     """
     def scale(self, clip: vs.VideoNode, width: int, height: int,
@@ -136,6 +139,7 @@ class Spline36(Kernel):
     Built-in spline36 resizer.
 
     Dependencies:
+
     * VapourSynth-descale
     """
     def scale(self, clip: vs.VideoNode, width: int, height: int,
@@ -154,6 +158,7 @@ class Spline64(Kernel):
     Built-in spline64 resizer.
 
     Dependencies:
+
     * VapourSynth-descale
     """
     def scale(self, clip: vs.VideoNode, width: int, height: int,

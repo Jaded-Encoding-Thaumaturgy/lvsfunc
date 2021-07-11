@@ -66,6 +66,7 @@ def nnedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs
     Generate nnedi3 antialiaser.
 
     Dependencies:
+
     * vapoursynth-nnedi3
     * vapoursynth-NNEDI3CL (Optional: opencl)
 
@@ -89,6 +90,7 @@ def eedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs.
     Generate eedi3 antialiaser.
 
     Dependencies:
+
     * vapoursynth-EEDI3
 
     :param opencl:   Use OpenCL (Default: False)
@@ -111,6 +113,7 @@ def kirsch_aa_mask(clip: vs.VideoNode, mthr: float = 0.25) -> vs.VideoNode:
     Kirsh-based AA mask.
 
     Dependencies:
+
     * kagefunc
 
     :param clip: Input clip
@@ -162,6 +165,7 @@ def transpose_aa(clip: vs.VideoNode,
     Original function written by Zastin, modified by LightArrowsEXE.
 
     Dependencies:
+
     * RGSF (optional: 32 bit clip)
     * vapoursynth-EEDI3
     * vapoursynth-nnedi3
@@ -237,6 +241,7 @@ def upscaled_sraa(clip: vs.VideoNode,
     Alias for this function is `lvsfunc.sraa`.
 
     Dependencies:
+
     * vapoursynth-eedi3 (default aafun)
     * vapoursynth-nnedi3 (default supersampler and aafun)
 

@@ -17,6 +17,7 @@ def bm3d(clip: vs.VideoNode, sigma: Union[float, List[float]] = 0.75,
     A wrapper function for the BM3D denoiser.
 
     Dependencies:
+
     * VapourSynth-BM3D
 
     :param clip:            Input clip
