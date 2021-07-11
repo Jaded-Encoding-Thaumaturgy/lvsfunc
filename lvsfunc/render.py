@@ -157,6 +157,17 @@ def clip_async_render(clip: vs.VideoNode,
     return ctx.timecodes  # might as well
 
 
+def get_render_progress() -> Progress:
+    return Progress(
+        TextColumn("{task.description}"),
+        BarColumn(),
+        TextColumn("{task.completed}/{task.total}"),
+        TextColumn("{task.percentage:>3.02f}%"),
+        FPSColumn(),
+        TimeRemainingColumn(),
+    )
+
+
 class SceneChangeMode(Enum):
     WWXD = 0
     SCXVID = 1
