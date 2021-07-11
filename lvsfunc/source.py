@@ -102,7 +102,7 @@ class DVDIndexer(ABC):
 
     def __init__(self, path: Union[Path, str], vps_indexer: Callable[..., vs.VideoNode], ext: str) -> None:
         self.path = path
-        self.vps_indexer = vps_indexer
+        self.vps_indexer = vps_indexer  # type: ignore
         self.ext = ext
         super().__init__()
 
