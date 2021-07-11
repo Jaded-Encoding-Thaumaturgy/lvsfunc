@@ -5,14 +5,13 @@ from io import BufferedReader
 from itertools import accumulate
 from pathlib import Path
 from subprocess import run
-from typing import Any, Callable, List, Optional, Tuple, cast
+from typing import Any, Callable, List, Optional, Tuple, Union, cast
 
 import vapoursynth as vs
 from pyparsedvd import vts_ifo
 from vsutil import is_image
 
 from .misc import get_matrix
-from .types import AnyPath
 
 core = vs.core
 
@@ -96,7 +95,7 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
 
 
 class DVDIndexer(ABC):
-    path: AnyPath
+    path: Union[Path, str]
     vps_indexer: Callable[..., vs.VideoNode]
     ext: str
 
@@ -123,7 +122,7 @@ class DGIndexNV(DVDIndexer):
         return [self.path, '-i', ','.join(map(str, files)), '-o', output, '-h']
 
 
-def dvd_source(vob_folder: AnyPath, idx: DVDIndexer = D2VWitch(), ifo_file: Optional[AnyPath] = None,
+def dvd_source(vob_folder: Union[Path, str], idx: DVDIndexer = D2VWitch(), ifo_file: Optional[Union[Path, str]] = None,
                extra: bool = False, **kwargs: Any) -> Tuple[List[vs.VideoNode], List[List[int]]]:
     vob_folder = Path(vob_folder)
 
