@@ -95,28 +95,26 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
 
 
 class DVDIndexer(ABC):
+    """Abstract DVD indexer interface."""
     path: Union[Path, str]
     vps_indexer: Callable[..., vs.VideoNode]
     ext: str
 
     @abstractmethod
     def get_cmd(self, files: List[Path], output: Path) -> List[Any]:
+        """Returns the indexer command"""
         raise NotImplementedError
 
 
 class D2VWitch(DVDIndexer):
-    path = 'd2vwitch'
-    vps_indexer = core.d2v.Source
-    ext = '.d2v'
+    """Built-in d2vwitch indexer"""
 
     def get_cmd(self, files: List[Path], output: Path) -> List[Any]:
         return [self.path, '--output', output, *files]
 
 
 class DGIndexNV(DVDIndexer):
-    path = 'DGIndexNV'
-    vps_indexer = core.dgdecodenv.DGSource
-    ext = '.dgi'
+    """Built-in DGIndexNV indexer"""
 
     def get_cmd(self, files: List[Path], output: Path) -> List[Any]:
         return [self.path, '-i', ','.join(map(str, files)), '-o', output, '-h']
@@ -124,6 +122,15 @@ class DGIndexNV(DVDIndexer):
 
 def dvd_source(vob_folder: Union[Path, str], idx: DVDIndexer = D2VWitch(), ifo_file: Optional[Union[Path, str]] = None,
                extra: bool = False, **kwargs: Any) -> Tuple[List[vs.VideoNode], List[List[int]]]:
+    """Concat .vob DVD files and trim them per titles using the .ifo file as reference.
+
+    :param vob_folder:      Folder with .vob files.
+    :param idx:             DVD indexer to be used.
+    :param ifo_file:        Optional IFO file path. If not specified, will search 'VTS_01_0.IFO'.
+    :param extra:           Adds the splash screen and BD Menu to the return clips.
+    :kwargs:                Arguments passed to the indexing filter.
+    :return:                Returns a tuple of trimmed clips per title and the chapter frame numbers.
+    """
     vob_folder = Path(vob_folder)
 
     # Index vob files using idx
@@ -177,5 +184,11 @@ def dvd_source(vob_folder: Union[Path, str], idx: DVDIndexer = D2VWitch(), ifo_f
 
 
 def trim_clips_per_chapters(clips: List[vs.VideoNode], chapters_frames: List[List[int]]) -> List[List[vs.VideoNode]]:
+    """Trim the ouputs of `dvd_source` per chapters.
+
+    :param clips:               List of title clips.
+    :param chapters_frames:     Chapter frames.
+    :return:                    Returns the titles trimmed per chapter.
+    """
     return [[clip[start:end] for start, end in zip(chapter_frames[:-1], chapter_frames[1:])]
             for clip, chapter_frames in zip(clips, chapters_frames)]
