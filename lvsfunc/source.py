@@ -8,6 +8,7 @@ from subprocess import run
 from typing import Any, Callable, List, Optional, Tuple, cast
 
 import vapoursynth as vs
+from pyparsedvd import vts_ifo
 from vsutil import is_image
 
 from .misc import get_matrix
@@ -124,11 +125,6 @@ class DGIndexNV(DVDIndexer):
 
 def dvd_source(vob_folder: AnyPath, idx: DVDIndexer = D2VWitch(), ifo_file: Optional[AnyPath] = None,
                extra: bool = False, **kwargs: Any) -> Tuple[List[vs.VideoNode], List[List[int]]]:
-    try:
-        from pyparsedvd import vts_ifo
-    except ModuleNotFoundError as mod_err:
-        raise ModuleNotFoundError("dvd_source: missing dependency 'pyparsedvd'") from mod_err
-
     vob_folder = Path(vob_folder)
 
     # Index vob files using idx
