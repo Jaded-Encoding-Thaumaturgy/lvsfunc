@@ -100,6 +100,12 @@ class DVDIndexer(ABC):
     vps_indexer: Callable[..., vs.VideoNode]
     ext: str
 
+    def __init__(self, path: Union[Path, str], vps_indexer: Callable[..., vs.VideoNode], ext: str) -> None:
+        self.path = path
+        self.vps_indexer = vps_indexer
+        self.ext = ext
+        super().__init__()
+
     @abstractmethod
     def get_cmd(self, files: List[Path], output: Path) -> List[Any]:
         """Returns the indexer command"""
@@ -108,6 +114,9 @@ class DVDIndexer(ABC):
 
 class D2VWitch(DVDIndexer):
     """Built-in d2vwitch indexer"""
+    def __init__(self, path: Union[Path, str] = 'd2vwitch',
+                 vps_indexer: Callable[..., vs.VideoNode] = core.d2v.Source, ext: str = '.d2v') -> None:
+        super().__init__(path, vps_indexer, ext)
 
     def get_cmd(self, files: List[Path], output: Path) -> List[Any]:
         return [self.path, '--output', output, *files]
@@ -115,6 +124,9 @@ class D2VWitch(DVDIndexer):
 
 class DGIndexNV(DVDIndexer):
     """Built-in DGIndexNV indexer"""
+    def __init__(self, path: Union[Path, str] = 'DGIndexNV',
+                 vps_indexer: Callable[..., vs.VideoNode] = core.dgdecodenv.DGSource, ext: str = '.dgi') -> None:
+        super().__init__(path, vps_indexer, ext)
 
     def get_cmd(self, files: List[Path], output: Path) -> List[Any]:
         return [self.path, '-i', ','.join(map(str, files)), '-o', output, '-h']
