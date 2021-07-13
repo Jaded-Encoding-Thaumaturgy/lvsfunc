@@ -124,15 +124,15 @@ def select_frames(clips: Union[vs.VideoNode, Sequence[vs.VideoNode]],
     if len(clips) > 1 and not all(clip.format == clips[0].format for clip in clips[1:]):
         raise ValueError("All input clips must be of the same format.")
 
-    def select_frames_func(n: int, f: vs.VideoFrame, indexes: List[Tuple[int, int]]) -> vs.VideoFrame:
-        return clips[indexes[n][0]].get_frame(indexes[n][1])
+    def select_frames_func(n: int, indicies: List[Tuple[int, int]]) -> vs.VideoNode:
+        return clips[indicies[n][0]][indicies[n][1]]  # fuck me this is ugly
 
     length = len(indicies)
     placeholder_clip = clips[0]
     if length != placeholder_clip.num_frames:
         placeholder_clip = core.std.BlankClip(placeholder_clip, length=length)
 
-    return core.std.ModifyFrame(placeholder_clip, placeholder_clip, partial(select_frames_func, indexes=indicies))
+    return core.std.FrameEval(placeholder_clip, partial(select_frames_func, indicies=indicies))
 
 
 def normalize_ranges(clip: vs.VideoNode, ranges: Union[Range, List[Range]]) -> List[Tuple[int, int]]:
