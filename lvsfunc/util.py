@@ -1,6 +1,7 @@
 """
     Helper functions for the main functions in the script.
 """
+from functools import partial
 from typing import Any, Callable, List, Optional, Sequence, Type, TypeVar, Tuple, Union
 
 import vapoursynth as vs
@@ -102,6 +103,36 @@ def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
     return prop
 
 
+def select_frames(clips: Union[vs.VideoNode, Sequence[vs.VideoNode]],
+                  indicies: Union[Sequence[int], Sequence[Tuple[int, int]]]) -> vs.VideoNode:
+    """
+    Select frames at indicies in some clip(s).
+
+    :param clips:    Clip or clips to select frames from.
+    :param indicies: Indicies of frames to select.
+                     Should be a list of ints for a single clip, or in the form (clip_index, frame_index)
+
+    :return:         Clip made up of frames at indexes
+    """
+    clips = [clips] if isinstance(clips, vs.VideoNode) else clips
+    indicies = [(int(0), index) if isinstance(index, int) else index for index in indicies]
+
+    if clips[0].format is None:
+        raise ValueError("Only constant format clips are supported.")
+    if len(clips) > 1 and not all(clip.format == clips[0].format for clip in clips[1:]):
+        raise ValueError("All input clips must be of the same format.")
+
+    def select_frames_func(n: int, f: vs.VideoFrame, indexes: List[Tuple[int, int]]) -> vs.VideoFrame:
+        return clips[indexes[n][0]].get_frame(indexes[n][1])
+
+    length = len(indicies)
+    placeholder_clip = clips[0]
+    if length != placeholder_clip.num_frames:
+        placeholder_clip = core.std.BlankClip(placeholder_clip, length=length)
+
+    return core.std.ModifyFrame(placeholder_clip, placeholder_clip, partial(select_frames_func, indexes=indicies))
+
+
 def normalize_ranges(clip: vs.VideoNode, ranges: Union[Range, List[Range]]) -> List[Tuple[int, int]]:
     """
     Normalize ``Range``\\(s) to a list of inclusive positive integer ranges.
@@ -174,19 +205,20 @@ def replace_ranges(clip_a: vs.VideoNode,
     if ranges is None:
         return clip_a
 
-    out = clip_a
+    out_indicies = list(zip([0] * clip_a.num_frames, range(clip_a.num_frames)))
+    clip_b_indices = list(zip([1] * clip_b.num_frames, range(clip_b.num_frames)))
 
     nranges = normalize_ranges(clip_b, ranges)
 
     for start, end in nranges:
-        tmp = clip_b[start:end + 1]
+        tmp = clip_b_indices[start:end + 1]
         if start != 0:
-            tmp = out[: start] + tmp
-        if end < out.num_frames - 1:
-            tmp = tmp + out[end + 1:]
-        out = tmp
+            tmp = out_indicies[: start] + tmp
+        if end < len(out_indicies) - 1:
+            tmp = tmp + out_indicies[end + 1:]
+        out_indicies = tmp
 
-    return out
+    return select_frames([clip_a, clip_b], out_indicies)
 
 
 def scale_thresh(thresh: float, clip: vs.VideoNode, assume: Optional[int] = None) -> float:
