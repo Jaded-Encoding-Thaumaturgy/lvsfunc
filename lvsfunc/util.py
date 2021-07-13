@@ -106,13 +106,15 @@ def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
 def select_frames(clips: Union[vs.VideoNode, Sequence[vs.VideoNode]],
                   indicies: Union[Sequence[int], Sequence[Tuple[int, int]]]) -> vs.VideoNode:
     """
-    Select frames at indicies in some clip(s).
+    Select frames from one or more clips at specified indices.
 
-    :param clips:    Clip or clips to select frames from.
-    :param indicies: Indicies of frames to select.
-                     Should be a list of ints for a single clip, or in the form (clip_index, frame_index)
+    :param clips:   A clip or a list of clips to select the frames from
+    :param indexes: Indices of frames to select.
 
-    :return:         Clip made up of frames at indexes
+                    Provide a list of indices for a single clip, or for multiple clips, a list of tuples in the
+                    form ``(clip_index, frame_index)``
+
+    :return:        The selected frames in a single clip
     """
     clips = [clips] if isinstance(clips, vs.VideoNode) else clips
     indicies = [(int(0), index) if isinstance(index, int) else index for index in indicies]
