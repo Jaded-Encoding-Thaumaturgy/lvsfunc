@@ -2,7 +2,7 @@
     Helper functions for the main functions in the script.
 """
 from functools import partial
-from typing import Any, Callable, List, Optional, Sequence, Type, TypeVar, Tuple, Union
+from typing import Any, Callable, List, Optional, Sequence, Type, TypeVar, Tuple, Union, cast
 
 import vapoursynth as vs
 from vsutil import depth
@@ -103,8 +103,8 @@ def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
     return prop
 
 
-def select_frames(clips: Union[vs.VideoNode, Sequence[vs.VideoNode]],
-                  indicies: Union[Sequence[int], Sequence[Tuple[int, int]]]) -> vs.VideoNode:
+def select_frames(clips: Union[vs.VideoNode, List[vs.VideoNode]],
+                  indicies: Union[List[int], List[Tuple[int, int]]]) -> vs.VideoNode:
     """
     Select frames from one or more clips at specified indices.
 
@@ -117,14 +117,21 @@ def select_frames(clips: Union[vs.VideoNode, Sequence[vs.VideoNode]],
     :return:        The selected frames in a single clip
     """
     clips = [clips] if isinstance(clips, vs.VideoNode) else clips
-    indicies = [(int(0), index) if isinstance(index, int) else index for index in indicies]
+    for pos, index in enumerate(indicies):
+        if isinstance(index, int):
+            indicies[pos] = (0, index)
+        clip_idx, frame_idx = indicies[pos]
+        if not (0 <= clip_idx <= len(clips)):
+            raise IndexError(f"Clip index {clip_idx} out of range")
+        if not (0 <= frame_idx <= clips[clip_idx].num_frames):
+            raise IndexError(f"Frame index {frame_idx} out of range for clip {clip_idx}")
 
     if clips[0].format is None:
         raise ValueError("Only constant format clips are supported.")
     if len(clips) > 1 and not all(clip.format == clips[0].format for clip in clips[1:]):
         raise ValueError("All input clips must be of the same format.")
 
-    def select_frames_func(n: int, clips: Sequence[vs.VideoNode], indicies: Sequence[Tuple[int, int]]) -> vs.VideoNode:
+    def select_frames_func(n: int, clips: List[vs.VideoNode], indicies: List[Tuple[int, int]]) -> vs.VideoNode:
         return clips[indicies[n][0]][indicies[n][1]]  # fuck me this is ugly
 
     length = len(indicies)
