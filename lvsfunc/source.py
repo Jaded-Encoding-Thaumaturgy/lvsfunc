@@ -207,11 +207,11 @@ def dvd_source(vob_folder: Union[Path, str], idx: DVDIndexer = D2VWitch(), ifo_f
 
 
 def trim_clips_per_chapters(clips: List[vs.VideoNode], chapters_frames: List[List[int]]) -> List[List[vs.VideoNode]]:
-    """Trim the ouputs of `dvd_source` per chapters.
+    """Trim the ouputs of `dvd_source` by chapter.
 
     :param clips:               List of title clips.
     :param chapters_frames:     Chapter frames.
-    :return:                    Returns the titles trimmed per chapter.
+    :return:                    Returns the titles trimmed by chapter.
     """
     return [[clip[start:end] for start, end in zip(chapter_frames[:-1], chapter_frames[1:])]
             for clip, chapter_frames in zip(clips, chapters_frames)]
