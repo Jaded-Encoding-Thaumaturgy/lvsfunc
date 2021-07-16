@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from io import BufferedReader
 from itertools import accumulate
 from pathlib import Path
-from subprocess import run
+from subprocess import run, call, DEVNULL
 from typing import Any, Callable, List, Optional, Tuple, Union, cast
 
 import vapoursynth as vs
@@ -111,6 +111,12 @@ class DVDIndexer(ABC):
         """Returns the indexer command"""
         raise NotImplementedError
 
+    def _check_path(self) -> None:
+        try:
+            call(self.path, stderr=DEVNULL, stdout=DEVNULL)
+        except FileNotFoundError as file_not_found:
+            raise FileNotFoundError(f'DVDIndexer: `{self.path}` was not found!') from file_not_found
+
 
 class D2VWitch(DVDIndexer):
     """Built-in d2vwitch indexer"""
@@ -119,6 +125,7 @@ class D2VWitch(DVDIndexer):
         super().__init__(path, vps_indexer, ext)
 
     def get_cmd(self, files: List[Path], output: Path) -> List[Any]:
+        self._check_path()
         return [self.path, '--output', output, *files]
 
 
@@ -129,6 +136,7 @@ class DGIndexNV(DVDIndexer):
         super().__init__(path, vps_indexer, ext)
 
     def get_cmd(self, files: List[Path], output: Path) -> List[Any]:
+        self._check_path()
         return [self.path, '-i', ','.join(map(str, files)), '-o', output, '-h']
 
 
@@ -147,6 +155,9 @@ def dvd_source(vob_folder: Union[Path, str], idx: DVDIndexer = D2VWitch(), ifo_f
 
     # Index vob files using idx
     vob_files = sorted(vob_folder.glob('*.vob'))
+
+    if not vob_files:
+        raise FileNotFoundError('dvd_source: No VOBs found!')
 
     if not (output := Path(vob_files[0].with_suffix(idx.ext))).exists():
         run(idx.get_cmd(vob_files, output), check=True, text=True, encoding='utf-8')
