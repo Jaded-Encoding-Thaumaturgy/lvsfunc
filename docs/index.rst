@@ -85,7 +85,6 @@ Functions
 
    lvsfunc.aa.clamp_aa
    lvsfunc.aa.eedi3
-   lvsfunc.aa.kirsch_aa_mask
    lvsfunc.aa.nnedi3
    lvsfunc.aa.nneedi3_clamp
    lvsfunc.aa.taa
@@ -148,7 +147,6 @@ lvsfunc.aa
 
    lvsfunc.aa.clamp_aa
    lvsfunc.aa.eedi3
-   lvsfunc.aa.kirsch_aa_mask
    lvsfunc.aa.nnedi3
    lvsfunc.aa.nneedi3_clamp
    lvsfunc.aa.taa

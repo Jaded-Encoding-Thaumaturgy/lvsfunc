@@ -108,26 +108,6 @@ def eedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs.
     return _eedi3
 
 
-def kirsch_aa_mask(clip: vs.VideoNode, mthr: float = 0.25) -> vs.VideoNode:
-    """
-    Kirsh-based AA mask.
-
-    Dependencies:
-
-    * kagefunc
-
-    :param clip: Input clip
-    :param mthr: Mask threshold, scaled to clip range if between 0 and 1 (inclusive).
-                 (Default: 0.25)
-    """
-    try:
-        from kagefunc import kirsch
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("kirsch_aa_mask: missing dependency 'kagefunc'")
-
-    return kirsch(get_y(clip)).std.Binarize(scale_thresh(mthr, clip)).std.Maximum().std.Convolution([1] * 9)
-
-
 def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
                   mask: Optional[vs.VideoNode] = None,
                   mthr: float = 0.25, opencl: bool = False) -> vs.VideoNode:
@@ -149,8 +129,10 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
     if clip.format is None:
         raise ValueError("nneedi3_clamp: 'Variable-format clips not supported'")
     y = get_y(clip)
-    merged = core.std.MaskedMerge(y, clamp_aa(y, taa(y, nnedi3(opencl=opencl)), taa(y, eedi3(opencl=opencl)), strength),
-                                  mask or kirsch_aa_mask(y))
+    mask = mask or y.std.Prewitt().std.Binarize(scale_thresh(mthr, y)).std.Maximum().std.Convolution([1]*9)
+    merged = core.std.MaskedMerge(y,
+                                  clamp_aa(y, taa(y, nnedi3(opencl=opencl)), taa(y, eedi3(opencl=opencl)), strength),
+                                  mask)
     return merged if clip.format.color_family == vs.GRAY else core.std.ShufflePlanes([merged, clip], [0, 1, 2], vs.YUV)
 
 
