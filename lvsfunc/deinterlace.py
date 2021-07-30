@@ -89,8 +89,8 @@ def TIVTC_VFR(clip: vs.VideoNode,
                 ivtc_clip.output(dn, progress_update=_cb)
 
         # Allow it to properly finish writing the logs
-        time.sleep(0.5)  # TO-DO: if possible, make it forcibly refresh the core instance so it stops throwing an error
-        raise vs.Error("TIVTC_VFR: vs.core must be refreshed after the analysis pass. Please refresh your preview")
+        time.sleep(0.5)
+        del ivtc_clip  # Releases the clip, and in turn the filter (prevents it from erroring out)
 
     tfm_args = {**tfm_args, 'input': str(tfm_in)}
 
