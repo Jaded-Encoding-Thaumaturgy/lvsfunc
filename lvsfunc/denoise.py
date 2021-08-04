@@ -1,10 +1,12 @@
 """
-    Denoising functions.
+    Denoising/Deblocking functions.
 """
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import vapoursynth as vs
 import vsutil
+
+from .types import Matrix
 
 core = vs.core
 
@@ -86,3 +88,88 @@ def bm3d(clip: vs.VideoNode, sigma: Union[float, List[float]] = 0.75,
     den = den if sigmal[0] != 0 else core.std.ShufflePlanes([clip, den], planes=[0, 1, 2], colorfamily=vs.YUV)
 
     return den
+
+
+def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
+                strength: Tuple[int, int, int] = (30, 50, 75),
+                thr: List[Tuple[float, float]] = [(2.0, 1.0), (3.0, 3.25), (5.0, 7.5)],
+                matrix: Matrix = Matrix.BT709, debug: bool = False, **args: Any) -> vs.VideoNode:
+    """
+    A rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
+
+    This function checks for differences between a frame and an edgemask with some processing done on it,
+    and for differences between the current frame and the next frame.
+    For frames where both thresholds are exceeded, it will perform deblocking at a specified strength.
+    This will ideally be frames that show big temporal *and* spatial inconsistencies.
+
+    Dependencies:
+
+    * vs-dpir
+    * rgsf
+
+    :param clip:            Input clip
+    :param edgevalue:       Remove edges from the edgemask that exceed this threshold
+    :param strength:        DPIR strength values (higher is stronger)
+    :param thr:             Invididual thresholds, written as a List of (OrigDiff, NextFrameDiff)
+    :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info
+    :param debug:           Print calculations and how strong the denoising is.
+
+    :return:                Deblocked clip
+    """
+    from functools import partial
+
+    from vsdpir import DPIR
+    from vsutil import depth, get_depth, scale_value
+
+    assert clip.format
+
+    def eval_db(n: int, f: List[vs.VideoFrame], clips: List[vs.VideoNode]) -> vs.VideoNode:
+        out = clips[0]
+        mode, i = f'unfiltered passthrough', None
+
+        if scale_value(f[0].props.OrigDiff, 32, 8) > thr[2][0] \
+            and scale_value(f[1].props.YNextDiff, 32, 8) > thr[2][1]:
+            out = clips[3]
+            mode, i = 'strong deblocking', 2
+        elif scale_value(f[0].props.OrigDiff, 32, 8) > thr[1][0] \
+            and scale_value(f[1].props.YNextDiff, 32, 8) > thr[1][1]:
+            out = clips[2]
+            mode, i = 'medium deblocking', 1
+        elif scale_value(f[0].props.OrigDiff, 32, 8) > thr[0][0] \
+            and scale_value(f[1].props.YNextDiff, 32, 8) > thr[0][1]:
+            out = clips[1]
+            mode, i = 'weak deblocking', 0
+
+        if debug:
+            if i is not None:
+                print(f'Frame {n}: {mode} / OrigDiff: {scale_value(f[0].props.OrigDiff, 32, 8)} (thr: {thr[i][0]}) ' \
+                    + f'/ YNextDiff: {scale_value(f[1].props.YNextDiff, 32, 8)} (thr: {thr[i][1]})')
+            else:
+                print(f'Frame {n}: {mode} / OrigDiff: {scale_value(f[0].props.OrigDiff, 32, 8)}' \
+                    + f'/ YNextDiff: {scale_value(f[1].props.YNextDiff, 32, 8)}')
+        return out
+
+    bits = get_depth(clip)
+    fmt = clip.format.id
+
+    if not clip.format.color_family == vs.RGB:
+        clip = depth(clip, 32).std.SetFrameProp('_Matrix', intval=matrix)
+        clip = core.resize.Bicubic(clip, format=vs.RGBS)
+
+    maxvalue = (1 << clip.format.bits_per_sample) - 1  # type:ignore[union-attr]
+    orig = core.std.Prewitt(clip)
+    orig = core.std.Expr(orig, f"x {edgevalue} >= {maxvalue} x ?")
+    orig_d = orig.rgsf.RemoveGrain(4).rgsf.RemoveGrain(4)
+
+    difforig = core.std.PlaneStats(orig, orig_d, prop='Orig')
+    diffnext = core.std.PlaneStats(clip, clip.std.DeleteFrames([0]), prop='YNext')
+
+    db_weak = DPIR(clip, strength=strength[0], task='deblock', **args)
+    db_med = DPIR(clip, strength=strength[1], task='deblock', **args)
+    db_str = DPIR(clip, strength=strength[2], task='deblock', **args)
+    db_clips = [clip, db_weak, db_med, db_str]
+
+    debl = core.std.FrameEval(clip, partial(eval_db, clips=db_clips), prop_src=[difforig, diffnext])
+
+    rsmpl = core.resize.Bicubic(debl, format=fmt, matrix=matrix)
+    return depth(rsmpl, bits)
