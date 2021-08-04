@@ -126,19 +126,19 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     assert clip.format
 
-    def _eval_db(n: int, f: List[vs.VideoFrame]) -> vs.VideoNode:
+    def _eval_db(n: int, f: List[vs.VideoFrame]) -> vs.VideoFrame:
         mode, i = 'unfiltered passthrough', None
 
-        OrigDiff, YNextDiff = cast(float, f[1].props.OrigDiff), cast(float, f[2].props.YNextDiff)
+        orig_diff, y_next_diff = cast(float, f[1].props['OrigDiff']), cast(float, f[2].props['YNextDiff'])
 
         if f[0].props['_PictType'] == b'I':
-            YNextDiff = (YNextDiff + OrigDiff) / 2
+            y_next_diff = (y_next_diff + orig_diff) / 2
 
-        if OrigDiff > thrs[2][0] and YNextDiff > thrs[2][1]:
+        if orig_diff > thrs_scaled[2][0] and y_next_diff > thrs_scaled[2][1]:
             mode, i = 'strong deblocking', 2
-        elif OrigDiff > thrs[1][0] and YNextDiff > thrs[1][1]:
+        elif orig_diff > thrs_scaled[1][0] and y_next_diff > thrs_scaled[1][1]:
             mode, i = 'medium deblocking', 1
-        elif OrigDiff > thrs[0][0] and YNextDiff > thrs[0][1]:
+        elif orig_diff > thrs_scaled[0][0] and y_next_diff > thrs_scaled[0][1]:
             mode, i = 'weak deblocking', 0
         else:
             if debug:
@@ -146,7 +146,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
             return f[0]
 
         if debug:
-            print_debug(n, f, mode, thrs[i])
+            print_debug(n, f, mode, thrs_scaled[i])
 
         img_L = dpir.frame_to_tensor(f[0])
         img_L = torch.cat((img_L, noise_level_maps[i]), dim=1)
@@ -168,14 +168,13 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     maxvalue = (1 << original_format.bits_per_sample) - 1
     orig = core.std.Prewitt(clip)
     orig = core.std.Expr(orig, f"x {edgevalue} >= {maxvalue} x ?")
-    orig_d = orig.rgsf.RemoveGrain(2) \
-        .std.Convolution(matrix=[1, 2, 1, 2, 4, 2, 1, 2, 1])
+    orig_d = orig.rgsf.RemoveGrain(2).std.Convolution(matrix=[1, 2, 1, 2, 4, 2, 1, 2, 1])
 
     difforig = core.std.PlaneStats(orig_d, orig, prop='Orig')
     diffnext = core.std.PlaneStats(orig, orig_d.std.DeleteFrames([0]), prop='YNext')
-    
+
     torch_args = (1, 1, clip.height, clip.width)
-    
+
     noise_level_maps = [torch.ones(*torch_args).mul_(torch.FloatTensor([s / 100])).float() for s in strength]
 
     device = torch.device(device_type, device_index)
@@ -192,16 +191,15 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     models = [dpir_model.eval().to(device) for _ in range(3)]
 
-    thrs = [[x / 219 for x in y] for y in thrs]
+    thrs_scaled = [[x / 219 for x in y] for y in thrs]
 
     deblock = core.std.ModifyFrame(clip, [clip, difforig, diffnext], _eval_db)
 
     return core.resize.Bicubic(deblock, format=original_format.id, matrix=matrix)
 
 
-def print_debug(n: int, f: List[vs.VideoFrame], mode: str, thrs: List[Tuple[int, int]] = None):
+def print_debug(n: int, f: List[vs.VideoFrame], mode: str, thrs: Tuple[int, int] = None):
     first_thr, second_thr = (f" (thrs: {thrs[0]})", f" (thrs: {thrs[1]})") if thrs is not None else ('', '')
-    print(
-        f'Frame {n}: {mode} / OrigDiff: {f[1].props.OrigDiff}' +
-        first_thr + f'/ YNextDiff: {f[2].props.YNextDiff}' + second_thr
-    )
+    debug = f'Frame {n}: {mode} / OrigDiff: {f[1].props.OrigDiff}'
+    debug += first_thr + f'/ YNextDiff: {f[2].props.YNextDiff}' + second_thr
+    print(debug)
