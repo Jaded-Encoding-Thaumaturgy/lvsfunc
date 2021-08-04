@@ -1,12 +1,12 @@
 """
     Denoising/Deblocking functions.
 """
-from functools import partial
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Tuple, Union, cast, Literal
 
+import os.path as path
 import vapoursynth as vs
 import vsutil
-from vsutil import depth, get_depth, scale_value
+from vsutil import depth
 
 from .types import Matrix
 
@@ -49,13 +49,13 @@ def bm3d(clip: vs.VideoNode, sigma: Union[float, List[float]] = 0.75,
     def to_fullgray(clip: vs.VideoNode) -> vs.VideoNode:
         return vsutil.get_y(clip).resize.Point(format=vs.GRAYS, range_in=vsutil.Range.LIMITED, range=vsutil.Range.FULL)
 
-    sigmal = [sigma] * 3 if not isinstance(sigma, list) else sigma + [sigma[-1]]*(3-len(sigma))
+    sigmal = [sigma] * 3 if not isinstance(sigma, list) else sigma + [sigma[-1]] * (3 - len(sigma))
     sigmal = [sigmal[0], 0, 0] if is_gray else sigmal
     is_gray = True if sigmal[1] == 0 and sigmal[2] == 0 else is_gray
     if len(sigmal) != 3:
         raise ValueError("bm3d: 'invalid number of sigma parameters supplied'")
     radiusl = [0, 0] if radius is None else [radius] * 2 if not isinstance(radius, list) \
-        else radius + [radius[-1]]*(2-len(radius))
+        else radius + [radius[-1]] * (2 - len(radius))
     if len(radiusl) != 2:
         raise ValueError("bm3d: 'invalid number or radius parameters supplied'")
 
@@ -95,7 +95,8 @@ def bm3d(clip: vs.VideoNode, sigma: Union[float, List[float]] = 0.75,
 def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strength: Tuple[int, int, int] = (30, 50, 75),
                 thrs: List[Tuple[float, float]] = [(2.0, 1.0), (3.0, 3.25), (5.0, 7.5)],
-                matrix: Matrix = Matrix.BT709, debug: bool = False, **kwargs: Any) -> vs.VideoNode:
+                matrix: Matrix = Matrix.BT709, debug: bool = False,
+                device_type: Literal['cpu', 'cuda'] = 'cuda', device_index: int = 0, **kwargs: Any) -> vs.VideoNode:
     """
     A rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
 
@@ -112,61 +113,87 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     :param clip:            Input clip
     :param edgevalue:       Remove edges from the edgemask that exceed this threshold
     :param strength:        DPIR strength values (higher is stronger)
-    :param thr:             Invididual thresholds, written as a List of (OrigDiff, NextFrameDiff)
+    :param thrs:             Invididual thresholds, written as a List of (OrigDiff, NextFrameDiff)
     :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info
+    :param device_type:     The device to use, can either be 'cpu' or 'cuda' if you have it.
+    :param device_index:    The 'device_index' + 1º device of type 'device_type' in the system.
     :param debug:           Print calculations and how strong the denoising is.
 
     :return:                Deblocked clip
     """
-    from vsdpir import DPIR
+    import torch
+    import vsdpir as dpir
 
     assert clip.format
 
-    def _eval_db(n: int, f: List[vs.VideoFrame], clips: List[vs.VideoNode]) -> vs.VideoNode:
-        out = clips[0]
-        mode, i, st = 'unfiltered passthrough', None, None
-        orig_diff = scale_value(cast(float, f[0].props['OrigDiff']), 32, 8)
-        y_next_diff = scale_value(cast(float, f[1].props['YNextDiff']), 32, 8)
+    def _eval_db(n: int, f: List[vs.VideoFrame]) -> vs.VideoNode:
+        mode, i = 'unfiltered passthrough', None
 
-        if orig_diff > thrs[2][0] and y_next_diff > thrs[2][1]:
-            out = clips[3]
-            mode, i, st = 'strong deblocking', 2, strength[2]
-        elif orig_diff > thrs[1][0] and y_next_diff > thrs[1][1]:
-            out = clips[2]
-            mode, i, st = 'medium deblocking', 1, strength[1]
-        elif orig_diff > thrs[0][0] and y_next_diff > thrs[0][1]:
-            out = clips[1]
-            mode, i, st = 'weak deblocking', 0, strength[0]
+        OrigDiff, YNextDiff = cast(float, f[1].props.OrigDiff), cast(float, f[2].props.YNextDiff)
+
+        if f[0].props['_PictType'] == b'I':
+            YNextDiff = (YNextDiff + OrigDiff) / 2
+
+        if OrigDiff > thrs[2][0] and YNextDiff > thrs[2][1]:
+            mode, i = 'strong deblocking', 2
+        elif OrigDiff > thrs[1][0] and YNextDiff > thrs[1][1]:
+            mode, i = 'medium deblocking', 1
+        elif OrigDiff > thrs[0][0] and YNextDiff > thrs[0][1]:
+            mode, i = 'weak deblocking', 0
+        else:
+            if debug:
+                print_debug(n, f, mode)
+            return f[0]
 
         if debug:
-            if i is not None:
-                print(f'Frame {n}: {mode} (strength: {st}) / OrigDiff: {orig_diff} (thr: {thrs[i][0]}) '
-                      f'/ YNextDiff: {y_next_diff} (thr: {thrs[i][1]})')
-            else:
-                print(f'Frame {n}: {mode} / OrigDiff: {orig_diff} / YNextDiff: {y_next_diff}')
-        return out
+            print_debug(n, f, mode, thrs[i])
 
-    bits = get_depth(clip)
-    fmt = clip.format.id
+        img_L = dpir.frame_to_tensor(f[0])
+        img_L = torch.cat((img_L, noise_level_maps[i]), dim=1)
+        img_L = img_L.to(device)
+
+        if img_L.shape[2] // 8 == 0 and img_L.shape[3] // 8 == 0:
+            img_E = models[i](img_L)
+        else:
+            img_E = dpir.utils_model.test_mode(models[i], img_L, refield=64, mode=5)
+
+        return dpir.tensor_to_frame(img_E, f[0])
+
+    original_format = clip.format
 
     if not clip.format.color_family == vs.RGB:
         clip = depth(clip, 32).std.SetFrameProp('_Matrix', intval=matrix)
         clip = core.resize.Bicubic(clip, format=vs.RGBS)
 
-    maxvalue = (1 << clip.format.bits_per_sample) - 1  # type:ignore[union-attr]
+    maxvalue = (1 << original_format.bits_per_sample) - 1
     orig = core.std.Prewitt(clip)
     orig = core.std.Expr(orig, f"x {edgevalue} >= {maxvalue} x ?")
-    orig_d = orig.rgsf.RemoveGrain(4).rgsf.RemoveGrain(4)
+    orig_d = orig.rgsf.RemoveGrain(2) \
+        .std.Convolution(matrix=[1, 2, 1, 2, 4, 2, 1, 2, 1])
 
-    difforig = core.std.PlaneStats(orig, orig_d, prop='Orig')
-    diffnext = core.std.PlaneStats(clip, clip.std.DeleteFrames([0]), prop='YNext')
+    difforig = core.std.PlaneStats(orig_d, orig, prop='Orig')
+    diffnext = core.std.PlaneStats(orig, orig_d.std.DeleteFrames([0]), prop='YNext')
 
-    db_weak = DPIR(clip, strength=strength[0], task='deblock', **kwargs)
-    db_med = DPIR(clip, strength=strength[1], task='deblock', **kwargs)
-    db_str = DPIR(clip, strength=strength[2], task='deblock', **kwargs)
-    db_clips = [clip, db_weak, db_med, db_str]
+    noise_level_maps = [torch.ones((1, 1, clip.height, clip.width)).mul_(torch.FloatTensor([s / 100])).float() for s in strength]
 
-    debl = core.std.FrameEval(clip, partial(_eval_db, clips=db_clips), prop_src=[difforig, diffnext])
+    device = torch.device(device_type, device_index)
 
-    rsmpl = core.resize.Bicubic(debl, format=fmt, matrix=matrix)
-    return depth(rsmpl, bits)
+    dpir_model_path = path.join(path.dirname(dpir.__file__), 'drunet_deblocking_color.pth')
+    dpir_model = dpir.network_unet.UNetRes(in_nc=4, out_nc=3, nc=[64, 128, 256, 512], nb=4, act_mode='R', downsample_mode='strideconv', upsample_mode='convtranspose')
+    dpir_model.load_state_dict(torch.load(dpir_model_path), strict=True)
+
+    for _, v in dpir_model.named_parameters():
+        v.requires_grad = False
+
+    models = [dpir_model.eval().to(device) for _ in range(3)]
+
+    thrs = [[x / 219 for x in y] for y in thrs]
+
+    deblock = core.std.ModifyFrame(clip, [clip, difforig, diffnext], _eval_db)
+
+    return core.resize.Bicubic(deblock, format=original_format.id, matrix=matrix)
+
+
+def print_debug(n: int, f: List[vs.VideoFrame], mode: str, thrs: List[Tuple[int, int]] = None):
+    first_thr, second_thr = (f" (thrs: {thrs[0]})", f" (thrs: {thrs[1]})") if thrs is not None else ('', '')
+    print(f'Frame {n}: {mode} / OrigDiff: {f[1].props.OrigDiff}' + first_thr + f'/ YNextDiff: {f[2].props.YNextDiff}' + second_thr)
