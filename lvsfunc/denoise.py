@@ -1,7 +1,7 @@
 """
     Denoising/Deblocking functions.
 """
-from typing import Any, Dict, List, Optional, Tuple, Union, cast, Literal
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import os.path as path
 import vapoursynth as vs
@@ -96,7 +96,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strength: Tuple[int, int, int] = (30, 50, 75),
                 thrs: List[Tuple[float, float]] = [(2.0, 1.0), (3.0, 3.25), (5.0, 7.5)],
                 matrix: Matrix = Matrix.BT709, debug: bool = False,
-                device_type: Literal['cpu', 'cuda'] = 'cuda', device_index: int = 0, **kwargs: Any) -> vs.VideoNode:
+                CUDA: bool = True, device_index: int = 0) -> vs.VideoNode:
     """
     A rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
 
@@ -115,8 +115,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     :param strength:        DPIR strength values (higher is stronger)
     :param thrs:             Invididual thresholds, written as a List of (OrigDiff, NextFrameDiff)
     :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info
-    :param device_type:     The device to use, can either be 'cpu' or 'cuda' if you have it.
-    :param device_index:    The 'device_index' + 1º device of type 'device_type' in the system.
+    :param CUDA:            The device to use, True to be cuda (if you have it), else uses cpu.
+    :param device_index:    The 'device_index' + 1º device of type device type in the system.
     :param debug:           Print calculations and how strong the denoising is.
 
     :return:                Deblocked clip
@@ -177,7 +177,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     noise_level_maps = [torch.ones(*torch_args).mul_(torch.FloatTensor([s / 100])).float() for s in strength]
 
-    device = torch.device(device_type, device_index)
+    device = torch.device('cuda' if CUDA else 'cpu', device_index)
 
     dpir_model_path = path.join(path.dirname(dpir.__file__), 'drunet_deblocking_color.pth')
     dpir_model = dpir.network_unet.UNetRes(
@@ -198,8 +198,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     return core.resize.Bicubic(deblock, format=original_format.id, matrix=matrix)
 
 
-def print_debug(n: int, f: List[vs.VideoFrame], mode: str, thrs: Optional[Tuple[int, int]] = None) -> None:
+def print_debug(n: int, f: List[vs.VideoFrame], mode: str, thrs: Optional[List[int, int]] = None) -> None:
     first_thr, second_thr = (f" (thrs: {thrs[0]})", f" (thrs: {thrs[1]})") if thrs is not None else ('', '')
-    debug = f'Frame {n}: {mode} / OrigDiff: {f[1].props.OrigDiff}'
-    debug += first_thr + f'/ YNextDiff: {f[2].props.YNextDiff}' + second_thr
+    debug = f"Frame {n}: {mode} / OrigDiff: {f[1].props['OrigDiff']}"
+    debug += first_thr + f"/ YNextDiff: {f[2].props['YNextDiff']}" + second_thr
     print(debug)
