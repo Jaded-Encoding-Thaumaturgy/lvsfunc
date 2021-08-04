@@ -121,8 +121,10 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     :return:                Deblocked clip
     """
-    import torch
+    import torch  # type: ignore
     import vsdpir as dpir
+    from vsdpir.utils_model import test_mode
+    from vsdpir.network_unet import UNetRes
 
     assert clip.format
 
@@ -155,7 +157,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
         if img_L.shape[2] // 8 == 0 and img_L.shape[3] // 8 == 0:
             img_E = models[i](img_L)
         else:
-            img_E = dpir.utils_model.test_mode(models[i], img_L, refield=64, mode=5)
+            img_E = test_mode(models[i], img_L, refield=64, mode=5)
 
         return dpir.tensor_to_frame(img_E, f[0])
 
@@ -180,7 +182,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     device = torch.device('cuda' if CUDA else 'cpu', device_index)
 
     dpir_model_path = path.join(path.dirname(dpir.__file__), 'drunet_deblocking_color.pth')
-    dpir_model = dpir.network_unet.UNetRes(
+    dpir_model = UNetRes(
         in_nc=4, out_nc=3, nc=[64, 128, 256, 512], nb=4, act_mode='R',
         downsample_mode='strideconv', upsample_mode='convtranspose'
     )
@@ -198,7 +200,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     return core.resize.Bicubic(deblock, format=original_format.id, matrix=matrix)
 
 
-def print_debug(n: int, f: List[vs.VideoFrame], mode: str, thrs: Optional[List[int, int]] = None) -> None:
+def print_debug(n: int, f: List[vs.VideoFrame], mode: str, thrs: Optional[List[int]] = None) -> None:
     first_thr, second_thr = (f" (thrs: {thrs[0]})", f" (thrs: {thrs[1]})") if thrs is not None else ('', '')
     debug = f"Frame {n}: {mode} / OrigDiff: {f[1].props['OrigDiff']}"
     debug += first_thr + f"/ YNextDiff: {f[2].props['YNextDiff']}" + second_thr
