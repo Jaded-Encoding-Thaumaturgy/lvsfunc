@@ -1,10 +1,12 @@
 """
     Denoising/Deblocking functions.
 """
-from typing import Any, Dict, List, Optional, Tuple, Union
+from functools import partial
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import vapoursynth as vs
 import vsutil
+from vsutil import depth, get_depth, scale_value
 
 from .types import Matrix
 
@@ -116,10 +118,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     :return:                Deblocked clip
     """
-    from functools import partial
-
     from vsdpir import DPIR
-    from vsutil import depth, get_depth, scale_value
 
     assert clip.format
 
