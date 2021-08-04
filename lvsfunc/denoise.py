@@ -173,13 +173,18 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     difforig = core.std.PlaneStats(orig_d, orig, prop='Orig')
     diffnext = core.std.PlaneStats(orig, orig_d.std.DeleteFrames([0]), prop='YNext')
-
-    noise_level_maps = [torch.ones((1, 1, clip.height, clip.width)).mul_(torch.FloatTensor([s / 100])).float() for s in strength]
+    
+    torch_args = (1, 1, clip.height, clip.width)
+    
+    noise_level_maps = [torch.ones(*torch_args).mul_(torch.FloatTensor([s / 100])).float() for s in strength]
 
     device = torch.device(device_type, device_index)
 
     dpir_model_path = path.join(path.dirname(dpir.__file__), 'drunet_deblocking_color.pth')
-    dpir_model = dpir.network_unet.UNetRes(in_nc=4, out_nc=3, nc=[64, 128, 256, 512], nb=4, act_mode='R', downsample_mode='strideconv', upsample_mode='convtranspose')
+    dpir_model = dpir.network_unet.UNetRes(
+        in_nc=4, out_nc=3, nc=[64, 128, 256, 512], nb=4, act_mode='R',
+        downsample_mode='strideconv', upsample_mode='convtranspose'
+    )
     dpir_model.load_state_dict(torch.load(dpir_model_path), strict=True)
 
     for _, v in dpir_model.named_parameters():
@@ -196,4 +201,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
 def print_debug(n: int, f: List[vs.VideoFrame], mode: str, thrs: List[Tuple[int, int]] = None):
     first_thr, second_thr = (f" (thrs: {thrs[0]})", f" (thrs: {thrs[1]})") if thrs is not None else ('', '')
-    print(f'Frame {n}: {mode} / OrigDiff: {f[1].props.OrigDiff}' + first_thr + f'/ YNextDiff: {f[2].props.YNextDiff}' + second_thr)
+    print(
+        f'Frame {n}: {mode} / OrigDiff: {f[1].props.OrigDiff}' +
+        first_thr + f'/ YNextDiff: {f[2].props.YNextDiff}' + second_thr
+    )
