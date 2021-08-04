@@ -198,7 +198,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     return core.resize.Bicubic(deblock, format=original_format.id, matrix=matrix)
 
 
-def print_debug(n: int, f: List[vs.VideoFrame], mode: str, thrs: Tuple[int, int] = None):
+def print_debug(n: int, f: List[vs.VideoFrame], mode: str, thrs: Optional[Tuple[int, int]] = None) -> None:
     first_thr, second_thr = (f" (thrs: {thrs[0]})", f" (thrs: {thrs[1]})") if thrs is not None else ('', '')
     debug = f'Frame {n}: {mode} / OrigDiff: {f[1].props.OrigDiff}'
     debug += first_thr + f'/ YNextDiff: {f[2].props.YNextDiff}' + second_thr
