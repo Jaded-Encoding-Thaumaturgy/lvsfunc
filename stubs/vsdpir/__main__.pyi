@@ -1,0 +1,3 @@
+from typing import Any
+
+def download_model(url: Any) -> None: ...
