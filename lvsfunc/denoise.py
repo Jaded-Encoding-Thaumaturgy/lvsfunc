@@ -94,8 +94,8 @@ def bm3d(clip: vs.VideoNode, sigma: Union[float, List[float]] = 0.75,
 
 def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strength: Tuple[int, int, int] = (30, 50, 75),
-                thr: List[Tuple[float, float]] = [(2.0, 1.0), (3.0, 3.25), (5.0, 7.5)],
-                matrix: Matrix = Matrix.BT709, debug: bool = False, **args: Any) -> vs.VideoNode:
+                thrs: List[Tuple[float, float]] = [(2.0, 1.0), (3.0, 3.25), (5.0, 7.5)],
+                matrix: Matrix = Matrix.BT709, debug: bool = False, **kwargs: Any) -> vs.VideoNode:
     """
     A rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
 
@@ -122,30 +122,27 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     assert clip.format
 
-    def eval_db(n: int, f: List[vs.VideoFrame], clips: List[vs.VideoNode]) -> vs.VideoNode:
+    def _eval_db(n: int, f: List[vs.VideoFrame], clips: List[vs.VideoNode]) -> vs.VideoNode:
         out = clips[0]
-        mode, i = f'unfiltered passthrough', None
+        mode, i = 'unfiltered passthrough', None
+        orig_diff = scale_value(cast(float, f[0].props['OrigDiff']), 32, 8)
+        y_next_diff = scale_value(cast(float, f[1].props['YNextDiff']), 32, 8)
 
-        if scale_value(f[0].props.OrigDiff, 32, 8) > thr[2][0] \
-            and scale_value(f[1].props.YNextDiff, 32, 8) > thr[2][1]:
+        if orig_diff > thrs[2][0] and y_next_diff > thrs[2][1]:
             out = clips[3]
             mode, i = 'strong deblocking', 2
-        elif scale_value(f[0].props.OrigDiff, 32, 8) > thr[1][0] \
-            and scale_value(f[1].props.YNextDiff, 32, 8) > thr[1][1]:
+        elif orig_diff > thrs[1][0] and y_next_diff > thrs[1][1]:
             out = clips[2]
             mode, i = 'medium deblocking', 1
-        elif scale_value(f[0].props.OrigDiff, 32, 8) > thr[0][0] \
-            and scale_value(f[1].props.YNextDiff, 32, 8) > thr[0][1]:
+        elif orig_diff > thrs[0][0] and y_next_diff > thrs[0][1]:
             out = clips[1]
             mode, i = 'weak deblocking', 0
 
         if debug:
             if i is not None:
-                print(f'Frame {n}: {mode} / OrigDiff: {scale_value(f[0].props.OrigDiff, 32, 8)} (thr: {thr[i][0]}) ' \
-                    + f'/ YNextDiff: {scale_value(f[1].props.YNextDiff, 32, 8)} (thr: {thr[i][1]})')
+                print(f'Frame {n}: {mode} / OrigDiff: {orig_diff} (thr: {thrs[i][0]}) / YNextDiff: {y_next_diff} (thr: {thrs[i][1]})')
             else:
-                print(f'Frame {n}: {mode} / OrigDiff: {scale_value(f[0].props.OrigDiff, 32, 8)}' \
-                    + f'/ YNextDiff: {scale_value(f[1].props.YNextDiff, 32, 8)}')
+                print(f'Frame {n}: {mode} / OrigDiff: {orig_diff} / YNextDiff: {y_next_diff}')
         return out
 
     bits = get_depth(clip)
@@ -163,12 +160,12 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     difforig = core.std.PlaneStats(orig, orig_d, prop='Orig')
     diffnext = core.std.PlaneStats(clip, clip.std.DeleteFrames([0]), prop='YNext')
 
-    db_weak = DPIR(clip, strength=strength[0], task='deblock', **args)
-    db_med = DPIR(clip, strength=strength[1], task='deblock', **args)
-    db_str = DPIR(clip, strength=strength[2], task='deblock', **args)
+    db_weak = DPIR(clip, strength=strength[0], task='deblock', **kwargs)
+    db_med = DPIR(clip, strength=strength[1], task='deblock', **kwargs)
+    db_str = DPIR(clip, strength=strength[2], task='deblock', **kwargs)
     db_clips = [clip, db_weak, db_med, db_str]
 
-    debl = core.std.FrameEval(clip, partial(eval_db, clips=db_clips), prop_src=[difforig, diffnext])
+    debl = core.std.FrameEval(clip, partial(_eval_db, clips=db_clips), prop_src=[difforig, diffnext])
 
     rsmpl = core.resize.Bicubic(debl, format=fmt, matrix=matrix)
     return depth(rsmpl, bits)
