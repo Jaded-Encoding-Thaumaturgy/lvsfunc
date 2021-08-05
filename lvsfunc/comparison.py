@@ -487,7 +487,7 @@ def diff(*clips: vs.VideoNode,
          return_array: bool = False,
          return_frames: bool = False,
          return_ranges: bool = False,
-         exclude_ranges: List[Tuple(int,int)] = None,
+         exclude_ranges: List[Tuple[int, int]] = None,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a, b: core.std.MakeDiff(a, b),
          **namedclips: vs.VideoNode) -> Union[vs.VideoNode, Tuple[vs.VideoNode, List[int]]]:
     """
