@@ -6,9 +6,10 @@ from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import vapoursynth as vs
 import vsutil
-from vsutil import depth, get_depth, scale_value
+from vsutil import depth, scale_value
 
 from .types import Matrix
+from .util import get_prop
 
 core = vs.core
 
@@ -95,7 +96,9 @@ def bm3d(clip: vs.VideoNode, sigma: Union[float, List[float]] = 0.75,
 def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strength: Tuple[int, int, int] = (30, 50, 75),
                 thrs: List[Tuple[float, float]] = [(2.0, 1.0), (3.0, 3.25), (5.0, 7.5)],
-                matrix: Matrix = Matrix.BT709, debug: bool = False, **kwargs: Any) -> vs.VideoNode:
+                matrix: Optional[Matrix] = None,
+                cuda: bool = True, device_index: int = 0,
+                debug: bool = False) -> vs.VideoNode:
     """
     A rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
 
@@ -112,9 +115,12 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     :param clip:            Input clip
     :param edgevalue:       Remove edges from the edgemask that exceed this threshold
     :param strength:        DPIR strength values (higher is stronger)
-    :param thr:             Invididual thresholds, written as a List of (OrigDiff, NextFrameDiff)
-    :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info
-    :param debug:           Print calculations and how strong the denoising is.
+    :param thrs:            Invididual thresholds, written as a List of (OrigDiff, NextFrameDiff)
+    :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
+                            If `None`, gets matrix from the "_Matrix" prop of the clip
+    :param cuda:            Device type used for deblocking. Uses CUDA if True, else CPU
+    :param device_index:    The 'device_index' + 1º device of type device type in the system
+    :param debug:           Print calculations and how strong the denoising is
 
     :return:                Deblocked clip
     """
@@ -127,6 +133,10 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
         mode, i, st = 'unfiltered passthrough', None, None
         orig_diff = scale_value(cast(float, f[0].props['OrigDiff']), 32, 8)
         y_next_diff = scale_value(cast(float, f[1].props['YNextDiff']), 32, 8)
+        f_type = str(f[0].props['_PictType'])[2:3]  # This is very dumb it fuck bytes
+
+        if f_type == 'I':
+            y_next_diff = (y_next_diff + orig_diff) / 2
 
         if orig_diff > thrs[2][0] and y_next_diff > thrs[2][1]:
             out = clips[3]
@@ -140,33 +150,35 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
         if debug:
             if i is not None:
-                print(f'Frame {n}: {mode} (strength: {st}) / OrigDiff: {orig_diff} (thr: {thrs[i][0]}) '
+                print(f'Frame {n} ({f_type}): {mode} (strength: {st}) '
+                      f'/ OrigDiff: {orig_diff} (thr: {thrs[i][0]}) '
                       f'/ YNextDiff: {y_next_diff} (thr: {thrs[i][1]})')
             else:
-                print(f'Frame {n}: {mode} / OrigDiff: {orig_diff} / YNextDiff: {y_next_diff}')
+                print(f'Frame {n} ({f_type}): {mode} / OrigDiff: {orig_diff} / YNextDiff: {y_next_diff}')
         return out
 
-    bits = get_depth(clip)
-    fmt = clip.format.id
+    original_format = clip.format
+
+    if not matrix:
+        matrix = cast(Matrix, get_prop(clip.get_frame(0), '_Matrix', int))
 
     if not clip.format.color_family == vs.RGB:
         clip = depth(clip, 32).std.SetFrameProp('_Matrix', intval=matrix)
         clip = core.resize.Bicubic(clip, format=vs.RGBS)
 
-    maxvalue = (1 << clip.format.bits_per_sample) - 1  # type:ignore[union-attr]
+    maxvalue = (1 << original_format.bits_per_sample) - 1
     orig = core.std.Prewitt(clip)
     orig = core.std.Expr(orig, f"x {edgevalue} >= {maxvalue} x ?")
-    orig_d = orig.rgsf.RemoveGrain(4).rgsf.RemoveGrain(4)
+    orig_d = orig.rgsf.RemoveGrain(4).std.Convolution(matrix=[1, 2, 1, 2, 4, 2, 1, 2, 1])
 
     difforig = core.std.PlaneStats(orig, orig_d, prop='Orig')
     diffnext = core.std.PlaneStats(clip, clip.std.DeleteFrames([0]), prop='YNext')
 
-    db_weak = DPIR(clip, strength=strength[0], task='deblock', **kwargs)
-    db_med = DPIR(clip, strength=strength[1], task='deblock', **kwargs)
-    db_str = DPIR(clip, strength=strength[2], task='deblock', **kwargs)
+    db_weak = DPIR(clip, strength=strength[0], task='deblock')
+    db_med = DPIR(clip, strength=strength[1], task='deblock')
+    db_str = DPIR(clip, strength=strength[2], task='deblock')
     db_clips = [clip, db_weak, db_med, db_str]
 
     debl = core.std.FrameEval(clip, partial(_eval_db, clips=db_clips), prop_src=[difforig, diffnext])
 
-    rsmpl = core.resize.Bicubic(debl, format=fmt, matrix=matrix)
-    return depth(rsmpl, bits)
+    return core.resize.Bicubic(debl, format=original_format.id, matrix=matrix)
