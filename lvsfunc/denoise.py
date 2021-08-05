@@ -157,6 +157,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 print(f'Frame {n} ({f_type}): {mode} / OrigDiff: {orig_diff} / YNextDiff: {y_next_diff}')
         return out
 
+    dpir_args: Dict[str, Any] = {'device_type': cuda, 'device_index': device_index}
+
     original_format = clip.format
 
     if not matrix:
@@ -174,9 +176,9 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     difforig = core.std.PlaneStats(orig, orig_d, prop='Orig')
     diffnext = core.std.PlaneStats(clip, clip.std.DeleteFrames([0]), prop='YNext')
 
-    db_weak = DPIR(clip, strength=strength[0], task='deblock')
-    db_med = DPIR(clip, strength=strength[1], task='deblock')
-    db_str = DPIR(clip, strength=strength[2], task='deblock')
+    db_weak = DPIR(clip, strength=strength[0], task='deblock', **dpir_args)
+    db_med = DPIR(clip, strength=strength[1], task='deblock', **dpir_args)
+    db_str = DPIR(clip, strength=strength[2], task='deblock', **dpir_args)
     db_clips = [clip, db_weak, db_med, db_str]
 
     debl = core.std.FrameEval(clip, partial(_eval_db, clips=db_clips), prop_src=[difforig, diffnext])
