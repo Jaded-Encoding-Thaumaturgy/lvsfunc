@@ -69,7 +69,7 @@ def _select_descale(n: int, f: Union[vs.VideoFrame, List[vs.VideoFrame]],
                     clips_by_resolution: Dict[int, ScaleAttempt]
                     ) -> vs.VideoNode:
     if type(f) is vs.VideoFrame:
-        f = [cast(vs.VideoFrame, f)]
+        f = [f]
     f = cast(List[vs.VideoFrame], f)
     best_res = max(f, key=lambda frame:
                    math.log(clip.height - util.get_prop(frame, "descaleResolution", int), 2)
@@ -207,12 +207,12 @@ def descale(clip: vs.VideoNode,
         raise ValueError("descale: 'Variable-format clips not supported'")
 
     if type(height) is int:
-        height = [cast(int, height)]
+        height = [height]
 
     height = cast(List[int], height)
 
     if type(width) is int:
-        width = [cast(int, width)]
+        width = [width]
     elif width is None:
         width = [get_w(h, aspect_ratio=clip.width/clip.height) for h in height]
 
