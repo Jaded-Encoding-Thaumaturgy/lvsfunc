@@ -133,7 +133,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
         mode, i, st = 'unfiltered passthrough', None, None
         orig_diff = scale_value(cast(float, f[0].props['OrigDiff']), 32, 8)
         y_next_diff = scale_value(cast(float, f[1].props['YNextDiff']), 32, 8)
-        f_type = str(f[0].props['_PictType'])[2:3]  # This is very dumb it fuck bytes
+        f_type = cast(bytes, f[0].props['_PictType']).decode('utf-8')
 
         if f_type == 'I':
             y_next_diff = (y_next_diff + orig_diff) / 2
@@ -157,7 +157,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 print(f'Frame {n} ({f_type}): {mode} / OrigDiff: {orig_diff} / YNextDiff: {y_next_diff}')
         return out
 
-    dpir_args: Dict[str, Any] = {'device_type': cuda, 'device_index': device_index}
+    dpir_args: Dict[str, Any] = {'device_type': 'cuda' if cuda else 'cpu', 'device_index': device_index}
 
     original_format = clip.format
 
