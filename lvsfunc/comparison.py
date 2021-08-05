@@ -486,6 +486,8 @@ def diff(*clips: vs.VideoNode,
          height: int = 288,
          return_array: bool = False,
          return_frames: bool = False,
+         return_ranges: bool = False,
+         exclude_ranges: List[Tuple(int,int)] = None,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a, b: core.std.MakeDiff(a, b),
          **namedclips: vs.VideoNode) -> Union[vs.VideoNode, Tuple[vs.VideoNode, List[int]]]:
     """
@@ -515,6 +517,8 @@ def diff(*clips: vs.VideoNode,
     :param return_array:  Return frames as an interleaved comparison (using :py:class:`lvsfunc.comparison.Interleave`)
                           (Default: ``False``)
     :param return_frames: Adds `frames list` to the return. (Default: ``False``)
+    :param return_ranges: Adds `frames ranges list` to the return. Supercedes `return_frames`. (Default: ``False``)
+    :param exclude_ranges: Excludes a list of frame ranges from difference checking. (Default: ``False``)
     :param diff_func:     Function for calculating diff in PlaneStatsMin/Max mode.
                           (Default: core.std.MakeDiff)
 
@@ -522,6 +526,14 @@ def diff(*clips: vs.VideoNode,
              or a stack of both input clips on top of MakeDiff clip.
              Optionally, you can allow the function to also return a list of frames as well.
     """
+    def _to_ranges(iterable):
+        import itertools
+        iterable = sorted(set(iterable))
+        for key, group in itertools.groupby(enumerate(iterable),
+                                            lambda t: t[1] - t[0]):
+            group = list(group)
+            yield group[0][1], group[-1][1]
+
     if clips and namedclips:
         raise ValueError("diff: positional clips and named keyword clips cannot both be given")
 
@@ -570,16 +582,29 @@ def diff(*clips: vs.VideoNode,
 
     frames.sort()
 
+    if exclude_ranges is not None:
+        for e in exclude_ranges:
+            start, end = e[0],e[1]
+            for f in frames:
+                if f in range(start,end+1):
+                    frames.remove(f) 
+
     if clips:
         name_a, name_b = "Clip A", "Clip B"
     else:
         name_a, name_b = namedclips.keys()
 
+    if return_ranges:
+        frame_ranges = [r for r in _to_ranges(frames)]
+
     if return_array:
         a, b = a.text.FrameNum(9), b.text.FrameNum(9)
         comparison = Interleave({f'{name_a}': core.std.Splice([a[f] for f in frames]),
                                  f'{name_b}': core.std.Splice([b[f] for f in frames])}).clip
-        return comparison if not return_frames else (comparison, frames)
+        if return_ranges:
+            return comparison, frame_ranges
+        else:
+            return comparison if not return_frames else (comparison, frames)
 
     else:
         scaled_width = vsutil.get_w(height, only_even=False)
@@ -592,7 +617,10 @@ def diff(*clips: vs.VideoNode,
         diff = core.std.Splice([diff[f] for f in frames])
 
         comparison = Stack((diff_stack, diff), direction=Direction.VERTICAL).clip
-        return comparison if not return_frames else (comparison, frames)
+        if return_ranges:
+            return comparison, frame_ranges
+        else:
+            return comparison if not return_frames else (comparison, frames)
 
 
 def interleave(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
