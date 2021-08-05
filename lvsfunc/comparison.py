@@ -487,7 +487,7 @@ def diff(*clips: vs.VideoNode,
          return_array: bool = False,
          return_frames: bool = False,
          return_ranges: bool = False,
-         exclude_ranges: List[Tuple(int,int)] = None,
+         exclude_ranges: List[Tuple[int, int]] = None,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a, b: core.std.MakeDiff(a, b),
          **namedclips: vs.VideoNode) -> Union[vs.VideoNode, Tuple[vs.VideoNode, List[int]]]:
     """
@@ -518,7 +518,7 @@ def diff(*clips: vs.VideoNode,
                           (Default: ``False``)
     :param return_frames: Adds `frames list` to the return. (Default: ``False``)
     :param return_ranges: Adds `frames ranges list` to the return. Supercedes `return_frames`. (Default: ``False``)
-    :param exclude_ranges: Excludes a list of frame ranges from difference checking. (Default: ``False``)
+    :param exclude_ranges: Excludes a list of frame ranges from difference checking output (but not processing). (Default: ``False``)
     :param diff_func:     Function for calculating diff in PlaneStatsMin/Max mode.
                           (Default: core.std.MakeDiff)
 
@@ -584,10 +584,9 @@ def diff(*clips: vs.VideoNode,
 
     if exclude_ranges is not None:
         for e in exclude_ranges:
-            start, end = e[0],e[1]
-            for f in frames:
-                if f in range(start,end+1):
-                    frames.remove(f) 
+            start, end = e[0], e[1]+1
+            r = range(start,end)
+            frames = [f for f in list(frames) if f not in r]
 
     if clips:
         name_a, name_b = "Clip A", "Clip B"
