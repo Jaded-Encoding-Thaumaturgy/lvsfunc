@@ -95,7 +95,7 @@ def bm3d(clip: vs.VideoNode, sigma: Union[float, List[float]] = 0.75,
 
 def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strength: Tuple[int, int, int] = (30, 50, 75),
-                thrs: List[Tuple[float, float]] = [(2.0, 1.0), (3.0, 3.25), (5.0, 7.5)],
+                thrs: List[Tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7, 7)],
                 matrix: Optional[Matrix] = None,
                 cuda: bool = True, device_index: int = 0,
                 debug: bool = False) -> vs.VideoNode:
@@ -115,7 +115,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     :param clip:            Input clip
     :param edgevalue:       Remove edges from the edgemask that exceed this threshold
     :param strength:        DPIR strength values (higher is stronger)
-    :param thrs:            Invididual thresholds, written as a List of (OrigDiff, NextFrameDiff)
+    :param thrs:            Invididual thresholds, written as a List of (OrigDiff, NextFrameDiff, PrevFrameDiff)
     :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
                             If `None`, gets matrix from the "_Matrix" prop of the clip
     :param cuda:            Device type used for deblocking. Uses CUDA if True, else CPU
@@ -133,28 +133,31 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
         mode, i, st = 'unfiltered passthrough', None, None
         orig_diff = scale_value(cast(float, f[0].props['OrigDiff']), 32, 8)
         y_next_diff = scale_value(cast(float, f[1].props['YNextDiff']), 32, 8)
+        y_prev_diff = scale_value(cast(float, f[2].props['YPrevDiff']), 32, 8)
         f_type = cast(bytes, f[0].props['_PictType']).decode('utf-8')
 
         if f_type == 'I':
             y_next_diff = (y_next_diff + orig_diff) / 2
 
-        if orig_diff > thrs[2][0] and y_next_diff > thrs[2][1]:
+        if orig_diff > thrs[2][0] and y_next_diff > thrs[2][1] and y_prev_diff > thrs[2][2]:
             out = clips[3]
             mode, i, st = 'strong deblocking', 2, strength[2]
-        elif orig_diff > thrs[1][0] and y_next_diff > thrs[1][1]:
+        elif orig_diff > thrs[1][0] and y_next_diff > thrs[1][1] and y_prev_diff > thrs[1][2]:
             out = clips[2]
             mode, i, st = 'medium deblocking', 1, strength[1]
-        elif orig_diff > thrs[0][0] and y_next_diff > thrs[0][1]:
+        elif orig_diff > thrs[0][0] and y_next_diff > thrs[0][1] and y_prev_diff > thrs[0][2]:
             out = clips[1]
             mode, i, st = 'weak deblocking', 0, strength[0]
 
         if debug:
             if i is not None:
                 print(f'Frame {n} ({f_type}): {mode} (strength: {st}) '
-                      f'/ OrigDiff: {orig_diff} (thr: {thrs[i][0]}) '
-                      f'/ YNextDiff: {y_next_diff} (thr: {thrs[i][1]})')
+                      f'/ OrigDiff: {orig_diff:.6f} (thr: {thrs[i][0]}) '
+                      f'/ YNextDiff: {y_next_diff:.6f} (thr: {thrs[i][1]}) '
+                      f'/ YPrevDiff: {y_prev_diff:.6f} (thr: {thrs[i][2]})')
             else:
-                print(f'Frame {n} ({f_type}): {mode} / OrigDiff: {orig_diff} / YNextDiff: {y_next_diff}')
+                print(f'Frame {n} ({f_type}): {mode} / OrigDiff: {orig_diff:.6f} '
+                      f'/ YNextDiff: {y_next_diff:.6f} / YPrevDiff: {y_prev_diff:.6f}')
         return out
 
     dpir_args: Dict[str, Any] = {'device_type': 'cuda' if cuda else 'cpu', 'device_index': device_index}
@@ -175,12 +178,13 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     difforig = core.std.PlaneStats(orig, orig_d, prop='Orig')
     diffnext = core.std.PlaneStats(clip, clip.std.DeleteFrames([0]), prop='YNext')
+    diffprev = core.std.PlaneStats(clip, clip[0] + clip, prop='YPrev')
 
     db_weak = DPIR(clip, strength=strength[0], task='deblock', **dpir_args)
     db_med = DPIR(clip, strength=strength[1], task='deblock', **dpir_args)
     db_str = DPIR(clip, strength=strength[2], task='deblock', **dpir_args)
     db_clips = [clip, db_weak, db_med, db_str]
 
-    debl = core.std.FrameEval(clip, partial(_eval_db, clips=db_clips), prop_src=[difforig, diffnext])
+    debl = core.std.FrameEval(clip, partial(_eval_db, clips=db_clips), prop_src=[difforig, diffnext, diffprev])
 
     return core.resize.Bicubic(debl, format=original_format.id, matrix=matrix)
