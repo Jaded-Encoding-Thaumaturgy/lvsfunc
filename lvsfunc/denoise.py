@@ -93,12 +93,12 @@ def bm3d(clip: vs.VideoNode, sigma: Union[float, List[float]] = 0.75,
     return den
 
 
-def autodb(clip: vs.VideoNode, edgevalue: int = 24,
-           strs: Sequence[float] = (30, 50, 75),
-           thrs: List[Sequence[float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
-           matrix: Optional[Matrix] = None,
-           cuda: bool = True, device_index: int = 0,
-           debug: bool = False) -> vs.VideoNode:
+def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
+                strs: Sequence[float] = (30, 50, 75),
+                thrs: List[Sequence[float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
+                matrix: Optional[Matrix] = None,
+                cuda: bool = True, device_index: int = 0,
+                debug: bool = False) -> vs.VideoNode:
     """
     A rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
 
@@ -135,7 +135,7 @@ def autodb(clip: vs.VideoNode, edgevalue: int = 24,
     try:
         from vsdpir import DPIR
     except ModuleNotFoundError:
-        raise ModuleNotFoundError("autodb: missing dependency 'vsdpir'")
+        raise ModuleNotFoundError("autodb_dpir: missing dependency 'vsdpir'")
 
     assert clip.format
 
@@ -172,7 +172,7 @@ def autodb(clip: vs.VideoNode, edgevalue: int = 24,
     original_format = clip.format
 
     if len(strs) != len(thrs):
-        raise ValueError('autodb: You must pass an equal amount of values to '
+        raise ValueError('autodb_dpir: You must pass an equal amount of values to '
                          f'strenght {len(strs)} and thrs {len(thrs)}!')
 
     if not matrix:
