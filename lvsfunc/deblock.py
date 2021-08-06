@@ -2,7 +2,7 @@
     Deblocking functions.
 """
 from functools import partial
-from typing import Any, Dict, List, Optional, Sequence, cast
+from typing import List, Optional, Sequence, Tuple, cast
 
 import vapoursynth as vs
 from vsutil import depth, scale_value
@@ -15,7 +15,7 @@ core = vs.core
 
 def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strs: Sequence[float] = (30, 50, 75),
-                thrs: List[Sequence[float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
+                thrs: Sequence[Tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
                 matrix: Optional[Matrix] = None,
                 cuda: bool = True, device_index: int = 0,
                 debug: bool = False) -> vs.VideoNode:
@@ -40,9 +40,11 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     :param edgevalue:       Remove edges from the edgemask that exceed this threshold (higher means more edges removed)
     :param strs:            A list of DPIR strength values (higher means stronger deblocking).
                             You can pass any arbitrary number of values here.
+                            The amount of values in strs and thrs need to be equal.
                             Note that the current highest vsdpir can go as of writing is ``strength=75``
     :param thrs:            A list of thresholds, written as [(dbrefDiff, NextFrameDiff, PrevFrameDiff)].
                             You can pass any arbitrary number of values here.
+                            The amount of values in strs and thrs need to be equal.
                             ``debug`` may help with setting this.
     :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
                             If `None`, gets matrix from the "_Matrix" prop of the clip
@@ -87,8 +89,6 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                       f'/ YNextDiff: {y_next_diff:.6f} / YPrevDiff: {y_prev_diff:.6f}')
         return out
 
-    dpir_args: Dict[str, Any] = {'device_type': 'cuda' if cuda else 'cpu', 'device_index': device_index}
-
     original_format = clip.format
 
     if len(strs) != len(thrs):
@@ -111,9 +111,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     diffnext = core.std.PlaneStats(clip, clip.std.DeleteFrames([0]), prop='YNext')
     diffprev = core.std.PlaneStats(clip, clip[0] + clip, prop='YPrev')
 
-    db_clips = [clip]
-    for st in strs:
-        db_clips += [DPIR(clip, strength=st, task='deblock', **dpir_args)]
+    db_clips = [clip] + [DPIR(clip, strength=st, task='deblock', device_type='cuda' if cuda else 'cpu',
+                              device_index=device_index) for st in strs]
 
     debl = core.std.FrameEval(clip, partial(_eval_db, clips=db_clips), prop_src=[diffdbref, diffnext, diffprev])
 
