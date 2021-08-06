@@ -107,6 +107,10 @@ def autodb(clip: vs.VideoNode, edgevalue: int = 24,
     For frames where both thresholds are exceeded, it will perform deblocking at a specified strength.
     This will ideally be frames that show big temporal *and* spatial inconsistencies.
 
+    Keep in mind that vsdpir is not perfect; it may cause weird, black dots to appear sometimes.
+    If that happens, you can perform a denoise on the original clip (maybe even using vsdpir's denoising mode)
+    and grab the brightest pixels from your two clips. That should return a perfectly fine clip.
+
     Dependencies:
 
     * vs-dpir
@@ -114,8 +118,11 @@ def autodb(clip: vs.VideoNode, edgevalue: int = 24,
 
     :param clip:            Input clip
     :param edgevalue:       Remove edges from the edgemask that exceed this threshold (higher means more edges removed)
-    :param strs:            A list of DPIR strength values (higher means stronger deblocking)
+    :param strs:            A list of DPIR strength values (higher means stronger deblocking).
+                            You can pass any arbitrary number of values here.
+                            Note that the current highest vsdpir can go as of writing is ``strength=75``
     :param thrs:            A list of thresholds, written as [(dbrefDiff, NextFrameDiff, PrevFrameDiff)].
+                            You can pass any arbitrary number of values here.
                             ``debug`` may help with setting this.
     :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
                             If `None`, gets matrix from the "_Matrix" prop of the clip
@@ -134,7 +141,8 @@ def autodb(clip: vs.VideoNode, edgevalue: int = 24,
 
     def _eval_db(n: int, f: List[vs.VideoFrame], clips: List[vs.VideoNode]) -> vs.VideoNode:
         out = clips[0]
-        deblocked, st = False, None
+        deblocked = False
+
         dbref_diff = scale_value(cast(float, f[0].props['dbrefDiff']), 32, 8)
         y_next_diff = scale_value(cast(float, f[1].props['YNextDiff']), 32, 8)
         y_prev_diff = scale_value(cast(float, f[2].props['YPrevDiff']), 32, 8)
