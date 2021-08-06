@@ -2,7 +2,7 @@
     Denoising/Deblocking functions.
 """
 from functools import partial
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Sequence, Union, cast
 
 import vapoursynth as vs
 import vsutil
@@ -94,8 +94,8 @@ def bm3d(clip: vs.VideoNode, sigma: Union[float, List[float]] = 0.75,
 
 
 def autodb(clip: vs.VideoNode, edgevalue: int = 24,
-           strs: Tuple[float, ...] = (30, 50, 75),
-           thrs: List[Tuple[float, ...]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
+           strs: Sequence[float] = (30, 50, 75),
+           thrs: List[Sequence[float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
            matrix: Optional[Matrix] = None,
            cuda: bool = True, device_index: int = 0,
            debug: bool = False) -> vs.VideoNode:
@@ -173,7 +173,6 @@ def autodb(clip: vs.VideoNode, edgevalue: int = 24,
     if not clip.format.color_family == vs.RGB:
         clip = depth(clip, 32).std.SetFrameProp('_Matrix', intval=matrix)
         clip = core.resize.Bicubic(clip, format=vs.RGBS)
-
 
     maxvalue = (1 << original_format.bits_per_sample) - 1
     dbref = core.std.Prewitt(clip)
