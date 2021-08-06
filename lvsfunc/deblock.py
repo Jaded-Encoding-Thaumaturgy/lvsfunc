@@ -5,10 +5,9 @@ from functools import partial
 from typing import List, Optional, Sequence, Tuple, cast
 
 import vapoursynth as vs
-from vsutil import depth, scale_value
+from vsutil import scale_value
 
 from .types import Matrix
-from .util import get_prop
 
 core = vs.core
 
@@ -81,8 +80,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 deblocked = True
 
         out = out.std.SetFrameProp('adb_EdgeValRefDiff', floatval=evref_diff) \
-                .std.SetFrameProp('adb_YNextDiff', floatval=y_next_diff) \
-                .std.SetFrameProp('adb_YPrevDiff', floatval=y_prev_diff)
+            .std.SetFrameProp('adb_YNextDiff', floatval=y_next_diff) \
+            .std.SetFrameProp('adb_YPrevDiff', floatval=y_prev_diff)
 
         if deblocked:
             # TO-DO: Figure out why it doesn't appear to be adding these props
@@ -98,6 +97,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     rgb = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=matrix)
 
+    assert rgb.format
+
     maxvalue = (1 << rgb.format.bits_per_sample) - 1
     evref = core.std.Prewitt(rgb)
     evref = core.std.Expr(evref, f"x {edgevalue} >= {maxvalue} x ?")
@@ -108,8 +109,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     diffprev = core.std.PlaneStats(rgb, rgb[0] + rgb, prop='YPrev')
 
     db_clips = [rgb] + [DPIR(rgb, strength=st, task='deblock', device_type='cuda' if cuda else 'cpu',
-                              device_index=device_index).std.SetFrameProp('adb_DeblockStrength', floatval=st)
-                              for st in strs]
+                        device_index=device_index).std.SetFrameProp('adb_DeblockStrength', floatval=st) for st in strs]
 
     debl = core.std.FrameEval(rgb, partial(_eval_db, clips=db_clips), prop_src=[diffevref, diffnext, diffprev])
 
