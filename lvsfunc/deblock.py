@@ -38,7 +38,6 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     Dependencies:
 
     * vs-dpir
-    * rgsf
 
     :param clip:            Input clip
     :param edgevalue:       Remove edges from the edgemask that exceed this threshold (higher means more edges removed)
@@ -108,7 +107,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     maxvalue = (1 << rgb.format.bits_per_sample) - 1
     evref = core.std.Prewitt(rgb)
     evref = core.std.Expr(evref, f"x {edgevalue} >= {maxvalue} x ?")
-    evref_rm = evref.rgsf.RemoveGrain(4).std.Convolution(matrix=[1, 2, 1, 2, 4, 2, 1, 2, 1])
+    evref_rm = evref.std.Median().std.Convolution(matrix=[1, 2, 1, 2, 4, 2, 1, 2, 1])
 
     diffevref = core.std.PlaneStats(evref, evref_rm, prop='EdgeValRef')
     diffnext = core.std.PlaneStats(rgb, rgb.std.DeleteFrames([0]), prop='YNext')
