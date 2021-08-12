@@ -240,7 +240,7 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
 def wipe_row(clip: vs.VideoNode,
              ref: Optional[vs.VideoNode] = None,
              pos: Union[Position, Tuple[int, int]] = (1, 1),
-             size: Optional[Union[Size, Tuple[int, int]]] = None,
+             size: Union[Size, Tuple[int, int], None] = None,
              show_mask: bool = False
              ) -> vs.VideoNode:
     """
@@ -429,7 +429,7 @@ def chroma_injector(func: F) -> F:
 def colored_clips(amount: int,
                   max_hue: int = 300,
                   rand: bool = True,
-                  seed: Optional[Union[bytearray, bytes, float, int, str]] = None,
+                  seed: Union[bytearray, bytes, float, int, str, None] = None,
                   **kwargs: Any
                   ) -> List[vs.VideoNode]:
     """
