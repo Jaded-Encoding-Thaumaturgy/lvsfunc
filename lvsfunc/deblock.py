@@ -44,7 +44,6 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     :param strs:            A list of DPIR strength values (higher means stronger deblocking).
                             You can pass any arbitrary number of values here.
                             The amount of values in strs and thrs need to be equal.
-                            Note that the current highest vsdpir can go as of writing is ``strength=75``
     :param thrs:            A list of thresholds, written as [(EdgeValRef, NextFrameDiff, PrevFrameDiff)].
                             You can pass any arbitrary number of values here.
                             The amount of values in strs and thrs need to be equal.
@@ -86,11 +85,11 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
         if write_props:
             for prop_name, prop_val in zip(
-                ['AdbEdgeValRefDiff', 'AdbYNextDiff', 'AdbYPrevDiff',
-                 'AdbEdgeValRefDiffThreshold', 'AdbYNextDiffThreshold', 'AdbYPrevDiffThreshold'],
+                ['Adb_EdgeValRefDiff', 'Adb_YNextDiff', 'Adb_YPrevDiff',
+                 'Adb_EdgeValRefDiffThreshold', 'Adb_YNextDiffThreshold', 'Adb_YPrevDiffThreshold'],
                 [evref_diff, y_next_diff, y_prev_diff] + list(nthr_used)
             ):
-                out = out.std.SetFrameProp(prop_name, floatval=prop_val)
+                out = out.std.SetFrameProp(prop_name, floatval=max(prop_val * 255, -1))
 
         return out
 
@@ -100,7 +99,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     nthrs = [tuple(x / 255 for x in thr) for thr in thrs]
 
-    rgb = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=matrix).std.SetFrameProp('AdbDeblockStrength', floatval=0)
+    rgb = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=matrix) \
+        .std.SetFrameProp('Adb_DeblockStrength', intval=0)
 
     assert rgb.format
 
@@ -115,7 +115,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     db_clips = [
         DPIR(rgb, strength=st, task='deblock', device_type='cuda' if cuda else 'cpu',
-             device_index=device_index).std.SetFrameProp('AdbDeblockStrength', floatval=st) for st in strs
+             device_index=device_index).std.SetFrameProp('Adb_DeblockStrength', intval=int(st)) for st in strs
     ]
 
     debl = core.std.FrameEval(
