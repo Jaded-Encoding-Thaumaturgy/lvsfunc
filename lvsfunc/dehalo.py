@@ -84,12 +84,14 @@ def deemphasize(clip: vs.VideoNode, strength: int = 95,
 
     clip = clip.std.SeparateFields(tff=TFF) if interlaced else clip
 
+    assert clip.format
+
     coords = [0, 1, 0, 0, 0, 0, 1, 0]
     mask = core.std.Sobel(clip)
     mask = iterate(mask, partial(core.std.Minimum, coordinates=coords), 3)
     mask = iterate(mask, partial(core.std.Maximum, coordinates=coords), 3)
 
     blurred = clip.fmtc.resample(clip.width-2, kernel='gauss', taps=4, a1=strength) \
-        .resize.Spline64(clip.width, format=clip.format)  # type:ignore[arg-type]
+        .resize.Spline64(clip.width, format=clip.format.id)
     merged = core.std.MaskedMerge(blurred, clip, mask)
     return merged.std.DoubleWeave().std.SelectEvery(2, 0) if interlaced else merged
