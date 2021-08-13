@@ -65,7 +65,7 @@ def deemphasize(clip: vs.VideoNode, strength: int = 95,
     resulting from a playback device in the transfer chain poorly compensating
     for pre-emphasis baked into the source signal.
 
-    Ported and modified from an AVS gist: https://gist.github.com/acuozzo/940869257cc79016215600a2392b33eb
+    Ported and modified from an AVS gist: https://gist.github.com/acuozzo/940869257cc79016215600a2392b33eb.
     This was mainly ported as an exercise. Usefulness not guaranteed.
 
     Dependencies:
@@ -77,7 +77,7 @@ def deemphasize(clip: vs.VideoNode, strength: int = 95,
     :param interlaced:  Whether the clip is interlaced or not
     :param TFF:         Top Field First if True, else Bottom Field First
 
-    :return:            Dehalo'd clip
+    :return:            Deringed clip
     """
     if clip.format is None:
         raise ValueError("deemphasize: 'Variable-format clips not supported'")
