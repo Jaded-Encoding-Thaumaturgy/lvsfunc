@@ -58,7 +58,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     try:
         from vsdpir import DPIR
     except ModuleNotFoundError:
-        raise ModuleNotFoundError("autodb_dpir: missing dependency 'vsdpir'")
+        raise ModuleNotFoundError("autodb_dpir: vsdpir and pytorch are required for autodb_dpir. "
+                                  "vsdpir can be installed with 'pip install vsdpir'.")
 
     if clip.format is None:
         raise ValueError("autodb_dpir: 'Variable-format clips not supported'")
