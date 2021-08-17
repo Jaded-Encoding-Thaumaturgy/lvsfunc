@@ -8,8 +8,8 @@ import warnings
 from abc import ABC, abstractmethod
 from enum import IntEnum
 from itertools import zip_longest
-from typing import (Any, Callable, Dict, Iterable, Iterator, List,
-                    Optional, Sequence, Set, Tuple, TypeVar, Union)
+from typing import (Any, Callable, Dict, Iterable, Iterator, List, Literal,
+                    Optional, Sequence, Set, Tuple, TypeVar, Union, overload)
 
 import vapoursynth as vs
 import vsutil
@@ -481,12 +481,45 @@ def diff_hardsub_mask(a: vs.VideoNode, b: vs.VideoNode, **kwargs: Any) -> vs.Vid
     return core.std.MaskedMerge(core.std.MakeDiff(a, a), core.std.MakeDiff(a, b), hardsub_mask(a, b))
 
 
+@overload
 def diff(*clips: vs.VideoNode,
+         return_frames: Literal[False],
          thr: float = 72,
          height: int = 288,
          return_array: bool = False,
-         return_frames: bool = False,
-         diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a, b: core.std.MakeDiff(a, b),
+         diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = core.std.MakeDiff,
+         **namedclips: vs.VideoNode) -> vs.VideoNode:
+    ...
+
+
+@overload
+def diff(*clips: vs.VideoNode,
+         return_frames: Literal[True],
+         thr: float = 72,
+         height: int = 288,
+         return_array: bool = False,
+         diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = core.std.MakeDiff,
+         **namedclips: vs.VideoNode) -> Tuple[vs.VideoNode, List[int]]:
+    ...
+
+
+@overload
+def diff(*clips: vs.VideoNode,
+         return_frames: bool,
+         thr: float = 72,
+         height: int = 288,
+         return_array: bool = False,
+         diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = core.std.MakeDiff,
+         **namedclips: vs.VideoNode) -> Union[vs.VideoNode, Tuple[vs.VideoNode, List[int]]]:
+    ...
+
+
+def diff(*clips: vs.VideoNode,
+         return_frames: bool,
+         thr: float = 72,
+         height: int = 288,
+         return_array: bool = False,
+         diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = core.std.MakeDiff,
          **namedclips: vs.VideoNode) -> Union[vs.VideoNode, Tuple[vs.VideoNode, List[int]]]:
     """
     Creates a standard :py:class:`lvsfunc.comparison.Stack` between frames from two clips that have differences.
@@ -506,6 +539,7 @@ def diff(*clips: vs.VideoNode,
     Alias for this function is `lvsfunc.diff`.
 
     :param clips:         Clips for comparison (order is kept)
+    :param return_frames: Adds `frames list` to the return.
     :param namedclips:    Keyword arguments of `name=clip` for all clips in the comparison.
                           Clips will be labeled at the top left with their `name`.
     :param thr:           Threshold, <= 1 uses PlaneStatsDiff, >1 uses Max/Min.
@@ -514,7 +548,6 @@ def diff(*clips: vs.VideoNode,
                           (MakeDiff clip will be twice this resolution) (Default: 288)
     :param return_array:  Return frames as an interleaved comparison (using :py:class:`lvsfunc.comparison.Interleave`)
                           (Default: ``False``)
-    :param return_frames: Adds `frames list` to the return. (Default: ``False``)
     :param diff_func:     Function for calculating diff in PlaneStatsMin/Max mode.
                           (Default: core.std.MakeDiff)
 
