@@ -29,6 +29,7 @@ The following VapourSynth libraries are also required for full functionality:
 * `d2vsource <https://github.com/dwbuiten/d2vsource>`_
 * `dgdecnv <http://rationalqm.us/dgdecnv/dgdecnv.html>`_
 * `ffms2 <https://github.com/FFMS/ffms2>`_
+* `fmtconv <https://github.com/EleonoreMizo/fmtconv>`_
 * `KNLMeansCL <https://github.com/Khanattila/KNLMeansCL>`_
 * `L-SMASH-Works <https://github.com/VFR-maniac/L-SMASH-Works>`_
 * `RGSF <https://github.com/IFeelBloated/RGSF>`_
@@ -65,6 +66,7 @@ Modules
 
    lvsfunc.aa
    lvsfunc.comparison
+   lvsfunc.deblock
    lvsfunc.dehalo
    lvsfunc.dehardsub
    lvsfunc.deinterlace
@@ -100,7 +102,9 @@ Functions
    lvsfunc.comparison.stack_planes
    lvsfunc.comparison.stack_vertical
    lvsfunc.comparison.tile
+   lvsfunc.deblock.autodb_dpir
    lvsfunc.dehalo.bidehalo
+   lvsfunc.dehalo.deemphasize
    lvsfunc.dehardsub.bounded_dehardsub
    lvsfunc.dehardsub.get_all_masks
    lvsfunc.dehardsub.hardsub_mask
@@ -179,18 +183,30 @@ lvsfunc.comparison
    :undoc-members:
    :show-inheritance:
 
+lvsfunc.deblock
+-------------------
+
+.. autosummary::
+
+   lvsfunc.deblock.autodb_dpir
+
+.. automodule:: lvsfunc.deblock
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 lvsfunc.dehalo
 -------------------
 
 .. autosummary::
 
    lvsfunc.dehalo.bidehalo
+   lvsfunc.dehalo.deemphasize
 
 .. automodule:: lvsfunc.dehalo
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 lvsfunc.dehardsub
 -----------------
@@ -265,7 +281,6 @@ lvsfunc.denoise
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 lvsfunc.mask
 -------------------

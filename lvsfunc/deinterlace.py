@@ -36,7 +36,8 @@ def SIVTC(clip: vs.VideoNode, pattern: int = 0,
     defivtc = core.std.SeparateFields(clip, tff=TFF).std.DoubleWeave()
     selectlist = [[0, 3, 6, 8], [0, 2, 5, 8], [0, 2, 4, 7], [2, 4, 6, 9], [1, 4, 6, 8]]
     dec = core.std.SelectEvery(defivtc, 10, selectlist[pattern]) if decimate else defivtc
-    return core.std.SetFrameProp(dec, prop='_FieldBased', intval=0)
+    return core.std.SetFrameProp(dec, prop='_FieldBased', intval=0) \
+        .std.SetFrameProp(prop='SIVTC_pattern', intval=pattern)
 
 
 def TIVTC_VFR(clip: vs.VideoNode,

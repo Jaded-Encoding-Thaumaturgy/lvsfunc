@@ -165,7 +165,8 @@ def clip_async_render(clip: vs.VideoNode,
 
         y4mformat = f"{y4mformat}p{clip.format.bits_per_sample}" if clip.format.bits_per_sample > 8 else y4mformat
 
-        header = f"YUV4MPEG2 C{y4mformat} W{clip.width} H{clip.height} F{clip.fps_num}:{clip.fps_den} Ip A0:0\n"
+        header = f"YUV4MPEG2 C{y4mformat} W{clip.width} H{clip.height} " \
+            f"F{clip.fps.numerator}:{clip.fps.denominator} Ip A0:0\n"
         outfile.write(header.encode("utf-8"))
 
     if timecodes:
