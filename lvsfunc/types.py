@@ -6,7 +6,7 @@ Range = Union[Optional[int], Tuple[Optional[int], Optional[int]]]
 
 class Coordinate():
     """
-    A positive set of (x, y) coodinates.
+    A positive set of (x, y) coordinates.
     """
     x: int
     y: int
