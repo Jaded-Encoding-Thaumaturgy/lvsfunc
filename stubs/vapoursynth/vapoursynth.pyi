@@ -710,6 +710,24 @@ class _Plugin_f3kdb_Bound(Plugin):
 # end implementation
 
 
+# implementation: fb
+class _Plugin_fb_Unbound(Plugin):
+    """
+    This class implements the module definitions for the corresponding VapourSynth plugin.
+    This class cannot be imported.
+    """
+    def FillBorders(self, clip: "VideoNode", left: typing.Optional[int] = None, right: typing.Optional[int] = None, top: typing.Optional[int] = None, bottom: typing.Optional[int] = None, mode: typing.Union[str, bytes, bytearray, None] = None, interlaced: typing.Optional[int] = None) -> "VideoNode": ...
+
+
+class _Plugin_fb_Bound(Plugin):
+    """
+    This class implements the module definitions for the corresponding VapourSynth plugin.
+    This class cannot be imported.
+    """
+    def FillBorders(self, left: typing.Optional[int] = None, right: typing.Optional[int] = None, top: typing.Optional[int] = None, bottom: typing.Optional[int] = None, mode: typing.Union[str, bytes, bytearray, None] = None, interlaced: typing.Optional[int] = None) -> "VideoNode": ...
+# end implementation
+
+
 # implementation: ffms2
 class _Plugin_ffms2_Unbound(Plugin):
     """
@@ -1846,6 +1864,13 @@ class VideoNode:
         flash3kyuu_deband
         """
 # end instance
+# instance_bound: fb
+    @property
+    def fb(self) -> _Plugin_fb_Bound:
+        """
+        FillBorders plugin for VapourSynth
+        """
+# end instance
 # instance_bound: ffms2
     @property
     def ffms2(self) -> _Plugin_ffms2_Bound:
@@ -2293,6 +2318,13 @@ class Core:
     def f3kdb(self) -> _Plugin_f3kdb_Unbound:
         """
         flash3kyuu_deband
+        """
+# end instance
+# instance_unbound: fb
+    @property
+    def fb(self) -> _Plugin_fb_Unbound:
+        """
+        FillBorders plugin for VapourSynth
         """
 # end instance
 # instance_unbound: ffms2
