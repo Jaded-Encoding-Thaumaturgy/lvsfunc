@@ -4,7 +4,7 @@
 from typing import Any, Callable, List, Optional, Sequence, Type, TypeVar, Tuple, Union
 
 import vapoursynth as vs
-from vsutil import depth
+from vsutil import depth, get_subsampling
 
 from .types import Range
 
@@ -209,3 +209,33 @@ def scale_thresh(thresh: float, clip: vs.VideoNode, assume: Optional[int] = None
             else round(thresh/((1 << assume) - 1) * ((1 << clip.format.bits_per_sample) - 1))
     return thresh if clip.format.sample_type == vs.FLOAT or thresh > 1 \
         else round(thresh * ((1 << clip.format.bits_per_sample) - 1))
+
+
+def padder(clip: vs.VideoNode,
+           left: int = 32, right: int = 32,
+           top: int = 32, bottom: int = 32) -> vs.VideoNode:
+    """
+    Pads out the pixels on the side by the given amount of pixels.
+    For a 4:2:0 clip, the output must be an even resolution.
+
+    :param clip:        Input clip
+    :param left:        Padding added to the left side of the clip
+    :param right:       Padding added to the right side of the clip
+    :param top:         Padding added to the top side of the clip
+    :param bottom:      Padding added to the bottom side of the clip
+
+    :return:            Padded clip
+    """
+    if clip.format is None:
+        raise ValueError("padder: 'Variable-format clips not supported'")
+
+    width = clip.width+left+right
+    height = clip.height+top+bottom
+
+    if get_subsampling(clip) == '420' and ((width % 2 != 0) or (height % 2 != 0)):
+        raise ValueError("padder: 'Values must result in an even resolution when passing a YUV420 clip!'")
+
+    scaled = core.resize.Point(clip, width, height,
+                               src_top=-1*top, src_left=-1*left,
+                               src_width=width, src_height=height)
+    return core.fb.FillBorders(scaled, left=left, right=right, top=top, bottom=bottom)

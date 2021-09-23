@@ -38,6 +38,7 @@ The following VapourSynth libraries are also required for full functionality:
 * `VapourSynth-BM3D <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-BM3D>`_
 * `VapourSynth-descale <https://github.com/Irrational-Encoding-Wizardry/VapourSynth-descale>`_
 * `VapourSynth-EEDI3 <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-EEDI3>`_
+* `VapourSynth-fillborders <https://github.com/dubhater/vapoursynth-fillborders>`_
 * `VapourSynth-nnedi3 <https://github.com/dubhater/VapourSynth-nnedi3>`_
 * `VapourSynth-NNEDI3CL <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-NNEDI3CL3>`_
 * `VapourSynth-ReadMpls <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-ReadMpls>`_
@@ -138,6 +139,7 @@ Functions
    lvsfunc.scale.reupscale
    lvsfunc.scale.test_descale
    lvsfunc.util.normalize_ranges
+   lvsfunc.util.padder
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
    lvsfunc.util.quick_resample
@@ -408,6 +410,7 @@ lvsfunc.util
 
    lvsfunc.util.get_prop
    lvsfunc.util.normalize_ranges
+   lvsfunc.util.padder
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
    lvsfunc.util.quick_resample
