@@ -3,6 +3,7 @@
 *.cfg
 *.pyc
 *.vpy
+tests/
 BACK-UP/
 build/
 dist/
