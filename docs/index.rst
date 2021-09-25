@@ -104,6 +104,7 @@ Functions
    lvsfunc.comparison.stack_vertical
    lvsfunc.comparison.tile
    lvsfunc.deblock.autodb_dpir
+   lvsfunc.deblock.prot_dpir
    lvsfunc.dehalo.bidehalo
    lvsfunc.dehalo.deemphasize
    lvsfunc.dehardsub.bounded_dehardsub
@@ -191,6 +192,7 @@ lvsfunc.deblock
 .. autosummary::
 
    lvsfunc.deblock.autodb_dpir
+   lvsfunc.deblock.prot_dpir
 
 .. automodule:: lvsfunc.deblock
    :members:

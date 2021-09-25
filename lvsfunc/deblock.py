@@ -2,14 +2,19 @@
     Deblocking functions.
 """
 from functools import partial
-from typing import Optional, Sequence, Tuple
+from typing import Any, Optional, Sequence, Tuple, Union
 
 import vapoursynth as vs
+from vsutil import depth, join, plane, split
 
 from .types import Matrix
 from .util import get_prop
 
 core = vs.core
+
+
+dpir_warning = "vsdpir and pytorch are required for this function. " + \
+               "vsdpir can be installed with 'pip install vsdpir'."
 
 
 def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
@@ -58,8 +63,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     try:
         from vsdpir import DPIR
     except ModuleNotFoundError:
-        raise ModuleNotFoundError("autodb_dpir: vsdpir and pytorch are required for autodb_dpir. "
-                                  "vsdpir can be installed with 'pip install vsdpir'.")
+        raise ModuleNotFoundError(f"autodb_dpir: {dpir_warning}")
 
     if clip.format is None:
         raise ValueError("autodb_dpir: 'Variable-format clips not supported'")
@@ -125,3 +129,56 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     )
 
     return core.resize.Bicubic(debl, format=clip.format.id, matrix=matrix)
+
+
+def prot_dpir(clip: vs.VideoNode, strength: int = 25,
+              matrix: Optional[Union[Matrix, int]] = None,
+              cuda: bool = True, device_index: int = 0,
+              **dpir_args: Any) -> vs.VideoNode:
+    """
+    Protective DPIR function for the deblocking mode.
+
+    Sometimes vs-dpir's deblocking mode will litter a random frame with a lot of red dots.
+    This is obviously undesirable, so this function was written to combat that.
+
+    Original code by Zewia, modified by LightArrowsEXE.
+
+    Dependencies:
+
+    * vs-dpir
+
+    :param clip:            Input clip
+    :param strength:        DPIR's deblocking strength
+    :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
+                            If `None`, gets matrix from the "_Matrix" prop of the clip
+    :param cuda:            Device type used for deblocking. Uses CUDA if True, else CPU
+    :param device_index:    The 'device_index' + 1º device of type device type in the system
+    :dpir_args:             Additional args to pass onto DPIR
+
+    :return:                Deblocked clip
+    """
+    try:
+        from vsdpir import DPIR
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError(f"prot_dpir: {dpir_warning}")
+
+    if clip.format is None:
+        raise ValueError("prot_dpir: 'Variable-format clips not supported'")
+
+    dpir_args |= dict(strength=strength, task='deblock',
+                      device_type='cuda' if cuda else 'cpu',
+                      device_index=device_index)
+
+    clip_rgb = depth(clip, 32).std.SetFrameProp('_Matrix', intval=matrix)
+    clip_rgb = core.resize.Bicubic(clip_rgb, format=vs.RGBS)
+
+    debl = DPIR(clip_rgb, **dpir_args)
+    rgb_planes = split(debl)
+
+    # Grab the brigher parts of the R plane to avoid model fuckery
+    # Everything below 5 (8 bit value) gets replaced with the ref's R plane
+    rgb_planes[0] = core.std.Expr([rgb_planes[0], rgb_planes[1], plane(clip_rgb, 0)],
+                                  'z x > y 5 255 / <= and z x ?')
+    rgb_merge = join(rgb_planes, family=vs.RGB)
+
+    return core.resize.Bicubic(rgb_merge, format=clip.format.id, matrix=matrix)
