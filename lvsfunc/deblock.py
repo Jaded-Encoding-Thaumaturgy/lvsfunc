@@ -134,28 +134,29 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 def vsdpir(clip: vs.VideoNode, strength: int = 25, mode: str = 'deblock',
            matrix: Optional[Union[Matrix, int]] = None,
            cuda: bool = True, device_index: int = 0,
-           i444: bool = False, **dpir_args: Any) -> vs.VideoNode:
+           i444: bool = False, **vsdpir_args: Any) -> vs.VideoNode:
     """
-    A simple DPIR wrapper for convenience.
+    A simple vs-dpir wrapper for convenience.
 
-    Converts to RGB -> runs DPIR -> converts back to original format.
-    Added upon request, if ``i444`` is set to True, returns a YUV444PS clip instead.
+    Converts to RGB -> runs vs-dpir -> converts back to original format.
+    For more information, see https://github.com/cszn/DPIR.
 
     Dependencies:
 
     * vs-dpir
 
     :param clip:            Input clip
-    :param strength:        DPIR strength
-    :param mode:            DPIR mode. Valid modes are 'deblock' and 'denoise'.
+    :param strength:        vs-dpir strength.
+                            Sane values lie between 20-50 for ``mode='deblock'``, and 2-5 for ``mode='denoise'``
+    :param mode:            vs-dpir mode. Valid modes are 'deblock' and 'denoise'.
     :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
                             If `None`, gets matrix from the "_Matrix" prop of the clip
     :param cuda:            Use CUDA if True, else CPU
     :param i444:            Forces the returned clip to be YUV444PS instead of the input clip's format
-    :dpir_args:             Additional args to pass onto DPIR
+    :param vsdpir_args:     Additional args to pass onto vs-dpir
                             (Note: strength, task, and device_type can't be overridden!)
 
-    :return:                Deblocked clip
+    :return:                Deblocked or denoised clip in either the given clip's format or YUV444PS
     """
     try:
         from vsdpir import DPIR
@@ -165,13 +166,16 @@ def vsdpir(clip: vs.VideoNode, strength: int = 25, mode: str = 'deblock',
     if clip.format is None:
         raise ValueError("vsdpir: 'Variable-format clips not supported'")
 
-    dpir_args |= dict(strength=strength, task=mode, device_type='cuda' if cuda else 'cpu')
+    # TO-DO: Add a check to see if the models have been fully downloaded
+    # and if not, run the installer included in vsdpir?
+
+    vsdpir_args |= dict(strength=strength, task=mode, device_type='cuda' if cuda else 'cpu')
 
     clip_rgb = depth(clip, 32).std.SetFrameProp('_Matrix', intval=matrix)
     clip_rgb = core.resize.Bicubic(clip_rgb, format=vs.RGBS)
 
-    debl = DPIR(clip_rgb, **dpir_args)
+    run_dpir = DPIR(clip_rgb, **vsdpir_args)
 
     if i444:
-        return core.resize.Bicubic(debl, format=vs.YUV444PS, matrix=matrix)
-    return core.resize.Bicubic(debl, format=clip.format.id, matrix=matrix)
+        return core.resize.Bicubic(run_dpir, format=vs.YUV444PS, matrix=matrix)
+    return core.resize.Bicubic(run_dpir, format=clip.format.id, matrix=matrix)
