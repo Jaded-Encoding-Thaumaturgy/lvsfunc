@@ -18,8 +18,7 @@ core = vs.core
 
 
 def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
-                rad: int = 3, radc: int = 2,
-                brz_a: float = 0.025, brz_b: float = 0.045) -> vs.VideoNode:
+                rad: int = 3, brz_a: float = 0.025, brz_b: float = 0.045) -> vs.VideoNode:
     """
     A wrapper for creating a detail mask to be used during denoising and/or debanding.
     The detail mask is created using debandshit's range mask,
@@ -38,7 +37,6 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
     :param clip:        Input clip
     :param sigma:       Sigma for Bilateral for pre-blurring (Default: False)
     :param rad:         The luma equivalent of gradfun3's "mask" parameter
-    :param radc:        The chroma equivalent of gradfun3's "mask" parameter
     :param brz_a:       Binarizing thresh for the detail mask.
                         Scaled to clip's depth if between 0 and 1 (inclusive),
                         else assumed to be in native range. (Default: 0.025)
@@ -61,7 +59,7 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
     blur = (util.quick_resample(clip, partial(core.bilateral.Gaussian, sigma=sigma))
             if sigma else clip)
 
-    mask_a = range_mask(get_y(blur), rad=rad, radc=radc)
+    mask_a = range_mask(get_y(blur), rad=rad)
     mask_a = core.std.Binarize(mask_a, brz_a)
 
     mask_b = core.std.Prewitt(get_y(blur))
