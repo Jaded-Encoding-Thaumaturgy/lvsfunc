@@ -37,6 +37,9 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
 
     Alias for this function is `lvsfunc.src`.
 
+    WARNING: This function may be rewritten in the future, and functionality may change!
+             No warning is currently printed for this in your terminal to avoid spam.
+
     Dependencies:
 
     * ffms2

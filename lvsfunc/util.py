@@ -1,7 +1,6 @@
 """
     Helper functions for the main functions in the script.
 """
-import warnings
 from typing import (Any, Callable, List, Optional, Sequence, Tuple, Type,
                     TypeVar, Union)
 
@@ -20,17 +19,13 @@ def quick_resample(clip: vs.VideoNode,
     A function to quickly resample to 16/8 bit and back to the original depth.
     Useful for filters that only work in 16 bit or lower when you're working in float.
 
-    WARNING: This function may be rewritten in the future, and functionality may change!
+    WARNING: This function may see some slight functionality changes in a future commit!
 
     :param clip:      Input clip
     :param function:  Filter to run after resampling (accepts and returns clip)
 
     :return:          Filtered clip in original depth
     """
-    warnings.warn("quick_resample: This function's functionality will change in a future version. "
-                  "Please make sure to update your older scripts once it does.",
-                  FutureWarning)
-
     if clip.format is None:
         raise ValueError("quick_resample: 'Variable-format clips not supported'")
     try:
