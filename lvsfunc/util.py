@@ -30,12 +30,13 @@ def quick_resample(clip: vs.VideoNode,
     try:  # Excepts all generic because >plugin/script writers being consistent >_>
         dither = depth(clip, 32)
         filtered = function(dither)
-    except:  # noqa: E722, F707
-        dither = depth(clip, 16)
-        filtered = function(dither)
     except:  # noqa: E722
-        dither = depth(clip, 8)
-        filtered = function(dither)
+        try:
+            dither = depth(clip, 16)
+            filtered = function(dither)
+        except:  # noqa: E722
+            dither = depth(clip, 8)
+            filtered = function(dither)
 
     return depth(filtered, clip.format.bits_per_sample)
 
