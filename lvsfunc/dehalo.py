@@ -1,6 +1,7 @@
 """
     Wrappers for dehaloing functions.
 """
+import warnings
 from functools import partial
 from typing import Any, Dict, Optional
 
@@ -68,6 +69,8 @@ def deemphasize(clip: vs.VideoNode, strength: int = 95,
     Ported and modified from an AVS gist: https://gist.github.com/acuozzo/940869257cc79016215600a2392b33eb.
     This was mainly ported as an exercise. Usefulness not guaranteed.
 
+    WARNING: This function will be deprecated in lvsfunc 0.4.0!
+
     Dependencies:
 
     * fmtconv
@@ -79,6 +82,10 @@ def deemphasize(clip: vs.VideoNode, strength: int = 95,
 
     :return:            Deringed clip
     """
+    warnings.warn("deemphasize: This function will no longer be supported in future versions. "
+                  "Please make sure to update your older scripts. "
+                  "This function will be removed in lvsfunc v0.4.0.", DeprecationWarning)
+
     if clip.format is None:
         raise ValueError("deemphasize: 'Variable-format clips not supported'")
 

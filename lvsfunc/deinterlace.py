@@ -4,9 +4,10 @@
 
 import os
 import time
+import warnings
 from functools import partial
 from pathlib import Path
-from typing import Any, Optional, Union, Dict
+from typing import Any, Dict, Optional, Union
 
 import vapoursynth as vs
 
@@ -235,6 +236,8 @@ def dir_deshimmer(clip: vs.VideoNode, TFF: bool = True,
     Only works (in the few instances it does, anyway) for obvious horizontal and vertical shimmering.
     Odds of success are low. But if you're desperate, it's worth a shot.
 
+    WARNING: This function will be deprecated in lvsfunc 0.4.0!
+
     Dependencies:
 
     * vapoursynth-nnedi3
@@ -247,6 +250,10 @@ def dir_deshimmer(clip: vs.VideoNode, TFF: bool = True,
 
     :return:             Deshimmered clip
     """
+    warnings.warn("dir_deshimmer: This function will no longer be supported in future versions. "
+                  "Please make sure to update your older scripts. "
+                  "This function will be removed in lvsfunc v0.4.0.", DeprecationWarning)
+
     clip = core.std.Transpose(clip) if transpose else clip
     deshim = core.nnedi3.nnedi3(clip, field=TFF, dh=dh, show_mask=show_mask)
     return core.std.Transpose(deshim) if transpose else deshim
@@ -264,6 +271,8 @@ def dir_unsharp(clip: vs.VideoNode,
 
     Special thanks to thebombzen and kageru for writing the bulk of this.
 
+    WARNING: This function may be rewritten in the future, and functionality may change!
+
     Dependencies:
 
     * knlmeanscl
@@ -275,6 +284,9 @@ def dir_unsharp(clip: vs.VideoNode,
 
     :return:                Unsharpened clip
     """
+    warnings.warn("dir_unsharp: This function's functionality will change in a future version, "
+                  "and will likely be renamed. Please make sure to update your older scripts once it does.",
+                  FutureWarning)
 
     dir = dir.lower()
     if dir not in ['v', 'h']:

@@ -399,6 +399,8 @@ def stack_compare(*clips: vs.VideoNode,
     Best to use when trying to match two sources frame-accurately.
     Alias for this function is `lvsfunc.scomp`.
 
+    When not using `make_diff`, `Stack` is heavily recommended instead.
+
     :param clips:     Clips to compare
     :param make_diff: Create and stack a diff (only works if two clips are given) (Default: ``True``)
     :param height:    Height in px to rescale clips to if `make_diff` is ``True``
@@ -408,8 +410,8 @@ def stack_compare(*clips: vs.VideoNode,
     :return:          Clip with `clips` stacked
     """
     if not make_diff:
-        warnings.warn('stack_compare has been deprecated in favor of `lvsfunc.comparison.Stack` '
-                      'if not using `make_diff`', DeprecationWarning)
+        warnings.warn("stack_compare has been deprecated in favour of `lvsfunc.comparison.Stack` "
+                      "when you're not using `make_diff`", DeprecationWarning)
         return core.std.StackHorizontal(clips)
 
     if len(clips) != 2:

@@ -4,6 +4,7 @@
 import colorsys
 import os
 import random
+import warnings
 from functools import partial, wraps
 from typing import (Any, Callable, Dict, List, Optional, Sequence, Tuple,
                     TypeVar, Union, cast)
@@ -115,6 +116,8 @@ def edgefixer(clip: vs.VideoNode,
 
     Alias for this function is `lvsfunc.ef`.
 
+    WARNING: This function may be rewritten in the future, and functionality may change!
+
     Dependencies:
 
     * VS-ContinuityFixer
@@ -129,6 +132,9 @@ def edgefixer(clip: vs.VideoNode,
 
     :return:            Clip with fixed edges
     """
+    warnings.warn("edgefixer: This function's functionality will change in a future version, "
+                  "and will likely be renamed. Please make sure to update your older scripts once it does.",
+                  FutureWarning)
 
     if left is None:
         left = 0

@@ -1,17 +1,18 @@
 """
     Wrappers and masks for denoising.
 """
+import warnings
 from abc import ABC, abstractmethod
 from functools import partial
 from typing import List, Optional, Tuple, Union
 
 import vapoursynth as vs
-from vsutil import depth, get_y, iterate, join, split
 from vsutil import Range as CRange
+from vsutil import depth, get_y, iterate, join, split
 
 from . import util
-from .util import replace_ranges, scale_thresh
 from .types import Position, Range, Size
+from .util import replace_ranges, scale_thresh
 
 core = vs.core
 
@@ -26,6 +27,8 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
 
     Function is curried to allow parameter tuning when passing to denoisers
     that allow you to pass your own mask.
+
+    WARNING: This function may be rewritten in the future, and functionality may change!
 
     Dependencies:
 
@@ -45,6 +48,10 @@ def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
 
     :return:            Detail mask
     """
+    warnings.warn("detail_mask: This function's functionality will change in a future version. "
+                  "Please make sure to update your older scripts once it does.",
+                  FutureWarning)
+
     if clip.format is None:
         raise ValueError("detail_mask: 'Variable-format clips not supported'")
 
