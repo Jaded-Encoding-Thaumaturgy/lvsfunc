@@ -16,10 +16,8 @@ def quick_resample(clip: vs.VideoNode,
                    function: Callable[[vs.VideoNode], vs.VideoNode]
                    ) -> vs.VideoNode:
     """
-    A function to quickly resample to 16/8 bit and back to the original depth.
+    A function to quickly resample to 32/16/8 bit and back to the original depth in a one-liner.
     Useful for filters that only work in 16 bit or lower when you're working in float.
-
-    WARNING: This function may see some slight functionality changes in a future commit!
 
     :param clip:      Input clip
     :param function:  Filter to run after resampling (accepts and returns clip)
@@ -28,12 +26,17 @@ def quick_resample(clip: vs.VideoNode,
     """
     if clip.format is None:
         raise ValueError("quick_resample: 'Variable-format clips not supported'")
-    try:
-        down = depth(clip, 16)
-        filtered = function(down)
+
+    try:  # Excepts all generic because >plugin/script writers being consistent >_>
+        dither = depth(clip, 32)
+        filtered = function(dither)
+    except:  # noqa: E722, F707
+        dither = depth(clip, 16)
+        filtered = function(dither)
     except:  # noqa: E722
-        down = depth(clip, 8)
-        filtered = function(down)
+        dither = depth(clip, 8)
+        filtered = function(dither)
+
     return depth(filtered, clip.format.bits_per_sample)
 
 
