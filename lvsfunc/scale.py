@@ -94,7 +94,7 @@ def reupscale(clip: vs.VideoNode,
 
     Function is curried to allow parameter tuning when passing to :py:func:`lvsfunc.scale.descale`
 
-    Stolen from Varde with some adjustments made.
+    Stolen from Vardë with some adjustments made.
 
     Dependencies:
 
