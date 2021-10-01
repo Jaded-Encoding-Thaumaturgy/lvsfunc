@@ -21,7 +21,7 @@ core = vs.core
 def minecraftify(clip: vs.VideoNode, div: float = 64.0, mod: Optional[int] = None) -> vs.VideoNode:
     """
     Function that transforms your clip into a Minecraft.
-    Idea from Meme-Maji's Kobayashi memery (love you varde).
+    Idea from Meme-Maji's Kobayashi memery (love you Vardë).
 
     :param clip:    Input clip
     :param div:     How much to divide the clip's resolution with
