@@ -1,5 +1,6 @@
 """
-    Helper functions for the main functions in the script.
+    Helper functions for the main functions in this module.
+    Also contains some useful functions for regular scripts.
 """
 from typing import (Any, Callable, List, Optional, Sequence, Tuple, Type,
                     TypeVar, Union)
@@ -216,6 +217,21 @@ def scale_thresh(thresh: float, clip: vs.VideoNode, assume: Optional[int] = None
             else round(thresh/((1 << assume) - 1) * ((1 << clip.format.bits_per_sample) - 1))
     return thresh if clip.format.sample_type == vs.FLOAT or thresh > 1 \
         else round(thresh * ((1 << clip.format.bits_per_sample) - 1))
+
+
+def scale_peak(value: float, peak: float) -> float:
+    """
+    Full-range scale function that scales a value from [0, 255] to [0, peak]
+    """
+    return value * peak / 255
+
+
+def force_mod(x: float, mod: int = 4) -> int:
+    """
+    Force output to fit a specific MOD.
+    Minimum returned value will always be mod².
+    """
+    return mod ** 2 if x < mod ** 2 else int(x / mod + 0.5) * mod
 
 
 def padder(clip: vs.VideoNode,

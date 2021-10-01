@@ -107,6 +107,7 @@ Functions
    lvsfunc.deblock.vsdpir
    lvsfunc.dehalo.bidehalo
    lvsfunc.dehalo.deemphasize
+   lvsfunc.dehalo.masked_dha
    lvsfunc.dehardsub.bounded_dehardsub
    lvsfunc.dehardsub.get_all_masks
    lvsfunc.dehardsub.hardsub_mask
@@ -139,12 +140,14 @@ Functions
    lvsfunc.scale.descale_detail_mask
    lvsfunc.scale.reupscale
    lvsfunc.scale.test_descale
+   lvsfunc.util.force_mod
    lvsfunc.util.normalize_ranges
    lvsfunc.util.padder
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
    lvsfunc.util.quick_resample
    lvsfunc.util.replace_ranges
+   lvsfunc.util.scale_peak
    lvsfunc.util.scale_thresh
 
 lvsfunc.aa
@@ -206,6 +209,7 @@ lvsfunc.dehalo
 
    lvsfunc.dehalo.bidehalo
    lvsfunc.dehalo.deemphasize
+   lvsfunc.dehalo.masked_dha
 
 .. automodule:: lvsfunc.dehalo
    :members:
@@ -410,6 +414,7 @@ lvsfunc.util
 
 .. autosummary::
 
+   lvsfunc.util.force_mod
    lvsfunc.util.get_prop
    lvsfunc.util.normalize_ranges
    lvsfunc.util.padder
@@ -417,6 +422,7 @@ lvsfunc.util
    lvsfunc.util.pick_repair
    lvsfunc.util.quick_resample
    lvsfunc.util.replace_ranges
+   lvsfunc.util.scale_peak
    lvsfunc.util.scale_thresh
 
 .. automodule:: lvsfunc.util
