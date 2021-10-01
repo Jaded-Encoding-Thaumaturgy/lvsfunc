@@ -1,10 +1,11 @@
 """
     Functions for various anti-aliasing functions and wrappers.
 """
+from math import ceil
 from typing import Any, Callable, Dict, Optional
 
 import vapoursynth as vs
-from vsutil import get_w, get_y
+from vsutil import fallback, get_depth, get_w, get_y, join, plane, scale_value
 
 from . import kernels, util
 from .util import scale_thresh
@@ -266,3 +267,75 @@ def upscaled_sraa(clip: vs.VideoNode,
         return scaled
 
     return core.std.ShufflePlanes([scaled, clip], planes=[0, 1, 2], colorfamily=vs.YUV)
+
+
+def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
+             rfactor: float = 2.0, mask_thr: float = 60, show_mask: bool = False,
+             **eedi3_args: Any) -> vs.VideoNode:
+    """
+    As the name implies, this is a based anti-aliaser. Thank you, based Zastin.
+    This relies on FSRCNNX being very sharp, and as such it very much acts like the main "AA" here.
+
+    Original function by Zastin, modified by LightArrowsEXE.
+
+    :param clip:            Input clip
+    :param shader_file:     Path to FSRCNNX shader file
+    :param rfactor:         Image enlargement factor
+    :param mask_thr:        Threshold for the edge mask binarisation.
+                            Scaled internally to match bitdepth of clip.
+    :param show_mask:       Output mask
+    :param eedi3_args:      Additional args to pass to eedi3
+
+    :return:                AA'd clip or mask clip
+    """
+    def _eedi3s(clip: vs.VideoNode, mclip: Optional[vs.VideoNode] = None,
+                **eedi3_kwargs: Any) -> vs.VideoNode:
+        edi_args: Dict[str, Any] = {  # Eedi3 args for `eedi3s`
+            'field': 0, 'alpha': 0.125, 'beta': 0.25, 'gamma': 40,
+            'nrad': 2, 'mdis': 20, 'mclip': mclip,
+            'vcheck': 2, 'vthresh0': 12, 'vthresh1': 24, 'vthresh2': 4
+        }
+        edi_args |= eedi3_kwargs
+
+        out = core.eedi3m.EEDI3(clip, dh=False, planes=0, **edi_args)
+
+        if mclip:
+            return core.std.Expr([clip, out, mclip], 'z y x ?')
+        return out
+
+    def _resize_mclip(mclip: vs.VideoNode,
+                      width: Optional[int] = None,
+                      height: Optional[int] = None
+                      ) -> vs.VideoNode:
+        iw, ih = mclip.width, mclip.height
+        ow, oh = fallback(width, iw), fallback(height, ih)
+
+        if (ow > iw and ow/iw != ow//iw) or (oh > ih and oh/ih != oh//ih):
+            mclip = kernels.Point().scale(mclip, iw * ceil(ow / iw), ih * ceil(oh / ih))
+        return core.fmtc.resample(mclip, ow, oh, kernel='box', fulls=1, fulld=1)
+
+    if clip.format is None:
+        raise ValueError("based_aa: 'Variable-format clips not supported'")
+
+    if mask_thr > 255:
+        raise ValueError(f"based_aa: 'mask_thr must be equal to or lower than 255 (current: {mask_thr})'")
+
+    aaw = round(clip.width * rfactor) >> 1 << 1
+    aah = round(clip.height * rfactor) >> 1 << 1
+    mask_thr = scale_value(mask_thr, 8, get_depth(clip))
+
+    clip_y = get_y(clip)
+    lmask = clip_y.std.Prewitt().std.Binarize(mask_thr).std.Maximum().std.BoxBlur(0, 1, 1, 1, 1)
+    mclip_up = _resize_mclip(lmask, aaw, aah)
+
+    if show_mask:
+        return lmask
+
+    aa = clip_y.std.Transpose()
+    aa = join([aa] * 3).placebo.Shader(shader=shader_file, filter='box', width=aa.width * 2, height=aa.height * 2)
+    aa = kernels.Spline36().scale(get_y(aa), aah, aaw)
+    aa = _eedi3s(aa, mclip=mclip_up.std.Transpose(), **eedi3_args).std.Transpose()
+    aa = kernels.Spline36().scale(_eedi3s(aa, mclip=mclip_up, **eedi3_args), clip.width, clip.height)
+
+    aa_merge = core.std.MaskedMerge(clip_y, aa, lmask)
+    return join([aa_merge, plane(clip, 1), plane(clip, 2)])

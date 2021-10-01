@@ -86,6 +86,7 @@ Functions
 
 .. autosummary::
 
+   lvsfunc.aa.based_aa
    lvsfunc.aa.clamp_aa
    lvsfunc.aa.eedi3
    lvsfunc.aa.nnedi3
@@ -155,6 +156,7 @@ lvsfunc.aa
 
 .. autosummary::
 
+   lvsfunc.aa.based_aa
    lvsfunc.aa.clamp_aa
    lvsfunc.aa.eedi3
    lvsfunc.aa.nnedi3
