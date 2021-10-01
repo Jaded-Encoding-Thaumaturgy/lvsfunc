@@ -68,6 +68,9 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     if clip.format is None:
         raise ValueError("autodb_dpir: 'Variable-format clips not supported'")
 
+    if not matrix:
+        matrix = get_prop(clip.get_frame(0), "_Matrix", int)
+
     def _eval_db(n: int, f: Sequence[vs.VideoFrame],
                  clip: vs.VideoNode, db_clips: Sequence[vs.VideoNode],
                  nthrs: Sequence[Tuple[float, float, float]]) -> vs.VideoNode:
@@ -166,14 +169,15 @@ def vsdpir(clip: vs.VideoNode, strength: int = 25, mode: str = 'deblock',
     if clip.format is None:
         raise ValueError("vsdpir: 'Variable-format clips not supported'")
 
+    if not matrix:
+        matrix = get_prop(clip.get_frame(0), "_Matrix", int)
+
     # TO-DO: Add a check to see if the models have been fully downloaded
     # and if not, run the installer included in vsdpir?
 
     vsdpir_args |= dict(strength=strength, task=mode, device_type='cuda' if cuda else 'cpu')
 
-    clip_rgb = depth(clip, 32).std.SetFrameProp('_Matrix', intval=matrix)
-    clip_rgb = core.resize.Bicubic(clip_rgb, format=vs.RGBS)
-
+    clip_rgb = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=matrix)
     run_dpir = DPIR(clip_rgb, **vsdpir_args)
 
     if i444:
