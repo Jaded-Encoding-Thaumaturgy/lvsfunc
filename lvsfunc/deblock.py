@@ -5,7 +5,6 @@ from functools import partial
 from typing import Any, Optional, Sequence, Tuple, Union
 
 import vapoursynth as vs
-from vsutil import depth
 
 from .types import Matrix
 from .util import get_prop
