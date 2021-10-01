@@ -238,7 +238,7 @@ def clamp_values(x: float, max_val: float, min_val: float) -> float:
     """
     Forcibly clamps the given value x to a max and/or min value.
     """
-    return max(min(x, max_val), min_val)
+    return min_val if x < min_val else max_val if x > max_val else x
 
 
 def padder(clip: vs.VideoNode,
