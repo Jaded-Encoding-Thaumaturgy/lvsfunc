@@ -141,6 +141,7 @@ Functions
    lvsfunc.scale.descale_detail_mask
    lvsfunc.scale.reupscale
    lvsfunc.scale.test_descale
+   lvsfunc.util.clamp_values
    lvsfunc.util.force_mod
    lvsfunc.util.normalize_ranges
    lvsfunc.util.padder
@@ -416,8 +417,8 @@ lvsfunc.util
 
 .. autosummary::
 
+   lvsfunc.util.clamp_values
    lvsfunc.util.force_mod
-   lvsfunc.util.get_prop
    lvsfunc.util.normalize_ranges
    lvsfunc.util.padder
    lvsfunc.util.pick_removegrain

@@ -234,6 +234,13 @@ def force_mod(x: float, mod: int = 4) -> int:
     return mod ** 2 if x < mod ** 2 else int(x / mod + 0.5) * mod
 
 
+def clamp_values(x: float, max_val: float, min_val: float) -> float:
+    """
+    Forcibly clamps the given value x to a max and/or min value.
+    """
+    return max(min(x, max_val), min_val)
+
+
 def padder(clip: vs.VideoNode,
            left: int = 32, right: int = 32,
            top: int = 32, bottom: int = 32) -> vs.VideoNode:
