@@ -6,10 +6,10 @@ from functools import partial
 from typing import Any, Dict, Optional
 
 import vapoursynth as vs
-from vsutil import depth, fallback, get_depth, get_y, iterate, join, plane
+from vsutil import depth, fallback, get_depth, get_y, iterate
 
 from . import denoise, kernels
-from .util import force_mod, pick_repair, scale_peak
+from .util import force_mod, pick_repair, scale_peak, clamp_values
 
 core = vs.core
 
@@ -147,18 +147,18 @@ def masked_dha(clip: vs.VideoNode, rx: float = 2.0, ry: float = 2.0,
         raise ValueError("masked_dha: 'Variable-format clips not supported'")
 
     # Original silently changed values around, which I hate. Throwing errors instead.
-    if not all([x >= 1 for x in (rfactor, rx, ry)]):
+    if not all(x >= 1 for x in (rfactor, rx, ry)):
         raise ValueError("masked_dha: 'rfactor, rx, and ry must all be bigger than 1.0'")
 
-    if 0 < darkstr < 1:
+    if not 0 <= darkstr <= 1:
         raise ValueError("masked_dha: 'darkstr must be between 1.0 and 0.0'")
 
-    if not all([0 < sens < 100 for sens in (lowsens, highsens)]):
+    if not all(0 < sens < 100 for sens in (lowsens, highsens)):
         raise ValueError("masked_dha: 'lowsens and highsens must be between 0 and 100'")
 
     # These are the only two I'm going to keep, as these will still give expected results.
-    maskpull = max(min(maskpull, 254), 0)
-    maskpush = max(min(maskpush, 255), maskpull + 1)
+    maskpull = clamp_values(maskpull, max_val=254, min_val=0)
+    maskpush = clamp_values(maskpush, max_val=255, min_val=maskpull + 1)
 
     peak_r = 1.0 if get_depth(clip) == 32 else 1 << get_depth(clip)
     peak = 1.0 if get_depth(clip) == 32 else peak_r - 1
@@ -194,4 +194,4 @@ def masked_dha(clip: vs.VideoNode, rx: float = 2.0, ry: float = 2.0,
 
     umfc = core.std.Expr([clip_y, ssc], f'x y < x dup y - {darkstr} * - x dup y - {brightstr} * - ?')
     mfc = core.std.MaskedMerge(clip_y, umfc, mask_f)
-    return join([mfc, plane(clip, 1), plane(clip, 2)]) if not clip.format.id == vs.GRAY else mfc
+    return core.std.ShufflePlanes([mfc, clip], [0, 1, 2], vs.YUV) if not clip.format.id == vs.GRAY else mfc
