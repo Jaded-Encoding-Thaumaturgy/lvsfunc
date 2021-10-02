@@ -133,7 +133,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     return core.resize.Bicubic(debl, format=clip.format.id, matrix=matrix)
 
 
-def vsdpir(clip: vs.VideoNode, strength: int = 25, mode: str = 'deblock',
+def vsdpir(clip: vs.VideoNode, strength: float = 25, mode: str = 'deblock',
            matrix: Optional[Union[Matrix, int]] = None,
            cuda: bool = True, device_index: int = 0,
            i444: bool = False, **vsdpir_args: Any) -> vs.VideoNode:
@@ -168,16 +168,14 @@ def vsdpir(clip: vs.VideoNode, strength: int = 25, mode: str = 'deblock',
     if clip.format is None:
         raise ValueError("vsdpir: 'Variable-format clips not supported'")
 
-    if not matrix:
+    if matrix is None:
         matrix = get_prop(clip.get_frame(0), "_Matrix", int)
-
-    # TO-DO: Add a check to see if the models have been fully downloaded
-    # and if not, run the installer included in vsdpir?
 
     vsdpir_args |= dict(strength=strength, task=mode, device_type='cuda' if cuda else 'cpu')
 
-    clip_rgb = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=matrix)
-    run_dpir = DPIR(clip_rgb, **vsdpir_args)
+    # Converting YUV -> RGB24 -> RGBS seems to fix the dotting issue
+    clip_rgb = core.resize.Bicubic(clip, format=vs.RGB24, matrix_in=matrix)
+    run_dpir = DPIR(clip_rgb.resize.Bicubic(format=vs.RGBS), **vsdpir_args)
 
     if i444:
         return core.resize.Bicubic(run_dpir, format=vs.YUV444PS, matrix=matrix)
