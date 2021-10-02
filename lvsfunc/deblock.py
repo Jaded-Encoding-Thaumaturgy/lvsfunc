@@ -173,8 +173,12 @@ def vsdpir(clip: vs.VideoNode, strength: float = 25, mode: str = 'deblock',
 
     vsdpir_args |= dict(strength=strength, task=mode, device_type='cuda' if cuda else 'cpu')
 
-    # Converting YUV -> RGB24 -> RGBS seems to fix the dotting issue
-    clip_rgb = core.resize.Bicubic(clip, format=vs.RGB24, matrix_in=matrix)
+    if clip.format.color_family is vs.YUV:
+        # Converting YUV -> RGB24 -> RGBS seems to fix the dotting issue
+        clip_rgb = core.resize.Bicubic(clip, format=vs.RGB24, matrix_in=matrix, dither_type='error_diffusion')
+    elif clip.format.color_family is vs.RGB:
+        clip_rgb = clip
+
     run_dpir = DPIR(clip_rgb.resize.Bicubic(format=vs.RGBS), **vsdpir_args)
 
     if i444:
