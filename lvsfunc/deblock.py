@@ -59,11 +59,6 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     :return:                Deblocked clip
     """
-    try:
-        from vsdpir import DPIR
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError(f"autodb_dpir: {dpir_warning}")
-
     if clip.format is None:
         raise ValueError("autodb_dpir: 'Variable-format clips not supported'")
 
@@ -106,8 +101,12 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     nthrs = [tuple(x / 255 for x in thr) for thr in thrs]
 
-    rgb = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=matrix) \
-        .std.SetFrameProp('Adb_DeblockStrength', intval=0)
+    if clip.format.color_family is vs.YUV:
+        # Converting YUV -> RGB24 -> RGBS seems to fix the dotting issue
+        rgb = core.resize.Bicubic(clip, format=vs.RGB24, matrix_in=matrix, dither_type='error_diffusion')
+        rgb = core.resize.Bicubic(rgb, format=vs.RGBS)
+    elif clip.format.color_family is vs.RGB:
+        rgb = clip
 
     assert rgb.format
 
@@ -121,8 +120,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     diffprev = core.std.PlaneStats(rgb, rgb[0] + rgb, prop='YPrev')
 
     db_clips = [
-        DPIR(rgb, strength=st, task='deblock', device_type='cuda' if cuda else 'cpu',
-             device_index=device_index).std.SetFrameProp('Adb_DeblockStrength', intval=int(st)) for st in strs
+        vsdpir(rgb, strength=st, mode='deblock', cuda=True if cuda else False,
+               device_index=device_index).std.SetFrameProp('Adb_DeblockStrength', intval=int(st)) for st in strs
     ]
 
     debl = core.std.FrameEval(
