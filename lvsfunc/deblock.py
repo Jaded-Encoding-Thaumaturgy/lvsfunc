@@ -2,9 +2,11 @@
     Deblocking functions.
 """
 from functools import partial
+from importlib.metadata import version
 from typing import Any, Optional, Sequence, Tuple, Union
 
 import vapoursynth as vs
+from packaging import version as pck_version
 
 from .types import Matrix
 from .util import get_prop
@@ -12,17 +14,12 @@ from .util import get_prop
 core = vs.core
 
 
-dpir_warning = "vsdpir and pytorch are required for this function. " + \
-               "vsdpir can be installed with 'pip install vsdpir'."
-
-
 def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strs: Sequence[float] = [30, 50, 75],
                 thrs: Sequence[Tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
                 matrix: Optional[Union[Matrix, int]] = None,
                 cuda: bool = True, device_index: int = 0,
-                write_props: bool = False
-                ) -> vs.VideoNode:
+                write_props: bool = False) -> vs.VideoNode:
     """
     A rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
 
@@ -52,7 +49,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                             You can pass any arbitrary number of values here.
                             The amount of values in strs and thrs need to be equal.
     :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
-                            If `None`, gets matrix from the "_Matrix" prop of the clip
+                            If `None`, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
+                            in which case it stays as `None`.
     :param cuda:            Device type used for deblocking. Uses CUDA if True, else CPU
     :param device_index:    The 'device_index' + 1º device of type device type in the system
     :write_props            Will write verbose props
@@ -61,9 +59,6 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     """
     if clip.format is None:
         raise ValueError("autodb_dpir: 'Variable-format clips not supported'")
-
-    if not matrix:
-        matrix = get_prop(clip.get_frame(0), "_Matrix", int)
 
     def _eval_db(n: int, f: Sequence[vs.VideoFrame],
                  clip: vs.VideoNode, db_clips: Sequence[vs.VideoNode],
@@ -101,12 +96,12 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     nthrs = [tuple(x / 255 for x in thr) for thr in thrs]
 
-    if clip.format.color_family is vs.YUV:
-        # Converting YUV -> RGB24 -> RGBS seems to fix the dotting issue
-        rgb = core.resize.Bicubic(clip, format=vs.RGB24, matrix_in=matrix, dither_type='error_diffusion')
-        rgb = core.resize.Bicubic(rgb, format=vs.RGBS)
-    elif clip.format.color_family is vs.RGB:
-        rgb = clip
+    is_rgb = clip.format.color_family is vs.RGB
+
+    if not matrix and not is_rgb:
+        matrix = get_prop(clip.get_frame(0), "_Matrix", int)
+
+    rgb = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=matrix) if not is_rgb else clip
 
     assert rgb.format
 
@@ -120,8 +115,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     diffprev = core.std.PlaneStats(rgb, rgb[0] + rgb, prop='YPrev')
 
     db_clips = [
-        vsdpir(rgb, strength=st, mode='deblock', cuda=True if cuda else False,
-               device_index=device_index).std.SetFrameProp('Adb_DeblockStrength', intval=int(st)) for st in strs
+        vsdpir(rgb, strength=st, mode='deblock', cuda=cuda, device_index=device_index)
+        .std.SetFrameProp('Adb_DeblockStrength', intval=int(st)) for st in strs
     ]
 
     debl = core.std.FrameEval(
@@ -129,7 +124,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
         prop_src=[diffevref, diffnext, diffprev]
     )
 
-    return core.resize.Bicubic(debl, format=clip.format.id, matrix=matrix)
+    return core.resize.Bicubic(debl, format=clip.format.id, matrix=matrix if not is_rgb else None)
 
 
 def vsdpir(clip: vs.VideoNode, strength: float = 25, mode: str = 'deblock',
@@ -138,6 +133,9 @@ def vsdpir(clip: vs.VideoNode, strength: float = 25, mode: str = 'deblock',
            i444: bool = False, **vsdpir_args: Any) -> vs.VideoNode:
     """
     A simple vs-dpir wrapper for convenience.
+
+    You must have vs-dpir 1.6.0 or higher.
+    https://github.com/HolyWu/vs-dpir.
 
     Converts to RGB -> runs vs-dpir -> converts back to original format.
     For more information, see https://github.com/cszn/DPIR.
@@ -151,7 +149,8 @@ def vsdpir(clip: vs.VideoNode, strength: float = 25, mode: str = 'deblock',
                             Sane values lie between 20-50 for ``mode='deblock'``, and 2-5 for ``mode='denoise'``
     :param mode:            vs-dpir mode. Valid modes are 'deblock' and 'denoise'.
     :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
-                            If `None`, gets matrix from the "_Matrix" prop of the clip
+                            If `None`, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
+                            in which case it stays as `None`.
     :param cuda:            Use CUDA if True, else CPU
     :param i444:            Forces the returned clip to be YUV444PS instead of the input clip's format
     :param vsdpir_args:     Additional args to pass onto vs-dpir
@@ -162,23 +161,25 @@ def vsdpir(clip: vs.VideoNode, strength: float = 25, mode: str = 'deblock',
     try:
         from vsdpir import DPIR
     except ModuleNotFoundError:
-        raise ModuleNotFoundError(f"vsdpir: {dpir_warning}")
+        raise ModuleNotFoundError("'vsdpir: vs-dpir and pytorch are required to use this function.'")
+
+    # Forcing user to use a version of vsdpir that doesn't have the dotting issue rather than worry about that here.
+    if pck_version.parse(version('vsdpir')) < pck_version.parse("1.6.0"):
+        raise ImportError(f"vsdpir: 'Your vs-dpir version must be at least 1.6.0. Current version: {version('vsdpir')}"
+                          "\nPlease install the latest version from <https://github.com/HolyWu/vs-dpir>'")
 
     if clip.format is None:
         raise ValueError("vsdpir: 'Variable-format clips not supported'")
 
-    if matrix is None:
+    is_rgb = clip.format.color_family is vs.RGB
+
+    if matrix is None and not is_rgb:
         matrix = get_prop(clip.get_frame(0), "_Matrix", int)
 
     vsdpir_args |= dict(strength=strength, task=mode, device_type='cuda' if cuda else 'cpu')
 
-    if clip.format.color_family is vs.YUV:
-        # Converting YUV -> RGB24 -> RGBS seems to fix the dotting issue
-        clip_rgb = core.resize.Bicubic(clip, format=vs.RGB24, matrix_in=matrix, dither_type='error_diffusion')
-    elif clip.format.color_family is vs.RGB:
-        clip_rgb = clip
-
-    run_dpir = DPIR(clip_rgb.resize.Bicubic(format=vs.RGBS), **vsdpir_args)
+    clip_rgb = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=matrix, dither_type='error_diffusion')
+    run_dpir = DPIR(clip_rgb, **vsdpir_args)
 
     if i444:
         return core.resize.Bicubic(run_dpir, format=vs.YUV444PS, matrix=matrix)
