@@ -487,22 +487,19 @@ def diff(*clips: vs.VideoNode,
          thr: float = 72,
          height: int = 288,
          return_array: bool = False,
-         return_frames: bool = False,
-         return_ranges: bool = False,
          exclusion_ranges: Optional[Union[int, Iterable[Tuple[int, int]]]] = None,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a, b: core.std.MakeDiff(a, b),
-         **namedclips: vs.VideoNode) -> Union[vs.VideoNode, Tuple[vs.VideoNode, List[int]]]:
+         **namedclips: vs.VideoNode) -> vs.VideoNode:
     """
     Creates a standard :py:class:`lvsfunc.comparison.Stack` between frames from two clips that have differences.
     Useful for making comparisons between TV and BD encodes, as well as clean and hardsubbed sources.
 
-    There are two methods used here to find differences.
+    There are two methods used here to find differences:
     If `thr` is below 1, PlaneStatsDiff is used to figure out the differences.
     Else, if `thr` is equal than or higher than 1, PlaneStatsMin/Max are used.
 
-    Recommended is PlaneStatsMin/Max, as those seem to catch
-    more outrageous differences more easily and not return
-    too many starved frames.
+    Recommended is PlaneStatsMin/Max, as those seem to catch more outrageous differences
+    without returning too many starved frames.
 
     Note that this might catch artifacting as differences!
     Make sure you verify every frame with your own eyes!
@@ -518,13 +515,12 @@ def diff(*clips: vs.VideoNode,
                                 (MakeDiff clip will be twice this resolution)
     :param return_array:        Return frames as an interleaved comparison
                                 (using :py:class:`lvsfunc.comparison.Interleave`)
-    :param return_ranges:       Adds `frames ranges list` to the return.
     :param exclusion_ranges:    Excludes a list of frame ranges from difference checking output (but not processing)
     :param diff_func:           Function for calculating diff in PlaneStatsMin/Max mode
 
     :return:                    Either an interleaved clip of the differences between the two clips
                                 or a stack of both input clips on top of MakeDiff clip.
-                                Optionally, you can allow the function to also return a list of frames as well.
+                                Furthermore, the function will print the ranges of all the diff's found.
     """
     if clips and namedclips:
         raise ValueError("diff: positional clips and named keyword clips cannot both be given")
@@ -597,7 +593,6 @@ def diff(*clips: vs.VideoNode,
         a, b = a.text.FrameNum(9), b.text.FrameNum(9)
         comparison = Interleave({f'{name_a}': core.std.Splice([a[f] for f in frames]),
                                  f'{name_b}': core.std.Splice([b[f] for f in frames])}).clip
-
     else:
         scaled_width = vsutil.get_w(height, only_even=False)
         diff = diff.resize.Spline36(width=scaled_width * 2, height=height * 2).text.FrameNum(9)
@@ -611,11 +606,9 @@ def diff(*clips: vs.VideoNode,
         comparison = Stack((diff_stack, diff), direction=Direction.VERTICAL).clip
 
     frame_ranges = [r for r in _to_ranges(frames)]
-    print(frame_ranges)
+    print(f"Frames with differences found: {frame_ranges}")
 
-    if return_ranges:
-        return comparison, frame_ranges
-    return comparison if not return_frames else (comparison, frames)
+    return comparison
 
 
 def interleave(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
