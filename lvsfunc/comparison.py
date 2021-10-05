@@ -8,8 +8,8 @@ import warnings
 from abc import ABC, abstractmethod
 from enum import IntEnum
 from itertools import groupby, zip_longest
-from typing import (Any, Callable, Dict, Iterable, Iterator, List,
-                    Optional, Sequence, Set, Tuple, TypeVar, Union)
+from typing import (Any, Callable, Dict, Iterable, Iterator, List, Optional,
+                    Sequence, Set, Tuple, TypeVar, Union)
 
 import vapoursynth as vs
 import vsutil
@@ -487,7 +487,7 @@ def diff(*clips: vs.VideoNode,
          thr: float = 72,
          height: int = 288,
          return_array: bool = False,
-         exclusion_ranges: Optional[Union[int, Iterable[Tuple[int, int]]]] = None,
+         exclusion_ranges: Optional[Sequence[Union[int, Tuple[int, int]]]] = None,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a, b: core.std.MakeDiff(a, b),
          **namedclips: vs.VideoNode) -> vs.VideoNode:
     """
@@ -520,7 +520,7 @@ def diff(*clips: vs.VideoNode,
 
     :return:                    Either an interleaved clip of the differences between the two clips
                                 or a stack of both input clips on top of MakeDiff clip.
-                                Furthermore, the function will print the ranges of all the diff's found.
+                                Furthermore, the function will print the ranges of all the diffs found.
     """
     if clips and namedclips:
         raise ValueError("diff: positional clips and named keyword clips cannot both be given")
@@ -538,11 +538,11 @@ def diff(*clips: vs.VideoNode,
         if any(nc.format is None for nc in namedclips.values()):
             raise ValueError("diff: variable-format namedclips not supported")
 
-    def _to_ranges(iterable: List[int]) -> Iterator[int]:
+    def _to_ranges(iterable: List[int]) -> Iterable[Tuple[int, int]]:
         iterable = sorted(set(iterable))
         for key, group in groupby(enumerate(iterable), lambda t: t[1] - t[0]):
-            group = list(group)
-            yield group[0][1], group[-1][1]
+            groupl = list(group)
+            yield groupl[0][1], groupl[-1][1]
 
     if clips:
         a, b = vsutil.depth(clips[0], 8), vsutil.depth(clips[1], 8)
@@ -577,12 +577,13 @@ def diff(*clips: vs.VideoNode,
     frames.sort()
 
     if exclusion_ranges:
-        for e in exclusion_ranges:  # type:ignore[union-attr]
-            if type(e) is int:
-                e = [e, e]
+        r: List[int] = []
+        for e in exclusion_ranges:
+            if isinstance(e, int):
+                e = (e, e)
             start, end = e[0], e[1]+1
-            r = range(start, end)
-            frames = [f for f in list(frames) if f not in r]
+            r += list(range(start, end))
+        frames = [f for f in frames if f not in r]
 
     if clips:
         name_a, name_b = "Clip A", "Clip B"
@@ -605,7 +606,7 @@ def diff(*clips: vs.VideoNode,
 
         comparison = Stack((diff_stack, diff), direction=Direction.VERTICAL).clip
 
-    frame_ranges = [r for r in _to_ranges(frames)]
+    frame_ranges = list(_to_ranges(frames))
     print(f"Frames with differences found: {frame_ranges}")
 
     return comparison
