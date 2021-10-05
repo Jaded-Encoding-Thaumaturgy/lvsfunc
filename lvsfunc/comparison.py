@@ -483,7 +483,7 @@ def diff_hardsub_mask(a: vs.VideoNode, b: vs.VideoNode, **kwargs: Any) -> vs.Vid
 
 @overload
 def diff(*clips: vs.VideoNode,
-         return_frames: Literal[False],
+         return_frames: Literal[False] = False,
          thr: float = 72,
          height: int = 288,
          return_array: bool = False,
@@ -505,7 +505,7 @@ def diff(*clips: vs.VideoNode,
 
 @overload
 def diff(*clips: vs.VideoNode,
-         return_frames: bool,
+         return_frames: bool = False,
          thr: float = 72,
          height: int = 288,
          return_array: bool = False,
@@ -515,7 +515,7 @@ def diff(*clips: vs.VideoNode,
 
 
 def diff(*clips: vs.VideoNode,
-         return_frames: bool,
+         return_frames: bool = False,
          thr: float = 72,
          height: int = 288,
          return_array: bool = False,
