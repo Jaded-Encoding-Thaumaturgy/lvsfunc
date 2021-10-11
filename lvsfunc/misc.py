@@ -165,8 +165,6 @@ def get_matrix(clip: vs.VideoNode) -> int:
 
     if frame.format.color_family == vs.RGB:
         return 0
-    if frame.format.color_family == vs.YCOCG:
-        return 8
     if w <= 1024 and h <= 576:
         return 5
     if w <= 2048 and h <= 1536:
