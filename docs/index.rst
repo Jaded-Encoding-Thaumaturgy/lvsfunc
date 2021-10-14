@@ -135,6 +135,7 @@ Functions
    lvsfunc.misc.wipe_row
    lvsfunc.recon.chroma_reconstruct
    lvsfunc.render.clip_async_render
+   lvsfunc.render.audio_async_render
    lvsfunc.render.find_scene_changes
    lvsfunc.render.get_render_process
    lvsfunc.scale.descale
@@ -368,6 +369,7 @@ lvsfunc.render
 .. autosummary::
 
    lvsfunc.render.clip_async_render
+   lvsfunc.render.audio_async_render
    lvsfunc.render.find_scene_changes
    lvsfunc.render.get_render_process
 
