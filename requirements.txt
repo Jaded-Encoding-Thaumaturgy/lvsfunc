@@ -1,4 +1,5 @@
 VapourSynth>=51
+numpy>=1.21.2
 packaging>=21.0
 rich>=8.0.0
 toolz>=0.9.0.1
