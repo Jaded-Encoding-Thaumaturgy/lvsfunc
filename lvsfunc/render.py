@@ -1,5 +1,5 @@
 """
-Clip rendering helpers.
+    Clip rendering helpers.
 """
 import vapoursynth as vs
 

@@ -1,3 +1,6 @@
+"""
+    Basic types to be used by certain functions.
+"""
 from enum import IntEnum
 from typing import NoReturn, Optional, Tuple, Union
 

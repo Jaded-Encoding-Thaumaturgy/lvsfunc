@@ -1,6 +1,6 @@
 """
-    Helper functions for the main functions in this module.
-    Also contains some useful functions for regular scripts.
+    Helper functions for module functions and wrapper.
+    Some of these may also be useful for regular scripting or other modules.
 """
 from typing import (Any, Callable, List, Optional, Sequence, Tuple, Type,
                     TypeVar, Union)

@@ -1,5 +1,5 @@
 """
-    Deblocking functions.
+    Deblocking functions and wrappers.
 """
 from functools import partial
 from importlib.metadata import version

@@ -1,5 +1,5 @@
 """
-    Functions for (de)scaling.
+    (De)scaling functions and wrappers.
 """
 import math
 from functools import partial

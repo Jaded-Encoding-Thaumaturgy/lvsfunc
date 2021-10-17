@@ -1,5 +1,5 @@
 """
-    Wrappers and masks for denoising.
+    Masking functions and wrappers.
 """
 import warnings
 from abc import ABC, abstractmethod

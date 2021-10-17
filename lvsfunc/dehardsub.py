@@ -1,5 +1,5 @@
 """
-Dehardsubbing helpers.
+    Dehardsubbing functions and wrappers.
 """
 import vapoursynth as vs
 

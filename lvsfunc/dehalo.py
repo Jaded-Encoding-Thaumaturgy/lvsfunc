@@ -1,5 +1,5 @@
 """
-    Wrappers for dehaloing functions.
+    Dehaloing functions and wrappers.
 """
 import warnings
 from functools import partial

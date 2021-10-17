@@ -1,6 +1,8 @@
 """
-    Functions intended to be used to make comparisons between different sources
-    or to be used to analyze something from a single clip.
+    comparison and analysis functions and wrappers.
+
+    These functions are intended to be used for comparing encodes, filterchains,
+    and other kinds of personal analysis.
 """
 import math
 import random
@@ -343,6 +345,9 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     Allows for the same frames from two different clips to be compared by interleaving them into a single clip.
     Clips are automatically resampled to 8 bit YUV -> RGB24 to emulate how a monitor shows the frame.
     This can be disabled by setting `force_resample` to ``False``.
+
+    This is not recommended over setting multiple outputs and checking between those,
+    but in the event that is unavailable to you, this function may be useful.
 
     Alias for this function is `lvsfunc.comp`.
 

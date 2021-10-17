@@ -1,5 +1,5 @@
 """
-    Functions for various anti-aliasing functions and wrappers.
+    Anti-aliasing functions and wrappers.
 """
 from math import ceil
 from typing import Any, Callable, Dict, Optional

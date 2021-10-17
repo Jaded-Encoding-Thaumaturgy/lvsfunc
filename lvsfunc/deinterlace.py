@@ -1,5 +1,5 @@
 """
-    Functions to help with deinterlacing or deinterlaced content.
+    Deinterlacing, IVCTC, and post-deinterlacing functions and wrappers.
 """
 
 import os

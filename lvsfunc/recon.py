@@ -1,8 +1,5 @@
 """
-    Wrappers and functions for chroma reconstruction.
-    Original functions written by shane on Discord,
-    but since he doesn't seem to be releasing them,
-    I will be the one to do it.
+    Chroma reconstruction functions and wrappers.
 """
 from functools import partial
 from typing import List, NamedTuple

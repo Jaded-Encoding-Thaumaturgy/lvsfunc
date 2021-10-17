@@ -1,5 +1,5 @@
 """
-    Denoising functions.
+    Denoising functions and wrappers.
 """
 from typing import Any, Dict, List, Optional, Union
 
