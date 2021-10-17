@@ -1,5 +1,5 @@
 """
-    Miscellaneous functions and wrappers that didn't really have a place in any other submodules.
+    Miscellaneous functions and wrappers that don't really have a place elsewhere.
 """
 import colorsys
 import os

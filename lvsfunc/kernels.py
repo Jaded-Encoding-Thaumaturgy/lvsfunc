@@ -1,5 +1,5 @@
 """
-    Kernels for vapoursynth internal resizers.
+    Kernels for VapourSynth internal resizers.
     Intended for use by :py:mod:`lvsfunc.scale` functions.
 """
 from abc import ABC, abstractmethod

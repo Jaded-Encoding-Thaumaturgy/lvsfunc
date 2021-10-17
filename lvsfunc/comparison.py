@@ -1,5 +1,5 @@
 """
-    comparison and analysis functions and wrappers.
+    Comparison and analysis functions and wrappers.
 
     These functions are intended to be used for comparing encodes, filterchains,
     and other kinds of personal analysis.

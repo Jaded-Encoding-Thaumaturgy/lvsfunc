@@ -1,5 +1,5 @@
 """
-    Deinterlacing, IVCTC, and post-deinterlacing functions and wrappers.
+    Deinterlacing, IVTC, and post-deinterlacing functions and wrappers.
 """
 
 import os
