@@ -194,4 +194,5 @@ def masked_dha(clip: vs.VideoNode, rx: float = 2.0, ry: float = 2.0,
 
     umfc = core.std.Expr([clip_y, ssc], f'x y < x dup y - {darkstr} * - x dup y - {brightstr} * - ?')
     mfc = core.std.MaskedMerge(clip_y, umfc, mask_f)
-    return core.std.ShufflePlanes([mfc, clip], [0, 1, 2], vs.YUV) if not clip.format.id == vs.GRAY else mfc
+    return core.std.ShufflePlanes([mfc, clip], [0, 1, 2], vs.YUV) \
+        if not clip.format.color_family == vs.GRAY else mfc
