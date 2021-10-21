@@ -330,9 +330,9 @@ def audio_async_render(audio: vs.AudioNode,
 
     if header == WaveHeader.AUTO:
         conditions = (audio.num_channels > 2, audio.bits_per_sample > 16, audio.num_samples > 44100)
-        header_func, use_w64 = (_w64_header, 1) if any(conditions) else (_wav_header, 0)
+        header_func, use_w64 = (_w64_header, WaveHeader.WAVE64) if any(conditions) else (_wav_header, WaveHeader.WAVE)
     else:
-        use_w64 = int(header)
+        use_w64 = header
         header_func = (_wav_header, _w64_header)[header]
 
     outfile.write(header_func(audio, bytes_per_second, block_align, data_size))
@@ -416,9 +416,6 @@ def _w64_header(audio: vs.AudioNode, bps: int, block_align: int, data_size: int)
     # Length of the FMT-GUID + length of FMT data and 8 for the bytes themself
     header += struct.pack('<Q', len(fmt_guid) + 8 + len(fmt_chunk_data))
     header += fmt_chunk_data
-
-    # # Finally write the header
-    # outfile.write(header)
 
     # DATA-GUID
     data_uuid = bytes(WAVE64_DATA_UUID)
