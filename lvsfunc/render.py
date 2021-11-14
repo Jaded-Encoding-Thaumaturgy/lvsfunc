@@ -54,8 +54,7 @@ def finish_frame(outfile: Optional[BinaryIO], timecodes: Optional[TextIO], ctx: 
 
     outfile.write("FRAME\n".encode("utf-8"))
 
-    for p in f:
-        outfile.write(p)
+    f._writelines(outfile.write)
 
 
 def clip_async_render(clip: vs.VideoNode,
