@@ -539,12 +539,14 @@ def diff(*clips: vs.VideoNode,
     :param clips:               Clips for comparison (order is kept)
     :param namedclips:          Keyword arguments of `name=clip` for all clips in the comparison.
                                 Clips will be labeled at the top left with their `name`.
-    :param thr:                 Threshold, <= 1 uses PlaneStatsDiff, >1 uses Max/Min.
-                                Value must be below 128
+    :param thr:                 Threshold, <= 1 uses PlaneStatsDiff, > 1 uses Max/Min.
+                                Higher values will catch more differences.
+                                Value must be lower than 128
     :param height:              Height in px to downscale clips to if `interleave` is ``False``
                                 (MakeDiff clip will be twice this resolution)
     :param interleave:          Return clip as an interleaved comparison
-                                (using :py:class:`lvsfunc.comparison.Interleave`)
+                                (using :py:class:`lvsfunc.comparison.Interleave`).
+                                This will not return a diff clip
     :param return_ranges:       Return a list of ranges in addition to the comparison clip
     :param exclusion_ranges:    Excludes a list of frame ranges from difference checking output (but not processing)
     :param diff_func:           Function for calculating diff in PlaneStatsMin/Max mode
