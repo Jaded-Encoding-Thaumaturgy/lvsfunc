@@ -19,7 +19,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 thrs: Sequence[Tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
                 matrix: Optional[Union[Matrix, int]] = None,
                 cuda: bool = True, device_index: int = 0,
-                write_props: bool = False) -> vs.VideoNode:
+                write_props: bool = False,
+                **vsdpir_args: Any) -> vs.VideoNode:
     """
     A rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
 
@@ -54,6 +55,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     :param cuda:            Device type used for deblocking. Uses CUDA if True, else CPU
     :param device_index:    The 'device_index' + 1º device of type device type in the system
     :write_props            Will write verbose props
+    :vsdpir_args            Additional args to pass to ``vsdpir``
 
     :return:                Deblocked clip
     """
@@ -115,7 +117,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     diffprev = core.std.PlaneStats(rgb, rgb[0] + rgb, prop='YPrev')
 
     db_clips = [
-        vsdpir(rgb, strength=st, mode='deblock', cuda=cuda, device_index=device_index)
+        vsdpir(rgb, strength=st, mode='deblock', cuda=cuda, device_index=device_index, **vsdpir_args)
         .std.SetFrameProp('Adb_DeblockStrength', intval=int(st)) for st in strs
     ]
 
