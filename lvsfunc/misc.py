@@ -66,9 +66,10 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
 
     # Error handling for some file types
     if file.endswith('.mpls') and mpls is False:
-        raise ValueError("source: 'Set \"mpls = True\" and pass a path to the base Blu-ray directory for this kind of file'")  # noqa: E501
+        raise ValueError("source: 'Set \"mpls = True\" and pass a path to the base Blu-ray directory "
+                         "for this kind of file'")
     if os.path.splitext(file)[1].lower() in annoying_formats:
-        raise ValueError("source: 'Use an external indexer like d2vwitch or DGIndexNV for this kind of file'")  # noqa: E501
+        raise ValueError("source: 'Use an external indexer like d2vwitch or DGIndexNV for this kind of file'")
 
     if force_lsmas:
         clip = core.lsmas.LWLibavSource(file, **index_args)
@@ -82,6 +83,8 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
         clip = core.d2v.Source(file, **index_args)
     elif file.endswith('.dgi'):
         clip = core.dgdecodenv.DGSource(file, **index_args)
+    elif file.endswith('.mp4'):
+        clip = core.lsmas.LibavSMASHSource(file, **index_args)
     elif is_image(file):
         clip = core.imwri.Read(file, **index_args)
     else:
