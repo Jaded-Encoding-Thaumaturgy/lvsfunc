@@ -56,8 +56,7 @@ def bidehalo(clip: vs.VideoNode, ref: Optional[vs.VideoNode] = None,
     else:
         bidh = depth(ref, clip.format.bits_per_sample)
 
-    restore_dark = core.std.Expr([clip, bidh], "x y < x y ?")
-    return restore_dark
+    return core.std.Expr([clip, bidh], "x y min")
 
 
 def deemphasize(clip: vs.VideoNode, strength: int = 95,
