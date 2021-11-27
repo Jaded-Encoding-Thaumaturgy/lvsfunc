@@ -163,6 +163,7 @@ def decomb(clip: vs.VideoNode,
     """
     A filter that performs relatively aggressive filtering to get rid of the combing on a interlaced/telecined source.
     Decimation can be disabled if the user wishes to decimate the clip themselves.
+
     Enabling vinverse will result in more aggressive decombing at the cost of potential detail loss.
     Sharpen will perform a directional unsharpening. Direction can be set using `dir`.
     A reference clip can be passed with `ref`, which will be used by VFM to create the output frames.
@@ -191,7 +192,7 @@ def decomb(clip: vs.VideoNode,
     :return:              Decombed and optionally decimated clip
     """
     try:
-        from havsfunc import QTGMC
+        from havsfunc import QTGMC, Vinverse
     except ModuleNotFoundError:
         raise ModuleNotFoundError("decomb: missing dependency 'havsfunc'")
 
@@ -220,7 +221,7 @@ def decomb(clip: vs.VideoNode,
 
     decombed = core.std.FrameEval(clip, partial(_pp, clip=clip, pp=qtgmc_merged), clip)
 
-    decombed = decombed.vinverse.Vinverse() if vinv else decombed
+    decombed = Vinverse(decombed) if vinv else decombed
     decombed = dir_unsharp(decombed, dir=dir) if sharpen else decombed
     decombed = util.pick_repair(clip)(decombed, clip, rep) if rep else decombed
     return core.vivtc.VDecimate(decombed) if decimate else decombed
