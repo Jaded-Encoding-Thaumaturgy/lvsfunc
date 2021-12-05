@@ -4,7 +4,7 @@
 """
 from abc import ABC, abstractmethod
 from math import sqrt
-from typing import Any, Tuple
+from typing import Any, Dict, Tuple
 
 import vapoursynth as vs
 
@@ -18,6 +18,10 @@ class Kernel(ABC):
     Additional kwargs supplied to constructor are passed only to the internal
     resizer, not the descale resizer.
     """
+
+    kwargs: Dict[str, Any]
+    """Arguments passed to the kernel filter"""
+
     def __init__(self, **kwargs: Any) -> None:
         self.kwargs = kwargs
 
