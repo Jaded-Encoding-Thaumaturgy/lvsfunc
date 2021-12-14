@@ -45,6 +45,7 @@ def TIVTC_VFR(clip: vs.VideoNode,
               tfm_in: Union[Path, str] = ".ivtc/matches.txt",
               tdec_in: Union[Path, str] = ".ivtc/metrics.txt",
               timecodes_out: Union[Path, str] = ".ivtc/timecodes.txt",
+              decimate: Union[int, bool] = True,
               tfm_args: Dict[str, Any] = {},
               tdecimate_args: Dict[str, Any] = {}) -> vs.VideoNode:
     """
@@ -61,11 +62,16 @@ def TIVTC_VFR(clip: vs.VideoNode,
     :param tfmIn:               File location for TFM's matches analysis
     :param tdecIn:              File location for TDecimate's metrics analysis
     :param mkvOut:              File location for TDecimate's timecode file output
+    :param decimate:            Perform TDecimate on the clip if true, else returns TFM'd clip only.
+                                Set to -1 to use TDecimate without TFM
     :param tfm_args:            Additional arguments to pass to TFM
     :param tdecimate_args:      Additional arguments to pass to TDecimate
 
     :return:                    IVTC'd VFR clip
     """
+    if int(decimate) not in (-1, 0, 1):
+        raise ValueError("TIVTC_VFR: 'Invalid `decimate` argument. Must be True/False, their integer values, or -1'")
+
     tfm_in = Path(tfm_in).resolve()
     tdec_in = Path(tdec_in).resolve()
     timecodes_out = Path(timecodes_out).resolve()
@@ -90,19 +96,18 @@ def TIVTC_VFR(clip: vs.VideoNode,
             with open(os.devnull, 'wb') as dn:
                 ivtc_clip.output(dn, progress_update=_cb)
 
-        # Allow it to properly finish writing the logs
-        time.sleep(0.5)
-        del ivtc_clip  # Releases the clip, and in turn the filter (prevents it from erroring out)
+        time.sleep(0.5)  # Allow it to properly finish writing logs
+        del ivtc_clip  # Releases the clip, and in turn the filter (prevents an error)
 
     tfm_args = {**tfm_args, 'input': str(tfm_in)}
 
     tdecimate_args = {
-        'mode': 5, **tdecimate_args,
+        'mode': 5, 'hybrid': 2, 'vfrDec': 1, **tdecimate_args,
         'input': str(tdec_in), 'tfmIn': str(tfm_in), 'mkvOut': str(timecodes_out),
-        'hybrid': 2, 'vfrDec': 1
     }
 
-    return clip.tivtc.TFM(**tfm_args).tivtc.TDecimate(**tdecimate_args)
+    tfm = clip.tivtc.TFM(**tfm_args) if not decimate == -1 else clip
+    return tfm.tivtc.TDecimate(**tdecimate_args) if not int(decimate) == 0 else tfm
 
 
 def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:
