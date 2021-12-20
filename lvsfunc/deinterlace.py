@@ -11,8 +11,8 @@ from typing import Any, Dict, Optional, Union
 
 import vapoursynth as vs
 
-from . import util
 from .render import get_render_progress
+from .util import pick_repair
 
 core = vs.core
 
@@ -110,7 +110,8 @@ def TIVTC_VFR(clip: vs.VideoNode,
     return tfm.tivtc.TDecimate(**tdecimate_args) if not int(decimate) == 0 else tfm
 
 
-def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:
+def deblend(clip: vs.VideoNode, start: int = 0,
+            rep: Optional[int] = None, decimate: bool = True) -> vs.VideoNode:
     """
     A simple function to fix deblending for interlaced video with an AABBA blending pattern,
     where A is a regular frame and B is a blended frame.
@@ -129,18 +130,19 @@ def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:
 
     * RGSF (optional: 32 bit clip)
 
-    :param clip:     Input clip
-    :param rep:      Repair mode for the deblended frames, no repair if None (Default: None)
+    :param clip:        Input clip
+    :param start:       First frame of the pattern (Default: 0)
+    :param rep:         Repair mode for the deblended frames, no repair if None (Default: None)
+    :param decimate:    Decimate the video after deblending (Default: True)
 
-    :return:         Deblended clip
+    :return:            Deblended clip
     """
 
-    blends_a = range(2, clip.num_frames - 1, 5)
-    blends_b = range(3, clip.num_frames - 1, 5)
+    blends_a = range(start + 2, clip.num_frames - 1, 5)
+    blends_b = range(start + 3, clip.num_frames - 1, 5)
     expr_cd = ["z a 2 / - y x 2 / - +"]
 
-    def deblend(n: int, clip: vs.VideoNode, rep: Optional[int]
-                ) -> vs.VideoNode:
+    def deblend(n: int, clip: vs.VideoNode, rep: Optional[int]) -> vs.VideoNode:
         # Thanks Myaa, motbob and kageru!
         if n % 5 in [0, 1, 4]:
             return clip
@@ -148,11 +150,12 @@ def deblend(clip: vs.VideoNode, rep: Optional[int] = None) -> vs.VideoNode:
             if n in blends_a:
                 c, cd, da, a = clip[n - 1], clip[n], clip[n + 1], clip[n + 2]
                 debl = core.std.Expr([c, cd, da, a], expr_cd)
-                return util.pick_repair(clip)(debl, c, rep) if rep else debl
+                return pick_repair(clip)(debl, c, rep) if rep else debl
             return clip
 
     debl = core.std.FrameEval(clip, partial(deblend, clip=clip, rep=rep))
-    return core.std.DeleteFrames(debl, blends_b).std.AssumeFPS(fpsnum=24000, fpsden=1001)
+    return core.std.DeleteFrames(debl, blends_b).std.AssumeFPS(fpsnum=24000, fpsden=1001) \
+        if decimate else debl
 
 
 def decomb(clip: vs.VideoNode,
