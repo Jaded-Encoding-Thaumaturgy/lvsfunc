@@ -12,7 +12,7 @@ from typing import Any, Dict, Optional, Union
 import vapoursynth as vs
 
 from .render import get_render_progress
-from .util import pick_repair
+from .util import get_prop, pick_repair
 
 core = vs.core
 
@@ -159,22 +159,19 @@ def deblend(clip: vs.VideoNode, start: int = 0,
 
 
 def decomb(clip: vs.VideoNode,
-           TFF: bool,
-           mode: int = 1,
-           ref: Optional[vs.VideoNode] = None,
-           decimate: bool = True,
-           vinv: bool = False,
-           sharpen: bool = False, dir: str = 'v',
-           rep: Optional[int] = None,
-           show_mask: bool = False,
-           **kwargs: Any) -> vs.VideoNode:
+           TFF: Union[bool, int] = True, mode: int = 1,
+           decimate: bool = True, vinv: bool = False,
+           rep: Optional[int] = None, show_mask: bool = False,
+           tivtc_args: Dict[str, Any] = {},
+           tdec_args: Dict[str, Any] = {},
+           qtgmc_args: Dict[str, Any] = {}) -> vs.VideoNode:
     """
     A filter that performs relatively aggressive filtering to get rid of the combing on a interlaced/telecined source.
     Decimation can be disabled if the user wishes to decimate the clip themselves.
 
     Enabling vinverse will result in more aggressive decombing at the cost of potential detail loss.
     Sharpen will perform a directional unsharpening. Direction can be set using `dir`.
-    A reference clip can be passed with `ref`, which will be used by VFM to create the output frames.
+    A reference clip can be passed with `ref`, which will be used by TFM to create the output frames.
 
     Base function written by Midlifecrisis from the WEEB AUTISM server, and modified by LightArrowsEXE.
 
@@ -186,16 +183,15 @@ def decomb(clip: vs.VideoNode,
 
     :param clip:          Input clip
     :param TFF:           Top-Field-First
-    :param mode:          Sets the matching mode or strategy to use for VFM
-    :param ref:           Reference clip for VFM's `clip2` parameter
+    :param mode:          Sets the matching mode or strategy to use for TFM
     :param decimate:      Decimate the video after deinterlacing (Default: True)
     :param vinv:          Use vinverse to get rid of additional combing (Default: False)
     :param sharpen:       Unsharpen after deinterlacing (Default: False)
     :param dir:           Directional vector. 'v' = Vertical, 'h' = Horizontal (Default: v)
     :param rep:           Repair mode for repairing the decombed clip using the original clip (Default: None)
     :param show_mask:     Return combmask
-    :param kwargs:        Arguments to pass to QTGMC
-                          (Default: SourceMatch=3, Lossless=2, TR0=1, TR1=2, TR2=3, FPSDivisor=2)
+    :param tivtc_args:    Arguments to pass to TFM
+    :param qtgmc_args:    Arguments to pass to QTGMC
 
     :return:              Decombed and optionally decimated clip
     """
@@ -204,17 +200,18 @@ def decomb(clip: vs.VideoNode,
     except ModuleNotFoundError:
         raise ModuleNotFoundError("decomb: missing dependency 'havsfunc'")
 
-    qtgmc_args = dict(SourceMatch=3, Lossless=2, TR0=1, TR1=2, TR2=3, FPSDivisor=2)
-    qtgmc_args.update(kwargs)
-
     VFM_TFF = int(TFF)
 
-    def _pp(n: int, f: vs.VideoFrame, clip: vs.VideoNode, pp: vs.VideoNode
-            ) -> vs.VideoNode:
-        return pp if f.props._Combed == 1 else clip
+    tivtc_kwargs: Dict[str, Any] = dict(order=VFM_TFF, mode=mode)
+    tivtc_kwargs |= tivtc_args
 
-    clip = core.vivtc.VFM(clip, order=VFM_TFF, mode=mode, clip2=ref) if ref is not None \
-        else core.vivtc.VFM(clip, order=VFM_TFF, mode=1)
+    qtgmc_kwargs: Dict[str, Any] = dict(SourceMatch=3, Lossless=2, TR0=1, TR1=2, TR2=3, FPSDivisor=2, TFF=TFF)
+    qtgmc_kwargs |= qtgmc_args
+
+    def _pp(n: int, f: vs.VideoFrame, clip: vs.VideoNode, pp: vs.VideoNode) -> vs.VideoNode:
+        return pp if get_prop(f, '_Combed', int) == 1 else clip
+
+    clip = core.tivtc.TFM(clip, **tivtc_kwargs)
 
     combmask = core.comb.CombMask(clip, cthresh=1, mthresh=3)
     combmask = core.std.Maximum(combmask, threshold=250).std.Maximum(threshold=250) \
@@ -224,15 +221,14 @@ def decomb(clip: vs.VideoNode,
     if show_mask:
         return combmask
 
-    qtgmc = QTGMC(clip, TFF=TFF, **qtgmc_args)
+    qtgmc = QTGMC(clip, **qtgmc_kwargs)
     qtgmc_merged = core.std.MaskedMerge(clip, qtgmc, combmask, first_plane=True)
 
     decombed = core.std.FrameEval(clip, partial(_pp, clip=clip, pp=qtgmc_merged), clip)
 
     decombed = Vinverse(decombed) if vinv else decombed
-    decombed = dir_unsharp(decombed, dir=dir) if sharpen else decombed
-    decombed = util.pick_repair(clip)(decombed, clip, rep) if rep else decombed
-    return core.vivtc.VDecimate(decombed) if decimate else decombed
+    decombed = pick_repair(clip)(decombed, clip, rep) if rep else decombed
+    return core.tivtc.TDecimate(decombed, **tdec_args) if decimate else decombed
 
 
 def dir_deshimmer(clip: vs.VideoNode, TFF: bool = True,
