@@ -162,7 +162,7 @@ def decomb(clip: vs.VideoNode,
            TFF: Union[bool, int] = True, mode: int = 1,
            decimate: bool = True, vinv: bool = False,
            rep: Optional[int] = None, show_mask: bool = False,
-           tivtc_args: Dict[str, Any] = {},
+           tfm_args: Dict[str, Any] = {},
            tdec_args: Dict[str, Any] = {},
            qtgmc_args: Dict[str, Any] = {}) -> vs.VideoNode:
     """
@@ -190,7 +190,7 @@ def decomb(clip: vs.VideoNode,
     :param dir:           Directional vector. 'v' = Vertical, 'h' = Horizontal (Default: v)
     :param rep:           Repair mode for repairing the decombed clip using the original clip (Default: None)
     :param show_mask:     Return combmask
-    :param tivtc_args:    Arguments to pass to TFM
+    :param tfm_args:      Arguments to pass to TFM
     :param qtgmc_args:    Arguments to pass to QTGMC
 
     :return:              Decombed and optionally decimated clip
@@ -202,8 +202,8 @@ def decomb(clip: vs.VideoNode,
 
     VFM_TFF = int(TFF)
 
-    tivtc_kwargs: Dict[str, Any] = dict(order=VFM_TFF, mode=mode)
-    tivtc_kwargs |= tivtc_args
+    tfm_kwargs: Dict[str, Any] = dict(order=VFM_TFF, mode=mode, chroma=True)
+    tfm_kwargs |= tfm_args  # chroma set to True by default to match VFM
 
     qtgmc_kwargs: Dict[str, Any] = dict(SourceMatch=3, Lossless=2, TR0=1, TR1=2, TR2=3, FPSDivisor=2, TFF=TFF)
     qtgmc_kwargs |= qtgmc_args
@@ -211,7 +211,7 @@ def decomb(clip: vs.VideoNode,
     def _pp(n: int, f: vs.VideoFrame, clip: vs.VideoNode, pp: vs.VideoNode) -> vs.VideoNode:
         return pp if get_prop(f, '_Combed', int) == 1 else clip
 
-    clip = core.tivtc.TFM(clip, **tivtc_kwargs)
+    clip = core.tivtc.TFM(clip, **tfm_kwargs)
 
     combmask = core.comb.CombMask(clip, cthresh=1, mthresh=3)
     combmask = core.std.Maximum(combmask, threshold=250).std.Maximum(threshold=250) \
