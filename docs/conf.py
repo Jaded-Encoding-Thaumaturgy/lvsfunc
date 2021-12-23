@@ -21,10 +21,10 @@ copyright = '2021, LightArrowsEXE'
 author = 'LightArrowsEXE'
 
 # The short X.Y version
-version = '0.3.10'
+version = '0.3.11'
 
 # The full version, including alpha/beta/rc tags
-release = '0.3.10'
+release = '0.3.11'
 
 # -- General configuration ---------------------------------------------------
 
