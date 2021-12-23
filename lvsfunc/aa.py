@@ -54,9 +54,9 @@ def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode]) -> vs
     y = get_y(clip)
 
     aa = aafun(y.std.Transpose())
-    aa = aa.resize.Spline36(height=clip.width, src_top=0.5).std.Transpose()
-    aa = aafun(aa)
-    aa = aa.resize.Spline36(height=clip.height, src_top=0.5)
+    aa = kernels.BicubicDidee().scale(aa, width=clip.width, height=clip.width, shift=(0.5, 0))
+    aa = aafun(aa.std.Transpose())
+    aa = kernels.BicubicDidee().scale(aa, width=clip.width, height=clip.height, shift=(0.5, 0))
 
     return aa if clip.format.color_family == vs.GRAY \
         else core.std.ShufflePlanes([aa, clip], planes=[0, 1, 2], colorfamily=vs.YUV)
@@ -171,9 +171,9 @@ def transpose_aa(clip: vs.VideoNode,
 
     def _taa(clip: vs.VideoNode) -> vs.VideoNode:
         aa = _aafun(clip.std.Transpose())
-        aa = aa.resize.Bicubic(clip.height, clip.width, src_top=.5).std.Transpose()
-        aa = _aafun(aa)
-        return aa.resize.Bicubic(clip.width, clip.height, src_top=.5)
+        aa = kernels.BicubicDidee().scale(aa, clip.height, clip.width, shift=(0.5, 0))
+        aa = _aafun(aa.std.Transpose())
+        return kernels.BicubicDidee().scale(aa, clip.width, clip.height, shift=(0.5, 0))
 
     def _csharp(flt: vs.VideoNode, clip: vs.VideoNode) -> vs.VideoNode:
         blur = core.std.Convolution(flt, [1] * 9)
@@ -190,9 +190,9 @@ def _nnedi3_supersample(clip: vs.VideoNode, width: int, height: int, opencl: boo
     nnargs: Dict[str, Any] = dict(field=0, dh=True, nsize=0, nns=4, qual=2)
     _nnedi3 = nnedi3(opencl=opencl, **nnargs)
     up_y = _nnedi3(get_y(clip))
-    up_y = up_y.resize.Spline36(height=height, src_top=0.5).std.Transpose()
-    up_y = _nnedi3(up_y)
-    up_y = up_y.resize.Spline36(height=width, src_top=0.5)
+    up_y = kernels.BicubicDidee().scale(up_y, width=up_y.width, height=height, shift=(0.5, 0))
+    up_y = _nnedi3(up_y.std.Transpose())
+    up_y = kernels.BicubicDidee().scale(up_y, width=up_y.width, height=width, shift=(0.5, 0))
     return up_y
 
 
