@@ -220,3 +220,14 @@ class RobidouxSharp(Bicubic):
         b = 6 / (13 + 7 * sqrt(2))
         c = 7 / (2 + 12 * sqrt(2))
         super().__init__(b=b, c=c, **kwargs)
+
+
+class BicubicDidee(Kernel):
+    """
+    Kernel inspired by a Didée post.
+    See: https://forum.doom9.org/showthread.php?p=1748922#post1748922.
+
+    This is useful for downscaling content, but might not help much with upscaling.
+    """
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(b=-1/2, c=1/4, **kwargs)
