@@ -222,7 +222,7 @@ class RobidouxSharp(Bicubic):
         super().__init__(b=b, c=c, **kwargs)
 
 
-class BicubicDidee(Kernel):
+class BicubicDidee(Bicubic):
     """
     Kernel inspired by a Didée post.
     See: https://forum.doom9.org/showthread.php?p=1748922#post1748922.
