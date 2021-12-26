@@ -103,7 +103,7 @@ class Lanczos(Kernel):
 
     :param taps: taps param for lanczos kernel
     """
-    def __init__(self, taps: int = 4, **kwargs: Any) -> None:
+    def __init__(self, taps: int = 3, **kwargs: Any) -> None:
         self.taps = taps
         super().__init__(**kwargs)
 
