@@ -10,7 +10,9 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 import vapoursynth as vs
+from vsutil import get_w, get_y
 
+from .kernels import Catrom, Kernel
 from .render import get_render_progress
 from .util import get_prop, pick_repair
 
@@ -229,6 +231,41 @@ def decomb(clip: vs.VideoNode,
     decombed = Vinverse(decombed) if vinv else decombed
     decombed = pick_repair(clip)(decombed, clip, rep) if rep else decombed
     return core.tivtc.TDecimate(decombed, **tdec_args) if decimate else decombed
+
+
+def descale_fields(clip: vs.VideoNode, tff: bool = True,
+                   width: Optional[int] = None, height: int = 720,
+                   kernel: Kernel = Catrom(), src_top: float = 0.0) -> vs.VideoNode:
+    """
+    Simple descaling wrapper for interwoven upscaled fields.
+    This function also sets a frameprop with the kernel that was used.
+
+    The kernel is set using an lvsfunc.Kernel object.
+    You can call these by doing for example ``kernel=lvf.kernels.Bilinear()``.
+    You can also set specific values manually. For example: ``kernel=lvf.kernels.Bicubic(b=0, c=1)``.
+    For more information, check the documentation on Kernels.
+
+    ``src_top`` allows you to to shift the clip prior to descaling.
+    This may be useful, as sometimes clips are shifted before or after the original upscaling.
+
+    :param clip:        Input clip
+    :param tff:         Top-field-first. `False` sets it to Bottom-Field-First
+    :param width:       Native width. Will be automatically determined if set to `None`
+    :param height:      Native height. Will be divided by two internally
+    :param kernel:      lvsfunc.Kernel object (default: Catrom)
+    :param src_top:     Shifts the clip vertically during the descaling
+
+    :return:            Descaled GRAY clip
+    """
+    height_field = int(height/2)
+
+    clip = clip.std.SetFieldBased(2-int(tff))
+
+    sep = core.std.SeparateFields(get_y(clip))
+    descaled = kernel.descale(sep, get_w(height, clip.width/clip.height), height_field, (src_top, 0))
+    weave_y = core.std.DoubleWeave(descaled)
+    weave_y = weave_y.std.SetFrameProp('scaler', data=f'{kernel.__name__} (Fields)')  # type: ignore[attr-defined]
+    return weave_y.std.SetFieldBased(0)[::2]
 
 
 def dir_deshimmer(clip: vs.VideoNode, TFF: bool = True,

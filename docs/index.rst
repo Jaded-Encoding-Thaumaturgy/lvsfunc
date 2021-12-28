@@ -114,6 +114,7 @@ Functions
    lvsfunc.dehardsub.hardsub_mask
    lvsfunc.deinterlace.deblend
    lvsfunc.deinterlace.decomb
+   lvsfunc.deinterlace.descale_fields
    lvsfunc.deinterlace.dir_deshimmer
    lvsfunc.deinterlace.dir_unsharp
    lvsfunc.deinterlace.SIVTC
@@ -271,6 +272,7 @@ lvsfunc.deinterlace
 
    lvsfunc.deinterlace.deblend
    lvsfunc.deinterlace.decomb
+   lvsfunc.deinterlace.descale_fields
    lvsfunc.deinterlace.dir_deshimmer
    lvsfunc.deinterlace.dir_unsharp
    lvsfunc.deinterlace.SIVTC
