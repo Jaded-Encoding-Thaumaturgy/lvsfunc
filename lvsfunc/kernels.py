@@ -36,7 +36,7 @@ class Kernel(ABC):
         pass
 
     @abstractmethod
-    def resample(self, clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat],
+    def resample(self, clip: vs.VideoNode, format: Union[vs.PresetFormat, vs.VideoFormat],
                  matrix: Optional[vs.MatrixCoefficients] = None,
                  matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
         pass
@@ -58,10 +58,10 @@ class Point(Kernel):
         return core.resize.Point(clip, width, height, src_top=shift[0],
                                  src_left=shift[1])
 
-    def resample(self, clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat],
+    def resample(self, clip: vs.VideoNode, format: Union[vs.PresetFormat, vs.VideoFormat],
                  matrix: Optional[vs.MatrixCoefficients] = None,
                  matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
-        return core.resize.Point(clip, format=int(new_format),
+        return core.resize.Point(clip, format=int(format),
                                  matrix=matrix, matrix_in=matrix_in,
                                  **self.kwargs)
 
@@ -81,10 +81,10 @@ class Bilinear(Kernel):
         return core.descale.Debilinear(clip, width, height, src_top=shift[0],
                                        src_left=shift[1])
 
-    def resample(self, clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat],
+    def resample(self, clip: vs.VideoNode, format: Union[vs.PresetFormat, vs.VideoFormat],
                  matrix: Optional[vs.MatrixCoefficients] = None,
                  matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
-        return core.resize.Bilinear(clip, format=int(new_format),
+        return core.resize.Bilinear(clip, format=int(format),
                                     matrix=matrix, matrix_in=matrix_in,
                                     **self.kwargs)
 
@@ -123,10 +123,10 @@ class Bicubic(Kernel):
                                       c=self.c, src_top=shift[0],
                                       src_left=shift[1])
 
-    def resample(self, clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat],
+    def resample(self, clip: vs.VideoNode, format: Union[vs.PresetFormat, vs.VideoFormat],
                  matrix: Optional[vs.MatrixCoefficients] = None,
                  matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
-        return core.resize.Bicubic(clip, format=int(new_format),
+        return core.resize.Bicubic(clip, format=int(format),
                                    filter_param_a=self.b, filter_param_b=self.c,
                                    filter_param_a_uv=self.b, filter_param_b_uv=self.c,
                                    matrix=matrix, matrix_in=matrix_in,
@@ -164,10 +164,10 @@ class Lanczos(Kernel):
         return core.descale.Delanczos(clip, width, height, taps=self.taps,
                                       src_top=shift[0], src_left=shift[1])
 
-    def resample(self, clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat],
+    def resample(self, clip: vs.VideoNode, format: Union[vs.PresetFormat, vs.VideoFormat],
                  matrix: Optional[vs.MatrixCoefficients] = None,
                  matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
-        return core.resize.Lanczos(clip, format=int(new_format),
+        return core.resize.Lanczos(clip, format=int(format),
                                    matrix=matrix, matrix_in=matrix_in,
                                    filter_param_a=self.taps, **self.kwargs)
 
@@ -194,10 +194,10 @@ class Spline16(Kernel):
         return core.descale.Despline16(clip, width, height, src_top=shift[0],
                                        src_left=shift[1])
 
-    def resample(self, clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat],
+    def resample(self, clip: vs.VideoNode, format: Union[vs.PresetFormat, vs.VideoFormat],
                  matrix: Optional[vs.MatrixCoefficients] = None,
                  matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
-        return core.resize.Spline16(clip, format=int(new_format),
+        return core.resize.Spline16(clip, format=int(format),
                                     matrix=matrix, matrix_in=matrix_in, **self.kwargs)
 
     def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
@@ -223,10 +223,10 @@ class Spline36(Kernel):
         return core.descale.Despline36(clip, width, height, src_top=shift[0],
                                        src_left=shift[1])
 
-    def resample(self, clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat],
+    def resample(self, clip: vs.VideoNode, format: Union[vs.PresetFormat, vs.VideoFormat],
                  matrix: Optional[vs.MatrixCoefficients] = None,
                  matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
-        return core.resize.Spline36(clip, format=int(new_format),
+        return core.resize.Spline36(clip, format=int(format),
                                     matrix=matrix, matrix_in=matrix_in, **self.kwargs)
 
     def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
@@ -252,10 +252,10 @@ class Spline64(Kernel):
         return core.descale.Despline64(clip, width, height, src_top=shift[0],
                                        src_left=shift[1])
 
-    def resample(self, clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat],
+    def resample(self, clip: vs.VideoNode, format: Union[vs.PresetFormat, vs.VideoFormat],
                  matrix: Optional[vs.MatrixCoefficients] = None,
                  matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
-        return core.resize.Spline64(clip, format=int(new_format),
+        return core.resize.Spline64(clip, format=int(format),
                                     matrix=matrix, matrix_in=matrix_in, **self.kwargs)
 
     def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
