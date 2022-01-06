@@ -7,8 +7,6 @@ from math import sqrt
 from typing import Any, Dict, Tuple, Union, Optional
 
 import vapoursynth as vs
-from vsutil import disallow_variable_format
-from .util import get_prop
 
 core = vs.core
 
@@ -39,31 +37,13 @@ class Kernel(ABC):
 
     @abstractmethod
     def resample(self, clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat],
-                 matrix: Optional[vs.MatrixCoefficients]) -> vs.VideoNode:
+                 matrix: Optional[vs.MatrixCoefficients] = None,
+                 matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
         pass
 
     @abstractmethod
     def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
         pass
-
-    @staticmethod
-    @disallow_variable_format
-    def _get_matrix_arg(clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat],
-                        matrix: Optional[vs.MatrixCoefficients]) -> Dict[str, Any]:
-        assert clip.format
-        src_is_rgb = clip.format.color_family != vs.RGB
-        dst_is_rgb = core.get_video_format(int(new_format)).color_family == vs.RGB
-
-        matrix_prop = matrix or get_prop(clip.get_frame(0), '_Matrix', int)
-
-        if src_is_rgb:
-            if not dst_is_rgb:
-                return dict(matrix=matrix_prop)
-        else:
-            if dst_is_rgb:
-                return dict(matrix_in=matrix_prop)
-
-        return dict()
 
 
 class Point(Kernel):
@@ -79,9 +59,10 @@ class Point(Kernel):
                                  src_left=shift[1])
 
     def resample(self, clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat],
-                 matrix: Optional[vs.MatrixCoefficients]) -> vs.VideoNode:
+                 matrix: Optional[vs.MatrixCoefficients] = None,
+                 matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
         return core.resize.Point(clip, format=int(new_format),
-                                 **self._get_matrix_arg(clip, new_format, matrix),
+                                 matrix=matrix, matrix_in=matrix_in,
                                  **self.kwargs)
 
     def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
@@ -101,9 +82,10 @@ class Bilinear(Kernel):
                                        src_left=shift[1])
 
     def resample(self, clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat],
-                 matrix: Optional[vs.MatrixCoefficients]) -> vs.VideoNode:
+                 matrix: Optional[vs.MatrixCoefficients] = None,
+                 matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
         return core.resize.Bilinear(clip, format=int(new_format),
-                                    **self._get_matrix_arg(clip, new_format, matrix),
+                                    matrix=matrix, matrix_in=matrix_in,
                                     **self.kwargs)
 
     def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
@@ -142,11 +124,12 @@ class Bicubic(Kernel):
                                       src_left=shift[1])
 
     def resample(self, clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat],
-                 matrix: Optional[vs.MatrixCoefficients]) -> vs.VideoNode:
+                 matrix: Optional[vs.MatrixCoefficients] = None,
+                 matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
         return core.resize.Bicubic(clip, format=int(new_format),
                                    filter_param_a=self.b, filter_param_b=self.c,
                                    filter_param_a_uv=self.b, filter_param_b_uv=self.c,
-                                   **self._get_matrix_arg(clip, new_format, matrix),
+                                   matrix=matrix, matrix_in=matrix_in,
                                    **self.kwargs)
 
     def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
@@ -182,9 +165,10 @@ class Lanczos(Kernel):
                                       src_top=shift[0], src_left=shift[1])
 
     def resample(self, clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat],
-                 matrix: Optional[vs.MatrixCoefficients]) -> vs.VideoNode:
+                 matrix: Optional[vs.MatrixCoefficients] = None,
+                 matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
         return core.resize.Lanczos(clip, format=int(new_format),
-                                   **self._get_matrix_arg(clip, new_format, matrix),
+                                   matrix=matrix, matrix_in=matrix_in,
                                    filter_param_a=self.taps, **self.kwargs)
 
     def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
@@ -211,9 +195,10 @@ class Spline16(Kernel):
                                        src_left=shift[1])
 
     def resample(self, clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat],
-                 matrix: Optional[vs.MatrixCoefficients]) -> vs.VideoNode:
+                 matrix: Optional[vs.MatrixCoefficients] = None,
+                 matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
         return core.resize.Spline16(clip, format=int(new_format),
-                                    **self._get_matrix_arg(clip, new_format, matrix), **self.kwargs)
+                                    matrix=matrix, matrix_in=matrix_in, **self.kwargs)
 
     def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
         return core.resize.Spline16(clip, src_top=shift[0], src_left=shift[1],
@@ -239,9 +224,10 @@ class Spline36(Kernel):
                                        src_left=shift[1])
 
     def resample(self, clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat],
-                 matrix: Optional[vs.MatrixCoefficients]) -> vs.VideoNode:
+                 matrix: Optional[vs.MatrixCoefficients] = None,
+                 matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
         return core.resize.Spline36(clip, format=int(new_format),
-                                    **self._get_matrix_arg(clip, new_format, matrix), **self.kwargs)
+                                    matrix=matrix, matrix_in=matrix_in, **self.kwargs)
 
     def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
         return core.resize.Spline36(clip, src_top=shift[0], src_left=shift[1],
@@ -267,9 +253,10 @@ class Spline64(Kernel):
                                        src_left=shift[1])
 
     def resample(self, clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat],
-                 matrix: Optional[vs.MatrixCoefficients]) -> vs.VideoNode:
+                 matrix: Optional[vs.MatrixCoefficients] = None,
+                 matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
         return core.resize.Spline64(clip, format=int(new_format),
-                                    **self._get_matrix_arg(clip, new_format, matrix), **self.kwargs)
+                                    matrix=matrix, matrix_in=matrix_in, **self.kwargs)
 
     def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
         return core.resize.Spline64(clip, src_top=shift[0], src_left=shift[1],
