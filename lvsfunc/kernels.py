@@ -99,17 +99,12 @@ class Bicubic(Kernel):
         self.c = c
         super().__init__(**kwargs)
 
-    def _get_param_values(self) -> Dict[str, Any]:
-        return dict(
-            filter_param_a=self.b, filter_param_b=self.c,
-            filter_param_a_uv=self.b, filter_param_b_uv=self.c
-        )
-
     def scale(self, clip: vs.VideoNode, width: int, height: int,
               shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
         return core.resize.Bicubic(clip, width, height,
                                    src_top=shift[0], src_left=shift[1],
-                                   **self._get_param_values(),
+                                   filter_param_a=self.b, filter_param_b=self.c,
+                                   filter_param_a_uv=self.b, filter_param_b_uv=self.c,
                                    **self.kwargs)
 
     def descale(self, clip: vs.VideoNode, width: int, height: int,
@@ -120,11 +115,15 @@ class Bicubic(Kernel):
 
     def resample(self, clip: vs.VideoNode, new_format: Union[vs.PresetFormat, vs.VideoFormat]) -> vs.VideoNode:
         return core.resize.Bicubic(clip, format=int(new_format),
-                                   **self._get_param_values(), **self.kwargs)
+                                   filter_param_a=self.b, filter_param_b=self.c,
+                                   filter_param_a_uv=self.b, filter_param_b_uv=self.c,
+                                   **self.kwargs)
 
     def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
         return core.resize.Bicubic(clip, src_top=shift[0], src_left=shift[1],
-                                   **self._get_param_values(), **self.kwargs)
+                                   filter_param_a=self.b, filter_param_b=self.c,
+                                   filter_param_a_uv=self.b, filter_param_b_uv=self.c,
+                                   **self.kwargs)
 
 
 class Lanczos(Kernel):
