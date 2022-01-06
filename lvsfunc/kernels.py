@@ -85,6 +85,7 @@ class Bilinear(Kernel):
 class Bicubic(Kernel):
     """
     Built-in bicubic resizer.
+    b=0, c=0.5
 
     Dependencies:
 
@@ -240,7 +241,7 @@ class Spline64(Kernel):
 
 class BSpline(Bicubic):
     """
-    Bicubic b=0, c=1
+    Bicubic b=1, c=0
     """
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(b=1, c=0, **kwargs)
@@ -264,7 +265,7 @@ class Mitchell(Bicubic):
 
 class Catrom(Bicubic):
     """
-    Bicubic b=0, c=1/2
+    Bicubic b=0, c=0.5
     """
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(b=0, c=1/2, **kwargs)
@@ -280,7 +281,7 @@ class BicubicSharp(Bicubic):
 
 class RobidouxSoft(Bicubic):
     """
-    Bicubic b=(9 - 3 * sqrt(2)) / 7, c=(1 - b) / 2
+    Bicubic b=0.67962, c=0.16019
     """
     def __init__(self, **kwargs: Any) -> None:
         b = (9 - 3 * sqrt(2)) / 7
@@ -290,7 +291,7 @@ class RobidouxSoft(Bicubic):
 
 class Robidoux(Bicubic):
     """
-    Bicubic b=12 / (19 + 9 * sqrt(2)) / 7, c=113 / (58 + 216 * sqrt(2))
+    Bicubic b=0.37822, c=0.31089
     """
     def __init__(self, **kwargs: Any) -> None:
         b = 12 / (19 + 9 * sqrt(2))
@@ -300,7 +301,7 @@ class Robidoux(Bicubic):
 
 class RobidouxSharp(Bicubic):
     """
-    Bicubic b=6 / (13 + 7 * sqrt(2)), c=7 / (2 + 12 * sqrt(2))
+    Bicubic b=0.26201, c=0.36899
     """
     def __init__(self, **kwargs: Any) -> None:
         b = 6 / (13 + 7 * sqrt(2))
@@ -313,7 +314,7 @@ class BicubicDidee(Bicubic):
     Kernel inspired by a Didée post.
     See: https://forum.doom9.org/showthread.php?p=1748922#post1748922.
 
-    Bicubic b=-1/2, c=1/4
+    Bicubic b=-0.5, c=0.25
 
     This is useful for downscaling content, but might not help much with upscaling.
     """
