@@ -2,7 +2,9 @@
     Basic types to be used by certain functions.
 """
 from enum import IntEnum
-from typing import NoReturn, Optional, Tuple, Union
+from typing import Any, NamedTuple, NoReturn, Optional, Protocol, Tuple, Union
+
+import vapoursynth as vs
 
 Range = Union[Optional[int], Tuple[Optional[int], Optional[int]]]
 
@@ -51,3 +53,15 @@ class Matrix(IntEnum):
     @property
     def RESERVED(self) -> NoReturn:
         raise PermissionError
+
+
+class Coefs(NamedTuple):
+    k0: float
+    phi: float
+    alpha: float
+    gamma: float
+
+
+class VSFunction(Protocol):
+    def __call__(self, clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
+        ...
