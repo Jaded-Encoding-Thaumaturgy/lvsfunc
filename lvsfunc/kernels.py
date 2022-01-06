@@ -149,16 +149,16 @@ class Lanczos(Kernel):
 
     def descale(self, clip: vs.VideoNode, width: int, height: int,
                 shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
-        return core.descale.Delanczos(clip, width, height, taps=self.taps,
+        return core.descale.Delanczos(clip, width, height, filter_param_a=self.taps,
                                       src_top=shift[0], src_left=shift[1])
 
     def resample(self, clip: vs.VideoNode, new_format: vs.PresetFormat) -> vs.VideoNode:
         return core.resize.Lanczos(clip, format=new_format,
-                                   taps=self.taps, **self.kwargs)
+                                   filter_param_a=self.taps, **self.kwargs)
 
     def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
         return core.resize.Lanczos(clip, src_top=shift[0], src_left=shift[1],
-                                   taps=self.taps, **self.kwargs)
+                                   filter_param_a=self.taps, **self.kwargs)
 
 
 class Spline16(Kernel):
