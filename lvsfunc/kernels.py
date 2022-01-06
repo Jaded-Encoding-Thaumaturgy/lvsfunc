@@ -4,7 +4,7 @@
 """
 from abc import ABC, abstractmethod
 from math import sqrt
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, Union, Optional
 
 import vapoursynth as vs
 
@@ -35,6 +35,16 @@ class Kernel(ABC):
                 shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
         pass
 
+    @abstractmethod
+    def resample(self, clip: vs.VideoNode, format: Union[vs.PresetFormat, vs.VideoFormat],
+                 matrix: Optional[vs.MatrixCoefficients] = None,
+                 matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
+        pass
+
+    @abstractmethod
+    def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
+        pass
+
 
 class Point(Kernel):
     """ Built-in point resizer. """
@@ -47,6 +57,16 @@ class Point(Kernel):
                 shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
         return core.resize.Point(clip, width, height, src_top=shift[0],
                                  src_left=shift[1])
+
+    def resample(self, clip: vs.VideoNode, format: Union[vs.PresetFormat, vs.VideoFormat],
+                 matrix: Optional[vs.MatrixCoefficients] = None,
+                 matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
+        return core.resize.Point(clip, format=int(format),
+                                 matrix=matrix, matrix_in=matrix_in,
+                                 **self.kwargs)
+
+    def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
+        return core.resize.Point(clip, src_top=shift[0], src_left=shift[1], **self.kwargs)
 
 
 class Bilinear(Kernel):
@@ -61,10 +81,21 @@ class Bilinear(Kernel):
         return core.descale.Debilinear(clip, width, height, src_top=shift[0],
                                        src_left=shift[1])
 
+    def resample(self, clip: vs.VideoNode, format: Union[vs.PresetFormat, vs.VideoFormat],
+                 matrix: Optional[vs.MatrixCoefficients] = None,
+                 matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
+        return core.resize.Bilinear(clip, format=int(format),
+                                    matrix=matrix, matrix_in=matrix_in,
+                                    **self.kwargs)
+
+    def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
+        return core.resize.Bilinear(clip, src_top=shift[0], src_left=shift[1], **self.kwargs)
+
 
 class Bicubic(Kernel):
     """
     Built-in bicubic resizer.
+    b=0, c=0.5
 
     Dependencies:
 
@@ -81,9 +112,8 @@ class Bicubic(Kernel):
     def scale(self, clip: vs.VideoNode, width: int, height: int,
               shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
         return core.resize.Bicubic(clip, width, height,
-                                   filter_param_a=self.b,
-                                   filter_param_b=self.c, src_top=shift[0],
-                                   src_left=shift[1],
+                                   src_top=shift[0], src_left=shift[1],
+                                   filter_param_a=self.b, filter_param_b=self.c,
                                    **self.kwargs)
 
     def descale(self, clip: vs.VideoNode, width: int, height: int,
@@ -91,6 +121,19 @@ class Bicubic(Kernel):
         return core.descale.Debicubic(clip, width, height, b=self.b,
                                       c=self.c, src_top=shift[0],
                                       src_left=shift[1])
+
+    def resample(self, clip: vs.VideoNode, format: Union[vs.PresetFormat, vs.VideoFormat],
+                 matrix: Optional[vs.MatrixCoefficients] = None,
+                 matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
+        return core.resize.Bicubic(clip, format=int(format),
+                                   filter_param_a=self.b, filter_param_b=self.c,
+                                   matrix=matrix, matrix_in=matrix_in,
+                                   **self.kwargs)
+
+    def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
+        return core.resize.Bicubic(clip, src_top=shift[0], src_left=shift[1],
+                                   filter_param_a=self.b, filter_param_b=self.c,
+                                   **self.kwargs)
 
 
 class Lanczos(Kernel):
@@ -118,6 +161,17 @@ class Lanczos(Kernel):
         return core.descale.Delanczos(clip, width, height, taps=self.taps,
                                       src_top=shift[0], src_left=shift[1])
 
+    def resample(self, clip: vs.VideoNode, format: Union[vs.PresetFormat, vs.VideoFormat],
+                 matrix: Optional[vs.MatrixCoefficients] = None,
+                 matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
+        return core.resize.Lanczos(clip, format=int(format),
+                                   matrix=matrix, matrix_in=matrix_in,
+                                   filter_param_a=self.taps, **self.kwargs)
+
+    def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
+        return core.resize.Lanczos(clip, src_top=shift[0], src_left=shift[1],
+                                   filter_param_a=self.taps, **self.kwargs)
+
 
 class Spline16(Kernel):
     """
@@ -136,6 +190,16 @@ class Spline16(Kernel):
                 shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
         return core.descale.Despline16(clip, width, height, src_top=shift[0],
                                        src_left=shift[1])
+
+    def resample(self, clip: vs.VideoNode, format: Union[vs.PresetFormat, vs.VideoFormat],
+                 matrix: Optional[vs.MatrixCoefficients] = None,
+                 matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
+        return core.resize.Spline16(clip, format=int(format),
+                                    matrix=matrix, matrix_in=matrix_in, **self.kwargs)
+
+    def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
+        return core.resize.Spline16(clip, src_top=shift[0], src_left=shift[1],
+                                    **self.kwargs)
 
 
 class Spline36(Kernel):
@@ -156,6 +220,16 @@ class Spline36(Kernel):
         return core.descale.Despline36(clip, width, height, src_top=shift[0],
                                        src_left=shift[1])
 
+    def resample(self, clip: vs.VideoNode, format: Union[vs.PresetFormat, vs.VideoFormat],
+                 matrix: Optional[vs.MatrixCoefficients] = None,
+                 matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
+        return core.resize.Spline36(clip, format=int(format),
+                                    matrix=matrix, matrix_in=matrix_in, **self.kwargs)
+
+    def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
+        return core.resize.Spline36(clip, src_top=shift[0], src_left=shift[1],
+                                    **self.kwargs)
+
 
 class Spline64(Kernel):
     """
@@ -175,10 +249,20 @@ class Spline64(Kernel):
         return core.descale.Despline64(clip, width, height, src_top=shift[0],
                                        src_left=shift[1])
 
+    def resample(self, clip: vs.VideoNode, format: Union[vs.PresetFormat, vs.VideoFormat],
+                 matrix: Optional[vs.MatrixCoefficients] = None,
+                 matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
+        return core.resize.Spline64(clip, format=int(format),
+                                    matrix=matrix, matrix_in=matrix_in, **self.kwargs)
+
+    def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
+        return core.resize.Spline64(clip, src_top=shift[0], src_left=shift[1],
+                                    **self.kwargs)
+
 
 class BSpline(Bicubic):
     """
-    Bicubic b=0, c=1
+    Bicubic b=1, c=0
     """
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(b=1, c=0, **kwargs)
@@ -202,7 +286,7 @@ class Mitchell(Bicubic):
 
 class Catrom(Bicubic):
     """
-    Bicubic b=0, c=1/2
+    Bicubic b=0, c=0.5
     """
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(b=0, c=1/2, **kwargs)
@@ -218,7 +302,7 @@ class BicubicSharp(Bicubic):
 
 class RobidouxSoft(Bicubic):
     """
-    Bicubic b=(9 - 3 * sqrt(2)) / 7, c=(1 - b) / 2
+    Bicubic b=0.67962, c=0.16019
     """
     def __init__(self, **kwargs: Any) -> None:
         b = (9 - 3 * sqrt(2)) / 7
@@ -228,7 +312,7 @@ class RobidouxSoft(Bicubic):
 
 class Robidoux(Bicubic):
     """
-    Bicubic b=12 / (19 + 9 * sqrt(2)) / 7, c=113 / (58 + 216 * sqrt(2))
+    Bicubic b=0.37822, c=0.31089
     """
     def __init__(self, **kwargs: Any) -> None:
         b = 12 / (19 + 9 * sqrt(2))
@@ -238,7 +322,7 @@ class Robidoux(Bicubic):
 
 class RobidouxSharp(Bicubic):
     """
-    Bicubic b=6 / (13 + 7 * sqrt(2)), c=7 / (2 + 12 * sqrt(2))
+    Bicubic b=0.26201, c=0.36899
     """
     def __init__(self, **kwargs: Any) -> None:
         b = 6 / (13 + 7 * sqrt(2))
@@ -251,7 +335,7 @@ class BicubicDidee(Bicubic):
     Kernel inspired by a Didée post.
     See: https://forum.doom9.org/showthread.php?p=1748922#post1748922.
 
-    Bicubic b=-1/2, c=1/4
+    Bicubic b=-0.5, c=0.25
 
     This is useful for downscaling content, but might not help much with upscaling.
     """
