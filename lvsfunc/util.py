@@ -8,7 +8,7 @@ from typing import (Any, Callable, List, Optional, Sequence, Tuple, Type,
 import vapoursynth as vs
 from vsutil import depth, get_subsampling
 
-from .types import Range
+from .types import Range, Coefs
 
 core = vs.core
 
@@ -269,3 +269,21 @@ def padder(clip: vs.VideoNode,
                                src_top=-1*top, src_left=-1*left,
                                src_width=width, src_height=height)
     return core.fb.FillBorders(scaled, left=left, right=right, top=top, bottom=bottom)
+
+
+def get_coefs(curve: vs.TransferCharacteristics) -> Coefs:
+    srgb = Coefs(0.04045, 12.92, 0.055, 2.4)
+    bt709 = Coefs(0.08145, 4.5, 0.0993, 2.22222)
+    smpte240m = Coefs(0.0912, 4.0, 0.1115, 2.22222)
+    bt2020 = Coefs(0.08145, 4.5, 0.0993, 2.22222)
+
+    gamma_linear_map = {
+        vs.TransferCharacteristics.TRANSFER_IEC_61966_2_1: srgb,
+        vs.TransferCharacteristics.TRANSFER_BT709: bt709,
+        vs.TransferCharacteristics.TRANSFER_BT601: bt709,
+        vs.TransferCharacteristics.TRANSFER_ST240_M: smpte240m,
+        vs.TransferCharacteristics.TRANSFER_BT2020_10: bt2020,
+        vs.TransferCharacteristics.TRANSFER_BT2020_12: bt2020
+    }
+
+    return gamma_linear_map[curve]

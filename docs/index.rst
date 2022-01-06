@@ -140,10 +140,14 @@ Functions
    lvsfunc.render.get_render_process
    lvsfunc.scale.descale
    lvsfunc.scale.descale_detail_mask
+   lvsfunc.scale.gamma2linear
+   lvsfunc.scale.linear2gamma
    lvsfunc.scale.reupscale
+   lvsfunc.scale.ssim_downsample
    lvsfunc.scale.test_descale
    lvsfunc.util.clamp_values
    lvsfunc.util.force_mod
+   lvsfunc.util.get_coefs
    lvsfunc.util.normalize_ranges
    lvsfunc.util.padder
    lvsfunc.util.pick_removegrain
@@ -385,7 +389,10 @@ lvsfunc.scale
 
    lvsfunc.scale.descale
    lvsfunc.scale.descale_detail_mask
+   lvsfunc.scale.gamma2linear
+   lvsfunc.scale.linear2gamma
    lvsfunc.scale.reupscale
+   lvsfunc.scale.ssim_downsample
    lvsfunc.scale.test_descale
 
 .. autoclass:: lvsfunc.scale.Resolution
@@ -421,6 +428,7 @@ lvsfunc.util
 
    lvsfunc.util.clamp_values
    lvsfunc.util.force_mod
+   lvsfunc.util.get_coefs
    lvsfunc.util.normalize_ranges
    lvsfunc.util.padder
    lvsfunc.util.pick_removegrain

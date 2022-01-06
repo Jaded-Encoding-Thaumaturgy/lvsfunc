@@ -50,15 +50,11 @@ def finish_frame(outfile: Optional[BinaryIO], timecodes: Optional[TextIO], ctx: 
     if outfile is None:
         return
 
-    f: vs.VideoFrame = ctx.frames[ctx.frames_rendered]
+    f = ctx.frames[ctx.frames_rendered]
 
     outfile.write("FRAME\n".encode("utf-8"))
 
-    for i, p in enumerate(f.planes()):
-        if f.get_stride(i) != p.width * f.format.bytes_per_sample:
-            outfile.write(bytes(p))  # type: ignore
-        else:
-            outfile.write(p)  # type: ignore
+    f._writelines(outfile.write)
 
 
 def clip_async_render(clip: vs.VideoNode,

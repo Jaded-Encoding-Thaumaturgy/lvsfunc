@@ -396,7 +396,7 @@ def chroma_injector(func: F) -> F:
                                          colorfamily=vs.YUV)
             return res
 
-        out_fmt: Optional[vs.Format] = None
+        out_fmt: Optional[vs.VideoFormat] = None
         if clip.format is not None:
             if clip.format.color_family not in (vs.GRAY, vs.YUV):
                 raise ValueError("chroma_injector: only YUV and GRAY clips are supported")

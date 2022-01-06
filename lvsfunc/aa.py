@@ -8,6 +8,7 @@ import vapoursynth as vs
 from vsutil import fallback, get_depth, get_w, get_y, join, plane, scale_value
 
 from . import kernels, util
+from .scale import ssim_downsample
 from .util import scale_thresh
 
 core = vs.core
@@ -270,34 +271,42 @@ def upscaled_sraa(clip: vs.VideoNode,
 
 
 def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
-             rfactor: float = 2.0, mask_thr: float = 60, show_mask: bool = False,
-             **eedi3_args: Any) -> vs.VideoNode:
+             rfactor: float = 2.0, tff: bool = True,
+             mask_thr: float = 60, show_mask: bool = False,
+             lmask: Optional[vs.VideoNode] = None, **eedi3_args: Any) -> vs.VideoNode:
     """
     As the name implies, this is a based anti-aliaser. Thank you, based Zastin.
     This relies on FSRCNNX being very sharp, and as such it very much acts like the main "AA" here.
 
     Original function by Zastin, modified by LightArrowsEXE.
 
+    Dependencies:
+
+    * vapoursynth-eedi3
+    * vs-placebo
+
     :param clip:            Input clip
     :param shader_file:     Path to FSRCNNX shader file
     :param rfactor:         Image enlargement factor
+    :param tff:             Top-Field-First if true, Bottom-Field-First if alse
     :param mask_thr:        Threshold for the edge mask binarisation.
                             Scaled internally to match bitdepth of clip.
     :param show_mask:       Output mask
     :param eedi3_args:      Additional args to pass to eedi3
+    :param lmask:           Line mask clip to use for eedi3
 
     :return:                AA'd clip or mask clip
     """
     def _eedi3s(clip: vs.VideoNode, mclip: Optional[vs.VideoNode] = None,
                 **eedi3_kwargs: Any) -> vs.VideoNode:
         edi_args: Dict[str, Any] = {  # Eedi3 args for `eedi3s`
-            'field': 0, 'alpha': 0.125, 'beta': 0.25, 'gamma': 40,
-            'nrad': 2, 'mdis': 20, 'mclip': mclip,
+            'field': int(tff), 'alpha': 0.125, 'beta': 0.25, 'gamma': 40,
+            'nrad': 2, 'mdis': 20,
             'vcheck': 2, 'vthresh0': 12, 'vthresh1': 24, 'vthresh2': 4
         }
         edi_args |= eedi3_kwargs
 
-        out = core.eedi3m.EEDI3(clip, dh=False, planes=0, **edi_args)
+        out = core.eedi3m.EEDI3(clip, dh=False, sclip=clip, planes=0, **edi_args)
 
         if mclip:
             return core.std.Expr([clip, out, mclip], 'z y x ?')
@@ -317,15 +326,18 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
     if clip.format is None:
         raise ValueError("based_aa: 'Variable-format clips not supported'")
 
-    if mask_thr > 255:
-        raise ValueError(f"based_aa: 'mask_thr must be equal to or lower than 255 (current: {mask_thr})'")
+    aaw = round(clip.width * rfactor) & ~1
+    aah = round(clip.height * rfactor) & ~1
 
-    aaw = round(clip.width * rfactor) >> 1 << 1
-    aah = round(clip.height * rfactor) >> 1 << 1
-    mask_thr = scale_value(mask_thr, 8, get_depth(clip))
+    if not lmask:
+        if mask_thr > 255:
+            raise ValueError(f"based_aa: 'mask_thr must be equal to or lower than 255 (current: {mask_thr})'")
 
-    clip_y = get_y(clip)
-    lmask = clip_y.std.Prewitt().std.Binarize(mask_thr).std.Maximum().std.BoxBlur(0, 1, 1, 1, 1)
+        mask_thr = scale_value(mask_thr, 8, get_depth(clip))
+
+        clip_y = get_y(clip)
+        lmask = clip_y.std.Prewitt().std.Binarize(mask_thr).std.Maximum().std.BoxBlur(0, 1, 1, 1, 1)
+
     mclip_up = _resize_mclip(lmask, aaw, aah)
 
     if show_mask:
@@ -333,9 +345,9 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
 
     aa = clip_y.std.Transpose()
     aa = join([aa] * 3).placebo.Shader(shader=shader_file, filter='box', width=aa.width * 2, height=aa.height * 2)
-    aa = kernels.Spline36().scale(get_y(aa), aah, aaw)
+    aa = ssim_downsample(get_y(aa), aah, aaw)
     aa = _eedi3s(aa, mclip=mclip_up.std.Transpose(), **eedi3_args).std.Transpose()
-    aa = kernels.Spline36().scale(_eedi3s(aa, mclip=mclip_up, **eedi3_args), clip.width, clip.height)
+    aa = ssim_downsample(_eedi3s(aa, mclip=mclip_up, **eedi3_args), clip.width, clip.height)
 
     aa_merge = core.std.MaskedMerge(clip_y, aa, lmask)
     return join([aa_merge, plane(clip, 1), plane(clip, 2)])

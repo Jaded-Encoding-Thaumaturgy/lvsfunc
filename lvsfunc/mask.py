@@ -209,7 +209,7 @@ class BoundingBox():
         if self.pos.x + self.size.x > ref.width or self.pos.y + self.size.y > ref.height:
             raise ValueError("BoundingBox: Bounds exceed clip size!")
 
-        mask_fmt: vs.Format = ref.format.replace(color_family=vs.GRAY, subsampling_w=0, subsampling_h=0)
+        mask_fmt: vs.VideoFormat = ref.format.replace(color_family=vs.GRAY, subsampling_w=0, subsampling_h=0)
         white: float = 1 if mask_fmt.sample_type == vs.FLOAT else (1 << ref.format.bits_per_sample) - 1
         mask: vs.VideoNode = core.std.BlankClip(ref, color=white, length=1, format=mask_fmt.id)
         mask = mask.std.Crop(self.pos.x, ref.width - (self.pos.x + self.size.x),

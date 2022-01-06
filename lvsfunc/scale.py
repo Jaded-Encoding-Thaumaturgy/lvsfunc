@@ -1,14 +1,18 @@
 """
-    (De)scaling functions and wrappers.
+    (De)scaling and conversion functions and wrappers.
 """
 import math
 from functools import partial
-from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple, Union, cast
+from typing import (Any, Callable, Dict, List, Literal, NamedTuple, Optional,
+                    Tuple, Union, cast)
 
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
 
-from . import kernels, util
+from . import kernels
+from .kernels import Catrom, Kernel
+from .types import VSFunction
+from .util import get_coefs, get_prop, quick_resample
 
 try:
     from cytoolz import functoolz
@@ -72,14 +76,14 @@ def _select_descale(n: int, f: Union[vs.VideoFrame, List[vs.VideoFrame]],
         f = [f]
     f = cast(List[vs.VideoFrame], f)
     best_res = max(f, key=lambda frame:
-                   math.log(clip.height - util.get_prop(frame, "descaleResolution", int), 2)
-                   * round(1 / max(util.get_prop(frame, "PlaneStatsAverage", float), 1e-12))
+                   math.log(clip.height - get_prop(frame, "descaleResolution", int), 2)
+                   * round(1 / max(get_prop(frame, "PlaneStatsAverage", float), 1e-12))
                    ** 0.2)
 
-    best_attempt = clips_by_resolution[util.get_prop(best_res, "descaleResolution", int)]
+    best_attempt = clips_by_resolution[get_prop(best_res, "descaleResolution", int)]
     if threshold == 0:
         return best_attempt.descaled
-    if util.get_prop(best_res, "PlaneStatsAverage", float) > threshold:
+    if get_prop(best_res, "PlaneStatsAverage", float) > threshold:
         return clip
     return best_attempt.descaled
 
@@ -116,14 +120,12 @@ def reupscale(clip: vs.VideoNode,
     znargs = dict(nsize=4, nns=4, qual=2, pscrn=2)
     znargs.update(kwargs)
 
-    upsc = util.quick_resample(clip, partial(core.znedi3.nnedi3, field=0,
-                                             dh=True, **znargs))
+    upsc = quick_resample(clip, partial(core.znedi3.nnedi3, field=0, dh=True, **znargs))
     upsc = core.std.FrameEval(upsc, partial(_transpose_shift, clip=upsc,
                                             kernel=kernel,
                                             caller="reupscale"),
                               prop_src=upsc)
-    upsc = util.quick_resample(upsc, partial(core.znedi3.nnedi3, field=0,
-                                             dh=True, **znargs))
+    upsc = quick_resample(upsc, partial(core.znedi3.nnedi3, field=0, dh=True, **znargs))
     return kernel.scale(upsc, width=height, height=width, shift=(0.5, 0)) \
         .std.Transpose()
 
@@ -335,6 +337,133 @@ def test_descale(clip: vs.VideoNode,
         rescaled = core.text.FrameProps(merge, "PlaneStatsDiff") if show_error else merge
 
     return rescaled, descale
+
+
+CURVES = Literal[
+    vs.TransferCharacteristics.TRANSFER_IEC_61966_2_1,
+    vs.TransferCharacteristics.TRANSFER_BT709,
+    vs.TransferCharacteristics.TRANSFER_BT601,
+    vs.TransferCharacteristics.TRANSFER_ST240_M,
+    vs.TransferCharacteristics.TRANSFER_BT2020_10,
+    vs.TransferCharacteristics.TRANSFER_BT2020_12,
+]
+
+
+def ssim_downsample(clip: vs.VideoNode, width: Optional[int] = None, height: int = 720,
+                    smooth: Union[int, float, VSFunction] = ((3 ** 2 - 1) / 12) ** 0.5,
+                    kernel: Kernel = Catrom(), gamma: bool = False,
+                    curve: CURVES = vs.TransferCharacteristics.TRANSFER_BT709,
+                    sigmoid: bool = False, epsilon: float = 1e-6) -> vs.VideoNode:
+    """
+    muvsfunc.ssim_downsample rewrite taken from a Vardë gist.
+    Unlike muvsfunc's implementation, this function also works in float and does not use nnedi3_resample.
+    Most of the documentation is taken from muvsfunc.
+
+    SSIM downsampler is an image downscaling technique that aims to optimize
+    for the perceptual quality of the downscaled results.
+    Image downscaling is considered as an optimization problem
+    where the difference between the input and output images is measured
+    using famous Structural SIMilarity (SSIM) index.
+    The solution is derived in closed-form, which leads to the simple, efficient implementation.
+    The downscaled images retain perceptually important features and details,
+    resulting in an accurate and spatio-temporally consistent representation of the high resolution input.
+
+    Original gist: https://gist.github.com/Ichunjo/16ab1f893588aafcb096c1f35a0cfb15
+
+    :param clip:        Input clip
+    :param width:       Output width. If None, autocalculates using height
+    :param height:      Output height (default: 720)
+    :param smooth:      Image smoothening method.
+                        If you pass an int, it specifies the "radius" of the internel used boxfilter,
+                        i.e. the window has a size of (2*smooth+1)x(2*smooth+1).
+                        If you pass a float, it specifies the "sigma" of core.tcanny.TCanny,
+                        i.e. the standard deviation of gaussian blur.
+                        If you pass a function, it acts as a general smoother.
+                        Default uses a gaussian blur.
+    :param curve:       Gamma mapping
+    :param sigmoid:     When True, applies a sigmoidal curve after the power-like curve
+                        (or before when converting from linear to gamma-corrected).
+                        This helps reduce the dark halo artefacts found around sharp edges
+                        caused by resizing in linear luminance.
+    :param epsilon:     Machine epsilon
+
+    :return: Downsampled clip
+    """
+    if isinstance(smooth, int):
+        filter_func = partial(core.std.BoxBlur, hradius=smooth, vradius=smooth)
+    elif isinstance(smooth, float):
+        filter_func = partial(core.tcanny.TCanny, sigma=smooth, mode=-1)
+    else:
+        filter_func = smooth  # type: ignore[assignment]
+
+    if width is None:
+        width = get_w(height, aspect_ratio=clip.width/clip.height)
+
+    clip = depth(clip, 32)
+
+    if gamma:
+        clip = gamma2linear(clip, curve, sigmoid=sigmoid, epsilon=epsilon)
+
+    l1 = kernel.scale(clip, width, height)
+    l2 = kernel.scale(clip.std.Expr('x dup *'), width, height)
+
+    m = filter_func(l1)
+
+    sl_plus_m_square = filter_func(l1.std.Expr('x dup *'))
+    sh_plus_m_square = filter_func(l2)
+    m_square = m.std.Expr('x dup *')
+    r = core.std.Expr([sl_plus_m_square, sh_plus_m_square, m_square], f'x z - {epsilon} < 0 y z - x z - / sqrt ?')
+    t = filter_func(core.std.Expr([r, m], 'x y *'))
+    m = filter_func(m)
+    r = filter_func(r)
+    d = core.std.Expr([m, r, l1, t], 'x y z * + a -')
+
+    if gamma:
+        d = linear2gamma(d, curve, sigmoid=sigmoid)
+
+    return d
+
+
+def gamma2linear(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
+                 sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
+                 epsilon: float = 1e-6) -> vs.VideoNode:
+    assert clip.format
+    if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
+        raise ValueError('Only 32 bits float is allowed')
+
+    c = get_coefs(curve)
+
+    expr = f'x {c.k0} <= x {c.phi} / x {c.alpha} + 1 {c.alpha} + / {c.gamma} pow ? {gcor} pow'
+    if sigmoid:
+        x0 = f'1 1 {cont} {thr} * exp + /'
+        x1 = f'1 1 {cont} {thr} 1 - * exp + /'
+        expr = f'{thr} 1 {expr} {x1} {x0} - * {x0} + {epsilon} max / 1 - {epsilon} max log {cont} / -'
+
+    expr = f'{expr} 0.0 max 1.0 min'
+
+    return core.std.Expr(clip, expr).std.SetFrameProps(_Transfer=8)
+
+
+def linear2gamma(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
+                 sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
+                 ) -> vs.VideoNode:
+    assert clip.format
+    if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
+        raise ValueError('Only 32 bits float is allowed')
+
+    c = get_coefs(curve)
+
+    expr = 'x'
+    if sigmoid:
+        x0 = f'1 1 {cont} {thr} * exp + /'
+        x1 = f'1 1 {cont} {thr} 1 - * exp + /'
+        expr = f'1 1 {cont} {thr} {expr} - * exp + / {x0} - {x1} {x0} - /'
+
+    expr += f' {gcor} pow'
+    expr = f'{expr} {c.k0} {c.phi} / <= {expr} {c.phi} * {expr} 1 {c.gamma} / pow {c.alpha} 1 + * {c.alpha} - ?'
+    expr = f'{expr} 0.0 max 1.0 min'
+
+    return core.std.Expr(clip, expr).std.SetFrameProps(_Transfer=curve)
 
 
 # TODO: Write a function that checks every possible combination of B and C in bicubic
