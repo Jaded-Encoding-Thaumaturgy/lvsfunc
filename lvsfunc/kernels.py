@@ -114,7 +114,6 @@ class Bicubic(Kernel):
         return core.resize.Bicubic(clip, width, height,
                                    src_top=shift[0], src_left=shift[1],
                                    filter_param_a=self.b, filter_param_b=self.c,
-                                   filter_param_a_uv=self.b, filter_param_b_uv=self.c,
                                    **self.kwargs)
 
     def descale(self, clip: vs.VideoNode, width: int, height: int,
@@ -128,14 +127,12 @@ class Bicubic(Kernel):
                  matrix_in: Optional[vs.MatrixCoefficients] = None) -> vs.VideoNode:
         return core.resize.Bicubic(clip, format=int(format),
                                    filter_param_a=self.b, filter_param_b=self.c,
-                                   filter_param_a_uv=self.b, filter_param_b_uv=self.c,
                                    matrix=matrix, matrix_in=matrix_in,
                                    **self.kwargs)
 
     def shift(self, clip: vs.VideoNode, shift: Tuple[float, float] = (0, 0)) -> vs.VideoNode:
         return core.resize.Bicubic(clip, src_top=shift[0], src_left=shift[1],
                                    filter_param_a=self.b, filter_param_b=self.c,
-                                   filter_param_a_uv=self.b, filter_param_b_uv=self.c,
                                    **self.kwargs)
 
 
