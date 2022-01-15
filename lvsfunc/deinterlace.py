@@ -7,10 +7,10 @@ import time
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import vapoursynth as vs
-from vsutil import get_w, get_y
+from vsutil import Dither, depth, get_depth, get_w, get_y
 
 from .kernels import Catrom, Kernel
 from .render import get_render_progress
@@ -341,3 +341,45 @@ def dir_unsharp(clip: vs.VideoNode,
     blurred_clip = core.std.Convolution(den, matrix=blur_matrix, mode=dir)
     unsharp = core.std.Expr(clips=[den, blurred_clip], expr=['x y - ' + str(strength) + ' * x +', "", ""])
     return core.std.MergeDiff(unsharp, diff)
+
+
+def fix_telecined_fades(clip: vs.VideoNode, thr: float = 2.2) -> vs.VideoNode:
+    """
+    A filter that gives a mathematically perfect solution to fades made *after* telecining
+    (which made perfect IVTC impossible). This is an improved version of the Fix-Telecined-Fades plugin
+    that deals with overshoot/undershoot by adding a check.
+
+    Make sure to run this *after* IVTC/deinterlacing!
+
+    If the value surpases thr * original value, it will not affect any pixels in that frame
+    to avoid it damaging frames it shouldn't need to. This helps a lot with orphan fields as well,
+    which would otherwise create massive swings in values, sometimes messing up the fade fixing.
+
+    If you pass your own float clip, you'll want to make sure to properly dither it down after.
+    If you don't do this, you'll run into some serious issues!
+
+    Taken from this gist and modified by LightArrowsEXE.
+    <https://gist.github.com/blackpilling/bf22846bfaa870a57ad77925c3524eb1>
+
+    :param clip:        Input clip
+    :param thr:         Threshold for when a field should be adjusted.
+                        Default is 2.2, which appears to be a safe value that doesn't
+
+    :return:            Clip with only fades fixed
+
+    """
+    def _ftf(n: int, f: List[vs.VideoFrame]) -> vs.VideoNode:
+        avg = (get_prop(f[0], 'PlaneStatsAverage', float),
+               get_prop(f[1], 'PlaneStatsAverage', float))
+
+        mean = sum(avg) / 2
+        fixed = (sep[0].std.Expr(f"x {mean} {avg[0]} / dup {thr} <= swap 1 ? *"),
+                 sep[1].std.Expr(f"x {mean} {avg[1]} / *"))
+
+        return core.std.Interleave(fixed).std.DoubleWeave()[::2]
+
+    clip32 = depth(clip, 32).std.Limiter()
+
+    sep = clip32.std.SeparateFields().std.PlaneStats()
+    ftf = core.std.FrameEval(clip32, _ftf, [sep[::2], sep[1::2]])
+    return depth(ftf, get_depth(clip), dither_type=Dither.ERROR_DIFFUSION)

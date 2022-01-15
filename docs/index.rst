@@ -117,6 +117,7 @@ Functions
    lvsfunc.deinterlace.descale_fields
    lvsfunc.deinterlace.dir_deshimmer
    lvsfunc.deinterlace.dir_unsharp
+   lvsfunc.deinterlace.fix_telecined_fades
    lvsfunc.deinterlace.SIVTC
    lvsfunc.deinterlace.TIVTC_VFR
    lvsfunc.denoise.bm3d
@@ -279,6 +280,7 @@ lvsfunc.deinterlace
    lvsfunc.deinterlace.descale_fields
    lvsfunc.deinterlace.dir_deshimmer
    lvsfunc.deinterlace.dir_unsharp
+   lvsfunc.deinterlace.fix_telecined_fades
    lvsfunc.deinterlace.SIVTC
    lvsfunc.deinterlace.TIVTC_VFR
 
