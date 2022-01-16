@@ -154,6 +154,7 @@ def vsdpir(clip: vs.VideoNode, strength: float = 25, mode: str = 'deblock',
                             If `None`, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
     :param cuda:            Use CUDA if True, else CPU
+    :param device_index:    The 'device_index' + 1º device of type device type in the system
     :param i444:            Forces the returned clip to be YUV444PS instead of the input clip's format
     :param vsdpir_args:     Additional args to pass onto vs-dpir
                             (Note: strength, task, and device_type can't be overridden!)
@@ -178,7 +179,9 @@ def vsdpir(clip: vs.VideoNode, strength: float = 25, mode: str = 'deblock',
     if matrix is None and not is_rgb:
         matrix = get_prop(clip.get_frame(0), "_Matrix", int)
 
-    vsdpir_args |= dict(strength=strength, task=mode, device_type='cuda' if cuda else 'cpu')
+    vsdpir_args |= dict(strength=strength, task=mode,
+                        device_type='cuda' if cuda else 'cpu',
+                        device_index=device_index)
 
     clip_rgb = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=matrix, dither_type='error_diffusion')
     run_dpir = DPIR(clip_rgb, **vsdpir_args)
