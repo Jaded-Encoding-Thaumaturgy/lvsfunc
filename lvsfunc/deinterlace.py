@@ -343,7 +343,8 @@ def dir_unsharp(clip: vs.VideoNode,
     return core.std.MergeDiff(unsharp, diff)
 
 
-def fix_telecined_fades(clip: vs.VideoNode, thr: float = 2.2) -> vs.VideoNode:
+def fix_telecined_fades(clip: vs.VideoNode, tff: Optional[Union[bool, int]] = None,
+                        thr: float = 2.2) -> vs.VideoNode:
     """
     A filter that gives a mathematically perfect solution to fades made *after* telecining
     (which made perfect IVTC impossible). This is an improved version of the Fix-Telecined-Fades plugin
@@ -362,8 +363,10 @@ def fix_telecined_fades(clip: vs.VideoNode, thr: float = 2.2) -> vs.VideoNode:
     <https://gist.github.com/blackpilling/bf22846bfaa870a57ad77925c3524eb1>
 
     :param clip:        Input clip
+    :param tff:         Top-field-first. `False` sets it to Bottom-Field-First
     :param thr:         Threshold for when a field should be adjusted.
                         Default is 2.2, which appears to be a safe value that doesn't
+                        cause it to do weird stuff with orphan fields.
 
     :return:            Clip with only fades fixed
 
@@ -378,8 +381,24 @@ def fix_telecined_fades(clip: vs.VideoNode, thr: float = 2.2) -> vs.VideoNode:
 
         return core.std.Interleave(fixed).std.DoubleWeave()[::2]
 
+    # I want to catch this before it reaches SeperateFields and give newer users a more useful error
+    if get_prop(clip.get_frame(0), '_FieldBased', int) == 0 and tff is None:
+        raise vs.Error("fix_telecined_fades: 'You must set `tff` for this clip!'")
+    elif isinstance(tff, (bool, int)):
+        clip = clip.std.SetFieldBased(int(tff) + 1)
+
     clip32 = depth(clip, 32).std.Limiter()
+    bits = get_depth(clip)
 
     sep = clip32.std.SeparateFields().std.PlaneStats()
-    ftf = core.std.FrameEval(clip32, _ftf, [sep[::2], sep[1::2]])
-    return depth(ftf, get_depth(clip), dither_type=Dither.ERROR_DIFFUSION)
+    sep = sep[::2], sep[1::2]  # type: ignore # I know this isn't good, but frameeval breaks otherwise
+    ftf = core.std.FrameEval(clip32, _ftf, sep)  # and I don't know how or why
+
+    if bits == 32:
+        warnings.warn("fix_telecined_fades: 'Make sure to dither down BEFORE setting the FieldBased prop to 0! "
+                      "Not doing this MAY return some of the combing!'")
+    else:
+        ftf = depth(ftf, bits, dither_type=Dither.ERROR_DIFFUSION)
+        ftf = ftf.std.SetFieldBased(0)
+
+    return ftf
