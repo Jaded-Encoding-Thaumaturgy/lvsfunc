@@ -363,7 +363,8 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: Optional[Union[bool, int]] = No
     <https://gist.github.com/blackpilling/bf22846bfaa870a57ad77925c3524eb1>
 
     :param clip:        Input clip
-    :param tff:         Top-field-first. `False` sets it to Bottom-Field-First
+    :param tff:         Top-field-first. `False` sets it to Bottom-Field-First.
+                        If None, get the field order from the _FieldBased prop.
     :param thr:         Threshold for when a field should be adjusted.
                         Default is 2.2, which appears to be a safe value that doesn't
                         cause it to do weird stuff with orphan fields.
