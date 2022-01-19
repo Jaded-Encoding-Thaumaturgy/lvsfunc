@@ -5,7 +5,8 @@ from math import ceil
 from typing import Any, Callable, Dict, Optional
 
 import vapoursynth as vs
-from vsutil import fallback, get_depth, get_w, get_y, join, plane, scale_value
+from vsutil import (depth, fallback, get_depth, get_w, get_y, join, plane,
+                    scale_value)
 
 from . import kernels, util
 from .scale import ssim_downsample
@@ -348,6 +349,7 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
     aa = ssim_downsample(get_y(aa), aah, aaw)
     aa = _eedi3s(aa, mclip=mclip_up.std.Transpose(), **eedi3_args).std.Transpose()
     aa = ssim_downsample(_eedi3s(aa, mclip=mclip_up, **eedi3_args), clip.width, clip.height)
+    aa = depth(aa, get_depth(clip_y))
 
     aa_merge = core.std.MaskedMerge(clip_y, aa, lmask)
     return join([aa_merge, plane(clip, 1), plane(clip, 2)])
