@@ -327,8 +327,8 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
     if clip.format is None:
         raise ValueError("based_aa: 'Variable-format clips not supported'")
 
-    aaw = round(clip.width * rfactor) & ~1
-    aah = round(clip.height * rfactor) & ~1
+    aaw = (round(clip.width * rfactor) + 1) & ~1
+    aah = (round(clip.height * rfactor) + 1) & ~1
 
     if not lmask:
         if mask_thr > 255:
@@ -344,12 +344,16 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
     if show_mask:
         return lmask
 
-    aa = clip_y.std.Transpose()
+    aa = depth(clip_y, 16).std.Transpose()
     aa = join([aa] * 3).placebo.Shader(shader=shader_file, filter='box', width=aa.width * 2, height=aa.height * 2)
+    aa = depth(aa, get_depth(clip_y))
     aa = ssim_downsample(get_y(aa), aah, aaw)
     aa = _eedi3s(aa, mclip=mclip_up.std.Transpose(), **eedi3_args).std.Transpose()
     aa = ssim_downsample(_eedi3s(aa, mclip=mclip_up, **eedi3_args), clip.width, clip.height)
     aa = depth(aa, get_depth(clip_y))
 
     aa_merge = core.std.MaskedMerge(clip_y, aa, lmask)
+
+    if clip.format.num_planes == 1:
+        return aa_merge
     return join([aa_merge, plane(clip, 1), plane(clip, 2)])
