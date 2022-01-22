@@ -377,9 +377,12 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: Optional[Union[bool, int]] = No
         avg = (get_prop(f[0], 'PlaneStatsAverage', float),
                get_prop(f[1], 'PlaneStatsAverage', float))
 
-        mean = sum(avg) / 2
-        fixed = (sep[0].std.Expr(f"x {mean} {avg[0]} / dup {thr} <= swap 1 ? *"),
-                 sep[1].std.Expr(f"x {mean} {avg[1]} / *"))
+        if avg[0] != avg[1]:
+            mean = sum(avg) / 2
+            fixed = (sep[0].std.Expr(f"x {mean} {avg[0]} / dup 2.2 <= swap 1 ? *"),
+                     sep[1].std.Expr(f"x {mean} {avg[1]} / *"))
+        else:
+            fixed = sep
 
         return core.std.Interleave(fixed).std.DoubleWeave()[::2]
 
