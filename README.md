@@ -22,7 +22,7 @@ $ pip3 install lvsfunc
 Or if you want the latest git version, install it with this command:
 
 ```sh
-$ pip3 install git+https://github.com/Irrational-Encoding-Wizardry/lvsfunc.git
+$ python -m pip install git+https://github.com/Irrational-Encoding-Wizardry/lvsfunc.git -U
 ```
 
 ### Arch Linux
