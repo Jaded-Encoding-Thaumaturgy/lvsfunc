@@ -2,11 +2,9 @@
     Deblocking functions and wrappers.
 """
 from functools import partial
-from importlib.metadata import version
 from typing import Any, Optional, Sequence, Tuple, Union
 
 import vapoursynth as vs
-from packaging import version as pck_version
 from vsutil import depth
 
 from .types import Matrix
@@ -169,11 +167,6 @@ def vsdpir(clip: vs.VideoNode, strength: float = 25, tiles: Optional[Union[int, 
 
     :return:                Deblocked or denoised clip in either the given clip's format or YUV444PS
     """
-    # Forcing user to use a version of vsdpir that doesn't have the dotting issue rather than worry about that here.
-    if pck_version.parse(version('vsdpir')) < pck_version.parse("1.6.0"):
-        raise ImportError(f"vsdpir: 'Your vs-dpir version must be at least 1.6.0. Current version: {version('vsdpir')}"
-                          "\nPlease install the latest version from <https://github.com/HolyWu/vs-dpir>'")
-
     if clip.format is None:
         raise ValueError("vsdpir: 'Variable-format clips not supported'")
 
