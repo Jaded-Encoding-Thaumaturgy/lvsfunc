@@ -7,9 +7,15 @@ from typing import Any, Optional, Sequence, Tuple, Union
 
 import vapoursynth as vs
 from packaging import version as pck_version
+from vsutil import depth
 
 from .types import Matrix
 from .util import get_prop
+
+try:
+    from vsmlrt import DPIR, Backend, DPIRModel, backendT
+except ModuleNotFoundError:
+    raise ModuleNotFoundError("deblock: 'vsmlrt is required to use deblocking function.'")
 
 core = vs.core
 
@@ -18,7 +24,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strs: Sequence[float] = [30, 50, 75],
                 thrs: Sequence[Tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
                 matrix: Optional[Union[Matrix, int]] = None,
-                cuda: bool = True, device_index: int = 0,
+                cuda: bool = True,
                 write_props: bool = False,
                 **vsdpir_args: Any) -> vs.VideoNode:
     """
@@ -45,6 +51,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     :param edgevalue:       Remove edges from the edgemask that exceed this threshold (higher means more edges removed)
     :param strs:            A list of DPIR strength values (higher means stronger deblocking).
                             You can pass any arbitrary number of values here.
+                            Sane deblocking strenghts lie between 1–20 for most regular deblocking.
+                            Going higher than 50 is not recommended outside of very extreme cases.
                             The amount of values in strs and thrs need to be equal.
     :param thrs:            A list of thresholds, written as [(EdgeValRef, NextFrameDiff, PrevFrameDiff)].
                             You can pass any arbitrary number of values here.
@@ -52,8 +60,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
                             If `None`, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
-    :param cuda:            Device type used for deblocking. Uses CUDA if True, else CPU
-    :param device_index:    The 'device_index' + 1º device of type device type in the system
+    :param cuda:            Use CUDA backend if True, else CPU backend
     :write_props            Will write verbose props
     :vsdpir_args            Additional args to pass to ``vsdpir``
 
@@ -117,7 +124,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     diffprev = core.std.PlaneStats(rgb, rgb[0] + rgb, prop='YPrev')
 
     db_clips = [
-        vsdpir(rgb, strength=st, mode='deblock', cuda=cuda, device_index=device_index, **vsdpir_args)
+        vsdpir(rgb, strength=st, mode='deblock', cuda=cuda, **vsdpir_args)
         .std.SetFrameProp('Adb_DeblockStrength', intval=int(st)) for st in strs
     ]
 
@@ -129,43 +136,39 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     return core.resize.Bicubic(debl, format=clip.format.id, matrix=matrix if not is_rgb else None)
 
 
-def vsdpir(clip: vs.VideoNode, strength: float = 25, mode: str = 'deblock',
-           matrix: Optional[Union[Matrix, int]] = None,
-           cuda: bool = True, device_index: int = 0,
-           i444: bool = False, **vsdpir_args: Any) -> vs.VideoNode:
+def vsdpir(clip: vs.VideoNode, strength: float = 25, tiles: Optional[Union[int, Tuple[int]]] = None,
+           mode: str = 'deblock', matrix: Optional[Union[Matrix, int]] = None,
+           cuda: bool = True, backend: Optional[backendT] = None,
+           i444: bool = False, **dpir_args: Any) -> vs.VideoNode:
     """
-    A simple vs-dpir wrapper for convenience.
+    A simple vs-mlrt DPIR wrapper for convenience.
 
-    You must have vs-dpir 1.6.0 or higher.
-    https://github.com/HolyWu/vs-dpir.
+    You must install vs-mlrt. For more information, see the following links:
+    https://github.com/AmusementClub/vs-mlrt
+    https://github.com/AmusementClub/vs-mlrt/wiki/DPIR
 
-    Converts to RGB -> runs vs-dpir -> converts back to original format.
+    Converts to RGB -> runs DPIR -> converts back to original format.
     For more information, see https://github.com/cszn/DPIR.
 
     Dependencies:
 
-    * vs-dpir
+    * vs-mlrt
 
     :param clip:            Input clip
-    :param strength:        vs-dpir strength.
-                            Sane values lie between 20-50 for ``mode='deblock'``, and 2-5 for ``mode='denoise'``
-    :param mode:            vs-dpir mode. Valid modes are 'deblock' and 'denoise'.
+    :param strength:        DPIR strength. Sane values lie between 1–20 for ``mode='deblock'``,
+                            and 1–3 for ``mode='denoise'``
+    :param mode:            DPIR mode. Valid modes are 'deblock' and 'denoise'.
     :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
                             If `None`, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
-    :param cuda:            Use CUDA if True, else CPU
-    :param device_index:    The 'device_index' + 1º device of type device type in the system
+    :param cuda:            Use CUDA backend if True, else CPU backend
+    :param backend:         Override used backend. This will override ``cuda``
     :param i444:            Forces the returned clip to be YUV444PS instead of the input clip's format
-    :param vsdpir_args:     Additional args to pass onto vs-dpir
-                            (Note: strength, task, and device_type can't be overridden!)
+    :param dpir_args:       Additional args to pass to vs-mlrt
+                            (Note: strength, tiles, model, and backend can't be overridden!)
 
     :return:                Deblocked or denoised clip in either the given clip's format or YUV444PS
     """
-    try:
-        from vsdpir import DPIR
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("'vsdpir: vs-dpir and pytorch are required to use this function.'")
-
     # Forcing user to use a version of vsdpir that doesn't have the dotting issue rather than worry about that here.
     if pck_version.parse(version('vsdpir')) < pck_version.parse("1.6.0"):
         raise ImportError(f"vsdpir: 'Your vs-dpir version must be at least 1.6.0. Current version: {version('vsdpir')}"
@@ -179,12 +182,24 @@ def vsdpir(clip: vs.VideoNode, strength: float = 25, mode: str = 'deblock',
     if matrix is None and not is_rgb:
         matrix = get_prop(clip.get_frame(0), "_Matrix", int)
 
-    vsdpir_args |= dict(strength=strength, task=mode,
-                        device_type='cuda' if cuda else 'cpu',
-                        device_index=device_index)
+    # TODO: Replace with a switch?
+    if mode == 'deblock':  # Get the correct model
+        model = DPIRModel.drunet_deblocking_color if is_rgb else DPIRModel.drunet_deblocking_grayscale
+    elif mode == 'denoise':
+        model = DPIRModel.drunet_color if is_rgb else DPIRModel.drunet_gray
+    else:
+        raise ValueError(f'vsdpir: "{mode}" is not a valid mode!')
+
+    if backend is not None:
+        dpir_backend = backend
+    else:
+        dpir_backend = Backend.ORT_CUDA if cuda is True else Backend.OV_CPU  # type:ignore[assignment]
+
+    dpir_args |= dict(strength=strength, tiles=tiles, model=model, backend=dpir_backend)
 
     clip_rgb = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=matrix, dither_type='error_diffusion')
-    run_dpir = DPIR(clip_rgb, **vsdpir_args)
+    in_clip = clip_rgb if is_rgb else depth(clip, 32)
+    run_dpir = DPIR(in_clip, **dpir_args)
 
     if i444:
         return core.resize.Bicubic(run_dpir, format=vs.YUV444PS, matrix=matrix)
