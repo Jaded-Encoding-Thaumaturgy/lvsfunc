@@ -10,11 +10,6 @@ from vsutil import depth
 from .types import Matrix
 from .util import get_prop
 
-try:
-    from vsmlrt import DPIR, Backend, DPIRModel, backendT
-except ModuleNotFoundError:
-    raise ModuleNotFoundError("deblock: 'vsmlrt is required to use deblocking function.'")
-
 core = vs.core
 
 
@@ -136,8 +131,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
 def vsdpir(clip: vs.VideoNode, strength: float = 25, tiles: Optional[Union[int, Tuple[int]]] = None,
            mode: str = 'deblock', matrix: Optional[Union[Matrix, int]] = None,
-           cuda: bool = True, backend: Optional[backendT] = None,
-           i444: bool = False, **dpir_args: Any) -> vs.VideoNode:
+           cuda: bool = True, i444: bool = False, **dpir_args: Any) -> vs.VideoNode:
     """
     A simple vs-mlrt DPIR wrapper for convenience.
 
@@ -160,13 +154,17 @@ def vsdpir(clip: vs.VideoNode, strength: float = 25, tiles: Optional[Union[int, 
                             If `None`, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
     :param cuda:            Use CUDA backend if True, else CPU backend
-    :param backend:         Override used backend. This will override ``cuda``
     :param i444:            Forces the returned clip to be YUV444PS instead of the input clip's format
-    :param dpir_args:       Additional args to pass to vs-mlrt
-                            (Note: strength, tiles, model, and backend can't be overridden!)
+    :param dpir_args:       Additional args to pass to vs-mlrt.
+                            Note: strength, tiles, and model can't be overridden!
 
     :return:                Deblocked or denoised clip in either the given clip's format or YUV444PS
     """
+    try:
+        from vsmlrt import DPIR, Backend, DPIRModel
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("deblock: 'vsmlrt is required to use deblocking function.'")
+
     if clip.format is None:
         raise ValueError("vsdpir: 'Variable-format clips not supported'")
 
@@ -181,14 +179,12 @@ def vsdpir(clip: vs.VideoNode, strength: float = 25, tiles: Optional[Union[int, 
     elif mode == 'denoise':
         model = DPIRModel.drunet_color if is_rgb else DPIRModel.drunet_gray
     else:
-        raise ValueError(f'vsdpir: "{mode}" is not a valid mode!')
+        raise ValueError(f"vsdpir: '\"{mode}\" is not a valid mode!'")
 
-    if backend is not None:
-        dpir_backend = backend
-    else:
-        dpir_backend = Backend.ORT_CUDA if cuda is True else Backend.OV_CPU  # type:ignore[assignment]
+    dpir_args |= dict(strength=strength, tiles=tiles, model=model)
 
-    dpir_args |= dict(strength=strength, tiles=tiles, model=model, backend=dpir_backend)
+    if "backend" not in dpir_args:
+        dpir_args |= dict(backend=Backend.ORT_CUDA if cuda else Backend.OV_CPU)
 
     clip_rgb = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=matrix, dither_type='error_diffusion')
     in_clip = clip_rgb if is_rgb else depth(clip, 32)
