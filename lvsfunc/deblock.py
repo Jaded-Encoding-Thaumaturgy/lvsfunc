@@ -1,12 +1,16 @@
 """
     Deblocking functions and wrappers.
 """
+from __future__ import annotations
+
 from functools import partial
-from typing import Any, Optional, Sequence, Tuple, Union
+from typing import Any, Optional, Sequence, SupportsFloat, Tuple, Union
 
 import vapoursynth as vs
-from vsutil import depth
+from vsutil import (Dither, depth, disallow_variable_format,
+                    disallow_variable_resolution, get_depth)
 
+from .kernels import Catrom, Kernel
 from .types import Matrix
 from .util import get_prop
 
@@ -129,17 +133,21 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     return core.resize.Bicubic(debl, format=clip.format.id, matrix=matrix if not is_rgb else None)
 
 
-def vsdpir(clip: vs.VideoNode, strength: float = 25, tiles: Optional[Union[int, Tuple[int]]] = None,
-           mode: str = 'deblock', matrix: Optional[Union[Matrix, int]] = None,
-           cuda: bool = True, i444: bool = False, **dpir_args: Any) -> vs.VideoNode:
+@disallow_variable_format
+@disallow_variable_resolution
+def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 25, mode: str = 'deblock',
+           matrix: Matrix | int | None = None, tiles: int | Tuple[int] | None = None,
+           cuda: bool = True, i444: bool = False, kernel: Kernel = Catrom(), **dpir_args: Any) -> vs.VideoNode:
     """
     A simple vs-mlrt DPIR wrapper for convenience.
 
     You must install vs-mlrt. For more information, see the following links:
-    https://github.com/AmusementClub/vs-mlrt
-    https://github.com/AmusementClub/vs-mlrt/wiki/DPIR
 
-    Converts to RGB -> runs DPIR -> converts back to original format.
+    * https://github.com/AmusementClub/vs-mlrt
+    * https://github.com/AmusementClub/vs-mlrt/wiki/DPIR
+    * https://github.com/AmusementClub/vs-mlrt/releases/latest
+
+    Converts to RGB -> runs DPIR -> converts back to original format, and with no subsampling if ``i444=True``.
     For more information, see https://github.com/cszn/DPIR.
 
     Dependencies:
@@ -151,12 +159,12 @@ def vsdpir(clip: vs.VideoNode, strength: float = 25, tiles: Optional[Union[int, 
                             and 1–3 for ``mode='denoise'``
     :param mode:            DPIR mode. Valid modes are 'deblock' and 'denoise'.
     :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
-                            If `None`, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
+                            If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
     :param cuda:            Use CUDA backend if True, else CPU backend
     :param i444:            Forces the returned clip to be YUV444PS instead of the input clip's format
     :param dpir_args:       Additional args to pass to vs-mlrt.
-                            Note: strength, tiles, and model can't be overridden!
+                            Note: strength, tiles, and model cannot be overridden!
 
     :return:                Deblocked or denoised clip in either the given clip's format or YUV444PS
     """
@@ -165,31 +173,37 @@ def vsdpir(clip: vs.VideoNode, strength: float = 25, tiles: Optional[Union[int, 
     except ModuleNotFoundError:
         raise ModuleNotFoundError("deblock: 'vsmlrt is required to use deblocking function.'")
 
-    if clip.format is None:
-        raise ValueError("vsdpir: 'Variable-format clips not supported'")
+    assert clip.format
 
-    is_rgb = clip.format.color_family is vs.RGB
+    bit_depth = get_depth(clip)
+    is_rgb, is_gray = (clip.format.color_family is f for f in (vs.RGB, vs.GRAY))
 
-    if matrix is None and not is_rgb:
-        matrix = get_prop(clip.get_frame(0), "_Matrix", int)
+    clip_32 = depth(clip, 32, dither_type=Dither.ERROR_DIFFUSION).std.Limiter()
 
-    # TODO: Replace with a switch?
-    if mode == 'deblock':  # Get the correct model
-        model = DPIRModel.drunet_deblocking_color if is_rgb else DPIRModel.drunet_deblocking_grayscale
-    elif mode == 'denoise':
-        model = DPIRModel.drunet_color if is_rgb else DPIRModel.drunet_gray
+    # TODO: Replace with a match-case?
+    if mode.lower() == 'deblock':
+        model = DPIRModel.drunet_deblocking_color if not is_gray else DPIRModel.drunet_deblocking_grayscale
+    elif mode.lower() == 'denoise':
+        model = DPIRModel.drunet_color if not is_gray else DPIRModel.drunet_gray
     else:
-        raise ValueError(f"vsdpir: '\"{mode}\" is not a valid mode!'")
+        raise ValueError(f"""vsdpir: '"{mode}" is not a valid mode!'""")
 
     dpir_args |= dict(strength=strength, tiles=tiles, model=model)
 
     if "backend" not in dpir_args:
         dpir_args |= dict(backend=Backend.ORT_CUDA if cuda else Backend.OV_CPU)
 
-    clip_rgb = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=matrix, dither_type='error_diffusion')
-    in_clip = clip_rgb if is_rgb else depth(clip, 32)
-    run_dpir = DPIR(in_clip.std.Limiter(), **dpir_args)
+    if is_rgb or is_gray:
+        return depth(DPIR(clip_32, **dpir_args), bit_depth)
 
-    if i444:
-        return core.resize.Bicubic(run_dpir, format=vs.YUV444PS, matrix=matrix)
-    return core.resize.Bicubic(run_dpir, format=clip.format.id, matrix=matrix)
+    if matrix is None:
+        matrix = get_prop(clip.get_frame(0), "_Matrix", int)
+
+    targ_matrix = Matrix(matrix)
+    targ_format = clip.format.replace(subsampling_w=0, subsampling_h=0) if i444 else clip.format
+
+    clip_rgb = kernel.resample(clip_32, vs.RGBS, matrix_in=targ_matrix)  # type:ignore[arg-type]
+
+    run_dpir = DPIR(clip_rgb, **dpir_args)
+
+    return kernel.resample(run_dpir, targ_format, targ_matrix)  # type:ignore[arg-type]
