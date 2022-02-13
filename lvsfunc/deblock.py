@@ -54,8 +54,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                             If `None`, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
     :param cuda:            Use CUDA backend if True, else CPU backend
-    :write_props            Will write verbose props
-    :vsdpir_args            Additional args to pass to ``vsdpir``
+    :param write_props:     Will write verbose props
+    :param vsdpir_args:     Additional args to pass to ``vsdpir``
 
     :return:                Deblocked clip
     """
