@@ -188,7 +188,7 @@ def vsdpir(clip: vs.VideoNode, strength: float = 25, tiles: Optional[Union[int, 
 
     clip_rgb = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=matrix, dither_type='error_diffusion')
     in_clip = clip_rgb if is_rgb else depth(clip, 32)
-    run_dpir = DPIR(in_clip, **dpir_args)
+    run_dpir = DPIR(in_clip.std.Limiter(), **dpir_args)
 
     if i444:
         return core.resize.Bicubic(run_dpir, format=vs.YUV444PS, matrix=matrix)
