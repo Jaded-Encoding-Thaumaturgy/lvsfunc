@@ -1,6 +1,8 @@
 """
     Miscellaneous functions and wrappers that don't really have a place elsewhere.
 """
+from __future__ import annotations
+
 import colorsys
 import os
 import random
@@ -10,11 +12,14 @@ from typing import (Any, Callable, Dict, List, Optional, Sequence, Tuple,
                     TypeVar, Union, cast)
 
 import vapoursynth as vs
-from vsutil import get_depth, get_w, get_y, is_image, scale_value
+from vsutil import (depth, disallow_variable_format,
+                    disallow_variable_resolution, get_depth, get_w, get_y,
+                    is_image, scale_value)
 
+from .kernels import Catrom
 from .mask import BoundingBox
-from .types import Position, Size
-from .util import get_prop
+from .types import Matrix, Position, Range, Size
+from .util import get_prop, normalize_ranges
 from .util import replace_ranges as _replace_ranges
 from .util import scale_thresh as _scale_thresh
 
@@ -483,6 +488,104 @@ def colored_clips(amount: int,
         shuffle(rgb_color_list)
 
     return [core.std.BlankClip(color=color, **blank_clip_args) for color in rgb_color_list]
+
+
+@disallow_variable_format
+@disallow_variable_resolution
+def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
+                 frame_ranges: Range | List[Range] | None = None, fade_length: int = 0,
+                 matrix: Matrix | int | None = None) -> vs.VideoNode:
+    """
+    Wrapper to overlay a logo or sign onto another clip. Rewrite of fvsfunc.InsertSign.
+    This wrapper also allows you to set fades to fade a logo in and out.
+
+    Requires:
+
+    * vs-imwri
+
+    :param clip:            Base clip
+    :param overlay:         Sign or logo to overlay. Must be the png loaded in through imwri.Read()
+                            or a path string to the image file.
+    :param frame_ranges:    Frame ranges or starting frame to apply the overlay to. See ``types.Range`` for more info.
+                            If None, overlays the entire clip.
+                            If a Range is passed, the overlaid clip will only show up inside that range.
+                            If only a single integer is given, it will start on that frame and
+                            stay until the end of the clip.
+                            Note that this function only accepts a single Range! You can't pass a list of them!
+    :param fade_length:     Length to fade the clips into each other.
+                            The fade will start and end on the frames given in frame_ranges.
+                            If set to 0, it won't fade and the sign will simply pop in.
+    :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
+                            If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
+                            in which case it stays as `None`.
+
+    :return:                Clip with a logo or sign overlaid ontop for the given frame ranges,
+                            either with or without a fade
+    """
+    try:
+        from kagefunc import crossfade
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("overlay_sign: 'missing dependency `kagefunc`'")
+
+    assert clip.format
+
+    ov_type = type(overlay)
+    clip_fam = clip.format.color_family
+
+    # TODO: This can probably be done better
+    if not isinstance(overlay, (vs.VideoNode, str)):
+        raise ValueError("overlay_sign: '`overlay` must be a VideoNode object or a string path!'")
+    elif isinstance(overlay, str):
+        overlay = core.imwri.Read(overlay, alpha=True)
+
+    if not all([clip.width, overlay.width]) or not all([clip.height, overlay.height]):
+        raise ValueError("overlay_sign: 'Your overlay clip must have the same dimensions as your input clip!'")
+
+    # wtf mypy this IS reachable
+    if isinstance(frame_ranges, list) and len(frame_ranges) > 1:
+        warnings.warn("overlay_sign: 'Only one range is currently supported! "
+                      "Grabbing the first item in list.'")
+        frame_ranges = frame_ranges[0]
+
+    overlay = overlay[0] * clip.num_frames
+
+    if matrix is None:
+        matrix = get_prop(clip.get_frame(0), "_Matrix", int)
+
+    if matrix == 2:
+        raise ValueError("overlay_sign: 'You can't set a matrix of 2! "
+                         "Please set the correct matrix in the parameters!'")
+
+    assert overlay.format
+
+    if overlay.format.color_family is not clip_fam:
+        if clip_fam is vs.RGB:
+            overlay = Catrom().resample(overlay, clip.format.id, matrix_in=matrix)  # type:ignore[arg-type]
+        else:
+            overlay = Catrom().resample(overlay, clip.format.id, matrix)  # type:ignore[arg-type]
+
+    try:
+        mask = core.std.PropToClip(overlay)
+    except vs.Error:
+        if ov_type is str:
+            raise ValueError("overlay_sign: 'Please make sure your image has an alpha channel!'")
+        else:
+            raise ValueError("overlay_sign: 'Please make sure you loaded your sign in using imwri.Read!'")
+
+    merge = core.std.MaskedMerge(clip, overlay, depth(mask, get_depth(overlay)))
+
+    if not frame_ranges:
+        return merge
+
+    if fade_length > 0:
+        if isinstance(frame_ranges, int):
+            return crossfade(clip[:frame_ranges+fade_length], merge[frame_ranges:], fade_length)
+        else:
+            start, end = normalize_ranges(clip, frame_ranges)[0]
+            merge = crossfade(clip[:start+fade_length], merge[start:], fade_length)
+            return crossfade(merge[:end], clip[end-fade_length:], fade_length)
+    else:
+        return replace_ranges(clip, merge, frame_ranges)
 
 
 # compatibility since these were moved to util

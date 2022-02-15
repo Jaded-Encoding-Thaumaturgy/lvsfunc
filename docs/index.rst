@@ -133,6 +133,7 @@ Functions
    lvsfunc.misc.get_matrix
    lvsfunc.misc.limit_dark
    lvsfunc.misc.load_bookmarks
+   lvsfunc.misc.overlay_sign
    lvsfunc.misc.shift_tint
    lvsfunc.misc.source
    lvsfunc.misc.wipe_row
@@ -151,7 +152,6 @@ Functions
    lvsfunc.util.force_mod
    lvsfunc.util.get_coefs
    lvsfunc.util.normalize_ranges
-   lvsfunc.util.overlay_sign
    lvsfunc.util.padder
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
@@ -351,6 +351,7 @@ lvsfunc.misc
    lvsfunc.misc.get_matrix
    lvsfunc.misc.limit_dark
    lvsfunc.misc.load_bookmarks
+   lvsfunc.misc.overlay_sign
    lvsfunc.misc.shift_tint
    lvsfunc.misc.source
    lvsfunc.misc.wipe_row
@@ -434,7 +435,6 @@ lvsfunc.util
    lvsfunc.util.force_mod
    lvsfunc.util.get_coefs
    lvsfunc.util.normalize_ranges
-   lvsfunc.util.overlay_sign
    lvsfunc.util.padder
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
