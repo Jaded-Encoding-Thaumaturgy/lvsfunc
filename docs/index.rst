@@ -44,6 +44,7 @@ The following VapourSynth libraries are also required for full functionality:
 * `VapourSynth-ReadMpls <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-ReadMpls>`_
 * `VapourSynth-Retinex <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-Retinex>`_
 * `vs-ContinuityFixer <https://github.com/MonoS/VS-ContinuityFixer>`_
+* `vs-imwri <https://github.com/vapoursynth/vs-imwri>`_
 * `zimg <https://github.com/sekrit-twc/zimg>`_
 * `znedi3 <https://github.com/sekrit-twc/znedi3>`_
 
@@ -150,6 +151,7 @@ Functions
    lvsfunc.util.force_mod
    lvsfunc.util.get_coefs
    lvsfunc.util.normalize_ranges
+   lvsfunc.util.overlay_sign
    lvsfunc.util.padder
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
@@ -432,6 +434,7 @@ lvsfunc.util
    lvsfunc.util.force_mod
    lvsfunc.util.get_coefs
    lvsfunc.util.normalize_ranges
+   lvsfunc.util.overlay_sign
    lvsfunc.util.padder
    lvsfunc.util.pick_removegrain
    lvsfunc.util.pick_repair
