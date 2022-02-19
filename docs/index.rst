@@ -141,6 +141,8 @@ Functions
    lvsfunc.render.clip_async_render
    lvsfunc.render.find_scene_changes
    lvsfunc.render.get_render_process
+   lvsfunc.scale.comparative_descale
+   lvsfunc.scale.comparative_restore
    lvsfunc.scale.descale
    lvsfunc.scale.descale_detail_mask
    lvsfunc.scale.gamma2linear
@@ -392,6 +394,8 @@ lvsfunc.scale
 
 .. autosummary::
 
+   lvsfunc.scale.comparative_descale
+   lvsfunc.scale.comparative_restore
    lvsfunc.scale.descale
    lvsfunc.scale.descale_detail_mask
    lvsfunc.scale.gamma2linear

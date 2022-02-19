@@ -4,13 +4,13 @@
 import math
 from functools import partial
 from typing import (Any, Callable, Dict, List, Literal, NamedTuple, Optional,
-                    Tuple, Union, cast)
+                    Tuple, Type, Union, cast)
 
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
 
 from . import kernels
-from .kernels import Catrom, Kernel
+from .kernels import BicubicSharp, Catrom, Kernel, Spline36
 from .types import VSFunction
 from .util import get_coefs, get_prop, quick_resample
 
@@ -464,6 +464,81 @@ def linear2gamma(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
     expr = f'{expr} 0.0 max 1.0 min'
 
     return core.std.Expr(clip, expr).std.SetFrameProps(_Transfer=curve)
+
+
+def comparative_descale(clip: vs.VideoNode, width: Optional[int] = None, height: int = 720,
+                        kernel: Type[Kernel] = Spline36, thr: float = 5e-8) -> vs.VideoNode:
+    """
+    Easy wrapper to descale to SharpBicubic and an additional kernel,
+    compare them, and then pick one or the other.
+
+    The output clip has props that can be used to frameeval specific kernels by the user.
+
+    :param clip:        Input clip
+    :param width:       Width to descale to (if None, auto-calculated)
+    :param height:      Descale height
+    :param kernel:      Kernel to compare BicubicSharp to
+    :param thr:         Threshold for which kernel to pick
+
+    :return:            Descaled clip
+    """
+    def _compare(n: int, f: vs.VideoFrame, sharp: vs.VideoNode, other: vs.VideoNode) -> vs.VideoNode:
+        sharp_diff = get_prop(f[0], 'PlaneStatsDiff', float)  # type:ignore[arg-type]
+        other_diff = get_prop(f[1], 'PlaneStatsDiff', float)  # type:ignore[arg-type]
+
+        return sharp if other_diff - thr > sharp_diff else other
+
+    if kernel == BicubicSharp:
+        raise ValueError("conditional_descale: 'You may not compare BicubicSharp with itself!'")
+
+    if width is None:
+        width = get_w(height, aspect_ratio=clip.width/clip.height)
+
+    clip_y = get_y(clip)
+    # TODO: Add support for multiple scaler combos. Gotta rethink how `thr` will work tho
+    sharp = BicubicSharp().descale(clip_y, width, height)
+    sharp_up = BicubicSharp().scale(sharp, clip.width, clip.height)
+
+    # TODO: Fix so you can also pass additional params to object. Breaks currently (not callable)
+    other = kernel().descale(clip_y, width, height)
+    other_up = kernel().scale(other, clip.width, clip.height)
+
+    # We need a diff between the rescaled clips and the original clip
+    sharp_diff = core.std.PlaneStats(sharp_up, clip_y)
+    other_diff = core.std.PlaneStats(other_up, clip_y)
+
+    # Extra props for future frame evalling in case it might prove useful (credit masking, for example)
+    sharp = sharp.std.SetFrameProp('scaler', data=BicubicSharp().__class__.__name__)
+    other = other.std.SetFrameProp('scaler', data=kernel().__class__.__name__)
+
+    return core.std.FrameEval(sharp, partial(_compare, sharp=sharp, other=other), [sharp_diff, other_diff])
+
+
+def comparative_restore(clip: vs.VideoNode, width: Optional[int] = None, height: int = 720,
+                        kernel: Type[Kernel] = Spline36) -> vs.VideoNode:
+    """
+    Companion function to go with comparative_descale
+    to reupscale the clip for descale detail masking.
+
+    :param clip:        Input clip
+    :param width:       Width to upscale to (if None, auto-calculated)
+    :param height:      Upscale height
+    :param kernel:      Kernel to compare BicubicSharp to
+    """
+    if isinstance(kernel, BicubicSharp):
+        raise ValueError("conditional_restore: 'You may not compare BicubicSharp with itself!'")
+
+    if width is None:
+        width = get_w(height, aspect_ratio=clip.width/clip.height)
+
+    def _compare(n: int, f: vs.VideoFrame, sharp_up: vs.VideoNode, other_up: vs.VideoNode) -> vs.VideoNode:
+        return sharp_up if get_prop(f, 'scaler', bytes) == b'BicubicSharp' else other_up
+
+    # TODO: just read prop and automatically figure out scaler TBH
+    sharp_up = BicubicSharp().scale(clip, width, height)
+    other_up = kernel().scale(clip, width, height)
+
+    return core.std.FrameEval(sharp_up, partial(_compare, sharp_up=sharp_up, other_up=other_up), clip)
 
 
 # TODO: Write a function that checks every possible combination of B and C in bicubic
