@@ -108,7 +108,6 @@ Functions
    lvsfunc.deblock.autodb_dpir
    lvsfunc.deblock.vsdpir
    lvsfunc.dehalo.bidehalo
-   lvsfunc.dehalo.deemphasize
    lvsfunc.dehalo.masked_dha
    lvsfunc.dehardsub.bounded_dehardsub
    lvsfunc.dehardsub.get_all_masks
@@ -116,7 +115,6 @@ Functions
    lvsfunc.deinterlace.deblend
    lvsfunc.deinterlace.decomb
    lvsfunc.deinterlace.descale_fields
-   lvsfunc.deinterlace.dir_deshimmer
    lvsfunc.deinterlace.dir_unsharp
    lvsfunc.deinterlace.fix_telecined_fades
    lvsfunc.deinterlace.SIVTC
@@ -149,7 +147,6 @@ Functions
    lvsfunc.scale.linear2gamma
    lvsfunc.scale.reupscale
    lvsfunc.scale.ssim_downsample
-   lvsfunc.scale.test_descale
    lvsfunc.util.clamp_values
    lvsfunc.util.force_mod
    lvsfunc.util.get_coefs
@@ -221,7 +218,6 @@ lvsfunc.dehalo
 .. autosummary::
 
    lvsfunc.dehalo.bidehalo
-   lvsfunc.dehalo.deemphasize
    lvsfunc.dehalo.masked_dha
 
 .. automodule:: lvsfunc.dehalo
@@ -282,7 +278,6 @@ lvsfunc.deinterlace
    lvsfunc.deinterlace.deblend
    lvsfunc.deinterlace.decomb
    lvsfunc.deinterlace.descale_fields
-   lvsfunc.deinterlace.dir_deshimmer
    lvsfunc.deinterlace.dir_unsharp
    lvsfunc.deinterlace.fix_telecined_fades
    lvsfunc.deinterlace.SIVTC
@@ -402,7 +397,6 @@ lvsfunc.scale
    lvsfunc.scale.linear2gamma
    lvsfunc.scale.reupscale
    lvsfunc.scale.ssim_downsample
-   lvsfunc.scale.test_descale
 
 .. autoclass:: lvsfunc.scale.Resolution
    :members:
