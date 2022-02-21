@@ -1,7 +1,9 @@
 """
     Denoising functions and wrappers.
 """
-from typing import Any, Dict, List, Optional, Union
+from __future__ import annotations
+
+from typing import Any, Dict, List
 
 import vapoursynth as vs
 import vsutil
@@ -9,9 +11,9 @@ import vsutil
 core = vs.core
 
 
-def bm3d(clip: vs.VideoNode, sigma: Union[float, List[float]] = 0.75,
-         radius: Union[int, List[int], None] = None, ref: Optional[vs.VideoNode] = None,
-         pre: Optional[vs.VideoNode] = None, refine: int = 1, matrix_s: str = "709",
+def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
+         radius: int | List[int] | None = None, ref: vs.VideoNode | None = None,
+         pre: vs.VideoNode | None = None, refine: int = 1, matrix_s: str = "709",
          basic_args: Dict[str, Any] = {}, final_args: Dict[str, Any] = {}) -> vs.VideoNode:
     """
     A wrapper function for the BM3D denoiser.

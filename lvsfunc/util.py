@@ -2,11 +2,12 @@
     Helper functions for module functions and wrapper.
     Some of these may also be useful for regular scripting or other modules.
 """
-from typing import (Any, Callable, List, Optional, Sequence, Tuple, Type,
-                    TypeVar, Union)
+from __future__ import annotations
+
+from typing import Any, Callable, List, Sequence, Tuple, Type, TypeVar, Union
 
 import vapoursynth as vs
-from vsutil import (depth, get_subsampling)
+from vsutil import depth, get_subsampling
 
 from .types import Coefs, Range
 
@@ -110,7 +111,7 @@ def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
     return prop
 
 
-def normalize_ranges(clip: vs.VideoNode, ranges: Union[Range, List[Range]]) -> List[Tuple[int, int]]:
+def normalize_ranges(clip: vs.VideoNode, ranges: Range | List[Range]) -> List[Tuple[int, int]]:
     """
     Normalize ``Range``\\(s) to a list of inclusive positive integer ranges.
 
@@ -146,7 +147,7 @@ def normalize_ranges(clip: vs.VideoNode, ranges: Union[Range, List[Range]]) -> L
 
 def replace_ranges(clip_a: vs.VideoNode,
                    clip_b: vs.VideoNode,
-                   ranges: Union[Range, List[Range], None]) -> vs.VideoNode:
+                   ranges: Range | List[Range] | None) -> vs.VideoNode:
     """
     A replacement for ReplaceFramesSimple that uses ints and tuples rather than a string.
     Frame ranges are inclusive.
@@ -197,7 +198,7 @@ def replace_ranges(clip_a: vs.VideoNode,
     return out
 
 
-def scale_thresh(thresh: float, clip: vs.VideoNode, assume: Optional[int] = None) -> float:
+def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -> float:
     """
     Scale binarization thresholds from float to int.
 

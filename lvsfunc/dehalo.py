@@ -1,12 +1,11 @@
 """
     Dehaloing functions and wrappers.
 """
-import warnings
 from functools import partial
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import vapoursynth as vs
-from vsutil import depth, fallback, get_depth, get_y, iterate
+from vsutil import depth, fallback, get_depth, get_y
 
 from . import denoise, kernels
 from .util import force_mod, pick_repair, scale_peak, clamp_values
@@ -14,9 +13,9 @@ from .util import force_mod, pick_repair, scale_peak, clamp_values
 core = vs.core
 
 
-def bidehalo(clip: vs.VideoNode, ref: Optional[vs.VideoNode] = None,
+def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
              sigmaS: float = 1.5, sigmaR: float = 5/255,
-             sigmaS_final: Optional[float] = None, sigmaR_final: Optional[float] = None,
+             sigmaS_final: float | None = None, sigmaR_final: float | None = None,
              bilateral_args: Dict[str, Any] = {},
              bm3d_args: Dict[str, Any] = {},
              ) -> vs.VideoNode:

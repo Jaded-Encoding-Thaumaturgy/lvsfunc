@@ -1,10 +1,12 @@
 """
     Masking functions and wrappers.
 """
+from __future__ import annotations
+
 import warnings
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import List, Optional, Tuple, Union
+from typing import List, Tuple
 
 import vapoursynth as vs
 from vsutil import Range as CRange
@@ -17,7 +19,7 @@ from .util import replace_ranges, scale_thresh
 core = vs.core
 
 
-def detail_mask(clip: vs.VideoNode, sigma: Optional[float] = None,
+def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
                 rad: int = 3, brz_a: float = 0.025, brz_b: float = 0.045) -> vs.VideoNode:
     """
     A wrapper for creating a detail mask to be used during denoising and/or debanding.
@@ -74,7 +76,7 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
               brz: float = 0.35,
               thmi: float = 0.315, thma: float = 0.5,
               thlimi: float = 0.195, thlima: float = 0.392,
-              edgemask: Optional[vs.VideoNode] = None) -> vs.VideoNode:
+              edgemask: vs.VideoNode | None = None) -> vs.VideoNode:
     """
     A halo mask to catch basic haloing, inspired by the mask from FineDehalo.
     Most was copied from there, but some key adjustments were made to center it specifically around masking.
@@ -191,7 +193,7 @@ class BoundingBox():
     pos: Position
     size: Size
 
-    def __init__(self, pos: Union[Position, Tuple[int, int]], size: Union[Size, Tuple[int, int]]):
+    def __init__(self, pos: Position | Tuple[int, int], size: Size | Tuple[int, int]):
         self.pos = pos if isinstance(pos, Position) else Position(pos[0], pos[1])
         self.size = size if isinstance(size, Size) else Size(size[0], size[1])
 
@@ -237,14 +239,14 @@ class DeferredMask(ABC):
 
     """
     ranges: List[Range]
-    bound: Optional[BoundingBox]
-    refframes: List[Optional[int]]
+    bound: BoundingBox | None
+    refframes: List[int | None]
     blur: bool
 
-    def __init__(self, ranges: Union[Range, List[Range], None] = None,
-                 bound: Union[BoundingBox, Tuple[Tuple[int, int], Tuple[int, int]], None] = None,
+    def __init__(self, ranges: Range | List[Range] | None = None,
+                 bound: BoundingBox | Tuple[Tuple[int, int], Tuple[int, int]] | None = None,
                  *,
-                 blur: bool = False, refframes: Union[int, List[int], None] = None):
+                 blur: bool = False, refframes: int | List[int] | None = None):
         self.ranges = ranges if isinstance(ranges, list) else [(0, None)] if ranges is None else [ranges]
         self.blur = blur
 

@@ -1,12 +1,13 @@
 """
     Dehardsubbing functions and wrappers.
 """
-import vapoursynth as vs
-
-import vsutil
+from __future__ import annotations
 
 from abc import ABC
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Tuple
+
+import vapoursynth as vs
+import vsutil
 
 from .mask import DeferredMask
 from .types import Range
@@ -57,7 +58,7 @@ class HardsubMask(DeferredMask, ABC):
         return pdhs, dmasks
 
     def apply_dehardsub(self, hrdsb: vs.VideoNode, ref: vs.VideoNode,
-                        partials: Optional[List[vs.VideoNode]]) -> vs.VideoNode:
+                        partials: List[vs.VideoNode] | None) -> vs.VideoNode:
         """
         Apply dehardsubbing to a clip.
 
@@ -141,9 +142,9 @@ class HardsubLine(HardsubMask):
 
     :param expand: ``kgf.hardsubmask`` expand parameter (Default: clip.width // 200)
     """
-    expand: Optional[int]
+    expand: int | None
 
-    def __init__(self, *args: Any, expand: Optional[int] = None, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, expand: int | None = None, **kwargs: Any) -> None:
         self.expand = expand
         try:
             from kagefunc import hardsubmask
@@ -167,7 +168,7 @@ class HardsubLineFade(HardsubLine):
     """
     ref_float: float
 
-    def __init__(self, ranges: Union[Range, List[Range]], *args: Any,
+    def __init__(self, ranges: Range | List[Range], *args: Any,
                  refframe: float = 0.5, **kwargs: Any) -> None:
         if refframe < 0 or refframe > 1:
             raise ValueError("HardsubLineFade: 'refframe must be between 0 and 1!'")
@@ -192,7 +193,7 @@ class HardsubSignFade(HardsubSign):
     """
     ref_float: float
 
-    def __init__(self, ranges: Union[Range, List[Range]], *args: Any,
+    def __init__(self, ranges: Range | List[Range], *args: Any,
                  refframe: float = 0.5, **kwargs: Any) -> None:
         if refframe < 0 or refframe > 1:
             raise ValueError("HardsubSignFade: 'refframe must be between 0 and 1!'")
@@ -215,11 +216,11 @@ class HardsubASS(HardsubMask):
                      May misbehave due to timestamp rounding.
     """
     filename: str
-    fontdir: Optional[str]
-    shift: Optional[int]
+    fontdir: str | None
+    shift: int | None
 
-    def __init__(self, filename: str, *args: Any, fontdir: Optional[str] = None,
-                 shift: Optional[int] = None, **kwargs: Any) -> None:
+    def __init__(self, filename: str, *args: Any, fontdir: str | None = None,
+                 shift: int | None = None, **kwargs: Any) -> None:
         self.filename = filename
         self.fontdir = fontdir
         self.shift = shift
@@ -255,7 +256,7 @@ def get_all_masks(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[HardsubMas
 
 
 def bounded_dehardsub(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[HardsubMask],
-                      partials: Optional[List[vs.VideoNode]] = None) -> vs.VideoNode:
+                      partials: List[vs.VideoNode] | None = None) -> vs.VideoNode:
     """
     Apply a list of :py:class:`lvsfunc.dehardsub.HardsubSign`
 

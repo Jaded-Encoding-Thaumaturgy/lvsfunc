@@ -8,8 +8,7 @@ import os
 import random
 import warnings
 from functools import partial, wraps
-from typing import (Any, Callable, Dict, List, Optional, Sequence, Tuple,
-                    TypeVar, Union, cast)
+from typing import Any, Callable, Dict, List, Sequence, Tuple, TypeVar, cast
 
 import vapoursynth as vs
 from vsutil import (depth, disallow_variable_format,
@@ -30,7 +29,7 @@ core = vs.core
 annoying_formats = ['.iso', '.ts', '.vob']
 
 
-def source(file: str, ref: Optional[vs.VideoNode] = None,
+def source(file: str, ref: vs.VideoNode | None = None,
            force_lsmas: bool = False,
            mpls: bool = False, mpls_playlist: int = 0, mpls_angle: int = 0,
            **index_args: Any) -> vs.VideoNode:
@@ -111,11 +110,11 @@ def source(file: str, ref: Optional[vs.VideoNode] = None,
 
 
 def edgefixer(clip: vs.VideoNode,
-              left: Union[int, List[int], None] = None,
-              right: Union[int, List[int], None] = None,
-              top: Union[int, List[int], None] = None,
-              bottom: Union[int, List[int], None] = None,
-              radius: Optional[List[int]] = None,
+              left: int | List[int] | None = None,
+              right: int | List[int] | None = None,
+              top: int | List[int] | None = None,
+              bottom: int | List[int] | None = None,
+              radius: List[int] | None = None,
               full_range: bool = False) -> vs.VideoNode:
     """
     A wrapper for ContinuityFixer (https://github.com/MonoS/VS-ContinuityFixer).
@@ -180,7 +179,7 @@ def get_matrix(clip: vs.VideoNode) -> int:
     return 9
 
 
-def shift_tint(clip: vs.VideoNode, values: Union[int, Sequence[int]] = 16) -> vs.VideoNode:
+def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.VideoNode:
     """
     A function for forcibly adding pixel values to a clip.
     Can be used to fix green tints in Crunchyroll sources, for example.
@@ -220,7 +219,7 @@ def shift_tint(clip: vs.VideoNode, values: Union[int, Sequence[int]] = 16) -> vs
 
 
 def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
-               threshold: float = 0.25, threshold_range: Optional[int] = None) -> vs.VideoNode:
+               threshold: float = 0.25, threshold_range: int | None = None) -> vs.VideoNode:
     """
     Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold.
     This way you can run lighter (or heavier) filtering on scenes that are almost entirely dark.
@@ -237,7 +236,7 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
     """
     def _diff(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
               filtered: vs.VideoNode, threshold: float,
-              threshold_range: Optional[int]) -> vs.VideoNode:
+              threshold_range: int | None) -> vs.VideoNode:
         psa = get_prop(f, "PlaneStatsAverage", float)
         if threshold_range:
             return filtered if threshold_range <= psa <= threshold else clip
@@ -253,9 +252,9 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
 
 
 def wipe_row(clip: vs.VideoNode,
-             ref: Optional[vs.VideoNode] = None,
-             pos: Union[Position, Tuple[int, int]] = (1, 1),
-             size: Union[Size, Tuple[int, int], None] = None,
+             ref: vs.VideoNode | None = None,
+             pos: Position | Tuple[int, int] = (1, 1),
+             size: Size | Tuple[int, int] | None = None,
              show_mask: bool = False
              ) -> vs.VideoNode:
     """
@@ -329,8 +328,8 @@ def frames_since_bookmark(clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoN
 F = TypeVar("F", bound=Callable[..., vs.VideoNode])
 
 
-def allow_variable(width: Optional[int] = None, height: Optional[int] = None,
-                   format: Optional[int] = None
+def allow_variable(width: int | None = None, height: int | None = None,
+                   format: int | None = None
                    ) -> Callable[[Callable[..., vs.VideoNode]], Callable[..., vs.VideoNode]]:
     """
     Decorator allowing a variable-res and/or variable-format clip to be passed
@@ -401,7 +400,7 @@ def chroma_injector(func: F) -> F:
                                          colorfamily=vs.YUV)
             return res
 
-        out_fmt: Optional[vs.VideoFormat] = None
+        out_fmt: vs.VideoFormat | None = None
         if clip.format is not None:
             if clip.format.color_family not in (vs.GRAY, vs.YUV):
                 raise ValueError("chroma_injector: only YUV and GRAY clips are supported")
@@ -444,7 +443,7 @@ def chroma_injector(func: F) -> F:
 def colored_clips(amount: int,
                   max_hue: int = 300,
                   rand: bool = True,
-                  seed: Union[bytearray, bytes, float, int, str, None] = None,
+                  seed: bytearray | bytes | float | str | None = None,
                   **kwargs: Any
                   ) -> List[vs.VideoNode]:
     """
@@ -477,7 +476,7 @@ def colored_clips(amount: int,
 
     blank_clip_args: Dict[str, Any] = {'keep': 1, **kwargs}
 
-    hues: List[Union[float, int]] = [i * max_hue / (amount - 1) for i in range(amount - 1)]
+    hues: List[float] = [i * max_hue / (amount - 1) for i in range(amount - 1)]
     hues.append(max_hue)
 
     hls_color_list: List[Tuple[float, float, float]] = [colorsys.hls_to_rgb(h / 360, 0.5, 1) for h in hues]

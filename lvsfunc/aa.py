@@ -1,8 +1,10 @@
 """
     Anti-aliasing functions and wrappers.
 """
+from __future__ import annotations
+
 from math import ceil
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict
 
 import vapoursynth as vs
 from vsutil import (depth, fallback, get_depth, get_w, get_y, join, plane,
@@ -112,7 +114,7 @@ def eedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs.
 
 
 def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
-                  mask: Optional[vs.VideoNode] = None,
+                  mask: vs.VideoNode | None = None,
                   mthr: float = 0.25, opencl: bool = False) -> vs.VideoNode:
     """
     A function that clamps eedi3 to nnedi3 for the purpose of reducing eedi3 artifacts.
@@ -207,9 +209,9 @@ def _eedi3_singlerate(clip: vs.VideoNode) -> vs.VideoNode:
 
 def upscaled_sraa(clip: vs.VideoNode,
                   rfactor: float = 1.5,
-                  width: Optional[int] = None, height: Optional[int] = None,
+                  width: int | None = None, height: int | None = None,
                   supersampler: Callable[[vs.VideoNode, int, int], vs.VideoNode] = _nnedi3_supersample,
-                  downscaler: Optional[Callable[[vs.VideoNode, int, int], vs.VideoNode]]
+                  downscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode] | None
                   = kernels.Bicubic(b=0, c=1/2).scale,
                   aafun: Callable[[vs.VideoNode], vs.VideoNode] = _eedi3_singlerate) -> vs.VideoNode:
     """
@@ -274,7 +276,7 @@ def upscaled_sraa(clip: vs.VideoNode,
 def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
              rfactor: float = 2.0, tff: bool = True,
              mask_thr: float = 60, show_mask: bool = False,
-             lmask: Optional[vs.VideoNode] = None, **eedi3_args: Any) -> vs.VideoNode:
+             lmask: vs.VideoNode | None = None, **eedi3_args: Any) -> vs.VideoNode:
     """
     As the name implies, this is a based anti-aliaser. Thank you, based Zastin.
     This relies on FSRCNNX being very sharp, and as such it very much acts like the main "AA" here.
@@ -298,7 +300,7 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
 
     :return:                AA'd clip or mask clip
     """
-    def _eedi3s(clip: vs.VideoNode, mclip: Optional[vs.VideoNode] = None,
+    def _eedi3s(clip: vs.VideoNode, mclip: vs.VideoNode | None = None,
                 **eedi3_kwargs: Any) -> vs.VideoNode:
         edi_args: Dict[str, Any] = {  # Eedi3 args for `eedi3s`
             'field': int(tff), 'alpha': 0.125, 'beta': 0.25, 'gamma': 40,
@@ -314,8 +316,8 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
         return out
 
     def _resize_mclip(mclip: vs.VideoNode,
-                      width: Optional[int] = None,
-                      height: Optional[int] = None
+                      width: int | None = None,
+                      height: int | None = None
                       ) -> vs.VideoNode:
         iw, ih = mclip.width, mclip.height
         ow, oh = fallback(width, iw), fallback(height, ih)

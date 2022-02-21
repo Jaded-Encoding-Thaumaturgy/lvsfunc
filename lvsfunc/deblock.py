@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, Optional, Sequence, SupportsFloat, Tuple, Union
+from typing import Any, Optional, Sequence, SupportsFloat, Tuple
 
 import vapoursynth as vs
 from vsutil import (Dither, depth, disallow_variable_format,
@@ -20,7 +20,7 @@ core = vs.core
 def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strs: Sequence[float] = [30, 50, 75],
                 thrs: Sequence[Tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
-                matrix: Optional[Union[Matrix, int]] = None,
+                matrix: Optional[Matrix | int] = None,
                 cuda: bool = True,
                 write_props: bool = False,
                 **vsdpir_args: Any) -> vs.VideoNode:

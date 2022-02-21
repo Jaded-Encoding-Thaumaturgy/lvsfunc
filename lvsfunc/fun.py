@@ -8,7 +8,7 @@
     Don't tell louis this exists though, else I'm a dead man.
 """
 
-from typing import Optional
+from __future__ import annotations
 
 import vapoursynth as vs
 
@@ -18,7 +18,7 @@ from .util import force_mod
 core = vs.core
 
 
-def minecraftify(clip: vs.VideoNode, div: float = 64.0, mod: Optional[int] = None) -> vs.VideoNode:
+def minecraftify(clip: vs.VideoNode, div: float = 64.0, mod: int | None = None) -> vs.VideoNode:
     """
     Function that transforms your clip into a Minecraft.
     Idea from Meme-Maji's Kobayashi memery (love you varde).

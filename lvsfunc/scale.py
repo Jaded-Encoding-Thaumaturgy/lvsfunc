@@ -1,10 +1,12 @@
 """
     (De)scaling and conversion functions and wrappers.
 """
+from __future__ import annotations
+
 import math
 from functools import partial
-from typing import (Any, Callable, Dict, List, Literal, NamedTuple, Optional,
-                    Tuple, Union, cast)
+from typing import (Any, Callable, Dict, List, Literal, NamedTuple,
+                    cast)
 
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
@@ -68,7 +70,7 @@ def _perform_descale(resolution: Resolution, clip: vs.VideoNode,
     return ScaleAttempt(descaled, rescaled, resolution, diff)
 
 
-def _select_descale(n: int, f: Union[vs.VideoFrame, List[vs.VideoFrame]],
+def _select_descale(n: int, f: vs.VideoFrame | List[vs.VideoFrame],
                     threshold: float, clip: vs.VideoNode,
                     clips_by_resolution: Dict[int, ScaleAttempt]
                     ) -> vs.VideoNode:
@@ -90,7 +92,7 @@ def _select_descale(n: int, f: Union[vs.VideoFrame, List[vs.VideoFrame]],
 
 @functoolz.curry
 def reupscale(clip: vs.VideoNode,
-              width: Optional[int] = None, height: int = 1080,
+              width: int | None = None, height: int = 1080,
               kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
               **kwargs: Any) -> vs.VideoNode:
     """
@@ -153,13 +155,12 @@ def descale_detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
 
 def descale(clip: vs.VideoNode,
             upscaler:
-            Optional[Callable[[vs.VideoNode, int, int], vs.VideoNode]]
-            = reupscale,
-            width: Union[int, List[int], None] = None,
-            height: Union[int, List[int]] = 720,
+            Callable[[vs.VideoNode, int, int], vs.VideoNode] | None = reupscale,
+            width: int | List[int] | None = None,
+            height: int | List[int] = 720,
             kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
             threshold: float = 0.0,
-            mask: Optional[Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode]]
+            mask: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] | None
             = descale_detail_mask, src_left: float = 0.0, src_top: float = 0.0,
             show_mask: bool = False) -> vs.VideoNode:
     """
@@ -300,8 +301,8 @@ CURVES = Literal[
 ]
 
 
-def ssim_downsample(clip: vs.VideoNode, width: Optional[int] = None, height: int = 720,
-                    smooth: Union[int, float, VSFunction] = ((3 ** 2 - 1) / 12) ** 0.5,
+def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 720,
+                    smooth: float | VSFunction = ((3 ** 2 - 1) / 12) ** 0.5,
                     kernel: Kernel = Catrom(), gamma: bool = False,
                     curve: CURVES = vs.TransferCharacteristics.TRANSFER_BT709,
                     sigmoid: bool = False, epsilon: float = 1e-6) -> vs.VideoNode:
@@ -417,8 +418,8 @@ def linear2gamma(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
     return core.std.Expr(clip, expr).std.SetFrameProps(_Transfer=curve)
 
 
-def comparative_descale(clip: vs.VideoNode, width: Optional[int] = None, height: int = 720,
-                        kernel: Optional[Kernel] = None, thr: float = 5e-8) -> vs.VideoNode:
+def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: int = 720,
+                        kernel: Kernel | None = None, thr: float = 5e-8) -> vs.VideoNode:
     """
     Easy wrapper to descale to SharpBicubic and an additional kernel,
     compare them, and then pick one or the other.
@@ -468,8 +469,8 @@ def comparative_descale(clip: vs.VideoNode, width: Optional[int] = None, height:
     return core.std.FrameEval(sharp, partial(_compare, sharp=sharp, other=other), [sharp_diff, other_diff])
 
 
-def comparative_restore(clip: vs.VideoNode, width: Optional[int] = None, height: int = 720,
-                        kernel: Optional[Kernel] = None) -> vs.VideoNode:
+def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: int = 720,
+                        kernel: Kernel | None = None) -> vs.VideoNode:
     """
     Companion function to go with comparative_descale
     to reupscale the clip for descale detail masking.

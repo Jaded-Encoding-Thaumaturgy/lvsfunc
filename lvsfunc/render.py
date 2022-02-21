@@ -1,15 +1,18 @@
 """
     Clip rendering helpers.
 """
+from __future__ import annotations
+
+from concurrent.futures import Future
+from enum import Enum
+from functools import partial
+from threading import Condition
+from typing import BinaryIO, Callable, Dict, List, TextIO
+
 import vapoursynth as vs
 
-from enum import Enum
-from threading import Condition
-from typing import BinaryIO, Callable, Dict, List, Optional, TextIO, Union
-from concurrent.futures import Future
-from functools import partial
-
-from .progress import Progress, BarColumn, FPSColumn, TextColumn, TimeRemainingColumn
+from .progress import (BarColumn, FPSColumn, Progress, TextColumn,
+                       TimeRemainingColumn)
 from .util import get_prop
 
 core = vs.core
@@ -37,7 +40,7 @@ class RenderContext:
         self.condition = Condition()
 
 
-def finish_frame(outfile: Optional[BinaryIO], timecodes: Optional[TextIO], ctx: RenderContext) -> None:
+def finish_frame(outfile: BinaryIO | None, timecodes: TextIO | None, ctx: RenderContext) -> None:
     """
     Output a frame.
 
@@ -58,10 +61,10 @@ def finish_frame(outfile: Optional[BinaryIO], timecodes: Optional[TextIO], ctx: 
 
 
 def clip_async_render(clip: vs.VideoNode,
-                      outfile: Optional[BinaryIO] = None,
-                      timecodes: Optional[TextIO] = None,
-                      progress: Optional[str] = "Rendering clip...",
-                      callback: Union[RenderCallback, List[RenderCallback], None] = None) -> List[float]:
+                      outfile: BinaryIO | None = None,
+                      timecodes: TextIO | None = None,
+                      progress: str | None = "Rendering clip...",
+                      callback: RenderCallback | List[RenderCallback] | None = None) -> List[float]:
     """
     Render a clip by requesting frames asynchronously using clip.get_frame_async,
     providing for callback with frame number and frame object.

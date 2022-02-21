@@ -4,6 +4,8 @@
     These functions are intended to be used for comparing encodes, filterchains,
     and other kinds of personal analysis.
 """
+from __future__ import annotations
+
 import math
 import random
 import warnings
@@ -11,7 +13,7 @@ from abc import ABC, abstractmethod
 from enum import IntEnum
 from itertools import groupby, zip_longest
 from typing import (Any, Callable, Dict, Iterable, Iterator, List, Literal,
-                    Optional, Sequence, Set, Tuple, TypeVar, Union, overload)
+                    Sequence, Set, Tuple, TypeVar, overload)
 
 import vapoursynth as vs
 import vsutil
@@ -49,7 +51,7 @@ class Comparer(ABC):
                             Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7)
     """
     def __init__(self,
-                 clips: Union[Dict[str, vs.VideoNode], Sequence[vs.VideoNode]],
+                 clips: Dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
                  /,
                  *,
                  label_alignment: int = 7
@@ -62,20 +64,20 @@ class Comparer(ABC):
             raise ValueError(f"Comparer: unexpected type {type(clips)} for `clips` argument")
 
         self.clips: List[vs.VideoNode] = list(clips.values()) if isinstance(clips, dict) else list(clips)
-        self.names: Optional[List[str]] = list(clips.keys()) if isinstance(clips, dict) else None
+        self.names: List[str] | None = list(clips.keys()) if isinstance(clips, dict) else None
 
         self.label_alignment = label_alignment
 
         self.num_clips = len(clips)
 
         widths: Set[int] = {clip.width for clip in self.clips}
-        self.width: Optional[int] = w if (w := widths.pop()) != 0 and len(widths) == 0 else None
+        self.width: int | None = w if (w := widths.pop()) != 0 and len(widths) == 0 else None
 
         heights: Set[int] = {clip.height for clip in self.clips}
-        self.height: Optional[int] = h if (h := heights.pop()) != 0 and len(heights) == 0 else None
+        self.height: int | None = h if (h := heights.pop()) != 0 and len(heights) == 0 else None
 
-        formats: Set[Optional[str]] = {getattr(clip.format, 'name', None) for clip in self.clips}
-        self.format: Optional[str] = formats.pop() if len(formats) == 1 else None
+        formats: Set[str | None] = {getattr(clip.format, 'name', None) for clip in self.clips}
+        self.format: str | None = formats.pop() if len(formats) == 1 else None
 
     def _marked_clips(self) -> List[vs.VideoNode]:
         """
@@ -121,7 +123,7 @@ class Stack(Comparer):
     """
 
     def __init__(self,
-                 clips: Union[Dict[str, vs.VideoNode], Sequence[vs.VideoNode]],
+                 clips: Dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
                  /,
                  *,
                  direction: Direction = Direction.HORIZONTAL,
@@ -161,7 +163,7 @@ class Interleave(Comparer):
     """
 
     def __init__(self,
-                 clips: Union[Dict[str, vs.VideoNode], Sequence[vs.VideoNode]],
+                 clips: Dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
                  /,
                  *,
                  label_alignment: int = 7
@@ -219,10 +221,10 @@ class Tile(Comparer):
     """
 
     def __init__(self,
-                 clips: Union[Dict[str, vs.VideoNode], Sequence[vs.VideoNode]],
+                 clips: Dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
                  /,
                  *,
-                 arrangement: Optional[List[List[int]]] = None,
+                 arrangement: List[List[int]] | None = None,
                  label_alignment: int = 7
                  ) -> None:
         super().__init__(clips, label_alignment=label_alignment)
@@ -255,7 +257,7 @@ class Tile(Comparer):
         return core.std.StackVertical(rows)
 
     def _auto_arrangement(self) -> List[List[int]]:
-        def _grouper(iterable: Iterable[T], n: int, fillvalue: Optional[T] = None) -> Iterator[Tuple[T, ...]]:
+        def _grouper(iterable: Iterable[T], n: int, fillvalue: T | None = None) -> Iterator[Tuple[T, ...]]:
             args = [iter(iterable)] * n
             return zip_longest(*args, fillvalue=fillvalue)
 
@@ -286,7 +288,7 @@ class Split(Stack):
     """
 
     def __init__(self,
-                 clips: Union[Dict[str, vs.VideoNode], Sequence[vs.VideoNode]],
+                 clips: Dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
                  /,
                  *,
                  direction: Direction = Direction.HORIZONTAL,
@@ -337,8 +339,8 @@ class Split(Stack):
 
 
 def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
-            frames: Optional[List[int]] = None,
-            rand_total: Optional[int] = None,
+            frames: List[int] | None = None,
+            rand_total: int | None = None,
             force_resample: bool = True, print_frame: bool = True,
             mismatch: bool = False) -> vs.VideoNode:
     """
@@ -494,7 +496,7 @@ def diff(*clips: vs.VideoNode,
          height: int = ...,
          interleave: bool = ...,
          return_ranges: Literal[True] = True,
-         exclusion_ranges: Optional[Sequence[Union[int, Tuple[int, int]]]] = ...,
+         exclusion_ranges: Sequence[int | Tuple[int, int]] | None = ...,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
          **namedclips: vs.VideoNode) -> Tuple[vs.VideoNode, List[Tuple[int, int]]]:
     ...
@@ -506,7 +508,7 @@ def diff(*clips: vs.VideoNode,
          height: int = ...,
          interleave: bool = ...,
          return_ranges: Literal[False],
-         exclusion_ranges: Optional[Sequence[Union[int, Tuple[int, int]]]] = ...,
+         exclusion_ranges: Sequence[int | Tuple[int, int]] | None = ...,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
          **namedclips: vs.VideoNode) -> vs.VideoNode:
     ...
@@ -517,9 +519,9 @@ def diff(*clips: vs.VideoNode,
          height: int = 288,
          interleave: bool = False,
          return_ranges: bool = False,
-         exclusion_ranges: Optional[Sequence[Union[int, Tuple[int, int]]]] = None,
+         exclusion_ranges: Sequence[int | Tuple[int, int]] | None = None,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a, b: core.std.MakeDiff(a, b),
-         **namedclips: vs.VideoNode) -> Union[vs.VideoNode, Tuple[vs.VideoNode, List[Tuple[int, int]]]]:
+         **namedclips: vs.VideoNode) -> vs.VideoNode | Tuple[vs.VideoNode, List[Tuple[int, int]]]:
     """
     Creates a standard :py:class:`lvsfunc.comparison.Stack` between frames from two clips that have differences.
     Useful for making comparisons between TV and BD encodes, as well as clean and hardsubbed sources.
