@@ -59,51 +59,6 @@ def bidehalo(clip: vs.VideoNode, ref: Optional[vs.VideoNode] = None,
     return core.std.Expr([clip, bidh], "x y min")
 
 
-def deemphasize(clip: vs.VideoNode, strength: int = 95,
-                interlaced: bool = False, TFF: bool = True) -> vs.VideoNode:
-    """
-    A function that attempts to deemphasize ringing common to SD video signals
-    resulting from a playback device in the transfer chain poorly compensating
-    for pre-emphasis baked into the source signal.
-
-    Ported and modified from an AVS gist: https://gist.github.com/acuozzo/940869257cc79016215600a2392b33eb.
-    This was mainly ported as an exercise. Usefulness not guaranteed.
-
-    WARNING: This function will be deprecated in lvsfunc 0.4.0!
-
-    Dependencies:
-
-    * fmtconv
-
-    :param clip:        Source clip
-    :param strength:    Gauss strength, lower is stronger. Ranged 1–100
-    :param interlaced:  Whether the clip is interlaced or not
-    :param TFF:         Top Field First if True, else Bottom Field First
-
-    :return:            Deringed clip
-    """
-    warnings.warn("deemphasize: This function will no longer be supported in future versions. "
-                  "Please make sure to update your older scripts. "
-                  "This function will be removed in lvsfunc v0.4.0.", DeprecationWarning)
-
-    if clip.format is None:
-        raise ValueError("deemphasize: 'Variable-format clips not supported'")
-
-    clip = clip.std.SeparateFields(tff=TFF) if interlaced else clip
-
-    assert clip.format
-
-    coords = [0, 1, 0, 0, 0, 0, 1, 0]
-    mask = core.std.Sobel(clip)
-    mask = iterate(mask, partial(core.std.Minimum, coordinates=coords), 3)
-    mask = iterate(mask, partial(core.std.Maximum, coordinates=coords), 3)
-
-    blurred = clip.fmtc.resample(clip.width-2, kernel='gauss', taps=4, a1=strength) \
-        .resize.Spline64(clip.width, format=clip.format.id)
-    merged = core.std.MaskedMerge(blurred, clip, mask)
-    return merged.std.DoubleWeave().std.SelectEvery(2, 0) if interlaced else merged
-
-
 # TO-DO: Add `ref` param that actually works...
 def masked_dha(clip: vs.VideoNode, rx: float = 2.0, ry: float = 2.0,
                brightstr: float = 1.0, darkstr: float = 0.0,

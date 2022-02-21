@@ -269,39 +269,6 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
     return weave_y.std.SetFieldBased(0)[::2]
 
 
-def dir_deshimmer(clip: vs.VideoNode, TFF: bool = True,
-                  dh: bool = False,
-                  transpose: bool = True,
-                  show_mask: bool = False) -> vs.VideoNode:
-    """
-    Directional deshimmering function.
-
-    Only works (in the few instances it does, anyway) for obvious horizontal and vertical shimmering.
-    Odds of success are low. But if you're desperate, it's worth a shot.
-
-    WARNING: This function will be deprecated in lvsfunc 0.4.0!
-
-    Dependencies:
-
-    * vapoursynth-nnedi3
-
-    :param clip:         Input clip
-    :param TFF:          Top Field First. Set to False if TFF doesn't work (Default: True)
-    :param dh:           Interpolate to double the height of given clip beforehand (Default: False)
-    :param transpose:    Transpose the clip before attempting to deshimmer (Default: True)
-    :param show_mask:    Show nnedi3's mask (Default: False)
-
-    :return:             Deshimmered clip
-    """
-    warnings.warn("dir_deshimmer: This function will no longer be supported in future versions. "
-                  "Please make sure to update your older scripts. "
-                  "This function will be removed in lvsfunc v0.4.0.", DeprecationWarning)
-
-    clip = core.std.Transpose(clip) if transpose else clip
-    deshim = core.nnedi3.nnedi3(clip, field=TFF, dh=dh, show_mask=show_mask)
-    return core.std.Transpose(deshim) if transpose else deshim
-
-
 def dir_unsharp(clip: vs.VideoNode,
                 strength: float = 1.0,
                 dir: str = 'v',
@@ -315,6 +282,7 @@ def dir_unsharp(clip: vs.VideoNode,
     Special thanks to thebombzen and kageru for writing the bulk of this.
 
     WARNING: This function may be rewritten in the future, and functionality may change!
+             It's unlikely the original function will remain!
 
     Dependencies:
 

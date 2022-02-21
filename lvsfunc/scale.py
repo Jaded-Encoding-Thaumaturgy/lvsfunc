@@ -290,55 +290,6 @@ def descale(clip: vs.VideoNode,
     return join([upscaled, plane(clip, 1), plane(clip, 2)])
 
 
-def test_descale(clip: vs.VideoNode,
-                 width: Optional[int] = None, height: int = 720,
-                 kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
-                 show_error: bool = True) -> Tuple[vs.VideoNode, ScaleAttempt]:
-    """
-    Generic function to test descales with;
-    descales and reupscales a given clip, allowing you to compare the two easily.
-    Also returns a :py:class:`lvsfunc.scale.ScaleAttempt` with additional
-    information.
-
-    When comparing, it is recommended to do atleast a 4x zoom using Nearest Neighbor.
-    I also suggest using 'compare' (:py:func:`lvsfunc.comparison.compare`),
-    as that will make comparing the output with the source clip a lot easier.
-
-    Some of this code was leveraged from DescaleAA found in fvsfunc.
-
-    Dependencies:
-
-    * vapoursynth-descale
-
-    :param clip:           Input clip
-    :param width:          Target descale width. If None, determine from `height`
-    :param height:         Target descale height (Default: 720)
-    :param kernel:         Kernel used to descale (see :py:class:`lvsfunc.kernels.Kernel`,
-                           Default: kernels.Bicubic(b=0, c=1/2))
-    :param show_error:     Render PlaneStatsDiff on the reupscaled frame (Default: True)
-
-    :return: A tuple containing a clip re-upscaled with the same kernel and
-             a ScaleAttempt tuple.
-    """
-    if clip.format is None:
-        raise ValueError("test_descale: 'Variable-format clips not supported'")
-
-    width = width or get_w(height, clip.width / clip.height)
-
-    clip_y = depth(get_y(clip), 32)
-
-    descale = _perform_descale(Resolution(width, height), clip_y, kernel)
-    rescaled = depth(core.std.PlaneStats(descale.rescaled, clip_y), get_depth(clip))
-
-    if clip.format.num_planes == 1:
-        rescaled = core.text.FrameProps(rescaled, "PlaneStatsDiff") if show_error else rescaled
-    else:
-        merge = core.std.ShufflePlanes([rescaled, clip], [0, 1, 2], vs.YUV)
-        rescaled = core.text.FrameProps(merge, "PlaneStatsDiff") if show_error else merge
-
-    return rescaled, descale
-
-
 CURVES = Literal[
     vs.TransferCharacteristics.TRANSFER_IEC_61966_2_1,
     vs.TransferCharacteristics.TRANSFER_BT709,
