@@ -14,9 +14,10 @@ from typing import Any, Dict, List
 import vapoursynth as vs
 from vsutil import Dither, depth, get_depth, get_w, get_y
 
-from .kernels import Catrom, Kernel
+from .comparison import Direction, Stack
+from .kernels import BicubicDidee, Catrom, Kernel
 from .render import get_render_progress
-from .util import get_prop, pick_repair
+from .util import force_mod, get_prop, pick_repair
 
 core = vs.core
 
@@ -41,8 +42,69 @@ def SIVTC(clip: vs.VideoNode, pattern: int = 0,
     defivtc = core.std.SeparateFields(clip, tff=tff).std.DoubleWeave()
     selectlist = [[0, 3, 6, 8], [0, 2, 5, 8], [0, 2, 4, 7], [2, 4, 6, 9], [1, 4, 6, 8]]
     dec = core.std.SelectEvery(defivtc, 10, selectlist[pattern]) if decimate else defivtc
-    return core.std.SetFrameProp(dec, prop='_FieldBased', intval=0) \
-        .std.SetFrameProp(prop='SIVTC_pattern', intval=pattern)
+    return dec.std.SetFieldBased(0).std.SetFrameProp(prop='SIVTC_pattern', intval=pattern)
+
+
+def seek_cycle(clip: vs.VideoNode, write_props: bool = True, scale: int = -1) -> vs.VideoNode:
+    """
+    Purely visual tool to view telecining cycles. This is purely a visual tool!
+    This function has no matching parameters, just use wobbly instead if you need that.
+
+    Displays the current frame, two previous and two future frames,
+    as well as whether they are combed or not.
+
+    P indicates a progressive frame, C a combed frame.
+
+    Dependencies:
+
+    * VapourSynth-TDeintMod
+
+    :param clip:            Input clip
+    :param write_props:     Write props on frames. Disabling this will also speed up the function.
+    :param scale:           Integer scaling of all clips. Must be to the power of 2.
+
+    :return:                Viewing UI for standard telecining cycles
+    """
+    if not (scale & (scale-1) == 0) and scale != 0 and scale != -1:
+        raise ValueError("seek_cycle: 'scale must be a value that is the power of 2!'")
+
+    # TODO: 60i checks and flags somehow? false positives gonna be a pain though
+    def check_combed(n: int, f: vs.VideoFrame, clip: vs.VideoNode) -> vs.VideoNode:
+        return clip.text.Text("C" if get_prop(f, "_Combed", int) else "P", 7)
+
+    # Scaling of the main clip
+    scale = 1 if scale == -1 else 2 ** scale
+
+    height = clip.height * scale
+    width = get_w(height, clip.width/clip.height)
+
+    clip = clip.tdm.IsCombed()
+    clip = Catrom().scale(clip, width, height)
+
+    # Downscaling for the cycle clips
+    clip_down = BicubicDidee().scale(clip, force_mod(width/4, 2), force_mod(height/4, 2))
+    if write_props:
+        clip_down = core.std.FrameEval(clip_down, partial(check_combed, clip=clip_down), clip_down).text.FrameNum(2)
+    blank_frame = clip_down.std.BlankClip(length=1, color=[0] * 3)
+
+    pad_c = clip_down.text.Text("Current", 8) if write_props else clip_down
+    pad_a, pad_b = blank_frame * 2 + clip_down[:-2], blank_frame + clip_down[:-1]
+    pad_d, pad_e = clip_down[1:] + blank_frame, clip_down[2:] + blank_frame * 2
+
+    # Cycling
+    cycle_clips = [pad_a, pad_b, pad_c, pad_d, pad_e]
+    pad_x = [pad_a.std.BlankClip(force_mod(pad_a.width/15))] * 4
+    cycle = cycle_clips + pad_x  # no shot this can't be done way cleaner
+    cycle[::2], cycle[1::2] = cycle_clips, pad_x
+
+    # Final stacking
+    stack_abcde = Stack(cycle).clip
+
+    vert_pad = stack_abcde.std.BlankClip(height=force_mod(stack_abcde.height / 5, 2))
+    horz_pad = clip.std.BlankClip(force_mod((stack_abcde.width-clip.width) / 2, 2))
+
+    stack = Stack([horz_pad, clip, horz_pad]).clip
+    return Stack([vert_pad, stack, vert_pad, stack_abcde], direction=Direction.VERTICAL).clip
 
 
 def TIVTC_VFR(clip: vs.VideoNode,
@@ -145,8 +207,8 @@ def deblend(clip: vs.VideoNode, start: int = 0,
     blends_b = range(start + 3, clip.num_frames - 1, 5)
     expr_cd = ["z a 2 / - y x 2 / - +"]
 
+    # Thanks Myaa, motbob and kageru!
     def deblend(n: int, clip: vs.VideoNode, rep: int | None) -> vs.VideoNode:
-        # Thanks Myaa, motbob and kageru!
         if n % 5 in [0, 1, 4]:
             return clip
         else:
@@ -268,6 +330,25 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
     weave_y = core.std.DoubleWeave(descaled)
     weave_y = weave_y.std.SetFrameProp('scaler', data=f'{kernel.__name__} (Fields)')  # type: ignore[attr-defined]
     return weave_y.std.SetFieldBased(0)[::2]
+
+
+def bob(clip: vs.VideoNode, tff: bool | None = None) -> vs.VideoNode:
+    """
+    Very simple bobbing function. Shouldn't be used for regular filtering,
+    but as a very cheap bobber for other functions.
+
+    :param clip:    Input clip
+    :param tff:     Top-field-first. `False` sets it to Bottom-Field-First.
+                    If None, get the field order from the _FieldBased prop.
+
+    :return:        Bobbed clip
+    """
+    if get_prop(clip.get_frame(0), '_FieldBased', int) == 0 and tff is None:
+        raise vs.Error("bob: 'You must set `tff` for this clip!'")
+    elif isinstance(tff, (bool, int)):
+        clip = clip.std.SetFieldBased(int(tff) + 1)
+
+    return Catrom().scale(clip.std.SeparateFields(), clip.width, clip.height)
 
 
 def dir_unsharp(clip: vs.VideoNode,
