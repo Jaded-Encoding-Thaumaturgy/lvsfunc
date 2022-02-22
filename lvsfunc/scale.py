@@ -429,6 +429,8 @@ def linear2gamma(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
     return core.std.Expr(clip, expr).std.SetFrameProps(_Transfer=curve)
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: int = 720,
                         kernel: Kernel | None = None, thr: float = 5e-8) -> vs.VideoNode:
     """
@@ -480,6 +482,8 @@ def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: in
     return core.std.FrameEval(sharp, partial(_compare, sharp=sharp, other=other), [sharp_diff, other_diff])
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: int = 720,
                         kernel: Kernel | None = None) -> vs.VideoNode:
     """

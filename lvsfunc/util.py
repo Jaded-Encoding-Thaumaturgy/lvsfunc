@@ -202,8 +202,6 @@ def replace_ranges(clip_a: vs.VideoNode,
     return out
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -> float:
     """
     Scale binarization thresholds from float to int.
@@ -215,7 +213,9 @@ def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -
 
     :return:       Threshold scaled to [0, 2^clip.depth - 1] (if vs.INTEGER)
     """
-    assert clip.format
+    if clip.format is None:
+        raise ValueError("scale_thresh: 'Variable-format clips not supported'")
+
     if thresh < 0:
         raise ValueError("scale_thresh: 'Thresholds must be positive.'")
     if thresh > 1:
