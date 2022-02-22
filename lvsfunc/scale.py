@@ -5,11 +5,12 @@ from __future__ import annotations
 
 import math
 from functools import partial
-from typing import (Any, Callable, Dict, List, Literal, NamedTuple,
-                    cast)
+from typing import Any, Callable, Dict, List, Literal, NamedTuple, cast
 
 import vapoursynth as vs
-from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
+from vsutil import (depth, disallow_variable_format,
+                    disallow_variable_resolution, get_depth, get_w, get_y,
+                    iterate, join, plane)
 
 from . import kernels
 from .kernels import Bicubic, BicubicSharp, Catrom, Kernel, Spline36
@@ -153,6 +154,8 @@ def descale_detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
     return iterate(mask, core.std.Inflate, 2)
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def descale(clip: vs.VideoNode,
             upscaler:
             Callable[[vs.VideoNode, int, int], vs.VideoNode] | None = reupscale,
@@ -206,8 +209,7 @@ def descale(clip: vs.VideoNode,
 
     :return:                       Descaled and re-upscaled clip with float bitdepth
     """
-    if clip.format is None:
-        raise ValueError("descale: 'Variable-format clips not supported'")
+    assert clip.format
 
     if type(height) is int:
         height = [height]
@@ -376,10 +378,13 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
     return d
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def gamma2linear(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  epsilon: float = 1e-6) -> vs.VideoNode:
     assert clip.format
+
     if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
         raise ValueError('Only 32 bits float is allowed')
 
@@ -396,10 +401,13 @@ def gamma2linear(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
     return core.std.Expr(clip, expr).std.SetFrameProps(_Transfer=8)
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def linear2gamma(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  ) -> vs.VideoNode:
     assert clip.format
+
     if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
         raise ValueError('Only 32 bits float is allowed')
 

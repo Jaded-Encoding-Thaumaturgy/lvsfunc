@@ -16,7 +16,7 @@ from typing import (Any, Callable, Dict, Iterable, Iterator, List, Literal,
                     Sequence, Set, Tuple, TypeVar, overload)
 
 import vapoursynth as vs
-import vsutil
+from vsutil import disallow_variable_format, disallow_variable_resolution, get_w, get_subsampling, depth
 
 from .dehardsub import hardsub_mask
 from .misc import get_matrix
@@ -307,7 +307,7 @@ class Split(Stack):
                               or (self.direction == Direction.VERTICAL and (((self.height // self.num_clips) % 2)
                                                                             or ((self.height % self.num_clips) % 2))))
 
-        is_subsampled = not all(vsutil.get_subsampling(clip) in ('444', None) for clip in self.clips)
+        is_subsampled = not all(get_subsampling(clip) in ('444', None) for clip in self.clips)
 
         if breaks_subsampling and is_subsampled:
             raise ValueError("Split: resulting cropped width or height violates subsampling rules; "
@@ -425,7 +425,7 @@ def stack_compare(*clips: vs.VideoNode,
         raise ValueError("stack_compare: `make_diff` only works for exactly 2 clips")
 
     clipa, clipb = clips
-    scaled_width = vsutil.get_w(height, only_even=False)
+    scaled_width = get_w(height, only_even=False)
 
     diff = core.std.MakeDiff(clipa=clipa, clipb=clipb)
     diff = diff.resize.Spline36(width=scaled_width * 2, height=height * 2).text.FrameNum(8)
@@ -435,6 +435,8 @@ def stack_compare(*clips: vs.VideoNode,
     return Stack([Stack(resized).clip, diff], direction=Direction.VERTICAL).clip
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.VideoNode:
     """
     Stacks the planes of a clip.
@@ -447,12 +449,12 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
 
     :return:               Clip with stacked planes
     """
-    if clip.format is None:
-        raise ValueError("stack_planes: variable-format clips not allowed")
+    assert clip.format
+
     if clip.format.num_planes != 3:
         raise ValueError("stack_planes: input clip must be in YUV or RGB planar format")
 
-    split_planes = vsutil.split(clip)
+    split_planes = split(clip)
 
     if clip.format.color_family == vs.ColorFamily.YUV:
         planes: Dict[str, vs.VideoNode] = {'Y': split_planes[0], 'U': split_planes[1], 'V': split_planes[2]}
@@ -463,10 +465,10 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
 
     direction: Direction = Direction.HORIZONTAL if not stack_vertical else Direction.VERTICAL
 
-    if vsutil.get_subsampling(clip) in ('444', None):
+    if get_subsampling(clip) in ('444', None):
         return Stack(planes, direction=direction).clip
 
-    elif vsutil.get_subsampling(clip) == '420':
+    elif get_subsampling(clip) == '420':
         subsample_direction: Direction = Direction.HORIZONTAL if stack_vertical else Direction.VERTICAL
         y_plane = planes.pop('Y').text.Text(text='Y')
         subsampled_planes = Stack(planes, direction=subsample_direction).clip
@@ -474,7 +476,7 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
         return Stack([y_plane, subsampled_planes], direction=direction).clip
 
     else:
-        raise ValueError(f"stack_planes: unexpected subsampling {vsutil.get_subsampling(clip)}")
+        raise ValueError(f"stack_planes: unexpected subsampling {get_subsampling(clip)}")
 
 
 def diff_hardsub_mask(a: vs.VideoNode, b: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
@@ -580,10 +582,10 @@ def diff(*clips: vs.VideoNode,
             yield groupl[0][1], groupl[-1][1]
 
     if clips:
-        a, b = vsutil.depth(clips[0], 8), vsutil.depth(clips[1], 8)
+        a, b = depth(clips[0], 8), depth(clips[1], 8)
     elif namedclips:
         nc = list(namedclips.values())
-        a, b = vsutil.depth(nc[0], 8), vsutil.depth(nc[1], 8)
+        a, b = depth(nc[0], 8), depth(nc[1], 8)
 
     frames = []
     if thr <= 1:
@@ -630,7 +632,7 @@ def diff(*clips: vs.VideoNode,
         comparison = Interleave({f'{name_a}': core.std.Splice([a[f] for f in frames]),
                                  f'{name_b}': core.std.Splice([b[f] for f in frames])}).clip
     else:
-        scaled_width = vsutil.get_w(height, only_even=False)
+        scaled_width = get_w(height, only_even=False)
         diff = diff.resize.Spline36(width=scaled_width * 2, height=height * 2).text.FrameNum(9)
         a, b = (c.resize.Spline36(width=scaled_width, height=height).text.FrameNum(9) for c in (a, b))
 

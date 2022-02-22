@@ -17,6 +17,8 @@ from .util import get_prop
 core = vs.core
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strs: Sequence[float] = [30, 50, 75],
                 thrs: Sequence[Tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
@@ -63,8 +65,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     :return:                Deblocked clip
     """
-    if clip.format is None:
-        raise ValueError("autodb_dpir: 'Variable-format clips not supported'")
+    assert clip.format
 
     def _eval_db(n: int, f: Sequence[vs.VideoFrame],
                  clip: vs.VideoNode, db_clips: Sequence[vs.VideoNode],

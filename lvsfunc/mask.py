@@ -10,7 +10,8 @@ from typing import List, Tuple
 
 import vapoursynth as vs
 from vsutil import Range as CRange
-from vsutil import depth, get_y, iterate, join, split
+from vsutil import (depth, disallow_variable_format,
+                    disallow_variable_resolution, get_y, iterate, join, split)
 
 from . import util
 from .types import Position, Range, Size
@@ -51,9 +52,6 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
     warnings.warn("detail_mask: This function's functionality will change in a future version. "
                   "Please make sure to update your older scripts once it does.",
                   FutureWarning)
-
-    if clip.format is None:
-        raise ValueError("detail_mask: 'Variable-format clips not supported'")
 
     brz_a = scale_thresh(brz_a, clip)
     brz_b = scale_thresh(brz_b, clip)
@@ -128,6 +126,8 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
     return core.std.Expr(mask, expr="x 2 *")
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
     """
     Min/max mask with separate luma/chroma radii.
@@ -148,6 +148,8 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
 
     :return:        Range mask
     """
+    assert clip.format
+
     if radc == 0:
         clip = get_y(clip)
 

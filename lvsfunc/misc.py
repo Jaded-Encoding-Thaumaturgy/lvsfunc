@@ -99,7 +99,8 @@ def source(file: str, ref: vs.VideoNode | None = None,
 
     if ref:
         if ref.format is None:
-            raise ValueError("source: 'Variable-format clips not supported.'")
+            raise ValueError("source: 'Variable-format ref clips not supported.'")
+
         clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
         clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height,
                                    format=ref.format.id, matrix=get_matrix(ref))
@@ -159,6 +160,8 @@ def edgefixer(clip: vs.VideoNode,
     return ef if full_range else core.std.Limiter(ef, 16.0, [235, 240])
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def get_matrix(clip: vs.VideoNode) -> int:
     """
     Helper function to get the matrix for a clip.
@@ -167,6 +170,8 @@ def get_matrix(clip: vs.VideoNode) -> int:
 
     :return:        Value representing a matrix
     """
+    assert clip.format
+
     frame = clip.get_frame(0)
     w, h = frame.width, frame.height
 

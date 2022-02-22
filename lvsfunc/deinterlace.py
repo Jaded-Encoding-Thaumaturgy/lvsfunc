@@ -141,7 +141,6 @@ def deblend(clip: vs.VideoNode, start: int = 0,
 
     :return:            Deblended clip
     """
-
     blends_a = range(start + 2, clip.num_frames - 1, 5)
     blends_b = range(start + 3, clip.num_frames - 1, 5)
     expr_cd = ["z a 2 / - y x 2 / - +"]
@@ -163,7 +162,7 @@ def deblend(clip: vs.VideoNode, start: int = 0,
 
 
 def decomb(clip: vs.VideoNode,
-           TFF: bool | int = True, mode: int = 1,
+           tff: bool | int = True, mode: int = 1,
            decimate: bool = True, vinv: bool = False,
            rep: int | None = None, show_mask: bool = False,
            tfm_args: Dict[str, Any] = {},
@@ -186,7 +185,7 @@ def decomb(clip: vs.VideoNode,
     * RGSF (optional: 32 bit clip)
 
     :param clip:          Input clip
-    :param TFF:           Top-Field-First
+    :param tff:           Top-Field-First
     :param mode:          Sets the matching mode or strategy to use for TFM
     :param decimate:      Decimate the video after deinterlacing (Default: True)
     :param vinv:          Use vinverse to get rid of additional combing (Default: False)
@@ -204,12 +203,12 @@ def decomb(clip: vs.VideoNode,
     except ModuleNotFoundError:
         raise ModuleNotFoundError("decomb: missing dependency 'havsfunc'")
 
-    VFM_TFF = int(TFF)
+    VFM_TFF = int(tff)
 
     tfm_kwargs: Dict[str, Any] = dict(order=VFM_TFF, mode=mode, chroma=True)
     tfm_kwargs |= tfm_args  # chroma set to True by default to match VFM
 
-    qtgmc_kwargs: Dict[str, Any] = dict(SourceMatch=3, Lossless=2, TR0=1, TR1=2, TR2=3, FPSDivisor=2, TFF=TFF)
+    qtgmc_kwargs: Dict[str, Any] = dict(SourceMatch=3, Lossless=2, TR0=1, TR1=2, TR2=3, FPSDivisor=2, TFF=tff)
     qtgmc_kwargs |= qtgmc_args
 
     def _pp(n: int, f: vs.VideoFrame, clip: vs.VideoNode, pp: vs.VideoNode) -> vs.VideoNode:

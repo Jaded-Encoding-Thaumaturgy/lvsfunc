@@ -5,7 +5,8 @@ from functools import partial
 from typing import List, NamedTuple
 
 import vapoursynth as vs
-from vsutil import depth, get_depth, join, split
+from vsutil import (depth, disallow_variable_format,
+                    disallow_variable_resolution, get_depth, join, split)
 
 core = vs.core
 
@@ -16,6 +17,8 @@ class RegressClips(NamedTuple):
     correlation: vs.VideoNode
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) -> vs.VideoNode:
     """
     A function to demangle messed-up chroma, like for example chroma
@@ -37,8 +40,7 @@ def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) 
 
     :return:        Clip with demangled chroma in either 4:2:0 or 4:4:4
     """
-    if clip.format is None:
-        raise ValueError("recon: 'Variable-format clips not supported'")
+    assert clip.format
 
     def dmgl(clip: vs.VideoNode) -> vs.VideoNode:
         return core.resize.Bicubic(clip, w, h, src_left=0.25)

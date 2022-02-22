@@ -6,11 +6,14 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 import vapoursynth as vs
-import vsutil
+from vsutil import (Range, disallow_variable_format,
+                    disallow_variable_resolution, get_y, iterate)
 
 core = vs.core
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
          radius: int | List[int] | None = None, ref: vs.VideoNode | None = None,
          pre: vs.VideoNode | None = None, refine: int = 1, matrix_s: str = "709",
@@ -37,15 +40,15 @@ def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
 
     :return:                Denoised clip
     """
-    if clip.format is None:
-        raise ValueError("bm3d: Variable format clips not supported")
+    assert clip.format
+
     is_gray = clip.format.color_family == vs.GRAY
 
     def to_opp(clip: vs.VideoNode) -> vs.VideoNode:
         return clip.resize.Bicubic(format=vs.RGBS, matrix_in_s=matrix_s).bm3d.RGB2OPP(sample=1)
 
     def to_fullgray(clip: vs.VideoNode) -> vs.VideoNode:
-        return vsutil.get_y(clip).resize.Point(format=vs.GRAYS, range_in=vsutil.Range.LIMITED, range=vsutil.Range.FULL)
+        return get_y(clip).resize.Point(format=vs.GRAYS, range_in=Range.LIMITED, range=Range.FULL)
 
     sigmal = [sigma] * 3 if not isinstance(sigma, list) else sigma + [sigma[-1]]*(3-len(sigma))
     sigmal = [sigmal[0], 0, 0] if is_gray else sigmal
@@ -75,12 +78,12 @@ def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
             else clip.bm3d.VFinal(sigma=sigmal, ref=refv, radius=radiusl[1], matrix=100, **final_args) \
             .bm3d.VAggregate(radius=radiusl[1], sample=1)
 
-    den = vsutil.iterate(clip_in, final, refine)
+    den = iterate(clip_in, final, refine)
 
     # boil everything back down to whatever input we had
     den = den.bm3d.OPP2RGB(sample=1).resize.Bicubic(format=clip.format.id, matrix_s=matrix_s) if not is_gray \
         else den.resize.Point(format=clip.format.replace(color_family=vs.GRAY, subsampling_w=0, subsampling_h=0).id,
-                              range_in=vsutil.Range.FULL, range=vsutil.Range.LIMITED)
+                              range_in=Range.FULL, range=Range.LIMITED)
     # merge source chroma if it exists and we didn't denoise it
     den = core.std.ShufflePlanes([den, clip], planes=[0, 1, 2], colorfamily=vs.YUV) \
         if is_gray and clip.format.color_family == vs.YUV else den

@@ -7,7 +7,8 @@ from abc import ABC
 from typing import Any, List, Tuple
 
 import vapoursynth as vs
-import vsutil
+from vsutil import (disallow_variable_format, disallow_variable_resolution,
+                    iterate, split)
 
 from .mask import DeferredMask
 from .types import Range
@@ -50,9 +51,9 @@ class HardsubMask(DeferredMask, ABC):
         thresh = scale_thresh(0.75, masks[-1])
         for p in partials:
             masks.append(core.std.Expr([masks[-1], self.get_mask(p, ref)], expr="x y -"))
-            dmasks.append(vsutil.iterate(core.std.Expr([masks[-1]], f"x {thresh} < 0 x ?"),
-                                         core.std.Maximum,
-                                         4).std.Inflate())
+            dmasks.append(iterate(core.std.Expr([masks[-1]], f"x {thresh} < 0 x ?"),
+                                  core.std.Maximum,
+                                  4).std.Inflate())
             pdhs.append(core.std.MaskedMerge(pdhs[-1], p, dmasks[-1]))
             masks[-1] = core.std.MaskedMerge(masks[-1], masks[-1].std.Invert(), masks[-2])
         return pdhs, dmasks
@@ -231,8 +232,8 @@ class HardsubASS(HardsubMask):
         mask = ref.sub.TextFile(self.filename, fontdir=self.fontdir, blend=False)[1]  # horrific abuse of typechecker
         mask = mask[self.shift:] if self.shift else mask
         mask = mask.std.Binarize(1)
-        mask = vsutil.iterate(mask, core.std.Maximum, 3)
-        mask = vsutil.iterate(mask, core.std.Inflate, 3)
+        mask = iterate(mask, core.std.Maximum, 3)
+        mask = iterate(mask, core.std.Inflate, 3)
         return mask
 
 
@@ -273,6 +274,8 @@ def bounded_dehardsub(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[Hardsu
     return hrdsb
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def hardsub_mask(hrdsb: vs.VideoNode, ref: vs.VideoNode, thresh: float = 0.06,
                  minimum: int = 1, expand: int = 8, inflate: int = 7) -> vs.VideoNode:
     """
@@ -287,15 +290,14 @@ def hardsub_mask(hrdsb: vs.VideoNode, ref: vs.VideoNode, thresh: float = 0.06,
 
     :return:        Hardsub mask
     """
-    if hrdsb.format is None:
-        raise ValueError("hardsub_mask: 'Variable-format clips not supported'")
+    assert hrdsb.format
 
     hsmf = core.std.Expr([hrdsb, ref], 'x y - abs') \
         .resize.Point(format=hrdsb.format.replace(subsampling_w=0, subsampling_h=0).id)
-    hsmf = core.std.Expr(vsutil.split(hsmf), "x y z max max")
+    hsmf = core.std.Expr(split(hsmf), "x y z max max")
     hsmf = hsmf.std.Binarize(scale_thresh(thresh, hsmf))
-    hsmf = vsutil.iterate(hsmf, core.std.Minimum, minimum)
-    hsmf = vsutil.iterate(hsmf, core.std.Maximum, expand)
-    hsmf = vsutil.iterate(hsmf, core.std.Inflate, inflate)
+    hsmf = iterate(hsmf, core.std.Minimum, minimum)
+    hsmf = iterate(hsmf, core.std.Maximum, expand)
+    hsmf = iterate(hsmf, core.std.Inflate, inflate)
 
     return hsmf

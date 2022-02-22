@@ -7,8 +7,9 @@ from math import ceil
 from typing import Any, Callable, Dict
 
 import vapoursynth as vs
-from vsutil import (depth, fallback, get_depth, get_w, get_y, join, plane,
-                    scale_value)
+from vsutil import (depth, disallow_variable_format,
+                    disallow_variable_resolution, fallback, get_depth, get_w,
+                    get_y, join, plane, scale_value)
 
 from . import kernels, util
 from .scale import ssim_downsample
@@ -17,6 +18,8 @@ from .util import scale_thresh
 core = vs.core
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, strength: float = 1) -> vs.VideoNode:
     """
     Clamp stronger AAs to weaker AAs.
@@ -31,6 +34,8 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
 
     :return:         Clip with clamped anti-aliasing.
     """
+    assert src.format
+
     if src.format is None or weak.format is None or strong.format is None:
         raise ValueError("clamp_aa: 'Variable-format clips not supported'")
     thr = strength * (1 << (src.format.bits_per_sample - 8)) if src.format.sample_type == vs.INTEGER \
@@ -42,6 +47,8 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
         else core.std.ShufflePlanes([clamp, src], planes=[0, 1, 2], colorfamily=vs.YUV)
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode]) -> vs.VideoNode:
     """
     Perform transpose AA.
@@ -52,8 +59,7 @@ def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode]) -> vs
 
     :return:       Antialiased clip
     """
-    if clip.format is None:
-        raise ValueError("taa: 'Variable-format clips not supported'")
+    assert clip.format
 
     y = get_y(clip)
 
@@ -113,6 +119,8 @@ def eedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs.
     return _eedi3
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
                   mask: vs.VideoNode | None = None,
                   mthr: float = 0.25, opencl: bool = False) -> vs.VideoNode:
@@ -131,8 +139,8 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
 
     :return:                    Antialiased clip
     """
-    if clip.format is None:
-        raise ValueError("nneedi3_clamp: 'Variable-format clips not supported'")
+    assert clip.format
+
     y = get_y(clip)
     mask = mask or y.std.Prewitt().std.Binarize(scale_thresh(mthr, y)).std.Maximum().std.Convolution([1]*9)
     merged = core.std.MaskedMerge(y,
@@ -141,6 +149,8 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
     return merged if clip.format.color_family == vs.GRAY else core.std.ShufflePlanes([merged, clip], [0, 1, 2], vs.YUV)
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def transpose_aa(clip: vs.VideoNode,
                  eedi3: bool = False,
                  rep: int = 13) -> vs.VideoNode:
@@ -164,8 +174,7 @@ def transpose_aa(clip: vs.VideoNode,
 
     :return:          Antialiased clip
     """
-    if clip.format is None:
-        raise ValueError("transpose_aa: 'Variable-format clips not supported'")
+    assert clip.format
 
     clip_y = get_y(clip)
 
@@ -207,6 +216,8 @@ def _eedi3_singlerate(clip: vs.VideoNode) -> vs.VideoNode:
     return eedi3(sclip=nnedi3(**nnargs)(y), **eeargs)(y)
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def upscaled_sraa(clip: vs.VideoNode,
                   rfactor: float = 1.5,
                   width: int | None = None, height: int | None = None,
@@ -243,8 +254,7 @@ def upscaled_sraa(clip: vs.VideoNode,
 
     :return:                Antialiased clip
     """
-    if clip.format is None:
-        raise ValueError("upscaled_sraa: 'Variable-format clips not supported'")
+    assert clip.format
 
     luma = get_y(clip)
 
@@ -273,6 +283,8 @@ def upscaled_sraa(clip: vs.VideoNode,
     return core.std.ShufflePlanes([scaled, clip], planes=[0, 1, 2], colorfamily=vs.YUV)
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
              rfactor: float = 2.0, tff: bool = True,
              mask_thr: float = 60, show_mask: bool = False,
@@ -326,8 +338,7 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
             mclip = kernels.Point().scale(mclip, iw * ceil(ow / iw), ih * ceil(oh / ih))
         return core.fmtc.resample(mclip, ow, oh, kernel='box', fulls=1, fulld=1)
 
-    if clip.format is None:
-        raise ValueError("based_aa: 'Variable-format clips not supported'")
+    assert clip.format
 
     aaw = (round(clip.width * rfactor) + 1) & ~1
     aah = (round(clip.height * rfactor) + 1) & ~1

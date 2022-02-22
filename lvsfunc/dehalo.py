@@ -5,14 +5,17 @@ from functools import partial
 from typing import Any, Dict
 
 import vapoursynth as vs
-from vsutil import depth, fallback, get_depth, get_y
+from vsutil import (depth, disallow_variable_format,
+                    disallow_variable_resolution, fallback, get_depth, get_y)
 
 from . import denoise, kernels
-from .util import force_mod, pick_repair, scale_peak, clamp_values
+from .util import clamp_values, force_mod, pick_repair, scale_peak
 
 core = vs.core
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
              sigmaS: float = 1.5, sigmaR: float = 5/255,
              sigmaS_final: float | None = None, sigmaR_final: float | None = None,
@@ -40,8 +43,7 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     bm3ddh_args: Dict[str, Any] = dict(sigma=8, radius=1, pre=clip)
     bm3ddh_args.update(bm3d_args)
 
-    if clip.format is None:
-        raise ValueError("bidehalo: 'Variable-format clips not supported'")
+    assert clip.format
 
     sigmaS_final = fallback(sigmaS_final, sigmaS / 3)
     sigmaR_final = fallback(sigmaR_final, sigmaR)
@@ -59,6 +61,8 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
 
 
 # TO-DO: Add `ref` param that actually works...
+@disallow_variable_format
+@disallow_variable_resolution
 def masked_dha(clip: vs.VideoNode, rx: float = 2.0, ry: float = 2.0,
                brightstr: float = 1.0, darkstr: float = 0.0,
                lowsens: float = 50, highsens: float = 50, rfactor: float = 1.0,
@@ -96,8 +100,7 @@ def masked_dha(clip: vs.VideoNode, rx: float = 2.0, ry: float = 2.0,
 
     :return:                Dehalo'd clip or halo mask clip
     """
-    if clip.format is None:
-        raise ValueError("masked_dha: 'Variable-format clips not supported'")
+    assert clip.format
 
     # Original silently changed values around, which I hate. Throwing errors instead.
     if not all(x >= 1 for x in (rfactor, rx, ry)):

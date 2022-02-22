@@ -7,13 +7,16 @@ from __future__ import annotations
 from typing import Any, Callable, List, Sequence, Tuple, Type, TypeVar, Union
 
 import vapoursynth as vs
-from vsutil import depth, get_subsampling
+from vsutil import (depth, disallow_variable_format,
+                    disallow_variable_resolution, get_subsampling)
 
 from .types import Coefs, Range
 
 core = vs.core
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def quick_resample(clip: vs.VideoNode,
                    function: Callable[[vs.VideoNode], vs.VideoNode]
                    ) -> vs.VideoNode:
@@ -26,8 +29,7 @@ def quick_resample(clip: vs.VideoNode,
 
     :return:          Filtered clip in original depth
     """
-    if clip.format is None:
-        raise ValueError("quick_resample: 'Variable-format clips not supported'")
+    assert clip.format
 
     try:  # Excepts all generic because >plugin/script writers being consistent >_>
         dither = depth(clip, 32)
@@ -43,6 +45,8 @@ def quick_resample(clip: vs.VideoNode,
     return depth(filtered, clip.format.bits_per_sample)
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
     """
     Returns rgvs.Repair if the clip is 16 bit or lower, else rgsf.Repair.
@@ -54,11 +58,12 @@ def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 
     :return:     Appropriate repair function for input clip's depth
     """
-    if clip.format is None:
-        raise ValueError("pick_repair: 'Variable-format clips not supported'")
+    assert clip.format
     return core.rgvs.Repair if clip.format.bits_per_sample < 32 else core.rgsf.Repair
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
     """
     Returns rgvs.RemoveGrain if the clip is 16 bit or lower, else rgsf.RemoveGrain.
@@ -72,8 +77,7 @@ def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 
     :return:     Appropriate RemoveGrain function for input clip's depth
     """
-    if clip.format is None:
-        raise ValueError("pick_removegrain: 'Variable-format clips not supported'")
+    assert clip.format
     return core.rgvs.RemoveGrain if clip.format.bits_per_sample < 32 else core.rgsf.RemoveGrain
 
 
@@ -198,6 +202,8 @@ def replace_ranges(clip_a: vs.VideoNode,
     return out
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -> float:
     """
     Scale binarization thresholds from float to int.
@@ -209,8 +215,7 @@ def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -
 
     :return:       Threshold scaled to [0, 2^clip.depth - 1] (if vs.INTEGER)
     """
-    if clip.format is None:
-        raise ValueError("scale_thresh: 'Variable-format clips not supported.'")
+    assert clip.format
     if thresh < 0:
         raise ValueError("scale_thresh: 'Thresholds must be positive.'")
     if thresh > 1:
@@ -242,6 +247,8 @@ def clamp_values(x: float, max_val: float, min_val: float) -> float:
     return min_val if x < min_val else max_val if x > max_val else x
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def padder(clip: vs.VideoNode,
            left: int = 32, right: int = 32,
            top: int = 32, bottom: int = 32) -> vs.VideoNode:
@@ -257,9 +264,6 @@ def padder(clip: vs.VideoNode,
 
     :return:            Padded clip
     """
-    if clip.format is None:
-        raise ValueError("padder: 'Variable-format clips not supported'")
-
     width = clip.width+left+right
     height = clip.height+top+bottom
 
