@@ -110,6 +110,8 @@ def source(file: str, ref: vs.VideoNode | None = None,
     return clip
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def edgefixer(clip: vs.VideoNode,
               left: int | List[int] | None = None,
               right: int | List[int] | None = None,
@@ -184,6 +186,8 @@ def get_matrix(clip: vs.VideoNode) -> int:
     return 9
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.VideoNode:
     """
     A function for forcibly adding pixel values to a clip.
@@ -256,6 +260,8 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
                                             threshold=threshold, threshold_range=threshold_range), avg)
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def wipe_row(clip: vs.VideoNode,
              ref: vs.VideoNode | None = None,
              pos: Position | Tuple[int, int] = (1, 1),

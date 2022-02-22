@@ -395,6 +395,8 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     return core.std.Interleave([frames_a, frames_b], mismatch=mismatch)
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def stack_compare(*clips: vs.VideoNode,
                   make_diff: bool = True,
                   height: int = 288,
@@ -479,6 +481,8 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
         raise ValueError(f"stack_planes: unexpected subsampling {get_subsampling(clip)}")
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def diff_hardsub_mask(a: vs.VideoNode, b: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
     """
     Diff func for :py:func:`lvsfunc.comparison.diff` to use a hardsub mask.
@@ -516,6 +520,8 @@ def diff(*clips: vs.VideoNode,
     ...
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def diff(*clips: vs.VideoNode,
          thr: float = 72,
          height: int = 288,
@@ -664,6 +670,7 @@ def interleave(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode
     return Interleave(clips if clips else namedclips).clip
 
 
+@disallow_variable_resolution
 def split(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     """
     Small convenience funciton for splitting clips along the x-axis and then stacking.
@@ -682,6 +689,7 @@ def split(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     return Split(clips if clips else namedclips, label_alignment=2).clip
 
 
+@disallow_variable_resolution
 def stack_horizontal(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     """
     Small convenience function for stacking clips horizontally.
@@ -697,6 +705,7 @@ def stack_horizontal(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.Vid
     return Stack(clips if clips else namedclips).clip
 
 
+@disallow_variable_resolution
 def stack_vertical(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     """
     Small convenience function for stacking clips vertically.
@@ -712,6 +721,7 @@ def stack_vertical(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.Video
     return Stack(clips if clips else namedclips, direction=Direction.VERTICAL).clip
 
 
+@disallow_variable_resolution
 def tile(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     """
     Small convenience function for tiling clips in a rectangular pattern.

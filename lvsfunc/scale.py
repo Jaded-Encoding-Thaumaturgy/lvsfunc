@@ -116,7 +116,6 @@ def reupscale(clip: vs.VideoNode,
 
     :return:             Reupscaled clip
     """
-
     width = width or get_w(height)
 
     # Doubling and downscale to given "h"
@@ -134,6 +133,8 @@ def reupscale(clip: vs.VideoNode,
 
 
 @functoolz.curry
+@disallow_variable_format
+@disallow_variable_resolution
 def descale_detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
                         threshold: float = 0.05) -> vs.VideoNode:
     """
@@ -303,6 +304,8 @@ CURVES = Literal[
 ]
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 720,
                     smooth: float | VSFunction = ((3 ** 2 - 1) / 12) ** 0.5,
                     kernel: Kernel = Catrom(), gamma: bool = False,

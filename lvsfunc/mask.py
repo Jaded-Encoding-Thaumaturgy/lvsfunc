@@ -20,6 +20,8 @@ from .util import replace_ranges, scale_thresh
 core = vs.core
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
                 rad: int = 3, brz_a: float = 0.025, brz_b: float = 0.045) -> vs.VideoNode:
     """
@@ -70,6 +72,8 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
     return util.pick_removegrain(mask)(mask, 11)
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def halo_mask(clip: vs.VideoNode, rad: int = 2,
               brz: float = 0.35,
               thmi: float = 0.315, thma: float = 0.5,

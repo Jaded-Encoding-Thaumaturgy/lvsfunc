@@ -22,7 +22,7 @@ core = vs.core
 
 
 def SIVTC(clip: vs.VideoNode, pattern: int = 0,
-          TFF: bool = True, decimate: bool = True) -> vs.VideoNode:
+          tff: bool = True, decimate: bool = True) -> vs.VideoNode:
     """
     A very simple fieldmatching function.
 
@@ -31,14 +31,14 @@ def SIVTC(clip: vs.VideoNode, pattern: int = 0,
 
     :param clip:        Input clip
     :param pattern:     First frame of any clean-combed-combed-clean-clean sequence
-    :param TFF:         Top-Field-First
+    :param tff:         Top-Field-First
     :param decimate:    Drop a frame every 5 frames to get down to 24000/1001
 
     :return:            IVTC'd clip
     """
     pattern = pattern % 5
 
-    defivtc = core.std.SeparateFields(clip, tff=TFF).std.DoubleWeave()
+    defivtc = core.std.SeparateFields(clip, tff=tff).std.DoubleWeave()
     selectlist = [[0, 3, 6, 8], [0, 2, 5, 8], [0, 2, 4, 7], [2, 4, 6, 9], [1, 4, 6, 8]]
     dec = core.std.SelectEvery(defivtc, 10, selectlist[pattern]) if decimate else defivtc
     return core.std.SetFrameProp(dec, prop='_FieldBased', intval=0) \

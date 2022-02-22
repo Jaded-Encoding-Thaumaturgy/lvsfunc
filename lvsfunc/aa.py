@@ -199,6 +199,8 @@ def transpose_aa(clip: vs.VideoNode,
     return aaclip if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def _nnedi3_supersample(clip: vs.VideoNode, width: int, height: int, opencl: bool = False) -> vs.VideoNode:
     nnargs: Dict[str, Any] = dict(field=0, dh=True, nsize=0, nns=4, qual=2)
     _nnedi3 = nnedi3(opencl=opencl, **nnargs)
@@ -209,6 +211,8 @@ def _nnedi3_supersample(clip: vs.VideoNode, width: int, height: int, opencl: boo
     return up_y
 
 
+@disallow_variable_format
+@disallow_variable_resolution
 def _eedi3_singlerate(clip: vs.VideoNode) -> vs.VideoNode:
     eeargs: Dict[str, Any] = dict(field=0, dh=False, alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
     nnargs: Dict[str, Any] = dict(field=0, dh=False, nsize=0, nns=4, qual=2)

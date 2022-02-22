@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import vapoursynth as vs
+from vsutil import disallow_variable_resolution
 
 from .kernels import Point
 from .util import force_mod
@@ -18,6 +19,7 @@ from .util import force_mod
 core = vs.core
 
 
+@disallow_variable_resolution
 def minecraftify(clip: vs.VideoNode, div: float = 64.0, mod: int | None = None) -> vs.VideoNode:
     """
     Function that transforms your clip into a Minecraft.
