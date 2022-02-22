@@ -3,10 +3,9 @@
 """
 from __future__ import annotations
 
-import warnings
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import List, Tuple
+from typing import Callable, List, Tuple
 
 import vapoursynth as vs
 from vsutil import Range as CRange
@@ -15,7 +14,7 @@ from vsutil import (depth, disallow_variable_format,
 
 from . import util
 from .types import Position, Range, Size
-from .util import replace_ranges, scale_thresh
+from .util import replace_ranges, scale_thresh, pick_removegrain
 
 core = vs.core
 
@@ -28,11 +27,6 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
     A wrapper for creating a detail mask to be used during denoising and/or debanding.
     The detail mask is created using debandshit's range mask,
     and is then merged with Prewitt to catch lines it may have missed.
-
-    Function is curried to allow parameter tuning when passing to denoisers
-    that allow you to pass your own mask.
-
-    WARNING: This function may be rewritten in the future, and functionality may change!
 
     Dependencies:
 
@@ -51,10 +45,6 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
 
     :return:            Detail mask
     """
-    warnings.warn("detail_mask: This function's functionality will change in a future version. "
-                  "Please make sure to update your older scripts once it does.",
-                  FutureWarning)
-
     brz_a = scale_thresh(brz_a, clip)
     brz_b = scale_thresh(brz_b, clip)
 
@@ -70,6 +60,59 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
     mask = core.std.Expr([mask_a, mask_b], 'x y max')
     mask = util.pick_removegrain(mask)(mask, 22)
     return util.pick_removegrain(mask)(mask, 11)
+
+
+@disallow_variable_format
+@disallow_variable_resolution
+def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
+                    detail_brz: float = 0.05, lines_brz: float = 0.08,
+                    blur_func: Callable[[vs.VideoNode, vs.VideoNode, float],
+                                        vs.VideoNode] = core.bilateral.Bilateral,
+                    edgemask_func: Callable[[vs.VideoNode], vs.VideoNode] = core.std.Prewitt,
+                    rg_mode: int = 17) -> vs.VideoNode:
+    """
+    A detail mask aimed at preserving as much detail as possible within darker areas,
+    even if it winds up being mostly noise.
+
+    :param clip:            Input clip
+    :param sigma:           Sigma for the detail mask.
+                            Higher means more detail and noise will be caught.
+    :param detail_brz:      Binarizing for the detail mask.
+                            Default values assume a 16bit clip, so you may need to adjust it yourself.
+                            Will not binarize if set to 0.
+    :param lines_brz:       Binarizing for the prewitt mask.
+                            Default values assume a 16bit clip, so you may need to adjust it yourself.
+                            Will not binarize if set to 0.
+    :param blur_func:       Blurring function used for the detail detection.
+                            Must accept the following parameters: ``clip``, ``ref_clip``, ``sigma``.
+    :param edgemask_func:   Edgemasking function used for the edge detection
+    :param rg_mode:         Removegrain mode performed on the final output
+
+    :return:                Detail mask
+    """
+    assert clip.format
+
+    detail_brz = scale_thresh(detail_brz, clip)
+    lines_brz = scale_thresh(lines_brz, clip)
+
+    clip_y = get_y(clip)
+    blur_pf = core.bilateral.Gaussian(clip_y, sigma=sigma / 4 * 3)
+
+    blur_pref = blur_func(clip_y, blur_pf, sigma)
+    blur_pref_diff = core.std.Expr([blur_pref, clip_y], "x y -").std.Deflate()
+    blur_pref = iterate(blur_pref_diff, core.std.Inflate, 4)
+
+    prew_mask = edgemask_func(clip_y).std.Deflate().std.Inflate()
+
+    if detail_brz > 0:
+        blur_pref = blur_pref.std.Binarize(detail_brz)
+    if lines_brz > 0:
+        prew_mask = prew_mask.std.Binarize(lines_brz)
+
+    merged = core.std.Expr([blur_pref, prew_mask], "x y +")
+    rm_grain = pick_removegrain(merged)(merged, rg_mode)
+
+    return depth(rm_grain, clip.format.bits_per_sample)
 
 
 @disallow_variable_format

@@ -121,6 +121,7 @@ Functions
    lvsfunc.deinterlace.TIVTC_VFR
    lvsfunc.denoise.bm3d
    lvsfunc.mask.detail_mask
+   lvsfunc.mask.detail_mask_neo
    lvsfunc.mask.halo_mask
    lvsfunc.mask.range_mask
    lvsfunc.misc.allow_variable
@@ -306,6 +307,7 @@ lvsfunc.mask
 .. autosummary::
 
    lvsfunc.mask.detail_mask
+   lvsfunc.mask.detail_mask_neo
    lvsfunc.mask.halo_mask
    lvsfunc.mask.range_mask
 
