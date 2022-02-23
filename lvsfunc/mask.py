@@ -67,7 +67,7 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
 def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
                     detail_brz: float = 0.05, lines_brz: float = 0.08,
                     blur_func: Callable[[vs.VideoNode, vs.VideoNode, float],
-                                        vs.VideoNode] = core.bilateral.Bilateral,
+                                        vs.VideoNode] | None = None,
                     edgemask_func: Callable[[vs.VideoNode], vs.VideoNode] = core.std.Prewitt,
                     rg_mode: int = 17) -> vs.VideoNode:
     """
@@ -85,12 +85,16 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
                             Will not binarize if set to 0.
     :param blur_func:       Blurring function used for the detail detection.
                             Must accept the following parameters: ``clip``, ``ref_clip``, ``sigma``.
+                            Uses `bilateral.Bilateral` by default.
     :param edgemask_func:   Edgemasking function used for the edge detection
     :param rg_mode:         Removegrain mode performed on the final output
 
     :return:                Detail mask
     """
     assert clip.format
+
+    if not blur_func:
+        blur_func = core.bilateral.Bilateral
 
     detail_brz = scale_thresh(detail_brz, clip)
     lines_brz = scale_thresh(lines_brz, clip)

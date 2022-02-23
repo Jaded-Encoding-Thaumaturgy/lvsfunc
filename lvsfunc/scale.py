@@ -155,17 +155,16 @@ def descale_detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
     return iterate(mask, core.std.Inflate, 2)
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def descale(clip: vs.VideoNode,
-            upscaler:
-            Callable[[vs.VideoNode, int, int], vs.VideoNode] | None = reupscale,
+            upscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode] | None
+            = lambda clip, width, height: reupscale(clip, width, height),
             width: int | List[int] | None = None,
             height: int | List[int] = 720,
             kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
             threshold: float = 0.0,
-            mask: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] | None
-            = descale_detail_mask, src_left: float = 0.0, src_top: float = 0.0,
+            mask: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] | vs.VideoNode | None
+            = lambda clip_y, rescaled_y: descale_detail_mask(clip_y, rescaled_y),
+            src_left: float = 0.0, src_top: float = 0.0,
             show_mask: bool = False) -> vs.VideoNode:
     """
     A unified descaling function.

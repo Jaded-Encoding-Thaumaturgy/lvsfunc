@@ -16,7 +16,6 @@ core = vs.core
 
 
 @disallow_variable_format
-@disallow_variable_resolution
 def quick_resample(clip: vs.VideoNode,
                    function: Callable[[vs.VideoNode], vs.VideoNode]
                    ) -> vs.VideoNode:
@@ -46,7 +45,6 @@ def quick_resample(clip: vs.VideoNode,
 
 
 @disallow_variable_format
-@disallow_variable_resolution
 def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
     """
     Returns rgvs.Repair if the clip is 16 bit or lower, else rgsf.Repair.
