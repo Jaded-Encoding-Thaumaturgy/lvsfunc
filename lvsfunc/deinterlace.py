@@ -353,49 +353,6 @@ def bob(clip: vs.VideoNode, tff: bool | None = None) -> vs.VideoNode:
     return Catrom().scale(clip.std.SeparateFields(), clip.width, clip.height)
 
 
-def dir_unsharp(clip: vs.VideoNode,
-                strength: float = 1.0,
-                dir: str = 'v',
-                h: float = 3.4) -> vs.VideoNode:
-    """
-    Diff'd directional unsharpening function.
-    Performs one-dimensional sharpening as such: "Original + (Original - blurred) * Strength"
-
-    This particular function is recommended for SD content, specifically after deinterlacing.
-
-    Special thanks to thebombzen and kageru for writing the bulk of this.
-
-    WARNING: This function may be rewritten in the future, and functionality may change!
-             It's unlikely the original function will remain!
-
-    Dependencies:
-
-    * knlmeanscl
-
-    :param clip:            Input clip
-    :param strength:        Amount to multiply blurred clip with original clip by (Default: 1.0)
-    :param dir:             Directional vector. 'v' = Vertical, 'h' = Horizontal (Default: v)
-    :param h:               Sigma for knlmeans, to prevent noise from getting sharpened (Default: 3.4)
-
-    :return:                Unsharpened clip
-    """
-    warnings.warn("dir_unsharp: This function's functionality will change in a future version, "
-                  "and will likely be renamed. Please make sure to update your older scripts once it does.",
-                  FutureWarning)
-
-    dir = dir.lower()
-    if dir not in ['v', 'h']:
-        raise ValueError("dir_unsharp: '\"dir\" must be either \"v\" or \"h\"'")
-
-    den = core.knlm.KNLMeansCL(clip, d=3, a=3, h=h)
-    diff = core.std.MakeDiff(clip, den)
-
-    blur_matrix = [1, 2, 1]
-    blurred_clip = core.std.Convolution(den, matrix=blur_matrix, mode=dir)
-    unsharp = core.std.Expr(clips=[den, blurred_clip], expr=['x y - ' + str(strength) + ' * x +', "", ""])
-    return core.std.MergeDiff(unsharp, diff)
-
-
 def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
                         thr: float = 2.2) -> vs.VideoNode:
     """

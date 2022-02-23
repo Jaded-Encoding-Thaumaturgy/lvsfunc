@@ -115,7 +115,6 @@ Functions
    lvsfunc.deinterlace.deblend
    lvsfunc.deinterlace.decomb
    lvsfunc.deinterlace.descale_fields
-   lvsfunc.deinterlace.dir_unsharp
    lvsfunc.deinterlace.fix_telecined_fades
    lvsfunc.deinterlace.ivtc_credits
    lvsfunc.deinterlace.seek_cycle
@@ -282,7 +281,6 @@ lvsfunc.deinterlace
    lvsfunc.deinterlace.deblend
    lvsfunc.deinterlace.decomb
    lvsfunc.deinterlace.descale_fields
-   lvsfunc.deinterlace.dir_unsharp
    lvsfunc.deinterlace.fix_telecined_fades
    lvsfunc.deinterlace.ivtc_credits
    lvsfunc.deinterlace.seek_cycle
