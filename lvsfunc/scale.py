@@ -194,13 +194,13 @@ def descale(clip: vs.VideoNode,
                                     Note that if upscaler is None, no upscaling will be performed
                                     and neither detail masking nor proper fractional descaling can be preformed.
                                     (Default: :py:func:`lvsfunc.scale.reupscale`)
-    :param width:                   Width to descale to (if None, auto-calculated)
+    :param width:                   Width(s) to descale to (if None, auto-calculated)
     :param height:                  Height(s) to descale to. List indicates multiple resolutions,
                                     the function will determine the best. (Default: 720)
     :param kernel:                  Kernel used to descale (see :py:class:`lvsfunc.kernels.Kernel`,
                                     (Default: kernels.Bicubic(b=0, c=1/2))
     :param threshold:               Error threshold for conditional descaling (Default: 0.0, always descale)
-    :param mask:                    Function used to mask detail. If ``None``, no masking.
+    :param mask:                    Function or mask clip used to mask detail. If ``None``, no masking.
                                     Function must accept a clip and a reupscaled clip and return a mask.
                                     (Default: :py:func:`lvsfunc.scale.descale_detail_mask`)
     :param src_left:                Horizontal shifting for fractional resolutions (Default: 0.0)
@@ -275,7 +275,8 @@ def descale(clip: vs.VideoNode,
         rescaled = kernel.scale(descaled, clip.width, clip.height,
                                 (src_left, src_top))
         rescaled = rescaled.resize.Point(format=clip.format.id)
-        dmask = mask(clip_y, rescaled)
+
+        dmask = mask if isinstance(mask, vs.VideoNode) else mask(clip_y, rescaled)
 
         if upscaler is None:
             dmask = core.resize.Spline36(dmask, upscaled.width, upscaled.height)
