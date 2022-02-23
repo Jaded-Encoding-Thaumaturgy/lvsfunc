@@ -502,6 +502,39 @@ def colored_clips(amount: int,
 
 @disallow_variable_format
 @disallow_variable_resolution
+def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
+              prefilter: bool = True, prefilter_sigma: float = 0.75) -> vs.VideoNode:
+    """
+    Diff'd unsharpening function.
+    Performs one-dimensional sharpening as such: "Original + (Original - blurred) * Strength"
+    It then merges back noise and detail that was prefiltered away,
+
+    This function also tries to mask haloing created by the unsharpening.
+    You can disable this by setting `mask` to False.
+
+    This function is not recommended for normal use,
+    but may be useful as prefiltering for detail- or edgemasks.
+
+    :param clip:                Input clip.
+    :param strength:            Amount to multiply blurred clip with original clip by
+    :param sigma:               Sigma for the gaussian blur.
+    :param prefilter:           Pre-denoising to prevent the unsharpening from picking up random noise.
+    :param prefilter_sigma:     Strength for the pre-denoising.
+    :param mask:                Use a halo mask to reduce haloing.
+    :param show_mask:           Show halo mask.
+
+    :return:                    Unsharpened clip
+    """
+    den = clip.dfttest.DFTTest(sigma=prefilter_sigma) if prefilter else clip
+    diff = core.std.MakeDiff(clip, den)
+
+    blurred_clip = core.bilateral.Gaussian(den, sigma=sigma)
+    unsharp = core.std.Expr(clips=[den, blurred_clip], expr=[f'x y - {strength} * x +', "", ""])
+    return core.std.MergeDiff(unsharp, diff)
+
+
+@disallow_variable_format
+@disallow_variable_resolution
 def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
                  frame_ranges: Range | List[Range] | None = None, fade_length: int = 0,
                  matrix: Matrix | int | None = None) -> vs.VideoNode:

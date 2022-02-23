@@ -137,6 +137,7 @@ Functions
    lvsfunc.misc.overlay_sign
    lvsfunc.misc.shift_tint
    lvsfunc.misc.source
+   lvsfunc.misc.unsharpen
    lvsfunc.misc.wipe_row
    lvsfunc.recon.chroma_reconstruct
    lvsfunc.render.clip_async_render
@@ -357,6 +358,7 @@ lvsfunc.misc
    lvsfunc.misc.overlay_sign
    lvsfunc.misc.shift_tint
    lvsfunc.misc.source
+   lvsfunc.misc.unsharpen
    lvsfunc.misc.wipe_row
 
 .. automodule:: lvsfunc.misc
