@@ -208,7 +208,7 @@ def _nnedi3_supersample(clip: vs.VideoNode, width: int, height: int, opencl: boo
     up_y = kernels.Catrom().scale(up_y, width=up_y.width, height=height, shift=(0.5, 0))
     up_y = _nnedi3(up_y.std.Transpose())
     up_y = kernels.Catrom().scale(up_y, width=up_y.width, height=width, shift=(0.5, 0))
-    return up_y
+    return up_y.std.Transpose()
 
 
 @disallow_variable_format
@@ -277,7 +277,7 @@ def upscaled_sraa(clip: vs.VideoNode,
 
     up_y = supersampler(luma, ssw, ssh)
 
-    aa_y = aafun(aafun(up_y).std.Transpose())
+    aa_y = aafun(aafun(up_y.std.Transpose()).std.Transpose())
 
     scaled = aa_y if downscaler is None else downscaler(aa_y, width, height)
 
