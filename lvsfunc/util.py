@@ -259,6 +259,8 @@ def get_neutral_value(clip: vs.VideoNode, chroma: bool = False) -> float:
 
     :return:            Neutral value.
     """
+    assert clip.format
+
     is_float = clip.format.sample_type == vs.FLOAT
 
     return (0. if chroma else 0.5) if is_float else float(1 << (get_depth(clip) - 1))
