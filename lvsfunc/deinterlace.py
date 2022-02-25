@@ -330,7 +330,7 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
     sep = core.std.SeparateFields(get_y(clip))
     descaled = kernel.descale(sep, width, height_field, (src_top, 0))
     weave_y = core.std.DoubleWeave(descaled)
-    weave_y = weave_y.std.SetFrameProp('scaler', data=f'{kernel.__name__} (Fields)')  # type: ignore[attr-defined]
+    weave_y = weave_y.std.SetFrameProp('scaler', data=f'{kernel.__class__.__name__} (Fields)')
     return weave_y.std.SetFieldBased(0)[::2]
 
 
