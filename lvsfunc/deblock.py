@@ -205,6 +205,18 @@ def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 2
 
     clip_rgb = kernel.resample(clip_32, vs.RGBS, matrix_in=targ_matrix)  # type:ignore[arg-type]
 
+    mod_w, mod_h = clip_rgb.width % 8, clip_rgb.height % 8
+
+    if to_pad := any([mod_w, mod_h]):
+        d_width, d_height = clip.width + mod_w, clip.height + mod_h
+
+        clip_rgb = Point(src_width=d_width, src_height=d_height).scale(
+            clip_rgb, d_width, d_height, (-mod_h, -mod_w)
+        )
+
     run_dpir = DPIR(clip_rgb, **dpir_args)
+
+    if to_pad:
+        run_dpir = run_dpir.std.Crop(0, mod_w, mod_h, 0)
 
     return kernel.resample(run_dpir, targ_format, targ_matrix)  # type:ignore[arg-type]
