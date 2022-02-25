@@ -10,7 +10,7 @@ import vapoursynth as vs
 from vsutil import (Dither, depth, disallow_variable_format,
                     disallow_variable_resolution, get_depth)
 
-from .kernels import Catrom, Kernel
+from .kernels import Catrom, Kernel, Point
 from .types import Matrix
 from .util import get_prop
 
