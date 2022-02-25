@@ -14,13 +14,13 @@ from typing import Any, Dict, List
 
 import vapoursynth as vs
 from vsutil import (Dither, depth, disallow_variable_format,
-                    disallow_variable_resolution, get_depth, get_neutral_value,
-                    get_w, get_y, scale_value)
+                    disallow_variable_resolution, get_depth, get_w, get_y,
+                    scale_value)
 
 from .comparison import Direction, Stack
 from .kernels import BicubicDidee, Catrom, Kernel
 from .render import get_render_progress
-from .util import force_mod, get_prop, pick_repair
+from .util import force_mod, get_neutral_value, get_prop, pick_repair
 
 core = vs.core
 

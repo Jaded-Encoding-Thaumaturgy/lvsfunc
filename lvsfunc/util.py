@@ -8,7 +8,7 @@ from typing import Any, Callable, List, Sequence, Tuple, Type, TypeVar, Union
 
 import vapoursynth as vs
 from vsutil import (depth, disallow_variable_format,
-                    disallow_variable_resolution, get_subsampling)
+                    disallow_variable_resolution, get_depth, get_subsampling)
 
 from .types import Coefs, Range
 
@@ -243,6 +243,25 @@ def clamp_values(x: float, max_val: float, min_val: float) -> float:
     Forcibly clamps the given value x to a max and/or min value.
     """
     return min_val if x < min_val else max_val if x > max_val else x
+
+
+@disallow_variable_format
+def get_neutral_value(clip: vs.VideoNode, chroma: bool = False) -> float:
+    """
+    Taken from vsutil. This isn't in any new versions yet, so mypy complains.
+    Will remove once vsutil does another version bump.
+
+    Returns the neutral value for the combination
+    of the plane type and bit depth/type of the clip as float.
+
+    :param clip:        Input clip.
+    :param chroma:      Whether to get luma or chroma plane value
+
+    :return:            Neutral value.
+    """
+    is_float = clip.format.sample_type == vs.FLOAT
+
+    return (0. if chroma else 0.5) if is_float else float(1 << (get_depth(clip) - 1))
 
 
 @disallow_variable_format
