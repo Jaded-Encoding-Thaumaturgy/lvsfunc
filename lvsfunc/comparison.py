@@ -16,7 +16,9 @@ from typing import (Any, Callable, Dict, Iterable, Iterator, List, Literal,
                     Sequence, Set, Tuple, TypeVar, overload)
 
 import vapoursynth as vs
-from vsutil import disallow_variable_format, disallow_variable_resolution, get_w, get_subsampling, depth
+from vsutil import (depth, disallow_variable_format,
+                    disallow_variable_resolution, get_subsampling, get_w)
+from vsutil import split as split_planes
 
 from .dehardsub import hardsub_mask
 from .misc import get_matrix
@@ -456,12 +458,12 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
     if clip.format.num_planes != 3:
         raise ValueError("stack_planes: input clip must be in YUV or RGB planar format")
 
-    split_planes = split(clip)
+    yuv_planes = split_planes(clip)
 
     if clip.format.color_family == vs.ColorFamily.YUV:
-        planes: Dict[str, vs.VideoNode] = {'Y': split_planes[0], 'U': split_planes[1], 'V': split_planes[2]}
+        planes: Dict[str, vs.VideoNode] = {'Y': yuv_planes[0], 'U': yuv_planes[1], 'V': yuv_planes[2]}
     elif clip.format.color_family == vs.ColorFamily.RGB:
-        planes = {'R': split_planes[0], 'G': split_planes[1], 'B': split_planes[2]}
+        planes = {'R': yuv_planes[0], 'G': yuv_planes[1], 'B': yuv_planes[2]}
     else:
         raise ValueError(f"stack_planes: unexpected color family {clip.format.color_family.name}")
 
