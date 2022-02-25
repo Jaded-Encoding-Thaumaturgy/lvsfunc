@@ -14,7 +14,8 @@ from typing import Any, Dict, List
 
 import vapoursynth as vs
 from vsutil import (Dither, depth, disallow_variable_format,
-                    disallow_variable_resolution, get_depth, get_w, get_y)
+                    disallow_variable_resolution, get_depth, get_neutral_value,
+                    get_w, get_y, scale_value)
 
 from .comparison import Direction, Stack
 from .kernels import BicubicDidee, Catrom, Kernel
@@ -579,3 +580,43 @@ def ivtc_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None,
         fix2 = c2.mv.FlowInter(super2, vect_b2, vect_f2).std.SelectEvery(4, [0, 2])
 
         return core.std.Interleave([fix1, fix2] if pattern == 0 else [fix2, fix1])
+
+
+@disallow_variable_format
+def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
+             amount: int = 128, scale: float = 1.5) -> vs.VideoNode:
+    """
+    A simple function to clean up residual combing after a deinterlacing pass.
+    This is Setsugen_no_ao's implementation, adopted into lvsfunc.
+
+    :param clip:    Input clip.
+    :param sstr:    Contrasharpening strength. Increase this if you find
+                    the decombing blurs the image a bit too much.
+    :param amount:  Maximum difference allowed between the original pixels and adjusted pixels.
+                    Scaled to input clip's depth. Set to 255 to effectively disable this.
+    :param scale:   Scale amount for vertical sharp * vertical blur.
+
+    :return:        Clip with residual combing largely removed
+    """
+    assert clip.format
+
+    if amount > 255:
+        raise ValueError("vinverse: '`amount` may not be set higher than 255!'")
+
+    neutral = get_neutral_value(clip)
+
+    # Expression to find combing and seperate it from the rest of the clip
+    find_combs = clip.akarin.Expr(f'{neutral} n! x x 2 * x[0,-1] x[0,1] + + 4 / - n@ +')
+
+    # Expression to decomb it (creates blending)
+    decomb = core.akarin.Expr([find_combs, clip],
+                              f'{neutral} n! x 2 * x[0,-1] x[0,1] + + 4 / blur! y x blur@ - x n@ - * 0 < n@ x blur@ '
+                              ' - abs x n@ - abs < x blur@ - n@ + x ? ? - n@ +')
+
+    # Final expression to properly merge it and avoid creating too much damage
+    return core.akarin.Expr([clip, decomb],
+                            f'{neutral} n! {scale_value(amount, 8, clip.format.bits_per_sample)} a! y y y y 2 * y[0,-1]'
+                            f' y[0,1] + + 4 / - {sstr} * + y - n@ + sdiff! x y - n@ + diff! sdiff@ n@ - diff@ n@ - '
+                            f'* 0 < sdiff@ n@ - abs diff@ n@ - abs < sdiff@ diff@ ? n@ - {scale} * n@ + sdiff@ n@ '
+                            '- abs diff@ n@ - abs < sdiff@ diff@ ? ? n@ - + merge! x a@ + merge@ < x a@ + x a@ - '
+                            'merge@ > x a@ - merge@ ? ?')

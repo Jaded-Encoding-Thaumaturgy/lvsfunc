@@ -25,6 +25,7 @@ lvsfunc depends on the following third-party scripts:
 
 The following VapourSynth libraries are also required for full functionality:
 
+* `akarinVS <https://github.com/AkarinVS/vapoursynth-plugin>`_
 * `combmask <https://mega.nz/#!whtkTShS!JsDhi-_QGs-kZkzWqgcXHX2MQII4Bl9Y4Ft0zHnXDvk>`_
 * `d2vsource <https://github.com/dwbuiten/d2vsource>`_
 * `dgdecnv <http://rationalqm.us/dgdecnv/dgdecnv.html>`_
@@ -120,6 +121,7 @@ Functions
    lvsfunc.deinterlace.seek_cycle
    lvsfunc.deinterlace.SIVTC
    lvsfunc.deinterlace.TIVTC_VFR
+   lvsfunc.deinterlace.vinverse
    lvsfunc.denoise.bm3d
    lvsfunc.mask.detail_mask
    lvsfunc.mask.detail_mask_neo
@@ -286,6 +288,7 @@ lvsfunc.deinterlace
    lvsfunc.deinterlace.seek_cycle
    lvsfunc.deinterlace.SIVTC
    lvsfunc.deinterlace.TIVTC_VFR
+   lvsfunc.deinterlace.vinverse
 
 .. automodule:: lvsfunc.deinterlace
    :members:
