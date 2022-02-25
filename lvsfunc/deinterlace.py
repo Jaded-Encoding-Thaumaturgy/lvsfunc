@@ -232,16 +232,16 @@ def decomb(clip: vs.VideoNode,
            rep: int | None = None, show_mask: bool = False,
            tfm_args: Dict[str, Any] = {},
            tdec_args: Dict[str, Any] = {},
+           vinv_args: Dict[str, Any] = {},
            qtgmc_args: Dict[str, Any] = {}) -> vs.VideoNode:
     """
     A filter that performs relatively aggressive filtering to get rid of the combing on a interlaced/telecined source.
     Decimation can be disabled if the user wishes to decimate the clip themselves.
 
     Enabling vinverse will result in more aggressive decombing at the cost of potential detail loss.
-    Sharpen will perform a directional unsharpening. Direction can be set using `dir`.
     A reference clip can be passed with `ref`, which will be used by TFM to create the output frames.
 
-    Base function written by Midlifecrisis from the WEEB AUTISM server, and modified by LightArrowsEXE.
+    Base function written by Midlifecrisis from the WEEB AUTISM server, modified by LightArrowsEXE.
 
     Dependencies:
 
@@ -254,17 +254,16 @@ def decomb(clip: vs.VideoNode,
     :param mode:          Sets the matching mode or strategy to use for TFM
     :param decimate:      Decimate the video after deinterlacing (Default: True)
     :param vinv:          Use vinverse to get rid of additional combing (Default: False)
-    :param sharpen:       Unsharpen after deinterlacing (Default: False)
-    :param dir:           Directional vector. 'v' = Vertical, 'h' = Horizontal (Default: v)
     :param rep:           Repair mode for repairing the decombed clip using the original clip (Default: None)
     :param show_mask:     Return combmask
     :param tfm_args:      Arguments to pass to TFM
+    :param vinv_args:     Arguments to pass to vinverse
     :param qtgmc_args:    Arguments to pass to QTGMC
 
     :return:              Decombed and optionally decimated clip
     """
     try:
-        from havsfunc import QTGMC, Vinverse
+        from havsfunc import QTGMC
     except ModuleNotFoundError:
         raise ModuleNotFoundError("decomb: missing dependency 'havsfunc'")
 
@@ -294,7 +293,7 @@ def decomb(clip: vs.VideoNode,
 
     decombed = core.std.FrameEval(clip, partial(_pp, clip=clip, pp=qtgmc_merged), clip)
 
-    decombed = Vinverse(decombed) if vinv else decombed
+    decombed = vinverse(decombed, **vinv_args) if vinv else decombed
     decombed = pick_repair(clip)(decombed, clip, rep) if rep else decombed
     return core.tivtc.TDecimate(decombed, **tdec_args) if decimate else decombed
 
