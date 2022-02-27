@@ -4,8 +4,6 @@
 
 from __future__ import annotations
 
-import os
-import time
 import warnings
 from fractions import Fraction
 from functools import partial
@@ -159,14 +157,10 @@ def TIVTC_VFR(clip: vs.VideoNode,
         with get_render_progress() as pr:
             task = pr.add_task("Analyzing frames...", total=ivtc_clip.num_frames)
 
-            def _cb(n: int, total: int) -> None:
+            for _ in ivtc_clip.frames(close=True):
                 pr.update(task, advance=1)
 
-            with open(os.devnull, 'wb') as dn:
-                ivtc_clip.output(dn, progress_update=_cb)
-
-        time.sleep(0.5)  # Allow it to properly finish writing logs
-        del ivtc_clip  # Releases the clip, and in turn the filter (prevents an error)
+        return TIVTC_VFR(clip, tfm_in, tdec_in, timecodes_out, decimate, tfm_args, tdecimate_args)
 
     tfm_args = {**tfm_args, 'input': str(tfm_in)}
 
