@@ -139,9 +139,9 @@ def TIVTC_VFR(clip: vs.VideoNode,
     if int(decimate) not in (-1, 0, 1):
         raise ValueError("TIVTC_VFR: 'Invalid `decimate` argument. Must be True/False, their integer values, or -1'")
 
-    tfm_in = Path(tfm_in).resolve()
-    tdec_in = Path(tdec_in).resolve()
-    timecodes_out = Path(timecodes_out).resolve()
+    tfm_in = Path(tfm_in).resolve().absolute()
+    tdec_in = Path(tdec_in).resolve().absolute()
+    timecodes_out = Path(timecodes_out).resolve().absolute()
 
     # TIVTC can't write files into directories that don't exist
     for p in (tfm_in, tdec_in, timecodes_out):
@@ -152,14 +152,23 @@ def TIVTC_VFR(clip: vs.VideoNode,
         tfm_analysis: Dict[str, Any] = {**tfm_args, 'output': str(tfm_in)}
         tdec_analysis: Dict[str, Any] = {**tdecimate_args, 'output': str(tdec_in), 'mode': 4}
 
-        ivtc_clip = core.tivtc.TFM(clip, **tfm_analysis).tivtc.TDecimate(**tdec_analysis)
+        ivtc_clip = core.tivtc.TFM(clip, **tfm_analysis)
+        ivtc_clip = core.tivtc.TDecimate(ivtc_clip, **tdec_analysis)
 
         with get_render_progress() as pr:
-            task = pr.add_task("Analyzing frames...", total=ivtc_clip.num_frames)
+            task_id = pr.add_task("Analyzing frames...", total=ivtc_clip.num_frames)
+            task = pr.tasks[task_id]
 
-            for _ in ivtc_clip.frames(close=True):
-                pr.update(task, advance=1)
+            while not pr.finished:
+                pr.advance(task_id)
+                ivtc_clip.get_frame_async_raw(
+                    task.completed - 1,
+                    lambda c, n, f: f.close()
+                )
 
+        del ivtc_clip
+
+    if not (tfm_in.stat().st_size > 0 and tdec_in.stat().st_size > 0):
         return TIVTC_VFR(clip, tfm_in, tdec_in, timecodes_out, decimate, tfm_args, tdecimate_args)
 
     tfm_args = {**tfm_args, 'input': str(tfm_in)}
