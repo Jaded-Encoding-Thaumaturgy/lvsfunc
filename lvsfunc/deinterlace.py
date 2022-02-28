@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import warnings
+from time import sleep
 from fractions import Fraction
 from functools import partial
 from pathlib import Path
@@ -15,9 +16,9 @@ from vsutil import (Dither, depth, disallow_variable_format,
                     disallow_variable_resolution, get_depth, get_w, get_y,
                     scale_value)
 
+from .render import get_render_progress
 from .comparison import Direction, Stack
 from .kernels import BicubicDidee, Catrom, Kernel
-from .render import get_render_progress
 from .util import force_mod, get_neutral_value, get_prop, pick_repair
 
 core = vs.core
@@ -139,43 +140,47 @@ def TIVTC_VFR(clip: vs.VideoNode,
     if int(decimate) not in (-1, 0, 1):
         raise ValueError("TIVTC_VFR: 'Invalid `decimate` argument. Must be True/False, their integer values, or -1'")
 
-    tfm_in = Path(tfm_in).resolve().absolute()
-    tdec_in = Path(tdec_in).resolve().absolute()
-    timecodes_out = Path(timecodes_out).resolve().absolute()
+    tfm_f = tdec_f = timecodes_f = Path()
+
+    def _set_paths() -> None:
+        nonlocal tfm_f, tdec_f, timecodes_f
+        tfm_f = Path(tfm_in).resolve().absolute()
+        tdec_f = Path(tdec_in).resolve().absolute()
+        timecodes_f = Path(timecodes_out).resolve().absolute()
+
+    _set_paths()
 
     # TIVTC can't write files into directories that don't exist
-    for p in (tfm_in, tdec_in, timecodes_out):
+    for p in (tfm_f, tdec_f, timecodes_f):
         if not p.parent.exists():
             p.parent.mkdir(parents=True)
 
-    if not (tfm_in.exists() and tdec_in.exists()):
-        tfm_analysis: Dict[str, Any] = {**tfm_args, 'output': str(tfm_in)}
-        tdec_analysis: Dict[str, Any] = {**tdecimate_args, 'output': str(tdec_in), 'mode': 4}
+    if not (tfm_f.exists() and tdec_f.exists()):
+        tfm_analysis: Dict[str, Any] = {**tfm_args, 'output': str(tfm_f)}
+        tdec_analysis: Dict[str, Any] = {**tdecimate_args, 'output': str(tdec_f), 'mode': 4}
 
         ivtc_clip = core.tivtc.TFM(clip, **tfm_analysis)
         ivtc_clip = core.tivtc.TDecimate(ivtc_clip, **tdec_analysis)
 
         with get_render_progress() as pr:
-            task_id = pr.add_task("Analyzing frames...", total=ivtc_clip.num_frames)
-            task = pr.tasks[task_id]
+            task = pr.add_task("Analyzing frames...", total=ivtc_clip.num_frames)
 
-            while not pr.finished:
-                pr.advance(task_id)
-                ivtc_clip.get_frame_async_raw(
-                    task.completed - 1,
-                    lambda c, n, f: f.close()
-                )
+            for i in range(ivtc_clip.num_frames):
+                pr.advance(task)
+                ivtc_clip.get_frame_async_raw(i, lambda c, n, f: f.close())
 
         del ivtc_clip
 
-    if not (tfm_in.stat().st_size > 0 and tdec_in.stat().st_size > 0):
-        return TIVTC_VFR(clip, tfm_in, tdec_in, timecodes_out, decimate, tfm_args, tdecimate_args)
+        _set_paths()
 
-    tfm_args = {**tfm_args, 'input': str(tfm_in)}
+    while not (tfm_f.stat().st_size > 0 and tdec_f.stat().st_size > 0):
+        sleep(0.5)
+
+    tfm_args = {**tfm_args, 'input': str(tfm_f)}
 
     tdecimate_args = {
         'mode': 5, 'hybrid': 2, 'vfrDec': 1, **tdecimate_args,
-        'input': str(tdec_in), 'tfmIn': str(tfm_in), 'mkvOut': str(timecodes_out),
+        'input': str(tdec_f), 'tfmIn': str(tfm_f), 'mkvOut': str(timecodes_out),
     }
 
     tfm = clip.tivtc.TFM(**tfm_args) if not decimate == -1 else clip
