@@ -126,9 +126,9 @@ def TIVTC_VFR(clip: vs.VideoNode,
     * TIVTC
 
     :param clip:                Input clip
-    :param tfmIn:               File location for TFM's matches analysis
-    :param tdecIn:              File location for TDecimate's metrics analysis
-    :param mkvOut:              File location for TDecimate's timecode file output
+    :param tfm_in:              File location for TFM's matches analysis
+    :param tdec_in:             File location for TDecimate's metrics analysis
+    :param timecodes_out:       File location for TDecimate's timecode file output
     :param decimate:            Perform TDecimate on the clip if true, else returns TFM'd clip only.
                                 Set to -1 to use TDecimate without TFM
     :param tfm_args:            Additional arguments to pass to TFM
