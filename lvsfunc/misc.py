@@ -525,11 +525,18 @@ def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
 
     :return:                    Unsharpened clip
     """
+    assert clip.format
+
     den = clip.dfttest.DFTTest(sigma=prefilter_sigma) if prefilter else clip
     diff = core.std.MakeDiff(clip, den)
 
+    expr: str | List[str] = f'x y - {strength} * x +'
+
+    if clip.format.color_family is not vs.GRAY:
+        expr = [str(expr), "", ""]  # mypy wtf?
+
     blurred_clip = core.bilateral.Gaussian(den, sigma=sigma)
-    unsharp = core.std.Expr(clips=[den, blurred_clip], expr=[f'x y - {strength} * x +', "", ""])
+    unsharp = core.std.Expr([den, blurred_clip], expr)
     return core.std.MergeDiff(unsharp, diff)
 
 
