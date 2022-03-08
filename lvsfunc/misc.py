@@ -509,18 +509,17 @@ def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
     Performs one-dimensional sharpening as such: "Original + (Original - blurred) * Strength"
     It then merges back noise and detail that was prefiltered away,
 
-    This function also tries to mask haloing created by the unsharpening.
-    You can disable this by setting `mask` to False.
+    Negative values will blur instead. This can be useful for trying to undo sharpening.
 
     This function is not recommended for normal use,
     but may be useful as prefiltering for detail- or edgemasks.
 
     :param clip:                Input clip.
-    :param strength:            Amount to multiply blurred clip with original clip by
+    :param strength:            Amount to multiply blurred clip with original clip by.
+                                Negative values will blur the clip instead.
     :param sigma:               Sigma for the gaussian blur.
     :param prefilter:           Pre-denoising to prevent the unsharpening from picking up random noise.
     :param prefilter_sigma:     Strength for the pre-denoising.
-    :param mask:                Use a halo mask to reduce haloing.
     :param show_mask:           Show halo mask.
 
     :return:                    Unsharpened clip
