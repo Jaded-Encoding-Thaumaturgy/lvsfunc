@@ -179,7 +179,7 @@ def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 2
     bit_depth = get_depth(clip)
     is_rgb, is_gray = (clip.format.color_family is f for f in (vs.RGB, vs.GRAY))
 
-    clip_32 = depth(clip, 32, dither_type=Dither.ERROR_DIFFUSION).std.Limiter()
+    clip_32 = depth(clip, 32, dither_type=Dither.ERROR_DIFFUSION)
 
     # TODO: Replace with a match-case?
     if mode.lower() == 'deblock':
@@ -195,7 +195,7 @@ def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 2
         dpir_args |= dict(backend=Backend.ORT_CUDA if cuda else Backend.OV_CPU)
 
     if is_rgb or is_gray:
-        return depth(DPIR(clip_32, **dpir_args), bit_depth)
+        return depth(DPIR(clip_32.std.Limiter(), **dpir_args), bit_depth)
 
     if matrix is None:
         matrix = get_prop(clip.get_frame(0), "_Matrix", int)
@@ -203,7 +203,7 @@ def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 2
     targ_matrix = Matrix(matrix)
     targ_format = clip.format.replace(subsampling_w=0, subsampling_h=0) if i444 else clip.format
 
-    clip_rgb = kernel.resample(clip_32, vs.RGBS, matrix_in=targ_matrix)  # type:ignore[arg-type]
+    clip_rgb = kernel.resample(clip_32, vs.RGBS, matrix_in=targ_matrix).std.Limiter()  # type:ignore[arg-type]
 
     mod_w, mod_h = clip_rgb.width % 8, clip_rgb.height % 8
 
