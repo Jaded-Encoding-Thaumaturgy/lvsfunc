@@ -6,7 +6,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from math import sqrt
-from typing import Any, Dict, Tuple, Sequence
+from functools import lru_cache
+from typing import Any, Dict, Generator, Tuple, Sequence, List, Type
 
 import vapoursynth as vs
 
@@ -726,3 +727,35 @@ class Bohman(Impulse):
             -0.00264747, -0.001192, 0, 0.000798, 0.00118257, 0.001221, 0.00102559, 0.00072, 0.000408479,
             0.000159, 0, -0.000073, -0.0000834291, -0.000062, -0.000033957, -0.000013, -0.00000291302, 0
         ], oversample, **kwargs)
+
+
+@lru_cache
+def get_all_kernels() -> List[Type[Kernel]]:
+    """
+    Get all kernels as a list.
+    """
+    def _subclasses(cls: Type[Kernel]) -> Generator[Type[Kernel], None, None]:
+        for subclass in cls.__subclasses__():
+            yield from _subclasses(subclass)
+            yield subclass
+
+    # https://github.com/python/mypy/issues/5374
+    return list(set(_subclasses(Kernel)))  # type: ignore
+
+
+@lru_cache
+def get_kernel(name: str) -> Type[Kernel]:
+    """
+    Get a kernel by name.
+
+    :param name: Kernel name.
+    :return: Kernel class.
+    """
+    all_kernels = get_all_kernels()
+    search_str = name.lower().strip()
+
+    for kernel in all_kernels:
+        if kernel.__name__.lower() == search_str:
+            return kernel
+
+    raise ValueError(f"get_kernel: 'Unknown kernel: {name}'")
