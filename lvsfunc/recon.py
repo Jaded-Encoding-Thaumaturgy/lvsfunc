@@ -54,11 +54,11 @@ def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) 
                                          src_left=-.5, filter_param_a=1/3, filter_param_b=1/3)
     planes[0], planes[1], planes[2] = map(dmgl, (planes[0], planes[1], planes[2]))
     y_fix = core.std.MakeDiff(clip_y, planes[0])
-    yu, yv = _Regress(planes[0], planes[1], planes[2], radius=radius)
+    yu, yv = regress(planes[0], planes[1], planes[2], radius=radius)
 
-    u_fix = _ReconstructMulti(y_fix, yu, radius=radius)
+    u_fix = reconstruct_multi(y_fix, yu, radius=radius)
     planes[1] = core.std.MergeDiff(planes[1], u_fix)
-    v_fix = _ReconstructMulti(y_fix, yv, radius=radius)
+    v_fix = reconstruct_multi(y_fix, yv, radius=radius)
     planes[2] = core.std.MergeDiff(planes[2], v_fix)
 
     merged = join([clip_y, planes[1], planes[2]])
@@ -66,7 +66,7 @@ def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) 
         else depth(merged, get_depth(clip))
 
 
-def _Regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1e-7) -> List[RegressClips]:
+def regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1e-7) -> List[RegressClips]:
     """
     Fit a line for every neighborhood of values of a given size in a clip
     with corresponding neighborhoods in one or more other clips.
@@ -106,7 +106,7 @@ def _Regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1
     return [RegressClips(*x) for x in zip(slopes, intercepts, corrs)]
 
 
-def _ReconstructMulti(c: vs.VideoNode, r: RegressClips, radius: int = 2) -> vs.VideoNode:
+def reconstruct_multi(c: vs.VideoNode, r: RegressClips, radius: int = 2) -> vs.VideoNode:
     weights = core.std.Expr(r.correlation, 'x 0.5 - 0.5 / 0 max')
     slope_pm = core.std.Expr((r.slope, weights), 'x y *')
     slope_pm_sum = _mean(slope_pm, radius)

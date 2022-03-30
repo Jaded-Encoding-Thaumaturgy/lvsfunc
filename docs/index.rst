@@ -141,6 +141,8 @@ Functions
    lvsfunc.misc.unsharpen
    lvsfunc.misc.wipe_row
    lvsfunc.recon.chroma_reconstruct
+   lvsfunc.recon.reconstruct_multi
+   lvsfunc.recon.regress
    lvsfunc.render.clip_async_render
    lvsfunc.render.find_scene_changes
    lvsfunc.render.get_render_process
@@ -373,6 +375,8 @@ lvsfunc.recon
 .. autosummary::
 
    lvsfunc.recon.chroma_reconstruct
+   lvsfunc.recon.reconstruct_multi
+   lvsfunc.recon.regress
 
 .. automodule:: lvsfunc.recon
    :members:
