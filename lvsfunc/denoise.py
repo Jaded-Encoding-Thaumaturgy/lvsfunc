@@ -40,6 +40,7 @@ def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
     :return:                Denoised clip
     """
     check_variable(clip, "bm3d")
+    assert clip.format
 
     is_gray = clip.format.color_family == vs.GRAY
 

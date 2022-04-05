@@ -208,6 +208,7 @@ def descale(clip: vs.VideoNode,
     :return:                       Descaled and re-upscaled clip with float bitdepth
     """
     check_variable(clip, "descale")
+    assert clip.format
 
     if type(height) is int:
         height = [height]
@@ -383,6 +384,7 @@ def gamma2linear(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  epsilon: float = 1e-6) -> vs.VideoNode:
     check_variable(clip, "gamma2linear")
+    assert clip.format
 
     if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
         raise ValueError("gamma2linear: 'Only 32 bits float is allowed'")
@@ -404,6 +406,7 @@ def linear2gamma(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  ) -> vs.VideoNode:
     check_variable(clip, "linear2gamma")
+    assert clip.format
 
     if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
         raise ValueError("linear2gamma: 'Only 32 bits float is allowed'")

@@ -63,6 +63,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     :return:                Deblocked clip
     """
     check_variable(clip, "autodb_dpir")
+    assert clip.format
 
     def _eval_db(n: int, f: Sequence[vs.VideoFrame],
                  clip: vs.VideoNode, db_clips: Sequence[vs.VideoNode],
@@ -170,6 +171,7 @@ def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 2
         raise ModuleNotFoundError("vsdpir: 'vsmlrt is required to use vsdpir functions.'")
 
     check_variable(clip, "vsdpir")
+    assert clip.format
 
     bit_depth = get_depth(clip)
     is_rgb, is_gray = (clip.format.color_family is f for f in (vs.RGB, vs.GRAY))

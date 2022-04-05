@@ -44,6 +44,7 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     bm3ddh_args.update(bm3d_args)
 
     check_variable(clip, "bidehalo")
+    assert clip.format
 
     sigmaS_final = fallback(sigmaS_final, sigmaS / 3)
     sigmaR_final = fallback(sigmaR_final, sigmaR)
@@ -99,6 +100,7 @@ def masked_dha(clip: vs.VideoNode, rx: float = 2.0, ry: float = 2.0,
     :return:                Dehalo'd clip or halo mask clip
     """
     check_variable(clip, "masked_dha")
+    assert clip.format
 
     # Original silently changed values around, which I hate. Throwing errors instead.
     if not all(x >= 1 for x in (rfactor, rx, ry)):

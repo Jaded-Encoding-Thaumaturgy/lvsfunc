@@ -27,6 +27,7 @@ def quick_resample(clip: vs.VideoNode,
     :return:          Filtered clip in original depth
     """
     check_variable(clip, "quick_resample")
+    assert clip.format
 
     try:  # Excepts all generic because >plugin/script writers being consistent >_>
         dither = depth(clip, 32)
@@ -54,6 +55,7 @@ def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
     :return:     Appropriate repair function for input clip's depth
     """
     check_variable(clip, "pick_repair")
+    assert clip.format
     return core.rgvs.Repair if clip.format.bits_per_sample < 32 else core.rgsf.Repair
 
 
@@ -71,6 +73,7 @@ def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
     :return:     Appropriate RemoveGrain function for input clip's depth
     """
     check_variable(clip, "pick_removegrain")
+    assert clip.format
     return core.rgvs.RemoveGrain if clip.format.bits_per_sample < 32 else core.rgsf.RemoveGrain
 
 
@@ -206,8 +209,8 @@ def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -
 
     :return:       Threshold scaled to [0, 2^clip.depth - 1] (if vs.INTEGER)
     """
-    if clip.format is None:
-        raise ValueError("scale_thresh: 'Variable-format clips not supported'")
+    check_variable(clip, "scale_thresh")
+    assert clip.format
 
     if thresh < 0:
         raise ValueError("scale_thresh: 'Thresholds must be positive.'")
@@ -254,6 +257,7 @@ def get_neutral_value(clip: vs.VideoNode, chroma: bool = False) -> float:
     :return:            Neutral value.
     """
     check_variable(clip, "get_neutral_value")
+    assert clip.format
 
     is_float = clip.format.sample_type == vs.FLOAT
 
@@ -312,3 +316,5 @@ def check_variable(clip: vs.VideoNode, function: str) -> None:
         raise ValueError(f"{function}: 'Variable-format clips not supported!'")
     elif 0 in (clip.width, clip.height):
         raise ValueError(f"{function}: 'Variable-resolution clips not supported!'")
+
+    assert clip.format

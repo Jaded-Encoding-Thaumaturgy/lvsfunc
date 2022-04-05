@@ -55,6 +55,7 @@ def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode]) -> vs
     :return:       Antialiased clip
     """
     check_variable(clip, "taa")
+    assert clip.format
 
     y = get_y(clip)
 
@@ -133,6 +134,7 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
     :return:                    Antialiased clip
     """
     check_variable(clip, "nneedi3_clamp")
+    assert clip.format
 
     y = get_y(clip)
     mask = mask or y.std.Prewitt().std.Binarize(scale_thresh(mthr, y)).std.Maximum().std.Convolution([1]*9)
@@ -166,6 +168,7 @@ def transpose_aa(clip: vs.VideoNode,
     :return:          Antialiased clip
     """
     check_variable(clip, "transpose_aa")
+    assert clip.format
 
     clip_y = get_y(clip)
 
@@ -248,6 +251,7 @@ def upscaled_sraa(clip: vs.VideoNode,
     :return:                Antialiased clip
     """
     check_variable(clip, "upscaled_sraa")
+    assert clip.format
 
     luma = get_y(clip)
 
@@ -330,6 +334,7 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
         return core.fmtc.resample(mclip, ow, oh, kernel='box', fulls=1, fulld=1)
 
     check_variable(clip, "based_aa")
+    assert clip.format
 
     aaw = (round(clip.width * rfactor) + 1) & ~1
     aah = (round(clip.height * rfactor) + 1) & ~1

@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import partial
-from tabnanny import check
 from typing import Callable, List, Tuple
 
 import vapoursynth as vs
@@ -91,6 +90,7 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
     :return:                Detail mask
     """
     check_variable(clip, "detail_mask_neo")
+    assert clip.format
 
     if not blur_func:
         blur_func = core.bilateral.Bilateral
@@ -330,9 +330,8 @@ class DeferredMask(ABC):
         """
         check_variable(clip, "get_mask")
         check_variable(ref, "get_mask")
-
-        if ref.format is None or clip.format is None:
-            raise ValueError("get_mask: 'Variable-format clips not supported'")
+        assert clip.format
+        assert ref.format
 
         if self.bound:
             bm = self.bound.get_mask(ref)

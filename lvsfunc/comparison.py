@@ -453,6 +453,7 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
     :return:               Clip with stacked planes
     """
     check_variable(clip, "stack_planes")
+    assert clip.format
 
     if clip.format.num_planes != 3:
         raise ValueError("stack_planes: input clip must be in YUV or RGB planar format")

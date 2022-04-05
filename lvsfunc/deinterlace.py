@@ -25,7 +25,7 @@ from .util import (check_variable, force_mod, get_neutral_value, get_prop,
 core = vs.core
 
 main_file = os.path.realpath(sys.argv[0]) if sys.argv[0] else None
-main_file = f"{os.path.splitext(os.path.basename(main_file))[0]}_"
+main_file = f"{os.path.splitext(os.path.basename(str(main_file)))[0]}_"
 
 
 def SIVTC(clip: vs.VideoNode, pattern: int = 0,
@@ -600,6 +600,7 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
     :return:        Clip with residual combing largely removed
     """
     check_variable(clip, "vinverse")
+    assert clip.format
 
     if amount > 255:
         raise ValueError("vinverse: '`amount` may not be set higher than 255!'")

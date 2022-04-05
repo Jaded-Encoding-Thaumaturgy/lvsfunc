@@ -61,7 +61,6 @@ def source(file: str, ref: vs.VideoNode | None = None,
 
     :return:                  Vapoursynth clip representing input file
     """
-
     # TODO: find a way to NOT have to rely on a million elif's
     if file.startswith('file:///'):
         file = file[8::]
@@ -96,8 +95,8 @@ def source(file: str, ref: vs.VideoNode | None = None,
             clip = core.ffms2.Source(file, **index_args)
 
     if ref:
-        if ref.format is None:
-            raise ValueError("source: 'Variable-format ref clips not supported.'")
+        check_variable(ref, "source")
+        assert ref.format
 
         clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
         clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height,
@@ -169,6 +168,7 @@ def get_matrix(clip: vs.VideoNode) -> int:
     :return:        Value representing a matrix
     """
     check_variable(clip, "get_matrix")
+    assert clip.format
 
     frame = clip.get_frame(0)
     w, h = frame.width, frame.height
@@ -249,7 +249,8 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
             return clip if psa > threshold else filtered
 
     if threshold_range and threshold_range > threshold:
-        raise ValueError(f"limit_dark: '\"threshold_range\" ({threshold_range}) must be a lower value than \"threshold\" ({threshold})'")  # noqa: E501
+        raise ValueError(f"limit_dark: '\"threshold_range\" ({threshold_range}) must be "
+                         "a lower value than \"threshold\" ({threshold})'")
 
     avg = core.std.PlaneStats(clip)
     return core.std.FrameEval(clip, partial(_diff, clip=clip, filtered=filtered,
@@ -519,6 +520,7 @@ def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
     :return:                    Unsharpened clip
     """
     check_variable(clip, "unsharpen")
+    assert clip.format
 
     den = clip.dfttest.DFTTest(sigma=prefilter_sigma) if prefilter else clip
     diff = core.std.MakeDiff(clip, den)
@@ -569,6 +571,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
         raise ModuleNotFoundError("overlay_sign: 'missing dependency `kagefunc`'")
 
     check_variable(clip, "overlay_sign")
+    assert clip.format
 
     ov_type = type(overlay)
     clip_fam = clip.format.color_family

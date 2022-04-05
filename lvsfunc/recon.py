@@ -40,6 +40,7 @@ def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) 
     :return:        Clip with demangled chroma in either 4:2:0 or 4:4:4
     """
     check_variable(clip, "chroma_reconstruct")
+    assert clip.format
 
     def dmgl(clip: vs.VideoNode) -> vs.VideoNode:
         return core.resize.Bicubic(clip, w, h, src_left=0.25)
