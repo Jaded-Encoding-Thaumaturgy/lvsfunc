@@ -8,14 +8,12 @@ from functools import partial
 from typing import Any, Callable, Dict, List, Literal, NamedTuple, cast
 
 import vapoursynth as vs
-from vsutil import (depth, disallow_variable_format,
-                    disallow_variable_resolution, get_depth, get_w, get_y,
-                    iterate, join, plane)
+from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
 
 from . import kernels
 from .kernels import Bicubic, BicubicSharp, Catrom, Kernel, Spline36
 from .types import VSFunction
-from .util import get_coefs, get_prop, quick_resample
+from .util import check_variable, get_coefs, get_prop, quick_resample
 
 try:
     from cytoolz import functoolz
@@ -133,8 +131,6 @@ def reupscale(clip: vs.VideoNode,
 
 
 @functoolz.curry
-@disallow_variable_format
-@disallow_variable_resolution
 def descale_detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
                         threshold: float = 0.05) -> vs.VideoNode:
     """
@@ -149,6 +145,9 @@ def descale_detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
 
     :return:               Mask of lost detail
     """
+    check_variable(clip, "descale_detail_mask")
+    check_variable(rescaled_clip, "descale_detail_mask")
+
     mask = core.std.Expr([get_y(clip), get_y(rescaled_clip)], 'x y - abs') \
         .std.Binarize(threshold)
     mask = iterate(mask, core.std.Maximum, 4)
@@ -208,7 +207,7 @@ def descale(clip: vs.VideoNode,
 
     :return:                       Descaled and re-upscaled clip with float bitdepth
     """
-    assert clip.format
+    check_variable(clip, "descale")
 
     if type(height) is int:
         height = [height]
@@ -303,8 +302,6 @@ CURVES = Literal[
 ]
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 720,
                     smooth: float | VSFunction = ((3 ** 2 - 1) / 12) ** 0.5,
                     kernel: Kernel = Catrom(), gamma: bool = False,
@@ -345,6 +342,8 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
 
     :return: Downsampled clip
     """
+    check_variable(clip, "ssim_downsample")
+
     if isinstance(smooth, int):
         filter_func = partial(core.std.BoxBlur, hradius=smooth, vradius=smooth)
     elif isinstance(smooth, float):
@@ -380,15 +379,13 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
     return d
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def gamma2linear(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  epsilon: float = 1e-6) -> vs.VideoNode:
-    assert clip.format
+    check_variable(clip, "gamma2linear")
 
     if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
-        raise ValueError('Only 32 bits float is allowed')
+        raise ValueError("gamma2linear: 'Only 32 bits float is allowed'")
 
     c = get_coefs(curve)
 
@@ -403,15 +400,13 @@ def gamma2linear(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
     return core.std.Expr(clip, expr).std.SetFrameProps(_Transfer=8)
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def linear2gamma(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  ) -> vs.VideoNode:
-    assert clip.format
+    check_variable(clip, "linear2gamma")
 
     if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
-        raise ValueError('Only 32 bits float is allowed')
+        raise ValueError("linear2gamma: 'Only 32 bits float is allowed'")
 
     c = get_coefs(curve)
 
@@ -428,8 +423,6 @@ def linear2gamma(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
     return core.std.Expr(clip, expr).std.SetFrameProps(_Transfer=curve)
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: int = 720,
                         kernel: Kernel | None = None, thr: float = 5e-8) -> vs.VideoNode:
     """
@@ -451,6 +444,8 @@ def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: in
         other_diff = get_prop(f[1], 'PlaneStatsDiff', float)  # type:ignore[arg-type]
 
         return sharp if other_diff - thr > sharp_diff else other
+
+    check_variable(clip, "comparative_descale")
 
     bsharp = BicubicSharp()
     kernel = kernel or Spline36()
@@ -481,8 +476,6 @@ def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: in
     return core.std.FrameEval(sharp, partial(_compare, sharp=sharp, other=other), [sharp_diff, other_diff])
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: int = 720,
                         kernel: Kernel | None = None) -> vs.VideoNode:
     """
@@ -493,9 +486,13 @@ def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: in
     :param width:       Width to upscale to (if None, auto-calculated)
     :param height:      Upscale height
     :param kernel:      Kernel to compare BicubicSharp to (Default: Spline36 if None)
+
+    :return:            Reupscaled clip
     """
     bsharp = BicubicSharp()
     kernel = kernel or Spline36()
+
+    check_variable(clip, "comparative_restore")
 
     if isinstance(kernel, Bicubic) and bsharp.b == kernel.b and bsharp.c == kernel.c:
         raise ValueError("comparative_restore: 'You may not compare BicubicSharp with itself!'")

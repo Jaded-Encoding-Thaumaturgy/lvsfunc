@@ -13,16 +13,18 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import vapoursynth as vs
-from vsutil import (Dither, depth, disallow_variable_format,
-                    disallow_variable_resolution, get_depth, get_w, get_y,
-                    scale_value)
+from vsutil import Dither, depth, get_depth, get_w, get_y, scale_value
 
 from .comparison import Direction, Stack
 from .kernels import BicubicDidee, Catrom, Kernel
 from .render import get_render_progress
-from .util import force_mod, get_neutral_value, get_prop, pick_repair
+from .util import (check_variable, force_mod, get_neutral_value, get_prop,
+                   pick_repair)
 
 core = vs.core
+
+main_file = os.path.realpath(sys.argv[0]) if sys.argv[0] else None
+main_file = f"{os.path.splitext(os.path.basename(main_file))[0]}_"
 
 
 def SIVTC(clip: vs.VideoNode, pattern: int = 0,
@@ -68,7 +70,7 @@ def seek_cycle(clip: vs.VideoNode, write_props: bool = True, scale: int = -1) ->
 
     :return:                Viewing UI for standard telecining cycles
     """
-    if not (scale & (scale-1) == 0) and scale != 0 and scale != -1:
+    if (scale & (scale-1) != 0) and scale != 0 and scale != -1:
         raise ValueError("seek_cycle: 'scale must be a value that is the power of 2!'")
 
     # TODO: 60i checks and flags somehow? false positives gonna be a pain though
@@ -175,8 +177,8 @@ def TIVTC_VFR(clip: vs.VideoNode,
         'input': str(tdec_in), 'tfmIn': str(tfm_in), 'mkvOut': str(timecodes_out),
     }
 
-    tfm = clip.tivtc.TFM(**tfm_args) if not decimate == -1 else clip
-    return tfm.tivtc.TDecimate(**tdecimate_args) if not int(decimate) == 0 else tfm
+    tfm = clip.tivtc.TFM(**tfm_args) if decimate != -1 else clip
+    return tfm.tivtc.TDecimate(**tdecimate_args) if int(decimate) != 0 else tfm
 
 
 def deblend(clip: vs.VideoNode, start: int = 0,
@@ -418,8 +420,6 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
     return ftf
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def ivtc_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None,
                  interlaced: bool = True, dec: bool | None = None,
                  bob_clip: vs.VideoNode | None = None, qtgmc_args: Dict[str, Any] = {}
@@ -456,6 +456,8 @@ def ivtc_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None,
         from havsfunc import QTGMC, DitherLumaRebuild
     except ModuleNotFoundError:
         raise ModuleNotFoundError("ivtc_credits: missing dependency 'havsfunc'")
+
+    check_variable(clip, "ivtc_credits")
 
     if clip.fps != Fraction(30000, 1001):
         raise ValueError("ivtc_credits: 'Your clip must have a framerate of 30000/1001!'")
@@ -581,7 +583,6 @@ def ivtc_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None,
         return core.std.Interleave([fix1, fix2] if pattern == 0 else [fix2, fix1])
 
 
-@disallow_variable_format
 def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
              amount: int = 128, scale: float = 1.5) -> vs.VideoNode:
     """
@@ -597,7 +598,7 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
 
     :return:        Clip with residual combing largely removed
     """
-    assert clip.format
+    check_variable(clip, "vinverse")
 
     if amount > 255:
         raise ValueError("vinverse: '`amount` may not be set higher than 255!'")

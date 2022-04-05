@@ -7,12 +7,12 @@ from abc import ABC
 from typing import Any, List, Tuple
 
 import vapoursynth as vs
-from vsutil import (disallow_variable_format, disallow_variable_resolution,
-                    iterate, split)
+from vsutil import iterate, split
 
 from .mask import DeferredMask
 from .types import Range
-from .util import normalize_ranges, replace_ranges, scale_thresh
+from .util import (check_variable, normalize_ranges, replace_ranges,
+                   scale_thresh)
 
 core = vs.core
 
@@ -274,8 +274,6 @@ def bounded_dehardsub(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[Hardsu
     return hrdsb
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def hardsub_mask(hrdsb: vs.VideoNode, ref: vs.VideoNode, thresh: float = 0.06,
                  minimum: int = 1, expand: int = 8, inflate: int = 7) -> vs.VideoNode:
     """
@@ -290,7 +288,8 @@ def hardsub_mask(hrdsb: vs.VideoNode, ref: vs.VideoNode, thresh: float = 0.06,
 
     :return:        Hardsub mask
     """
-    assert hrdsb.format
+    check_variable(hrdsb, "hardsub_mask")
+    check_variable(ref, "hardsub_mask")
 
     hsmf = core.std.Expr([hrdsb, ref], 'x y - abs') \
         .resize.Point(format=hrdsb.format.replace(subsampling_w=0, subsampling_h=0).id)

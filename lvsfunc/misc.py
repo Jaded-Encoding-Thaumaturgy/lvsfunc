@@ -11,14 +11,12 @@ from functools import partial, wraps
 from typing import Any, Callable, Dict, List, Sequence, Tuple, TypeVar, cast
 
 import vapoursynth as vs
-from vsutil import (depth, disallow_variable_format,
-                    disallow_variable_resolution, get_depth, get_w, get_y,
-                    is_image, scale_value)
+from vsutil import depth, get_depth, get_w, get_y, is_image, scale_value
 
 from .kernels import Catrom
 from .mask import BoundingBox
 from .types import Matrix, Position, Range, Size
-from .util import get_prop, normalize_ranges
+from .util import check_variable, get_prop, normalize_ranges
 from .util import replace_ranges as _replace_ranges
 from .util import scale_thresh as _scale_thresh
 
@@ -110,8 +108,6 @@ def source(file: str, ref: vs.VideoNode | None = None,
     return clip
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def edgefixer(clip: vs.VideoNode,
               left: int | List[int] | None = None,
               right: int | List[int] | None = None,
@@ -149,6 +145,8 @@ def edgefixer(clip: vs.VideoNode,
                   "and will likely be renamed. Please make sure to update your older scripts once it does.",
                   FutureWarning)
 
+    check_variable(clip, "edgefixer")
+
     if left is None:
         left = 0
     if right is None:
@@ -162,8 +160,6 @@ def edgefixer(clip: vs.VideoNode,
     return ef if full_range else core.std.Limiter(ef, 16.0, [235, 240])
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def get_matrix(clip: vs.VideoNode) -> int:
     """
     Helper function to get the matrix for a clip.
@@ -172,7 +168,7 @@ def get_matrix(clip: vs.VideoNode) -> int:
 
     :return:        Value representing a matrix
     """
-    assert clip.format
+    check_variable(clip, "get_matrix")
 
     frame = clip.get_frame(0)
     w, h = frame.width, frame.height
@@ -186,8 +182,6 @@ def get_matrix(clip: vs.VideoNode) -> int:
     return 9
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.VideoNode:
     """
     A function for forcibly adding pixel values to a clip.
@@ -208,6 +202,8 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
     :return:        Clip with pixel values added
     """
     val: Tuple[float, float, float]
+
+    check_variable(clip, "shift_tint")
 
     if isinstance(values, int):
         val = (values, values, values)
@@ -260,8 +256,6 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
                                             threshold=threshold, threshold_range=threshold_range), avg)
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def wipe_row(clip: vs.VideoNode,
              ref: vs.VideoNode | None = None,
              pos: Position | Tuple[int, int] = (1, 1),
@@ -281,6 +275,8 @@ def wipe_row(clip: vs.VideoNode,
 
     :return:               Clip with given rows or columns wiped
     """
+    check_variable(clip, "wipe_row")
+
     ref = ref or core.std.BlankClip(clip)
 
     if size is None:
@@ -500,8 +496,6 @@ def colored_clips(amount: int,
     return [core.std.BlankClip(color=color, **blank_clip_args) for color in rgb_color_list]
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
               prefilter: bool = True, prefilter_sigma: float = 0.75) -> vs.VideoNode:
     """
@@ -524,7 +518,7 @@ def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
 
     :return:                    Unsharpened clip
     """
-    assert clip.format
+    check_variable(clip, "unsharpen")
 
     den = clip.dfttest.DFTTest(sigma=prefilter_sigma) if prefilter else clip
     diff = core.std.MakeDiff(clip, den)
@@ -539,8 +533,6 @@ def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
     return core.std.MergeDiff(unsharp, diff)
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
                  frame_ranges: Range | List[Range] | None = None, fade_length: int = 0,
                  matrix: Matrix | int | None = None) -> vs.VideoNode:
@@ -576,7 +568,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     except ModuleNotFoundError:
         raise ModuleNotFoundError("overlay_sign: 'missing dependency `kagefunc`'")
 
-    assert clip.format
+    check_variable(clip, "overlay_sign")
 
     ov_type = type(overlay)
     clip_fam = clip.format.color_family

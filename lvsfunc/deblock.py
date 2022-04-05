@@ -7,18 +7,15 @@ from functools import partial
 from typing import Any, Optional, Sequence, SupportsFloat, Tuple
 
 import vapoursynth as vs
-from vsutil import (Dither, depth, disallow_variable_format,
-                    disallow_variable_resolution, get_depth)
+from vsutil import Dither, depth, get_depth
 
 from .kernels import Catrom, Kernel, Point
 from .types import Matrix
-from .util import get_prop
+from .util import check_variable, get_prop
 
 core = vs.core
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strs: Sequence[float] = [30, 50, 75],
                 thrs: Sequence[Tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
@@ -65,7 +62,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     :return:                Deblocked clip
     """
-    assert clip.format
+    check_variable(clip, "autodb_dpir")
 
     def _eval_db(n: int, f: Sequence[vs.VideoFrame],
                  clip: vs.VideoNode, db_clips: Sequence[vs.VideoNode],
@@ -134,8 +131,6 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     return core.resize.Bicubic(debl, format=clip.format.id, matrix=matrix if not is_rgb else None)
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 25, mode: str = 'deblock',
            matrix: Matrix | int | None = None, tiles: int | Tuple[int] | None = None,
            cuda: bool = True, i444: bool = False, kernel: Kernel = Catrom(), **dpir_args: Any) -> vs.VideoNode:
@@ -172,9 +167,9 @@ def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 2
     try:
         from vsmlrt import DPIR, Backend, DPIRModel
     except ModuleNotFoundError:
-        raise ModuleNotFoundError("deblock: 'vsmlrt is required to use deblocking function.'")
+        raise ModuleNotFoundError("vsdpir: 'vsmlrt is required to use vsdpir functions.'")
 
-    assert clip.format
+    check_variable(clip, "vsdpir")
 
     bit_depth = get_depth(clip)
     is_rgb, is_gray = (clip.format.color_family is f for f in (vs.RGB, vs.GRAY))

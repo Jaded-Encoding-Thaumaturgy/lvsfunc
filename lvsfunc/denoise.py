@@ -6,14 +6,13 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 import vapoursynth as vs
-from vsutil import (Range, disallow_variable_format,
-                    disallow_variable_resolution, get_y, iterate)
+from vsutil import Range, get_y, iterate
+
+from .util import check_variable
 
 core = vs.core
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
          radius: int | List[int] | None = None, ref: vs.VideoNode | None = None,
          pre: vs.VideoNode | None = None, refine: int = 1, matrix_s: str = "709",
@@ -40,7 +39,7 @@ def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
 
     :return:                Denoised clip
     """
-    assert clip.format
+    check_variable(clip, "bm3d")
 
     is_gray = clip.format.color_family == vs.GRAY
 

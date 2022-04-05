@@ -5,8 +5,9 @@ from functools import partial
 from typing import List, NamedTuple
 
 import vapoursynth as vs
-from vsutil import (depth, disallow_variable_format,
-                    disallow_variable_resolution, get_depth, join, split)
+from vsutil import depth, get_depth, join, split
+
+from .util import check_variable
 
 core = vs.core
 
@@ -17,8 +18,6 @@ class RegressClips(NamedTuple):
     correlation: vs.VideoNode
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) -> vs.VideoNode:
     """
     A function to demangle messed-up chroma, like for example chroma
@@ -40,7 +39,7 @@ def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) 
 
     :return:        Clip with demangled chroma in either 4:2:0 or 4:4:4
     """
-    assert clip.format
+    check_variable(clip, "chroma_reconstruct")
 
     def dmgl(clip: vs.VideoNode) -> vs.VideoNode:
         return core.resize.Bicubic(clip, w, h, src_left=0.25)
@@ -74,7 +73,7 @@ def regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1e
     More info: https://en.wikipedia.org/wiki/Simple_linear_regression
     """
 
-    if not radius > 0:
+    if radius <= 0:
         raise ValueError("Regress: 'radius must be greater than zero'")
 
     Expr = core.std.Expr
@@ -107,6 +106,8 @@ def regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1e
 
 
 def reconstruct_multi(c: vs.VideoNode, r: RegressClips, radius: int = 2) -> vs.VideoNode:
+    check_variable(c, "reconstruct_multi")
+
     weights = core.std.Expr(r.correlation, 'x 0.5 - 0.5 / 0 max')
     slope_pm = core.std.Expr((r.slope, weights), 'x y *')
     slope_pm_sum = _mean(slope_pm, radius)

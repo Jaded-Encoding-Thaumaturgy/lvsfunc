@@ -5,22 +5,21 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import partial
+from tabnanny import check
 from typing import Callable, List, Tuple
 
 import vapoursynth as vs
 from vsutil import Range as CRange
-from vsutil import (depth, disallow_variable_format,
-                    disallow_variable_resolution, get_y, iterate, join, split)
+from vsutil import depth, get_y, iterate, join, split
 
 from . import util
 from .types import Position, Range, Size
-from .util import replace_ranges, scale_thresh, pick_removegrain
+from .util import (check_variable, pick_removegrain, replace_ranges,
+                   scale_thresh)
 
 core = vs.core
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
                 rad: int = 3, brz_a: float = 0.025, brz_b: float = 0.045) -> vs.VideoNode:
     """
@@ -45,6 +44,8 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
 
     :return:            Detail mask
     """
+    check_variable(clip, "detail_mask")
+
     brz_a = scale_thresh(brz_a, clip)
     brz_b = scale_thresh(brz_b, clip)
 
@@ -62,8 +63,6 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
     return util.pick_removegrain(mask)(mask, 11)
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
                     detail_brz: float = 0.05, lines_brz: float = 0.08,
                     blur_func: Callable[[vs.VideoNode, vs.VideoNode, float],
@@ -91,7 +90,7 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
 
     :return:                Detail mask
     """
-    assert clip.format
+    check_variable(clip, "detail_mask_neo")
 
     if not blur_func:
         blur_func = core.bilateral.Bilateral
@@ -119,8 +118,6 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
     return depth(rm_grain, clip.format.bits_per_sample)
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def halo_mask(clip: vs.VideoNode, rad: int = 2,
               brz: float = 0.35,
               thmi: float = 0.315, thma: float = 0.5,
@@ -148,6 +145,8 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
 
     :return:                Halo mask
     """
+    check_variable(clip, "halo_mask")
+
     smax = scale_thresh(1.0, clip)
 
     thmi, thma, thlimi, thlima = (scale_thresh(t, clip, assume=8) for t in [thmi, thma, thlimi, thlima])
@@ -177,8 +176,6 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
     return core.std.Expr(mask, expr="x 2 *")
 
 
-@disallow_variable_format
-@disallow_variable_resolution
 def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
     """
     Min/max mask with separate luma/chroma radii.
@@ -199,7 +196,7 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
 
     :return:        Range mask
     """
-    assert clip.format
+    check_variable(clip, "range_mask")
 
     if radc == 0:
         clip = get_y(clip)
@@ -258,6 +255,8 @@ class BoundingBox():
 
         :return:    Square mask representing the bounding box.
         """
+        check_variable(ref, "get_mask")
+
         if ref.format is None:
             raise ValueError("BoundingBox: 'Variable-format clips not supported'")
 
@@ -329,6 +328,9 @@ class DeferredMask(ABC):
 
         :return:      Bounded mask
         """
+        check_variable(clip, "get_mask")
+        check_variable(ref, "get_mask")
+
         if ref.format is None or clip.format is None:
             raise ValueError("get_mask: 'Variable-format clips not supported'")
 
