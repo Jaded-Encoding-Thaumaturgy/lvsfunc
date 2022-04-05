@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import time
 import warnings
 from fractions import Fraction
@@ -113,9 +114,9 @@ def seek_cycle(clip: vs.VideoNode, write_props: bool = True, scale: int = -1) ->
 
 
 def TIVTC_VFR(clip: vs.VideoNode,
-              tfm_in: Path | str = ".ivtc/matches.txt",
-              tdec_in: Path | str = ".ivtc/metrics.txt",
-              timecodes_out: Path | str = ".ivtc/timecodes.txt",
+              tfm_in: Path | str = f".ivtc/{main_file}matches.txt",
+              tdec_in: Path | str = f".ivtc/{main_file}metrics.txt",
+              timecodes_out: Path | str = f".ivtc/{main_file}timecodes.txt",
               decimate: int | bool = True,
               tfm_args: Dict[str, Any] = {},
               tdecimate_args: Dict[str, Any] = {}) -> vs.VideoNode:
