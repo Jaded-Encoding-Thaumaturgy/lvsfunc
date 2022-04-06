@@ -25,7 +25,7 @@ from .util import (check_variable, force_mod, get_neutral_value, get_prop,
 core = vs.core
 
 __all__: List[str] = [
-    'SIVTC', 'TIVTC_VFR',
+    'sivtc', 'SIVTC', 'tivtc_vfr', 'TIVTC_VFR',
     'seek_cycle',
     'deblend', 'decomb',
     'descale_fields',
@@ -38,7 +38,7 @@ main_file = os.path.realpath(sys.argv[0]) if sys.argv[0] else None
 main_file = f"{os.path.splitext(os.path.basename(str(main_file)))[0]}_"
 
 
-def SIVTC(clip: vs.VideoNode, pattern: int = 0,
+def sivtc(clip: vs.VideoNode, pattern: int = 0,
           tff: bool = True, decimate: bool = True) -> vs.VideoNode:
     """
     A very simple fieldmatching function.
@@ -123,7 +123,7 @@ def seek_cycle(clip: vs.VideoNode, write_props: bool = True, scale: int = -1) ->
     return Stack([vert_pad, stack, vert_pad, stack_abcde], direction=Direction.VERTICAL).clip
 
 
-def TIVTC_VFR(clip: vs.VideoNode,
+def tivtc_vfr(clip: vs.VideoNode,
               tfm_in: Path | str = f".ivtc/{main_file}matches.txt",
               tdec_in: Path | str = f".ivtc/{main_file}metrics.txt",
               timecodes_out: Path | str = f".ivtc/{main_file}timecodes.txt",
@@ -632,3 +632,8 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
                             f'* 0 < sdiff@ n@ - abs diff@ n@ - abs < sdiff@ diff@ ? n@ - {scale} * n@ + sdiff@ n@ '
                             '- abs diff@ n@ - abs < sdiff@ diff@ ? ? n@ - + merge! x a@ + merge@ < x a@ + x a@ - '
                             'merge@ > x a@ - merge@ ? ?')
+
+
+# Temporary aliases
+SIVTC = sivtc
+TIVTC_VFR = tivtc_vfr
