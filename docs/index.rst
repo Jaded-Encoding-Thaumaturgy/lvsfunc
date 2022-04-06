@@ -123,6 +123,8 @@ Functions
    lvsfunc.deinterlace.TIVTC_VFR
    lvsfunc.deinterlace.vinverse
    lvsfunc.denoise.bm3d
+   lvsfunc.mask.BoundingBox
+   lvsfunc.mask.DeferredMask
    lvsfunc.mask.detail_mask
    lvsfunc.mask.detail_mask_neo
    lvsfunc.mask.halo_mask
@@ -314,6 +316,8 @@ lvsfunc.mask
 
 .. autosummary::
 
+   lvsfunc.mask.BoundingBox
+   lvsfunc.mask.DeferredMask
    lvsfunc.mask.detail_mask
    lvsfunc.mask.detail_mask_neo
    lvsfunc.mask.halo_mask
