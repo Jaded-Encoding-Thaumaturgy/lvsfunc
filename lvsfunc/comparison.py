@@ -33,7 +33,7 @@ __all__: List[str] = [
     'diff_hardsub_mask', 'diff',
     'interleave', 'split', 'tile',
     'stack_horizontal', 'stack_vertical',
-    'DIRECTION'
+    'Direction'
 ]
 
 T = TypeVar('T')
