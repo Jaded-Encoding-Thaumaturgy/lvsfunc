@@ -4,9 +4,18 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Any, NamedTuple, NoReturn, Optional, Protocol, Tuple, Union
+from typing import (Any, List, NamedTuple, NoReturn, Optional, Protocol, Tuple,
+                    Union)
 
 import vapoursynth as vs
+
+
+__all__: List[str] = [
+    'Range',
+    'Coordinate', 'Position', 'Size',
+    'Matrix', 'Coefs',
+    'VSFunction'
+]
 
 Range = Union[Optional[int], Tuple[Optional[int], Optional[int]]]
 

@@ -24,6 +24,16 @@ from .util import (check_variable, force_mod, get_neutral_value, get_prop,
 
 core = vs.core
 
+__all__: List[str] = [
+    'SIVTC', 'TIVTC_VFR',
+    'seek_cycle',
+    'deblend', 'decomb',
+    'descale_fields',
+    'fix_telecined_fades',
+    'ivtc_credits',
+    'vinverse'
+]
+
 main_file = os.path.realpath(sys.argv[0]) if sys.argv[0] else None
 main_file = f"{os.path.splitext(os.path.basename(str(main_file)))[0]}_"
 

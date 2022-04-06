@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, Optional, Sequence, SupportsFloat, Tuple
+from typing import Any, Optional, Sequence, SupportsFloat, Tuple, List
 
 import vapoursynth as vs
 from vsutil import Dither, depth, get_depth
@@ -14,6 +14,11 @@ from .types import Matrix
 from .util import check_variable, get_prop
 
 core = vs.core
+
+
+__all__: List[str] = [
+    'vsdpir', 'autodb_dpir'
+]
 
 
 def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,

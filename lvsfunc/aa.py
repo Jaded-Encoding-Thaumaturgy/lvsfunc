@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from math import ceil
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, List
 
 import vapoursynth as vs
 from vsutil import (depth, fallback, get_depth, get_w, get_y, join, plane,
@@ -15,6 +15,17 @@ from .scale import ssim_downsample
 from .util import check_variable, scale_thresh
 
 core = vs.core
+
+
+__all__: List[str] = [
+    'clamp_aa',
+    'taa',
+    'nnedi3', 'eedi3',
+    'nneedi3_clamp',
+    'transpose_aa',
+    'upscaled_sraa', 'sraa',
+    'based_aa'
+]
 
 
 def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, strength: float = 1) -> vs.VideoNode:
@@ -367,3 +378,7 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
     if clip.format.num_planes == 1:
         return aa_merge
     return join([aa_merge, plane(clip, 1), plane(clip, 2)])
+
+
+# Aliases
+sraa = upscaled_sraa

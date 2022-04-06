@@ -26,6 +26,14 @@ except ModuleNotFoundError:
 core = vs.core
 
 
+__all__: List[str] = [
+    'descale', 'descale_detail_mask', 'reupscale',
+    'ssim_downsample', 'CURVES',
+    'gamma2linear', 'linear2gamma',
+    'comparative_descale', 'comparative_restore'
+]
+
+
 class Resolution(NamedTuple):
     """ Tuple representing a resolution. """
 

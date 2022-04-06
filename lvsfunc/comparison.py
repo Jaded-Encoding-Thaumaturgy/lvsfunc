@@ -26,6 +26,16 @@ from .util import check_variable, get_prop
 
 core = vs.core
 
+__all__: List[str] = [
+    'Comparer', 'Stack', 'Interleave', 'Tile', 'Split',
+    'compare', 'comp', 'stack_compare', 'scomp',
+    'stack_planes',
+    'diff_hardsub_mask', 'diff',
+    'interleave', 'split', 'tile',
+    'stack_horizontal', 'stack_vertical',
+    'DIRECTION'
+]
+
 T = TypeVar('T')
 
 
@@ -734,3 +744,8 @@ def tile(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     if clips and namedclips:
         raise ValueError("tile: positional clips and named keyword clips cannot both be given")
     return Tile(clips if clips else namedclips).clip
+
+
+# Aliases
+comp = compare
+scomp = stack_compare

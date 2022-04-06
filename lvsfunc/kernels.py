@@ -14,6 +14,22 @@ import vapoursynth as vs
 core = vs.core
 
 
+__all__: List[str] = [
+    'BSpline', 'Bessel', 'Bicubic', 'BicubicDidee',
+    'BicubicDogWay', 'BicubicSharp', 'Bilinear',
+    'BlackHarris', 'BlackMan', 'BlackManMinLobe',
+    'BlackNuttall', 'Bohman', 'Box', 'Catrom',
+    'Cosine', 'FlatTop', 'FmtConv', 'Gaussian',
+    'Ginseng', 'Hamming', 'Hann', 'Hermite',
+    'Impulse', 'Kaiser', 'Lanczos', 'MinSide',
+    'Mitchell', 'NearestNeighbour', 'Parzen',
+    'Point', 'Quadratic', 'Robidoux', 'RobidouxSharp',
+    'RobidouxSoft', 'Sinc', 'Spline16', 'Spline36',
+    'Spline64', 'Welch', 'Wiener',
+    'get_all_kernels', 'get_kernel'
+]
+
+
 class Kernel(ABC):
     """
     Abstract scaling kernel interface.

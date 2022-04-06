@@ -14,6 +14,20 @@ from .types import Coefs, Range
 core = vs.core
 
 
+__all__: List[str] = [
+    'quick_resample',
+    'pick_repair', 'pick_removegrain',
+    'get_prop',
+    'normalize_ranges', 'replace_ranges', 'rfs',
+    'scale_thresh', 'scale_peak',
+    'force_mod', 'padder',
+    'clamp_values',
+    'get_neutral_value', 'get_coefs',
+    'check_variable',
+    'VideoProp'
+]
+
+
 def quick_resample(clip: vs.VideoNode,
                    function: Callable[[vs.VideoNode], vs.VideoNode]
                    ) -> vs.VideoNode:
@@ -318,3 +332,7 @@ def check_variable(clip: vs.VideoNode, function: str) -> None:
         raise ValueError(f"{function}: 'Variable-resolution clips not supported!'")
 
     assert clip.format
+
+
+# Aliases
+rfs = replace_ranges

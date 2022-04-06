@@ -19,6 +19,13 @@ from .util import (check_variable, pick_removegrain, replace_ranges,
 core = vs.core
 
 
+__all__: List[str] = [
+    'detail_mask', 'detail_mask_neo',
+    'halo_mask', 'range_mask',
+    'BoundingBox', 'DeferredMask'
+]
+
+
 def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
                 rad: int = 3, brz_a: float = 0.025, brz_b: float = 0.045) -> vs.VideoNode:
     """

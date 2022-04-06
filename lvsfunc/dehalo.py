@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import vapoursynth as vs
 from vsutil import depth, fallback, get_depth, get_y
@@ -14,6 +14,11 @@ from .util import (check_variable, clamp_values, force_mod, pick_repair,
                    scale_peak)
 
 core = vs.core
+
+
+__all__: List[str] = [
+    'bidehalo', 'masked_dha'
+]
 
 
 def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,

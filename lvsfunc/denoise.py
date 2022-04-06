@@ -13,6 +13,11 @@ from .util import check_variable
 core = vs.core
 
 
+__all__: List[str] = [
+    'bm3d'
+]
+
+
 def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
          radius: int | List[int] | None = None, ref: vs.VideoNode | None = None,
          pre: vs.VideoNode | None = None, refine: int = 1, matrix_s: str = "709",

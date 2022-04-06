@@ -12,10 +12,16 @@ from __future__ import annotations
 
 import vapoursynth as vs
 
+from typing import List
+
 from .kernels import Point
 from .util import force_mod, check_variable
 
 core = vs.core
+
+__all__: List[str] = [
+    'minecraftify'
+]
 
 
 def minecraftify(clip: vs.VideoNode, div: float = 64.0, mod: int | None = None) -> vs.VideoNode:

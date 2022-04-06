@@ -12,6 +12,14 @@ from .util import check_variable
 core = vs.core
 
 
+__all__: List[str] = [
+    'chroma_reconstruct', 'ChromaReconstruct',
+    'crecon', 'demangle',
+    'regress', 'reconstruct_multi',
+    'RegressClips'
+]
+
+
 class RegressClips(NamedTuple):
     slope: vs.VideoNode
     intercept: vs.VideoNode
@@ -122,3 +130,5 @@ def _mean(c: vs.VideoNode, radius: int) -> vs.VideoNode:
 
 # Aliases
 ChromaReconstruct = chroma_reconstruct
+crecon = chroma_reconstruct
+demangle = chroma_reconstruct

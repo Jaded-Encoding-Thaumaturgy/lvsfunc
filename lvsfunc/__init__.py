@@ -12,14 +12,19 @@
 from . import (aa, comparison, deblock, dehalo, dehardsub, deinterlace,
                denoise, fun, kernels, mask, misc, recon, render, scale, types,
                util)
-
-# Aliases:
-comp = comparison.compare
-diff = comparison.diff
-ef = misc.edgefixer
-rfs = util.replace_ranges
-scomp = comparison.stack_compare
-sraa = aa.upscaled_sraa
-src = misc.source
-demangle = recon.ChromaReconstruct
-crecon = recon.ChromaReconstruct
+from .aa import *
+from .comparison import *
+from .deblock import *
+from .dehalo import *
+from .dehardsub import *
+from .deinterlace import *
+from .denoise import *
+from .fun import *
+from .kernels import *
+from .mask import *
+from .misc import *
+from .recon import *
+from .render import *
+from .scale import *
+from .types import *
+from .util import *

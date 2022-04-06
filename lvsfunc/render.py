@@ -20,6 +20,15 @@ core = vs.core
 RenderCallback = Callable[[int, vs.VideoFrame], None]
 
 
+__all__: List[str] = [
+    'RenderContext',
+    'finish_frame',
+    'clip_async_render',
+    'get_render_progress',
+    'find_scene_changes', 'SceneChangeMode'
+]
+
+
 class RenderContext:
     """
     Contains info on the current render operation.

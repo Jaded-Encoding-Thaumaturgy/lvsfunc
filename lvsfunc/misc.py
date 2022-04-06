@@ -23,6 +23,21 @@ from .util import scale_thresh as _scale_thresh
 core = vs.core
 
 
+__all__: List[str] = [
+    'source', 'src',
+    'edgefixer', 'ef',
+    'get_matrix',
+    'shift_tint',
+    'limit_dark',
+    'wipe_row',
+    'load_bookmarks', 'frames_since_bookmark',
+    'allow_variable', 'chroma_injector',
+    'colored_clips',
+    'unsharpen',
+    'overlay_sign'
+]
+
+
 # List of containers that are better off being indexed externally
 annoying_formats = ['.iso', '.ts', '.vob']
 
@@ -632,9 +647,11 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
         return replace_ranges(clip, merge, frame_ranges)
 
 
-# compatibility since these were moved to util
+# Aliases
 replace_ranges = _replace_ranges
 scale_thresh = _scale_thresh
+ef = edgefixer
+src = source
 
 # TODO: Write function that only masks px of a certain color/threshold of colors.
 #       Think the magic wand tool in various image-editing programs.
