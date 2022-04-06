@@ -145,7 +145,7 @@ Functions
    lvsfunc.recon.regress
    lvsfunc.render.clip_async_render
    lvsfunc.render.find_scene_changes
-   lvsfunc.render.get_render_process
+   lvsfunc.render.get_render_progress
    lvsfunc.scale.comparative_descale
    lvsfunc.scale.comparative_restore
    lvsfunc.scale.descale
@@ -390,7 +390,7 @@ lvsfunc.render
 
    lvsfunc.render.clip_async_render
    lvsfunc.render.find_scene_changes
-   lvsfunc.render.get_render_process
+   lvsfunc.render.get_render_progress
 
 .. automodule:: lvsfunc.render
    :members:

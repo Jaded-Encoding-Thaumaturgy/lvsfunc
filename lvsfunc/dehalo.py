@@ -84,7 +84,7 @@ def masked_dha(clip: vs.VideoNode, rx: float = 2.0, ry: float = 2.0,
     In essence, they define the window between how weak an effect is for it to be processed,
     and how strong it has to be before it's fully discarded.
 
-    Adopted from G41Fun, original by `Orum <https://forum.doom9.org/showthread.php?t=148498>.
+    Adopted from G41Fun, original by ``Orum <https://forum.doom9.org/showthread.php?t=148498>``.
     Heavily modified by LightArrowsEXE.
 
     :param clip:            Input clip
