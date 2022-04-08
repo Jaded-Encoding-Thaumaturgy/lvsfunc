@@ -63,6 +63,7 @@ class ScaleAttempt(NamedTuple):
 
 
 CreditMask = Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode]
+CustomScaler = Callable[[vs.VideoNode, int, int], vs.VideoNode]
 
 
 def _transpose_shift(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
@@ -527,7 +528,8 @@ def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: in
 
 
 def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 720,
-                  kernel: Kernel | str = Bicubic(b=0, c=1/2), downscaler: Kernel | str = Bicubic(b=-0.5, c=0.25),
+                  kernel: Kernel | str = Bicubic(b=0, c=1/2),
+                  downscaler: CustomScaler | Kernel | str = ssim_downsample,
                   credit_mask: CreditMask | vs.VideoNode | None = descale_detail_mask, mask_thr: float = 0.085,
                   mix_strength: float = 0.25, show_mask: bool | int = False,
                   nnedi3_args: Dict[str, Any] = {}, eedi3_args: Dict[str, Any] = {}) -> vs.VideoNode:
@@ -549,8 +551,8 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
     :param height:          Upscale height (Default: 720).
     :param kernel:          Kernel used to descale the clip. This can also be a string.
                             (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=0, c=1/2) (Catrom)).
-    :param downscaler:      Kernel used to descale the clip. This can also be a string.
-                            (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=-0.5, c=0.25) (Didee)).
+    :param downscaler:      Kernel or custom scaler used to downscale the clip. This can also be a string.
+                            (see :py:class:`lvsfunc.kernels.Kernel`, Default: ``ssim_downsample``).
     :param credit_mask:     Function or mask clip used to mask detail. If ``None``, no masking.
                             Function must accept a clip and a reupscaled clip and return a mask.
                             (Default: :py:func:`lvsfunc.scale.descale_detail_mask`).
@@ -572,10 +574,10 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
         raise ValueError(f"mixed_rescale: '`mask_thr` must be between 0.0 and 1.0! Not {mask_thr}!'")
 
     # Default settings set to match insaneAA as closely as reasonably possible
-    nnargs: Dict[str, Any] = dict(nsize=4, nns=4, qual=2, pscrn=1)
+    nnargs: Dict[str, Any] = dict(nsize=0, nns=4, qual=2, pscrn=1)
     nnargs |= nnedi3_args
 
-    eediargs: Dict[str, Any] = dict(alpha=0.2, beta=0.25, gamma=1000, mdis=20)
+    eediargs: Dict[str, Any] = dict(alpha=0.2, beta=0.25, gamma=1000, nrad=2, mdis=20)
     eediargs |= eedi3_args
 
     width = width or get_w(height, clip.width/clip.height, only_even=False)
@@ -592,7 +594,13 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
 
     descaled = kernel.descale(clip_y, width, height)
     upscaled = kernel.scale(descaled, clip.width, clip.height)
-    downscaled = downscaler.scale(clip_y, width, height)
+
+    if isinstance(downscaler, Kernel):
+        downscaled = downscaler.scale(clip_y, width, height)
+    else:
+        downscaled = depth(downscaler(clip_y, width, height), bits)
+        downscaler = Catrom()
+
     merged = core.std.Expr([descaled, downscaled], f'x {mix_strength} * y 1 {mix_strength} - * +')
 
     if isinstance(credit_mask, vs.VideoNode):
