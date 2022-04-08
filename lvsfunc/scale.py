@@ -32,7 +32,8 @@ __all__: List[str] = [
     'descale', 'descale_detail_mask', 'reupscale',
     'ssim_downsample', 'CURVES',
     'gamma2linear', 'linear2gamma',
-    'comparative_descale', 'comparative_restore'
+    'comparative_descale', 'comparative_restore',
+    'mixed_rescale'
 ]
 
 
