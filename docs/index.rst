@@ -109,6 +109,7 @@ Functions
    lvsfunc.deblock.autodb_dpir
    lvsfunc.deblock.vsdpir
    lvsfunc.dehalo.bidehalo
+   lvsfunc.dehalo.fine_dehalo
    lvsfunc.dehalo.masked_dha
    lvsfunc.dehardsub.bounded_dehardsub
    lvsfunc.dehardsub.get_all_masks
@@ -128,6 +129,7 @@ Functions
    lvsfunc.mask.detail_mask
    lvsfunc.mask.detail_mask_neo
    lvsfunc.mask.halo_mask
+   lvsfunc.mask.mt_xxpand_multi
    lvsfunc.mask.range_mask
    lvsfunc.misc.allow_variable
    lvsfunc.misc.chroma_injector
@@ -227,6 +229,7 @@ lvsfunc.dehalo
 .. autosummary::
 
    lvsfunc.dehalo.bidehalo
+   lvsfunc.dehalo.fine_dehalo
    lvsfunc.dehalo.masked_dha
 
 .. automodule:: lvsfunc.dehalo
@@ -321,6 +324,7 @@ lvsfunc.mask
    lvsfunc.mask.detail_mask
    lvsfunc.mask.detail_mask_neo
    lvsfunc.mask.halo_mask
+   lvsfunc.mask.mt_xxpand_multi
    lvsfunc.mask.range_mask
 
 .. autoclass:: lvsfunc.mask.BoundingBox

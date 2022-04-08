@@ -76,3 +76,9 @@ class Coefs(NamedTuple):
 class VSFunction(Protocol):
     def __call__(self, clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
         ...
+
+
+class Shapes(IntEnum):
+    RECTANGLE = 0
+    ELLIPSE = 1
+    LOSANGE = 2
