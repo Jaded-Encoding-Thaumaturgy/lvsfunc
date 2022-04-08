@@ -9,7 +9,8 @@ from typing import Any, Dict, List
 import vapoursynth as vs
 from vsutil import depth, fallback, get_depth, get_y
 
-from . import denoise, kernels
+from .denoise import bm3d
+from .kernels import BSpline, Catrom
 from .util import (check_variable, clamp_values, force_mod, pick_repair,
                    scale_peak)
 
@@ -55,7 +56,7 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     sigmaR_final = fallback(sigmaR_final, sigmaR)
 
     if ref is None:
-        den = depth(denoise.bm3d(clip, **bm3ddh_args), 16)
+        den = depth(bm3d(clip, **bm3ddh_args), 16)
 
         ref = den.bilateral.Bilateral(sigmaS=sigmaS, sigmaR=sigmaR, **bilateral_args)
         bidh = den.bilateral.Bilateral(ref=ref, sigmaS=sigmaS_final, sigmaR=sigmaR_final, **bilateral_args)
@@ -128,15 +129,15 @@ def masked_dha(clip: vs.VideoNode, rx: float = 2.0, ry: float = 2.0,
 
     clip_y = get_y(clip)  # Should still work even if GRAY clip
 
-    clip_ds = kernels.Catrom().scale(clip_y, force_mod(clip.width/rx, 4), force_mod(clip.height/ry, 4))
-    clip_ss = kernels.BSpline().scale(clip_ds, clip.width, clip.height)
+    clip_ds = Catrom().scale(clip_y, force_mod(clip.width/rx, 4), force_mod(clip.height/ry, 4))
+    clip_ss = BSpline().scale(clip_ds, clip.width, clip.height)
 
     chl = core.std.Expr([clip_y.std.Maximum(), clip_y.std.Minimum()], 'x y -')
     lhl = core.std.Expr([clip_ss.std.Maximum(), clip_ss.std.Minimum()], 'x y -')
 
     mask_i = core.std.Expr([chl, lhl], expr_i)
     mask_f = core.std.Expr([clip_ds.std.Maximum(), clip_ds.std.Minimum()], 'x y - 4 *').std.Convolution(matrix=[1]*9)
-    mask_f = kernels.BSpline().scale(mask_f, clip.width, clip.height)
+    mask_f = BSpline().scale(mask_f, clip.width, clip.height)
     mask_f = core.std.Expr(mask_f, f'{peak} {peak} {maskpull} - {peak} {maskpush} - - / x {maskpull} - *')
 
     if show_mask:
@@ -148,10 +149,10 @@ def masked_dha(clip: vs.VideoNode, rx: float = 2.0, ry: float = 2.0,
         ssc = pick_repair(clip)(clip_y, mmg, 1)
     else:
         ss_w, ss_h = force_mod(clip.width * rfactor, 4), force_mod(clip.height * rfactor, 4)
-        ssc = kernels.Catrom().scale(clip_y, ss_w, ss_h)
-        ssc = core.std.Expr([ssc, kernels.Catrom().scale(mmg.std.Maximum(), ss_w, ss_h)], 'x y min')
-        ssc = core.std.Expr([ssc, kernels.Catrom().scale(mmg.std.Minimum(), ss_w, ss_h)], 'x y max')
-        ssc = kernels.Catrom().scale(ssc, clip.width, clip.height)
+        ssc = Catrom().scale(clip_y, ss_w, ss_h)
+        ssc = core.std.Expr([ssc, Catrom().scale(mmg.std.Maximum(), ss_w, ss_h)], 'x y min')
+        ssc = core.std.Expr([ssc, Catrom().scale(mmg.std.Minimum(), ss_w, ss_h)], 'x y max')
+        ssc = Catrom().scale(ssc, clip.width, clip.height)
 
     umfc = core.std.Expr([clip_y, ssc], f'x y < x dup y - {darkstr} * - x dup y - {brightstr} * - ?')
     mfc = core.std.MaskedMerge(clip_y, umfc, mask_f)

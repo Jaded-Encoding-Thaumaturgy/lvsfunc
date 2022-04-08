@@ -10,8 +10,8 @@ from typing import Any, Callable, Dict, List, Literal, NamedTuple, cast
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
 
-from . import kernels
-from .kernels import Bicubic, BicubicSharp, Catrom, Kernel, Spline36
+from .kernels import (Bicubic, BicubicSharp, Catrom, Kernel, Spline36,
+                      get_kernel)
 from .types import VSFunction
 from .util import check_variable, get_coefs, get_prop, quick_resample
 
@@ -61,7 +61,7 @@ class ScaleAttempt(NamedTuple):
 
 
 def _transpose_shift(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
-                     kernel: kernels.Kernel, caller: str) -> vs.VideoNode:
+                     kernel: Kernel, caller: str) -> vs.VideoNode:
     h = f.height
     w = f.width
     clip = kernel.scale(clip, w, h*2, (0.5, 0))
@@ -69,7 +69,7 @@ def _transpose_shift(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
 
 
 def _perform_descale(resolution: Resolution, clip: vs.VideoNode,
-                     kernel: kernels.Kernel) -> ScaleAttempt:
+                     kernel: Kernel) -> ScaleAttempt:
     descaled = kernel.descale(clip, resolution.width, resolution.height) \
         .std.SetFrameProp('descaleResolution', intval=resolution.height)
     rescaled = kernel.scale(descaled, clip.width, clip.height)
@@ -100,7 +100,7 @@ def _select_descale(n: int, f: vs.VideoFrame | List[vs.VideoFrame],
 @functoolz.curry
 def reupscale(clip: vs.VideoNode,
               width: int | None = None, height: int = 1080,
-              kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
+              kernel: Kernel | str = Bicubic(b=0, c=1/2),
               **kwargs: Any) -> vs.VideoNode:
     """
     A quick 'n easy wrapper used to re-upscale a clip descaled with descale using znedi3.
@@ -124,9 +124,12 @@ def reupscale(clip: vs.VideoNode,
     """
     width = width or get_w(height)
 
+    if isinstance(kernel, str):
+        kernel = get_kernel(kernel)()
+
     # Doubling and downscale to given "h"
-    znargs = dict(nsize=4, nns=4, qual=2, pscrn=2)
-    znargs.update(kwargs)
+    znargs: Dict[str, Any] = dict(nsize=4, nns=4, qual=2, pscrn=2)
+    znargs |= kwargs
 
     upsc = quick_resample(clip, partial(core.znedi3.nnedi3, field=0, dh=True, **znargs))
     upsc = core.std.FrameEval(upsc, partial(_transpose_shift, clip=upsc,
@@ -167,7 +170,7 @@ def descale(clip: vs.VideoNode,
             Callable[[vs.VideoNode, int, int], vs.VideoNode] | None = reupscale,
             width: int | List[int] | None = None,
             height: int | List[int] = 720,
-            kernel: kernels.Kernel = kernels.Bicubic(b=0, c=1/2),
+            kernel: Kernel | str = Bicubic(b=0, c=1/2),
             threshold: float = 0.0,
             mask: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] | vs.VideoNode | None
             = descale_detail_mask, src_left: float = 0.0, src_top: float = 0.0,
@@ -203,8 +206,8 @@ def descale(clip: vs.VideoNode,
     :param width:                   Width(s) to descale to (if None, auto-calculated)
     :param height:                  Height(s) to descale to. List indicates multiple resolutions,
                                     the function will determine the best. (Default: 720)
-    :param kernel:                  Kernel used to descale (see :py:class:`lvsfunc.kernels.Kernel`,
-                                    (Default: kernels.Bicubic(b=0, c=1/2))
+    :param kernel:                  Kernel used to descale the clip. This can also be a string.
+                                    (see :py:class:`lvsfunc.kernels.Kernel`, (Default: kernels.Bicubic(b=0, c=1/2))
     :param threshold:               Error threshold for conditional descaling (Default: 0.0, always descale)
     :param mask:                    Function or mask clip used to mask detail. If ``None``, no masking.
                                     Function must accept a clip and a reupscaled clip and return a mask.
@@ -217,6 +220,9 @@ def descale(clip: vs.VideoNode,
     """
     check_variable(clip, "descale")
     assert clip.format
+
+    if isinstance(kernel, str):
+        kernel = get_kernel(kernel)()
 
     if type(height) is int:
         height = [height]
@@ -313,7 +319,7 @@ CURVES = Literal[
 
 def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 720,
                     smooth: float | VSFunction = ((3 ** 2 - 1) / 12) ** 0.5,
-                    kernel: Kernel = Catrom(), gamma: bool = False,
+                    kernel: Kernel | str = Catrom(), gamma: bool = False,
                     curve: CURVES = vs.TransferCharacteristics.TRANSFER_BT709,
                     sigmoid: bool = False, epsilon: float = 1e-6) -> vs.VideoNode:
     """
@@ -352,6 +358,9 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
     :return: Downsampled clip
     """
     check_variable(clip, "ssim_downsample")
+
+    if isinstance(kernel, str):
+        kernel = get_kernel(kernel)()
 
     if isinstance(smooth, int):
         filter_func = partial(core.std.BoxBlur, hradius=smooth, vradius=smooth)
@@ -435,7 +444,7 @@ def linear2gamma(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
 
 
 def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: int = 720,
-                        kernel: Kernel | None = None, thr: float = 5e-8) -> vs.VideoNode:
+                        kernel: Kernel | str | None = None, thr: float = 5e-8) -> vs.VideoNode:
     """
     Easy wrapper to descale to SharpBicubic and an additional kernel,
     compare them, and then pick one or the other.
@@ -445,7 +454,7 @@ def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: in
     :param clip:        Input clip
     :param width:       Width to descale to (if None, auto-calculated)
     :param height:      Descale height
-    :param kernel:      Kernel to compare BicubicSharp to (Default: Spline36 if None)
+    :param kernel:      Kernel to compare BicubicSharp to. This can also be a string (Default: Spline36 if None).
     :param thr:         Threshold for which kernel to pick
 
     :return:            Descaled clip
@@ -457,6 +466,9 @@ def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: in
         return sharp if other_diff - thr > sharp_diff else other
 
     check_variable(clip, "comparative_descale")
+
+    if isinstance(kernel, str):
+        kernel = get_kernel(kernel)()
 
     bsharp = BicubicSharp()
     kernel = kernel or Spline36()
@@ -488,7 +500,7 @@ def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: in
 
 
 def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: int = 720,
-                        kernel: Kernel | None = None) -> vs.VideoNode:
+                        kernel: Kernel | str | None = None) -> vs.VideoNode:
     """
     Companion function to go with comparative_descale
     to reupscale the clip for descale detail masking.
@@ -500,10 +512,13 @@ def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: in
 
     :return:            Reupscaled clip
     """
+    check_variable(clip, "comparative_restore")
+
+    if isinstance(kernel, str):
+        kernel = get_kernel(kernel)()
+
     bsharp = BicubicSharp()
     kernel = kernel or Spline36()
-
-    check_variable(clip, "comparative_restore")
 
     if isinstance(kernel, Bicubic) and bsharp.b == kernel.b and bsharp.c == kernel.c:
         raise ValueError("comparative_restore: 'You may not compare BicubicSharp with itself!'")
