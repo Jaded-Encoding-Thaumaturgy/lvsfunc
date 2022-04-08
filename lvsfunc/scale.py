@@ -14,7 +14,8 @@ from . import kernels
 from .kernels import (Bicubic, BicubicSharp, Catrom, Kernel, Spline36,
                       get_kernel)
 from .types import VSFunction
-from .util import check_variable, get_coefs, get_prop, quick_resample
+from .util import (check_variable, get_coefs, get_prop, quick_resample,
+                   scale_thresh)
 
 try:
     from cytoolz import functoolz
@@ -526,12 +527,12 @@ def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: in
 
 
 def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 720,
-                  kernel: Kernel | str = Bicubic(b=0, c=1/2), downscaler: Kernel | str = Bicubic(b=0, c=1/2),
+                  kernel: Kernel | str = Bicubic(b=0, c=1/2), downscaler: Kernel | str = Bicubic(b=-0.5, c=0.25),
                   credit_mask: CreditMask | vs.VideoNode | None = descale_detail_mask, mask_thr: float = 0.085,
                   mix_strength: float = 0.25, show_mask: bool | int = False,
                   nnedi3_args: Dict[str, Any] = {}, eedi3_args: Dict[str, Any] = {}) -> vs.VideoNode:
     """
-    InsaneAA rewrite to be a much saner and easier to maintain and easier to read.
+    InsaneAA rewrite to be a much saner and easier to read function.
     Descales and downscales the given clip and merges them together with a set strength.
 
     This can be useful for dealing with a source that you can't accurately descale,
@@ -547,9 +548,9 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
     :param width:           Upscale width. If None, determine from `height` (default: None).
     :param height:          Upscale height (Default: 720).
     :param kernel:          Kernel used to descale the clip. This can also be a string.
-                            (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=0, c=1/2)).
+                            (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=0, c=1/2) (Catrom)).
     :param downscaler:      Kernel used to descale the clip. This can also be a string.
-                            (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=0, c=1/2)).
+                            (see :py:class:`lvsfunc.kernels.Kernel`, Default: kernels.Bicubic(b=-0.5, c=0.25) (Didee)).
     :param credit_mask:     Function or mask clip used to mask detail. If ``None``, no masking.
                             Function must accept a clip and a reupscaled clip and return a mask.
                             (Default: :py:func:`lvsfunc.scale.descale_detail_mask`).
@@ -567,6 +568,9 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
 
     assert clip.format
 
+    if not 0 <= mask_thr <= 1:
+        raise ValueError(f"mixed_rescale: '`mask_thr` must be between 0.0 and 1.0! Not {mask_thr}!'")
+
     # Default settings set to match insaneAA as closely as reasonably possible
     nnargs: Dict[str, Any] = dict(nsize=4, nns=4, qual=2, pscrn=1)
     nnargs |= nnedi3_args
@@ -581,6 +585,7 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
     if isinstance(downscaler, str):
         downscaler = get_kernel(downscaler)()
 
+    bits = get_depth(clip)
     clip_y = get_y(clip)
 
     line_mask = clip_y.std.Prewitt(scale=2).std.Maximum()
@@ -595,7 +600,7 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
     elif not credit_mask:
         detail_mask = clip_y.std.BlankClip(length=1) * clip.num_frames
     else:
-        detail_mask = descale_detail_mask(clip_y, upscaled, threshold=mask_thr)
+        detail_mask = descale_detail_mask(clip_y, upscaled, threshold=scale_thresh(mask_thr, clip))
         detail_mask = iterate(detail_mask, core.std.Inflate, 2)
         detail_mask = iterate(detail_mask, core.std.Maximum, 2)
 
@@ -608,7 +613,8 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
         .std.Transpose().znedi3.nnedi3(0, True, **nnargs)
     double = merged.std.Transpose().eedi3m.EEDI3(0, True, **eediargs) \
         .std.Transpose().eedi3m.EEDI3(0, True, sclip=sclip, **eediargs)
-    rescaled = downscaler.scale(double, clip.width, clip.height, shift=(.5, .5))
+    rescaled = ssim_downsample(downscaler.shift(double, shift=(.5, .5)), height=clip.height)
+    rescaled = depth(rescaled, bits)
 
     masked = core.std.MaskedMerge(rescaled, clip_y, detail_mask)
     masked = core.std.MaskedMerge(clip_y, masked, line_mask)
