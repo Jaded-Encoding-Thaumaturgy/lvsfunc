@@ -154,6 +154,7 @@ Functions
    lvsfunc.scale.descale_detail_mask
    lvsfunc.scale.gamma2linear
    lvsfunc.scale.linear2gamma
+   lvsfunc.scale.mixed_rescale
    lvsfunc.scale.reupscale
    lvsfunc.scale.ssim_downsample
    lvsfunc.util.clamp_values
@@ -412,6 +413,7 @@ lvsfunc.scale
    lvsfunc.scale.descale_detail_mask
    lvsfunc.scale.gamma2linear
    lvsfunc.scale.linear2gamma
+   lvsfunc.scale.mixed_rescale
    lvsfunc.scale.reupscale
    lvsfunc.scale.ssim_downsample
 
