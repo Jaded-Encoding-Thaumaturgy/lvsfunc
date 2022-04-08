@@ -17,6 +17,7 @@ jobs:
           version: latest
           cache: true
       - name: Install dependencies
+        id: dependencies
         run: |
           python3 -m pip install --upgrade pip
           pip install -r requirements-dev.txt
@@ -24,4 +25,5 @@ jobs:
       - name: Running flake8
         run: flake8 lvsfunc
       - name: Running mypy
+        if: steps.dependencies.outcome == 'success'
         run: mypy -p lvsfunc
