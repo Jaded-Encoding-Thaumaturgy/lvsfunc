@@ -95,6 +95,7 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     Heavily modified by LightArrowsEXE.
 
     :param clip:            Input clip
+    :param ref:             Reference clip. Will replace regular dehaloing with the given clip.
     :param rx:              Horizontal radius for halo removal. Must be greater than 1.
     :param ry:              Vertical radius for halo removal. Must be greater than 1.
     :param brightstr:       Strength for bright halo removal
@@ -149,18 +150,22 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     if show_mask:
         return mask_f
 
-    mmg = core.std.MaskedMerge(clip_ss, clip_y, mask_i)
-
-    if rfactor == 1:
-        ssc = pick_repair(clip)(clip_y, mmg, 1)
+    if ref:
+        umfc = get_y(ref)
     else:
+        mmg = core.std.MaskedMerge(clip_ss, clip_y, mask_i)
+
+        if rfactor == 1:
+            ssc = pick_repair(clip)(clip_y, mmg, 1)
+
         ss_w, ss_h = force_mod(clip.width * rfactor, 4), force_mod(clip.height * rfactor, 4)
         ssc = Catrom().scale(clip_y, ss_w, ss_h)
         ssc = core.std.Expr([ssc, Catrom().scale(mmg.std.Maximum(), ss_w, ss_h)], 'x y min')
         ssc = core.std.Expr([ssc, Catrom().scale(mmg.std.Minimum(), ss_w, ss_h)], 'x y max')
         ssc = Catrom().scale(ssc, clip.width, clip.height)
 
-    umfc = core.std.Expr([clip_y, ssc], f'x y < x dup y - {darkstr} * - x dup y - {brightstr} * - ?')
+        umfc = core.std.Expr([clip_y, ssc], f'x y < x dup y - {darkstr} * - x dup y - {brightstr} * - ?')
+
     mfc = core.std.MaskedMerge(clip_y, umfc, mask_f)
     return core.std.ShufflePlanes([mfc, clip], [0, 1, 2], vs.YUV) \
         if clip.format.color_family != vs.GRAY else mfc
