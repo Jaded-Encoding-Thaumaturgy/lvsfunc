@@ -591,7 +591,7 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
     bits = get_depth(clip)
     clip_y = get_y(clip)
 
-    line_mask = clip_y.std.Prewitt(scale=2).std.Maximum()
+    line_mask = clip_y.std.Prewitt(scale=2).std.Maximum().std.Limiter()
 
     descaled = kernel.descale(clip_y, width, height)
     upscaled = kernel.scale(descaled, clip.width, clip.height)
@@ -611,7 +611,7 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
     else:
         detail_mask = descale_detail_mask(clip_y, upscaled, threshold=scale_thresh(mask_thr, clip))
         detail_mask = iterate(detail_mask, core.std.Inflate, 2)
-        detail_mask = iterate(detail_mask, core.std.Maximum, 2)
+        detail_mask = iterate(detail_mask, core.std.Maximum, 2).std.Limiter()
 
     if show_mask == 2:
         return line_mask
