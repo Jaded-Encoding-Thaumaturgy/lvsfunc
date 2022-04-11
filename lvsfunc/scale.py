@@ -531,7 +531,7 @@ def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: in
 def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 720,
                   kernel: Kernel | str = Bicubic(b=0, c=1/2),
                   downscaler: CustomScaler | Kernel | str = ssim_downsample,
-                  credit_mask: CreditMask | vs.VideoNode | None = descale_detail_mask, mask_thr: float = 0.085,
+                  credit_mask: CreditMask | vs.VideoNode | None = descale_detail_mask, mask_thr: float = 0.05,
                   mix_strength: float = 0.25, show_mask: bool | int = False,
                   nnedi3_args: Dict[str, Any] = {}, eedi3_args: Dict[str, Any] = {}) -> vs.VideoNode:
     """
