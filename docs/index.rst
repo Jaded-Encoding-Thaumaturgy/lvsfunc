@@ -40,6 +40,7 @@ The following VapourSynth libraries are also required for full functionality:
 * `VapourSynth-descale <https://github.com/Irrational-Encoding-Wizardry/VapourSynth-descale>`_
 * `VapourSynth-EEDI3 <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-EEDI3>`_
 * `VapourSynth-fillborders <https://github.com/dubhater/vapoursynth-fillborders>`_
+* `VapourSynth-RemapFrames <https://github.com/Irrational-Encoding-Wizardry/Vapoursynth-RemapFrames>`_
 * `VapourSynth-nnedi3 <https://github.com/dubhater/VapourSynth-nnedi3>`_
 * `VapourSynth-NNEDI3CL <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-NNEDI3CL3>`_
 * `VapourSynth-ReadMpls <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-ReadMpls>`_
@@ -156,6 +157,7 @@ Functions
    lvsfunc.scale.descale_detail_mask
    lvsfunc.scale.gamma2linear
    lvsfunc.scale.linear2gamma
+   lvsfunc.scale.mixed_rescale
    lvsfunc.scale.reupscale
    lvsfunc.scale.ssim_downsample
    lvsfunc.util.clamp_values
@@ -416,6 +418,7 @@ lvsfunc.scale
    lvsfunc.scale.descale_detail_mask
    lvsfunc.scale.gamma2linear
    lvsfunc.scale.linear2gamma
+   lvsfunc.scale.mixed_rescale
    lvsfunc.scale.reupscale
    lvsfunc.scale.ssim_downsample
 
