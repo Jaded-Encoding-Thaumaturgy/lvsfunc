@@ -161,10 +161,14 @@ def normalize_ranges(clip: vs.VideoNode, ranges: Range | List[Range]) -> List[Tu
 
 def replace_ranges(clip_a: vs.VideoNode,
                    clip_b: vs.VideoNode,
-                   ranges: Range | List[Range] | None) -> vs.VideoNode:
+                   ranges: Range | List[Range] | None,
+                   use_plugin: bool = True) -> vs.VideoNode:
     """
     A replacement for ReplaceFramesSimple that uses ints and tuples rather than a string.
-    Frame ranges are inclusive.
+    Frame ranges are inclusive. Optionally strings can still be used.
+
+    This function will try to call the `VapourSynth-RemapFrames` plugin before doing any of its own processing.
+    This should come with a speed boost, so it's recommended you install it.
 
     Examples with clips ``black`` and ``white`` of equal length:
 
@@ -175,31 +179,38 @@ def replace_ranges(clip_a: vs.VideoNode,
         * ``replace_ranges(black, white, [(200, -1)])``: replace 200 until the end with ``white``,
           leaving 1 frame of ``black``
 
-    :param clip_a:     Original clip
-    :param clip_b:     Replacement clip
-    :param ranges:     Ranges to replace clip_a (original clip) with clip_b (replacement clip).
+    Dependencies: VapourSynth-RemapFrames
 
-                       Integer values in the list indicate single frames,
+    :param clip_a:      Original clip
+    :param clip_b:      Replacement clip
+    :param ranges:      Ranges to replace clip_a (original clip) with clip_b (replacement clip).
 
-                       Tuple values indicate inclusive ranges.
+                        Integer values in the list indicate single frames,
 
-                       Negative integer values will be wrapped around based on clip_b's length.
+                        Tuple values indicate inclusive ranges.
 
-                       None values are context dependent:
+                        Negative integer values will be wrapped around based on clip_b's length.
 
-                           * None provided as sole value to ranges: no-op
-                           * Single None value in list: Last frame in clip_b
-                           * None as first value of tuple: 0
-                           * None as second value of tuple: Last frame in clip_b
+                        None values are context dependent:
+
+                            * None provided as sole value to ranges: no-op
+                            * Single None value in list: Last frame in clip_b
+                            * None as first value of tuple: 0
+                            * None as second value of tuple: Last frame in clip_b
+    :param use_plugin:  Use the ReplaceFramesSimple plugin for the rfs call.
 
     :return:           Clip with ranges from clip_a replaced with clip_b
     """
     if ranges is None:
         return clip_a
 
-    out = clip_a
-
     nranges = normalize_ranges(clip_b, ranges)
+
+    if use_plugin and hasattr(core, 'remap'):
+        return core.remap.ReplaceFramesSimple(clip_a, clip_b, mappings=' '  # type:ignore  # TODO: Fix stubs
+                                              .join(f'[{s} {e}]' for s, e in nranges))
+
+    out = clip_a
 
     for start, end in nranges:
         tmp = clip_b[start:end + 1]
