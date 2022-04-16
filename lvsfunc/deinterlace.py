@@ -17,7 +17,7 @@ import vapoursynth as vs
 from vsutil import Dither, depth, get_depth, get_w, get_y, scale_value
 
 from .comparison import Direction, Stack
-from .kernels import BicubicDidee, Catrom, Kernel
+from .kernels import Bicubic, BicubicDidee, Catrom, Kernel, get_kernel
 from .render import get_render_progress
 from .util import (check_variable, force_mod, get_neutral_value, get_prop,
                    pick_repair)
@@ -313,7 +313,8 @@ def decomb(clip: vs.VideoNode,
 
 def descale_fields(clip: vs.VideoNode, tff: bool = True,
                    width: int | None = None, height: int = 720,
-                   kernel: Kernel = Catrom(), src_top: float = 0.0) -> vs.VideoNode:
+                   kernel: Kernel | str = Bicubic(b=0, c=0.5),
+                   src_top: float = 0.0) -> vs.VideoNode:
     """
     Simple descaling wrapper for interwoven upscaled fields.
     This function also sets a frameprop with the kernel that was used.
@@ -330,13 +331,16 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
     :param tff:         Top-field-first. `False` sets it to Bottom-Field-First
     :param width:       Native width. Will be automatically determined if set to `None`
     :param height:      Native height. Will be divided by two internally
-    :param kernel:      lvsfunc.Kernel object (default: Catrom)
+    :param kernel:      lvsfunc.Kernel object. This can also be a string (default: Catrom)
     :param src_top:     Shifts the clip vertically during the descaling
 
     :return:            Descaled GRAY clip
     """
     height_field = int(height/2)
     width = width or get_w(height, clip.width/clip.height)
+
+    if isinstance(kernel, str):
+        kernel = get_kernel(kernel)()
 
     clip = clip.std.SetFieldBased(2-int(tff))
 

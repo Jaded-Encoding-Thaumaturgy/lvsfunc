@@ -5,14 +5,14 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Callable, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 import vapoursynth as vs
 from vsutil import Range as CRange
 from vsutil import depth, get_y, iterate, join, split
 
 from . import util
-from .types import Position, Range, Size
+from .types import Position, Range, Shapes, Size
 from .util import (check_variable, pick_removegrain, replace_ranges,
                    scale_thresh)
 
@@ -22,7 +22,8 @@ core = vs.core
 __all__: List[str] = [
     'detail_mask', 'detail_mask_neo',
     'halo_mask', 'range_mask',
-    'BoundingBox', 'DeferredMask'
+    'BoundingBox', 'DeferredMask',
+    'mt_xxpand_multi', 'minm', 'maxm'
 ]
 
 
@@ -364,3 +365,51 @@ class DeferredMask(ABC):
     @abstractmethod
     def _mask(self, clip: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
         pass
+
+
+def mt_xxpand_multi(clip: vs.VideoNode,
+                    sw: float = 1, sh: float | None = None,
+                    mode: Shapes | int = Shapes.ELLIPSE,
+                    start: int = 0,
+                    m__imum: Callable[..., vs.VideoNode] = core.std.Maximum,
+                    planes: List[int] = [0, 1, 2],
+                    **m_params: Any) -> List[vs.VideoNode]:
+    """
+    Mask expanding/inpanding function written by Zastin.
+
+    Performs multiple Minimums/Maximums.
+    """
+    check_variable(clip, "mt_xxpand_multi")
+    assert clip.format
+
+    params: Dict[str, Any] = dict(planes=planes)
+    params |= m_params
+
+    sh = sh or sw
+
+    # TODO: Match case
+    if mode == Shapes.ELLIPSE:
+        coordinates = [[1] * 8, [0, 1, 0, 1, 1, 0, 1, 0],
+                       [0, 1, 0, 1, 1, 0, 1, 0]]
+    elif mode == Shapes.LOSANGE:
+        coordinates = [[0, 1, 0, 1, 1, 0, 1, 0]] * 3
+    else:
+        coordinates = [[1] * 8] * 3
+
+    clips = [clip]
+    end = int(min(sw, sh)) + start
+
+    for x in range(start, end):
+        clips += [m__imum(clips[-1], coordinates=coordinates[x % 3], **params)]
+
+    for x in range(end, int(end + sw - sh)):
+        clips += [m__imum(clips[-1], coordinates=[0, 0, 0, 1, 1, 0, 0, 0], **params)]
+
+    for x in range(end, int(end + sh - sw)):
+        clips += [m__imum(clips[-1], coordinates=[0, 1, 0, 0, 0, 0, 1, 0], **params)]
+
+    return clips
+
+
+maxm = partial(mt_xxpand_multi, m__imum=core.std.Maximum)
+minm = partial(mt_xxpand_multi, m__imum=core.std.Minimum)

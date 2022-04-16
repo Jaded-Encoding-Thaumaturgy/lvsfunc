@@ -10,9 +10,9 @@ import vapoursynth as vs
 from vsutil import (depth, fallback, get_depth, get_w, get_y, join, plane,
                     scale_value)
 
-from . import kernels, util
+from .kernels import Bicubic, Catrom, Point
 from .scale import ssim_downsample
-from .util import check_variable, scale_thresh
+from .util import check_variable, pick_repair, scale_thresh
 
 core = vs.core
 
@@ -71,9 +71,9 @@ def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode]) -> vs
     y = get_y(clip)
 
     aa = aafun(y.std.Transpose())
-    aa = kernels.Catrom().scale(aa, width=clip.width, height=clip.width, shift=(0.5, 0))
+    aa = Catrom().scale(aa, width=clip.width, height=clip.width, shift=(0.5, 0))
     aa = aafun(aa.std.Transpose())
-    aa = kernels.Catrom().scale(aa, width=clip.width, height=clip.height, shift=(0.5, 0))
+    aa = Catrom().scale(aa, width=clip.width, height=clip.height, shift=(0.5, 0))
 
     return aa if clip.format.color_family == vs.GRAY \
         else core.std.ShufflePlanes([aa, clip], planes=[0, 1, 2], colorfamily=vs.YUV)
@@ -189,9 +189,9 @@ def transpose_aa(clip: vs.VideoNode,
 
     def _taa(clip: vs.VideoNode) -> vs.VideoNode:
         aa = _aafun(clip.std.Transpose())
-        aa = kernels.Catrom().scale(aa, clip.height, clip.width, shift=(0.5, 0))
+        aa = Catrom().scale(aa, clip.height, clip.width, shift=(0.5, 0))
         aa = _aafun(aa.std.Transpose())
-        return kernels.Catrom().scale(aa, clip.width, clip.height, shift=(0.5, 0))
+        return Catrom().scale(aa, clip.width, clip.height, shift=(0.5, 0))
 
     def _csharp(flt: vs.VideoNode, clip: vs.VideoNode) -> vs.VideoNode:
         blur = core.std.Convolution(flt, [1] * 9)
@@ -199,7 +199,7 @@ def transpose_aa(clip: vs.VideoNode,
 
     aaclip = _taa(clip_y)
     aaclip = _csharp(aaclip, clip_y)
-    aaclip = util.pick_repair(clip_y)(aaclip, clip_y, rep)
+    aaclip = pick_repair(clip_y)(aaclip, clip_y, rep)
 
     return aaclip if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
 
@@ -210,9 +210,9 @@ def _nnedi3_supersample(clip: vs.VideoNode, width: int, height: int, opencl: boo
     nnargs: Dict[str, Any] = dict(field=0, dh=True, nsize=0, nns=4, qual=2)
     _nnedi3 = nnedi3(opencl=opencl, **nnargs)
     up_y = _nnedi3(get_y(clip))
-    up_y = kernels.Catrom().scale(up_y, width=up_y.width, height=height, shift=(0.5, 0))
+    up_y = Catrom().scale(up_y, width=up_y.width, height=height, shift=(0.5, 0))
     up_y = _nnedi3(up_y.std.Transpose())
-    up_y = kernels.Catrom().scale(up_y, width=up_y.width, height=width, shift=(0.5, 0))
+    up_y = Catrom().scale(up_y, width=up_y.width, height=width, shift=(0.5, 0))
     return up_y.std.Transpose()
 
 
@@ -230,7 +230,7 @@ def upscaled_sraa(clip: vs.VideoNode,
                   width: int | None = None, height: int | None = None,
                   supersampler: Callable[[vs.VideoNode, int, int], vs.VideoNode] = _nnedi3_supersample,
                   downscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode] | None
-                  = kernels.Bicubic(b=0, c=1/2).scale,
+                  = Bicubic(b=0, c=1/2).scale,
                   aafun: Callable[[vs.VideoNode], vs.VideoNode] = _eedi3_singlerate) -> vs.VideoNode:
     """
     A function that performs a supersampled single-rate AA to deal with heavy aliasing and broken-up lineart.
@@ -341,7 +341,7 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
         ow, oh = fallback(width, iw), fallback(height, ih)
 
         if (ow > iw and ow/iw != ow//iw) or (oh > ih and oh/ih != oh//ih):
-            mclip = kernels.Point().scale(mclip, iw * ceil(ow / iw), ih * ceil(oh / ih))
+            mclip = Point().scale(mclip, iw * ceil(ow / iw), ih * ceil(oh / ih))
         return core.fmtc.resample(mclip, ow, oh, kernel='box', fulls=1, fulld=1)
 
     check_variable(clip, "based_aa")

@@ -4,12 +4,12 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, Optional, Sequence, SupportsFloat, Tuple, List
+from typing import Any, List, Optional, Sequence, SupportsFloat, Tuple
 
 import vapoursynth as vs
 from vsutil import Dither, depth, get_depth
 
-from .kernels import Catrom, Kernel, Point
+from .kernels import Bicubic, Kernel, Point, get_kernel
 from .types import Matrix
 from .util import check_variable, get_prop
 
@@ -139,7 +139,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
 def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 25, mode: str = 'deblock',
            matrix: Matrix | int | None = None, tiles: int | Tuple[int] | None = None,
-           cuda: bool = True, i444: bool = False, kernel: Kernel = Catrom(), **dpir_args: Any) -> vs.VideoNode:
+           cuda: bool = True, i444: bool = False, kernel: Kernel | str = Bicubic(b=0, c=0.5),
+           **dpir_args: Any) -> vs.VideoNode:
     """
     A simple vs-mlrt DPIR wrapper for convenience.
 
@@ -177,6 +178,9 @@ def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 2
 
     check_variable(clip, "vsdpir")
     assert clip.format
+
+    if isinstance(kernel, str):
+        kernel = get_kernel(kernel)()
 
     bit_depth = get_depth(clip)
     is_rgb, is_gray = (clip.format.color_family is f for f in (vs.RGB, vs.GRAY))

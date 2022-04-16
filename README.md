@@ -1,5 +1,13 @@
 # lvsfunc
 
+<p align="center">
+    <img alt="Read the Docs" src="https://img.shields.io/readthedocs/lvsfunc">
+    <img alt="PyPI" src="https://img.shields.io/pypi/v/lvsfunc">
+    <img alt="GitHub commits since tagged version" src="https://img.shields.io/github/commits-since/Irrational-Encoding-Wizardry/lvsfunc/latest">
+    <img alt="PyPI - License" src="https://img.shields.io/pypi/l/lvsfunc">
+    <img alt="Discord" src="https://img.shields.io/discord/856381934052704266?label=discord">
+</p>
+
 A collection of VapourSynth functions and wrappers
 written and/or modified by LightArrowsEXE.
 Full information on how every function/wrapper works,
@@ -16,13 +24,13 @@ remove that from your system first.
 Install `lvsfunc` with the following command:
 
 ```sh
-$ pip3 install lvsfunc
+$ pip3 install lvsfunc --no-cache-dir --upgrade
 ```
 
 Or if you want the latest git version, install it with this command:
 
 ```sh
-$ python -m pip install git+https://github.com/Irrational-Encoding-Wizardry/lvsfunc.git -U
+$ python3 -m pip install --no-cache-dir --upgrade git+https://github.com/Irrational-Encoding-Wizardry/lvsfunc.git -U
 ```
 
 ### Arch Linux
@@ -32,6 +40,9 @@ Install the [AUR package](https://aur.archlinux.org/packages/vapoursynth-plugin-
 ```sh
 $ yay -S vapoursynth-plugin-lvsfunc-git
 ```
+
+Note that this may be outdated.
+It's recommended you grab the git version instead.
 
 ## Usage
 
