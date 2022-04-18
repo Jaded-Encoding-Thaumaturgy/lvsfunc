@@ -127,29 +127,33 @@ def tivtc_vfr(clip: vs.VideoNode,
               tfm_args: Dict[str, Any] = {},
               tdecimate_args: Dict[str, Any] = {}) -> vs.VideoNode:
     """
-    Wrapper for performing TFM and TDecimate on a clip that is supposed to be VFR,
-    including generating a metrics/matches/timecodes txt file.
+    | Wrapper for performing TFM and TDecimate on a clip that is supposed to be VFR,
+    | including generating a metrics/matches/timecodes txt file.
 
-    Largely based on, if not basically rewritten from, atomchtools.TIVTC_VFR.
+    | This function took *heavy* inspiration from atomchtools.TIVTC_VFR,
+    | and is basically an improved rewrite on the concept.
 
     .. warning::
         | When calculating the matches and metrics for the first time, your previewer may error!
-        | To fix this, refresh your previewer!
+        | To fix this, refresh your previewer! If it still doesn't work, open the ``.ivtc`` directory
+        | and check if the files in there are **0kb**. If they are, **delete them** and run the function again.
+        | You may need to first restart your previewer entirely for it to work.
 
-    Dependencies:
+    Dependencies: TIVTC
 
-    * TIVTC
-
-    :param clip:                Input clip
-    :param tfmIn:               File location for TFM's matches analysis
-    :param tdecIn:              File location for TDecimate's metrics analysis
-    :param mkvOut:              File location for TDecimate's timecode file output
+    :param clip:                Input clip.
+    :param tfmIn:               File location for TFM's matches analysis.
+                                By default it will be written to `.ivtc/{script_name}_matches.txt`.
+    :param tdecIn:              File location for TDecimate's metrics analysis.
+                                By default it will be written to `.ivtc/{script_name}_metrics.txt`.
+    :param timecodes_out:       File location for TDecimate's timecodes analysis.
+                                By default it will be written to `.ivtc/{script_name}_timecodes.txt`.
     :param decimate:            Perform TDecimate on the clip if true, else returns TFM'd clip only.
-                                Set to -1 to use TDecimate without TFM
-    :param tfm_args:            Additional arguments to pass to TFM
-    :param tdecimate_args:      Additional arguments to pass to TDecimate
+                                Set to -1 to use TDecimate without TFM.
+    :param tfm_args:            Additional arguments to pass to TFM.
+    :param tdecimate_args:      Additional arguments to pass to TDecimate.
 
-    :return:                    IVTC'd VFR clip
+    :return:                    IVTC'd VFR clip with external timecode/matches/metrics txt files
     """
     if int(decimate) not in (-1, 0, 1):
         raise ValueError("TIVTC_VFR: 'Invalid `decimate` argument. Must be True/False, their integer values, or -1'")
