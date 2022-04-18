@@ -1,11 +1,11 @@
 # lvsfunc
 
 <p align="center">
-    <img alt="Read the Docs" src="https://img.shields.io/readthedocs/lvsfunc">
-    <img alt="PyPI" src="https://img.shields.io/pypi/v/lvsfunc">
-    <img alt="GitHub commits since tagged version" src="https://img.shields.io/github/commits-since/Irrational-Encoding-Wizardry/lvsfunc/latest">
-    <img alt="PyPI - License" src="https://img.shields.io/pypi/l/lvsfunc">
-    <img alt="Discord" src="https://img.shields.io/discord/856381934052704266?label=discord">
+    <a href="https://lvsfunc.encode.moe"><img alt="Read the Docs" src="https://img.shields.io/readthedocs/lvsfunc"></a>
+    <a href="https://pypi.org/project/lvsfunc/"><img alt="PyPI" src="https://img.shields.io/pypi/v/lvsfunc"></a>
+    <a href="https://github.com/Irrational-Encoding-Wizardry/lvsfunc/commits/master"><img alt="GitHub commits since tagged version" src="https://img.shields.io/github/commits-since/Irrational-Encoding-Wizardry/lvsfunc/latest"></a>
+    <a href="https://github.com/Irrational-Encoding-Wizardry/lvsfunc/blob/master/LICENSE"><img alt="PyPI - License" src="https://img.shields.io/pypi/l/lvsfunc"></a>
+    <a href="https://discord.gg/qxTxVJGtst"><img alt="Discord" src="https://img.shields.io/discord/856381934052704266?label=discord"></a>
 </p>
 
 A collection of VapourSynth functions and wrappers
