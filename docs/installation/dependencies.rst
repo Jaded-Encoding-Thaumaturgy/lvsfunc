@@ -16,7 +16,7 @@ The following VapourSynth libraries are also required for full functionality:
 * `ffms2 <https://github.com/FFMS/ffms2>`_
 * `fmtconv <https://github.com/EleonoreMizo/fmtconv>`_
 * `KNLMeansCL <https://github.com/Khanattila/KNLMeansCL>`_
-* `L-SMASH-Works <https://github.com/VFR-maniac/L-SMASH-Works>`_
+* `L-SMASH-Works <https://github.com/AkarinVS/L-SMASH-Works>`_
 * `RGSF <https://github.com/IFeelBloated/RGSF>`_
 * `TIVTC <https://github.com/dubhater/vapoursynth-tivtc>`_
 * `VapourSynth-Bilateral <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-Bilateral>`_
