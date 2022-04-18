@@ -1,7 +1,3 @@
-"""
-    Helper functions for module functions and wrapper.
-    Some of these may also be useful for regular scripting or other modules.
-"""
 from __future__ import annotations
 
 from typing import Any, Callable, List, Sequence, Tuple, Type, TypeVar, Union

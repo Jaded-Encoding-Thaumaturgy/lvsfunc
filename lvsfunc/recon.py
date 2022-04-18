@@ -1,6 +1,3 @@
-"""
-    Chroma reconstruction functions and wrappers.
-"""
 from functools import partial
 from typing import List, NamedTuple
 

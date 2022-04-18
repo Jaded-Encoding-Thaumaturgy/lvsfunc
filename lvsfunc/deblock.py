@@ -1,6 +1,3 @@
-"""
-    Deblocking functions and wrappers.
-"""
 from __future__ import annotations
 
 from functools import partial

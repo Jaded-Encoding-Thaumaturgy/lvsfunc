@@ -1,6 +1,3 @@
-"""
-    Anti-aliasing functions and wrappers.
-"""
 from __future__ import annotations
 
 from math import ceil

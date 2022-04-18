@@ -1,6 +1,3 @@
-"""
-    Clip rendering helpers.
-"""
 from __future__ import annotations
 
 from concurrent.futures import Future

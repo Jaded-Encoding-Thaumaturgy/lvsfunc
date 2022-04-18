@@ -1,7 +1,3 @@
-"""
-    Deinterlacing, IVTC, and post-deinterlacing functions and wrappers.
-"""
-
 from __future__ import annotations
 
 import os

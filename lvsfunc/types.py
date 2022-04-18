@@ -1,6 +1,3 @@
-"""
-    Basic types to be used by certain functions.
-"""
 from __future__ import annotations
 
 from enum import IntEnum

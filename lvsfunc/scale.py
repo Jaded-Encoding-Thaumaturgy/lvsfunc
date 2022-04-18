@@ -1,6 +1,3 @@
-"""
-    (De)scaling and conversion functions and wrappers.
-"""
 from __future__ import annotations
 
 import math

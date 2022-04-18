@@ -1,6 +1,3 @@
-"""
-    Miscellaneous functions and wrappers that don't really have a place elsewhere.
-"""
 from __future__ import annotations
 
 import colorsys
