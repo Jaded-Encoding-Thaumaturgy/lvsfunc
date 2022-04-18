@@ -5,9 +5,9 @@ Dehardsubbing functions and wrappers.
 
 .. autosummary::
 
-   lvsfunc.dehardsub.bounded_dehardsub
-   lvsfunc.dehardsub.get_all_masks
-   lvsfunc.dehardsub.hardsub_mask
+    lvsfunc.dehardsub.bounded_dehardsub
+    lvsfunc.dehardsub.get_all_masks
+    lvsfunc.dehardsub.hardsub_mask
 
 .. autoclass:: lvsfunc.dehardsub.HardsubMask
     :members:

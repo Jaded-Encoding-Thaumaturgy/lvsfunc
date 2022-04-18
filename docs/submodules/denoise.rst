@@ -1,11 +1,12 @@
 lvsfunc.denoise
 -------------------
 
-Denoising functions and wrappers.
-
 .. autosummary::
+    lvsfunc.denoise.bm3d
 
-   lvsfunc.denoise.bm3d
+.. warning::
+
+    This submodule will soon be deprecated in favor of **vapoursynth-denoise**!
 
 .. automodule:: lvsfunc.denoise
     :members:
