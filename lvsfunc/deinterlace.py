@@ -132,6 +132,10 @@ def tivtc_vfr(clip: vs.VideoNode,
 
     Largely based on, if not basically rewritten from, atomchtools.TIVTC_VFR.
 
+    .. warning::
+        | When calculating the matches and metrics for the first time, your previewer may error!
+        | To fix this, refresh your previewer!
+
     Dependencies:
 
     * TIVTC
@@ -161,7 +165,7 @@ def tivtc_vfr(clip: vs.VideoNode,
 
     if not (tfm_in.exists() and tdec_in.exists()):
         tfm_analysis: Dict[str, Any] = {**tfm_args, 'output': str(tfm_in)}
-        tdec_analysis: Dict[str, Any] = {**tdecimate_args, 'output': str(tdec_in), 'mode': 4}
+        tdec_analysis: Dict[str, Any] = {'mode': 4, **tdecimate_args, 'output': str(tdec_in)}
 
         ivtc_clip = core.tivtc.TFM(clip, **tfm_analysis).tivtc.TDecimate(**tdec_analysis)
 
