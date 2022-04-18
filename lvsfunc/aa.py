@@ -355,7 +355,7 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
 
         mask_thr = scale_value(mask_thr, 8, get_depth(clip))
 
-        lmask = clip_y.std.Prewitt().std.Binarize(mask_thr).std.Maximum().std.BoxBlur(0, 1, 1, 1, 1)
+        lmask = clip_y.std.Prewitt().std.Binarize(mask_thr).std.Maximum().std.BoxBlur(0, 1, 1, 1, 1).std.Limiter()
 
     mclip_up = _resize_mclip(lmask, aaw, aah)
 

@@ -150,7 +150,7 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     if ref:
         umfc = get_y(ref)
     else:
-        mmg = core.std.MaskedMerge(clip_ss, clip_y, mask_i)
+        mmg = core.std.MaskedMerge(clip_ss, clip_y, mask_i.std.Limiter())
 
         if rfactor == 1:
             ssc = pick_repair(clip)(clip_y, mmg, 1)
@@ -274,7 +274,7 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
 
     mask = core.std.Expr([large, shr_med], expr="x y - 2 *")
     mask = core.std.Convolution(mask, matrix=[1] * 9)
-    mask = core.std.Expr([mask], expr="x 2 *")
+    mask = core.std.Expr([mask], expr="x 2 *").std.Limiter()
 
     # TODO: Match case
     if show_mask == 1:

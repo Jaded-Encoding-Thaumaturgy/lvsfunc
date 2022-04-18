@@ -298,4 +298,4 @@ def hardsub_mask(hrdsb: vs.VideoNode, ref: vs.VideoNode, thresh: float = 0.06,
     hsmf = iterate(hsmf, core.std.Maximum, expand)
     hsmf = iterate(hsmf, core.std.Inflate, inflate)
 
-    return hsmf
+    return hsmf.std.Limiter()

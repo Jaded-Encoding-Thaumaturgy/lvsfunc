@@ -64,7 +64,7 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
 
     mask = core.std.Expr([mask_a, mask_b], 'x y max')
     mask = util.pick_removegrain(mask)(mask, 22)
-    return util.pick_removegrain(mask)(mask, 11)
+    return util.pick_removegrain(mask)(mask, 11).std.Limiter()
 
 
 def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
@@ -120,7 +120,7 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
     merged = core.std.Expr([blur_pref, prew_mask], "x y +")
     rm_grain = pick_removegrain(merged)(merged, rg_mode)
 
-    return depth(rm_grain, clip.format.bits_per_sample)
+    return depth(rm_grain, clip.format.bits_per_sample).std.Limiter()
 
 
 def halo_mask(clip: vs.VideoNode, rad: int = 2,
@@ -178,7 +178,7 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
     mask = core.std.Expr([expand, excl], expr="x y - 2 *")
     # Additional blurring to amplify the mask
     mask = core.std.Convolution(mask, matrix)
-    return core.std.Expr(mask, expr="x 2 *")
+    return core.std.Expr(mask, expr="x 2 *").std.Limiter()
 
 
 def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
@@ -221,7 +221,7 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
             planes[i] = core.std.Expr([ma, mi], 'x y -')
         mask = join(planes)
 
-    return mask
+    return mask.std.Limiter()
 
 
 # Helper functions
@@ -276,7 +276,7 @@ class BoundingBox():
         mask = mask.std.AddBorders(self.pos.x, ref.width - (self.pos.x + self.size.x),
                                    self.pos.y, ref.height - (self.pos.y + self.size.y))
 
-        return mask
+        return mask.std.Limiter()
 
 
 class DeferredMask(ABC):
@@ -357,6 +357,8 @@ class DeferredMask(ABC):
                              range=CRange.FULL, range_in=CRange.FULL)
                 hm = replace_ranges(hm, core.std.Expr([hm, mask*len(hm)], expr="x y max"), range)
 
+        hm = hm.std.Limiter()
+
         return hm if self.bound is None else core.std.MaskedMerge(core.std.BlankClip(hm), hm, bm)
 
     @abstractmethod
@@ -403,7 +405,7 @@ def mt_xxpand_multi(clip: vs.VideoNode,
         clips += [m__imum(clips[-1], coordinates=[0, 0, 0, 1, 1, 0, 0, 0], **params)]
 
     for x in range(end, int(end + sh - sw)):
-        clips += [m__imum(clips[-1], coordinates=[0, 1, 0, 0, 0, 0, 1, 0], **params)]
+        clips += [m__imum(clips[-1], coordinates=[0, 1, 0, 0, 0, 0, 1, 0], **params).std.Limiter()]
 
     return clips
 
