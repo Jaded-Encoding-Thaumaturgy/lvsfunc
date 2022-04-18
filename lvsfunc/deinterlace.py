@@ -144,11 +144,11 @@ def tivtc_vfr(clip: vs.VideoNode,
 
     :param clip:                Input clip.
     :param tfmIn:               File location for TFM's matches analysis.
-                                By default it will be written to `.ivtc/{yourScriptName}_matches.txt`.
+                                By default it will be written to ``.ivtc/{yourScriptName}_matches.txt``.
     :param tdecIn:              File location for TDecimate's metrics analysis.
-                                By default it will be written to `.ivtc/{yourScriptName}_metrics.txt`.
+                                By default it will be written to ``.ivtc/{yourScriptName}_metrics.txt``.
     :param timecodes_out:       File location for TDecimate's timecodes analysis.
-                                By default it will be written to `.ivtc/{yourScriptName}_timecodes.txt`.
+                                By default it will be written to ``.ivtc/{yourScriptName}_timecodes.txt``.
     :param decimate:            Perform TDecimate on the clip if true, else returns TFM'd clip only.
                                 Set to -1 to use TDecimate without TFM.
     :param tfm_args:            Additional arguments to pass to TFM.
@@ -159,20 +159,27 @@ def tivtc_vfr(clip: vs.VideoNode,
     if int(decimate) not in (-1, 0, 1):
         raise ValueError("TIVTC_VFR: 'Invalid `decimate` argument. Must be True/False, their integer values, or -1'")
 
-    tfm_in = Path(tfm_in).resolve()
-    tdec_in = Path(tdec_in).resolve()
-    timecodes_out = Path(timecodes_out).resolve()
+    tfm_f = tdec_f = timecodes_f = Path()
+
+    def _set_paths() -> None:
+        nonlocal tfm_f, tdec_f, timecodes_f
+        tfm_f = Path(tfm_in).resolve().absolute()
+        tdec_f = Path(tdec_in).resolve().absolute()
+        timecodes_f = Path(timecodes_out).resolve().absolute()
+
+    _set_paths()
 
     # TIVTC can't write files into directories that don't exist
-    for p in (tfm_in, tdec_in, timecodes_out):
+    for p in (tfm_f, tdec_f, timecodes_f):
         if not p.parent.exists():
             p.parent.mkdir(parents=True)
 
-    if not (tfm_in.exists() and tdec_in.exists()):
-        tfm_analysis: Dict[str, Any] = {**tfm_args, 'output': str(tfm_in)}
-        tdec_analysis: Dict[str, Any] = {'mode': 4, **tdecimate_args, 'output': str(tdec_in)}
+    if not (tfm_f.exists() and tdec_f.exists()):
+        tfm_analysis: Dict[str, Any] = {**tfm_args, 'output': str(tfm_f)}
+        tdec_analysis: Dict[str, Any] = {'mode': 4, **tdecimate_args, 'output': str(tdec_f)}
 
-        ivtc_clip = core.tivtc.TFM(clip, **tfm_analysis).tivtc.TDecimate(**tdec_analysis)
+        ivtc_clip = core.tivtc.TFM(clip, **tfm_analysis)
+        ivtc_clip = core.tivtc.TDecimate(ivtc_clip, **tdec_analysis)
 
         with get_render_progress() as pr:
             task = pr.add_task("Analyzing frames...", total=ivtc_clip.num_frames)
@@ -183,14 +190,18 @@ def tivtc_vfr(clip: vs.VideoNode,
             with open(os.devnull, 'wb') as dn:
                 ivtc_clip.output(dn, progress_update=_cb)
 
-        time.sleep(0.5)  # Allow it to properly finish writing logs
         del ivtc_clip  # Releases the clip, and in turn the filter (prevents an error)
+
+        _set_paths()
+
+    while not (tfm_f.stat().st_size > 0 and tdec_f.stat().st_size > 0):
+        time.sleep(0.5)  # Allow it to properly finish writing logs if necessary
 
     tfm_args = {**tfm_args, 'input': str(tfm_in)}
 
     tdecimate_args = {
         'mode': 5, 'hybrid': 2, 'vfrDec': 1, **tdecimate_args,
-        'input': str(tdec_in), 'tfmIn': str(tfm_in), 'mkvOut': str(timecodes_out),
+        'input': str(tdec_f), 'tfmIn': str(tfm_f), 'mkvOut': str(timecodes_f),
     }
 
     tfm = clip.tivtc.TFM(**tfm_args) if decimate != -1 else clip
