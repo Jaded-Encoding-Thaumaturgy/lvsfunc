@@ -17,7 +17,7 @@ so we recommend you give it an alias.
 
     import lvsfunc as lvf
 
-.. important::
+.. note::
 
     The rest of the documentation will assume you alias `lvsfunc` as `lvf`.
 
@@ -57,4 +57,4 @@ This is useful if you only need a single function and don't want to pollute your
 with all the other `lvsfunc` functions.
 
 For further information about specific functions, please refer to their individual documentations.
-You can find them by scouring the "functions" pages to the left, or using the search bar to find them.
+You can find them by scouring the "functions" pages to the left, or using the search bar.

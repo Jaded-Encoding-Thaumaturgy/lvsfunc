@@ -18,7 +18,7 @@ About
 
 .. toctree::
     :maxdepth: 4
-    :caption: Installation:
+    :caption: Installation
 
     installation/install
     installation/dependencies
@@ -27,7 +27,7 @@ About
 
 .. toctree::
     :maxdepth: 4
-    :caption: Functions:
+    :caption: Functions
     :titlesonly:
 
     submodules/aa
@@ -50,3 +50,9 @@ Special credits
 ---------------
 | A special thanks to every contributor who has contributed to lvsfunc.
 | `A comprehensive list of contributors can be found here. <https://github.com/Irrational-Encoding-Wizardry/lvsfunc/graphs/contributors>`_
+
+.. toctree::
+    :maxdepth: 4
+    :caption: Changelogs
+
+    changelogs/changelogs
