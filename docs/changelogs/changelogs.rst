@@ -1,8 +1,8 @@
 Changelogs
 ----------
 
-.. image:: https://img.shields.io/github/commits-since/Irrational-Encoding-Wizardry/lvsfunc/v0.4.1   :alt: GitHub commits since tagged version
-
+.. image::
+    https://img.shields.io/github/commits-since/Irrational-Encoding-Wizardry/lvsfunc/v0.4.1
 
 This page may be outdated, but the `releases page <https://github.com/Irrational-Encoding-Wizardry/lvsfunc/releases>`_
 on Github should always be up-to-date.

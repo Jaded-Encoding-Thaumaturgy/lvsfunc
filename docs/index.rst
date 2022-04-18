@@ -1,4 +1,4 @@
-lvsfunc documentation
+lvsfunc Documentation
 ---------------------
 
 .. warning::
@@ -9,6 +9,21 @@ lvsfunc documentation
 
 About
 ---------------
+
+.. image:: https://img.shields.io/readthedocs/lvsfunc
+    :target: https://lvsfunc.encode.moe/
+
+.. image:: https://img.shields.io/pypi/v/lvsfunc
+    :target: https://pypi.org/project/lvsfunc/
+
+.. image:: https://img.shields.io/github/commits-since/Irrational-Encoding-Wizardry/lvsfunc/v0.4.1
+    :target: https://github.com/Irrational-Encoding-Wizardry/lvsfunc/commits/master
+
+.. image:: https://img.shields.io/pypi/l/lvsfunc
+    :target: https://github.com/Irrational-Encoding-Wizardry/lvsfunc/blob/master/LICENSE
+
+.. image:: https://img.shields.io/discord/856381934052704266?label=discord
+    :target: https://discord.gg/qxTxVJGtst
 
 .. automodule:: lvsfunc
     :members:
