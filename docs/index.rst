@@ -25,6 +25,7 @@ About
 .. image:: https://img.shields.io/discord/856381934052704266?label=discord
     :target: https://discord.gg/qxTxVJGtst
 
+
 .. automodule:: lvsfunc
     :members:
     :undoc-members:
@@ -61,10 +62,12 @@ About
     submodules/types
     submodules/util
 
-Special credits
+
+Special Credits
 ---------------
 | A special thanks to every contributor who has contributed to lvsfunc.
 | `A comprehensive list of contributors can be found here. <https://github.com/Irrational-Encoding-Wizardry/lvsfunc/graphs/contributors>`_
+
 
 .. toctree::
     :maxdepth: 4

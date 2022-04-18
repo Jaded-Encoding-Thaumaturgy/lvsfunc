@@ -10,7 +10,7 @@ lvsfunc depends on the following third-party scripts:
 The following VapourSynth libraries are also required for full functionality:
 
 * `akarinVS <https://github.com/AkarinVS/vapoursynth-plugin>`_
-* `combmask <https://mega.nz/#!whtkTShS!JsDhi-_QGs-kZkzWqgcXHX2MQII4Bl9Y4Ft0zHnXDvk>`_
+* `combmask <https://drive.google.com/file/d/15E0Ua27AndT-0zSHHCC1iL5SZO09Ntbv/view?usp=sharing>`_
 * `d2vsource <https://github.com/dwbuiten/d2vsource>`_
 * `dgdecnv <http://rationalqm.us/dgdecnv/dgdecnv.html>`_
 * `ffms2 <https://github.com/FFMS/ffms2>`_
@@ -25,7 +25,7 @@ The following VapourSynth libraries are also required for full functionality:
 * `VapourSynth-EEDI3 <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-EEDI3>`_
 * `VapourSynth-fillborders <https://github.com/dubhater/vapoursynth-fillborders>`_
 * `VapourSynth-nnedi3 <https://github.com/dubhater/VapourSynth-nnedi3>`_
-* `VapourSynth-NNEDI3CL <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-NNEDI3CL3>`_
+* `VapourSynth-NNEDI3CL <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-NNEDI3CL>`_
 * `VapourSynth-ReadMpls <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-ReadMpls>`_
 * `VapourSynth-RemapFrames <https://github.com/Irrational-Encoding-Wizardry/Vapoursynth-RemapFrames>`_
 * `VapourSynth-Retinex <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-Retinex>`_
