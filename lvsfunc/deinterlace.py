@@ -32,6 +32,7 @@ __all__: List[str] = [
 
 main_file = os.path.realpath(sys.argv[0]) if sys.argv[0] else None
 main_file = f"{os.path.splitext(os.path.basename(str(main_file)))[0]}_"
+main_file = "{yourScriptName}_" if main_file in ("__main___", "setup_") else main_file
 
 
 def sivtc(clip: vs.VideoNode, pattern: int = 0,
@@ -137,17 +138,17 @@ def tivtc_vfr(clip: vs.VideoNode,
         | When calculating the matches and metrics for the first time, your previewer may error!
         | To fix this, refresh your previewer! If it still doesn't work, open the ``.ivtc`` directory
         | and check if the files in there are **0kb**. If they are, **delete them** and run the function again.
-        | You may need to first restart your previewer entirely for it to work.
+        | You may need to first restart your previewer entirely for it to work!
 
     Dependencies: TIVTC
 
     :param clip:                Input clip.
     :param tfmIn:               File location for TFM's matches analysis.
-                                By default it will be written to `.ivtc/{script_name}_matches.txt`.
+                                By default it will be written to `.ivtc/{yourScriptName}_matches.txt`.
     :param tdecIn:              File location for TDecimate's metrics analysis.
-                                By default it will be written to `.ivtc/{script_name}_metrics.txt`.
+                                By default it will be written to `.ivtc/{yourScriptName}_metrics.txt`.
     :param timecodes_out:       File location for TDecimate's timecodes analysis.
-                                By default it will be written to `.ivtc/{script_name}_timecodes.txt`.
+                                By default it will be written to `.ivtc/{yourScriptName}_timecodes.txt`.
     :param decimate:            Perform TDecimate on the clip if true, else returns TFM'd clip only.
                                 Set to -1 to use TDecimate without TFM.
     :param tfm_args:            Additional arguments to pass to TFM.
