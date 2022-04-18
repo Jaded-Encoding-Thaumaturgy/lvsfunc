@@ -1,7 +1,9 @@
 lvsfunc.aa
 ---------------
 
-**Warning**: This entire module will see a complete overhaul at some point in the future.
+.. warning::
+
+   This entire module will see a complete overhaul at some point in the future.
 
 Anti-aliasing functions and wrappers.
 

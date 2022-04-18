@@ -1,39 +1,44 @@
 lvsfunc.kernels
 ---------------
 
-.. autosummary::
+`Kernels` are a collection of wrappers pertaining to (de)scaling, format conversion, and other related operations,
+all while providing a consistent and clean interface.
+This allows for easy expansion and ease of use for any other maintainers
+who wishes to use them in their own functions.
 
-    lvsfunc.kernels.get_kernel
-    lvsfunc.kernels.get_all_kernels
+You can create presets for common scaling algorithms or settings,
+while ensuring the interface will always remain the same,
+even across different plugins with their own settings and expected behavior.
 
-`Kernels` are a collection of wrappers pertaining to (de)scaling, format conversion, and other related operations, all while providing a consistent and clean interface. This allows for easy expansion and ease of use for any other maintainers who wishes to use them in their own functions.
-
-You can create presets for common scaling algorithms or settings, while ensuring the interface will always remain the same, even across different plugins with their own settings and expected behavior.
-
-For example, if you want to downscale a video clip to 1280x720 using Bicubic (b=0, c=1), you can call the preset, :py:class:`lvsfunc.kernels.SharpBicubic`, like so:
+For example, if you want to downscale a video clip to 1280x720 using Bicubic (b=0, c=1),
+you can call the preset, :py:class:`lvsfunc.kernels.SharpBicubic`, like so:
 
 .. code-block:: py
 
-    kernels.SharpBicubic().scale(clip, width=1280, height=720)
+    lvf.kernels.SharpBicubic().scale(clip, width=1280, height=720)
 
 Of course, there is also a generic Bicubic class should you want to assign the values manually.
 
 .. code-block:: py
 
-    kernels.Bicubic(b=0, c=1).scale(clip, width=1280, height=720)
+    lvf.kernels.Bicubic(b=0, c=1).scale(clip, width=1280, height=720)
 
 This allows for easy customizability, and every kernel can be given unique parameters if required.
 
 .. code-block:: py
 
-    kernels.Bicubic(b=0, c=0.5)
-    kernels.Lanczos(taps=3)
-    kernels.Impulse(impulse, oversample=8, taps=1)
+    lvf.kernels.Bicubic(b=0, c=0.5)
+    lvf.kernels.Lanczos(taps=3)
+    lvf.kernels.Impulse(impulse, oversample=8, taps=1)
 
 Using this interface allows for consistency, which makes supporting a wide array of kernels in your own function very simple.
 
 Supporting Kernels in Your Own Function
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. autosummary::
+
+    lvsfunc.kernels.get_kernel
+    lvsfunc.kernels.get_all_kernels
 
 Kernels are very flexible, so if you want to use them as-is, they're simple enough to add. However, you should also consider newer users and their inexperience with Kernels, but potential exposure to abusing strings for "presets".
 
@@ -87,7 +92,11 @@ Every `Kernel` class comes with a set of methods:
 All Available Kernels
 ^^^^^^^^^^^^^^^^^^^^^
 
+.. note::
+
+    | There are still a lot of unsupported kernels! If you know of any we're missing, please contact us!
+
 .. automodule:: lvsfunc.kernels
     :members:
     :show-inheritance:
-    :exclude-members: Example
+    :exclude-members: Example, get_kernel, get_all_kernels

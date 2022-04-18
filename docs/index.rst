@@ -1,6 +1,12 @@
 lvsfunc documentation
 ---------------------
 
+.. warning::
+
+    | Anything **MAY** change at any time. The public API **SHOULD NOT** be considered stable.
+    | If you use lvsfunc in any of your projects, consider hardcoding a version requirement.
+
+
 About
 ---------------
 
@@ -16,15 +22,7 @@ About
 
     installation/install
     installation/dependencies
-
-
-Disclaimer
-----------------
-
-Anything **MAY** change at any time.
-The public API **SHOULD NOT** be considered stable.
-If you use lvsfunc in any of your projects,
-consider hardcoding a version requirement.
+    installation/usage
 
 
 .. toctree::
@@ -49,7 +47,6 @@ consider hardcoding a version requirement.
     submodules/util
 
 Special credits
--------------------
-A special thanks to every contributor who has contributed to lvsfunc.
-
-`A comprehensive list of contributors can be found here. <https://github.com/Irrational-Encoding-Wizardry/lvsfunc/graphs/contributors>`_
+---------------
+| A special thanks to every contributor who has contributed to lvsfunc.
+| `A comprehensive list of contributors can be found here. <https://github.com/Irrational-Encoding-Wizardry/lvsfunc/graphs/contributors>`_
