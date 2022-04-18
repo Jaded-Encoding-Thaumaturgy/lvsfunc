@@ -379,8 +379,9 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
     to avoid it damaging frames it shouldn't need to. This helps a lot with orphan fields as well,
     which would otherwise create massive swings in values, sometimes messing up the fade fixing.
 
-    If you pass your own float clip, you'll want to make sure to properly dither it down after.
-    If you don't do this, you'll run into some serious issues!
+    .. warning::
+        | If you pass your own float clip, you'll want to make sure to properly dither it down after.
+        | If you don't do this, you'll run into some serious issues!
 
     Taken from this gist and modified by LightArrowsEXE.
     <https://gist.github.com/blackpilling/bf22846bfaa870a57ad77925c3524eb1>

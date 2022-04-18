@@ -427,7 +427,7 @@ def stack_compare(*clips: vs.VideoNode,
 
     if not make_diff:
         warnings.warn("stack_compare has been deprecated in favour of `lvsfunc.comparison.Stack` "
-                      "when you're not using `make_diff`", DeprecationWarning)
+                      "when not using `make_diff`", DeprecationWarning)
         return core.std.StackHorizontal(clips)
 
     if len(clips) != 2:

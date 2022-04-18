@@ -51,8 +51,9 @@ def source(file: str, ref: vs.VideoNode | None = None,
 
     Alias for this function is `lvsfunc.src`.
 
-    WARNING: This function may be rewritten in the future, and functionality may change!
-             No warning is currently printed for this in your terminal to avoid spam.
+    .. warning::
+        | WARNING: This function will be rewritten in the future, and functionality may change!
+        |         No warning is currently printed for this in your terminal to avoid spam.
 
     Dependencies:
 
@@ -136,7 +137,8 @@ def edgefixer(clip: vs.VideoNode,
 
     Alias for this function is `lvsfunc.ef`.
 
-    WARNING: This function may be rewritten in the future, and functionality may change!
+    .. warning::
+        This function may be rewritten in the future, and functionality may change!
 
     Dependencies:
 
