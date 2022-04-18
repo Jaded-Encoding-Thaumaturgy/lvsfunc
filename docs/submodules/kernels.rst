@@ -32,35 +32,6 @@ This allows for easy customizability, and every kernel can be given unique param
 
 Using this interface allows for consistency, which makes supporting a wide array of kernels in your own function very simple.
 
-Methods
-^^^^^^^
-
-Every `Kernel` class comes with a set of methods:
-
-.. autoclass:: lvsfunc.kernels.Example.scale
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :member-order: bysource
-
-.. autoclass:: lvsfunc.kernels.Example.descale
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :member-order: bysource
-
-.. autoclass:: lvsfunc.kernels.Example.shift
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :member-order: bysource
-
-.. autoclass:: lvsfunc.kernels.Example.resample
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :member-order: bysource
-
 Supporting Kernels in Your Own Function
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -95,6 +66,23 @@ Which in turn allows users to call the function in multiple ways:
     example2 = descale(clip, 1280, 720, 'bicubic')
 
 Easy as pie!
+
+Methods
+^^^^^^^
+
+Every `Kernel` class comes with a set of methods:
+
+.. autoclass:: lvsfunc.kernels.Example.scale
+    :members:
+
+.. autoclass:: lvsfunc.kernels.Example.descale
+    :members:
+
+.. autoclass:: lvsfunc.kernels.Example.shift
+    :members:
+
+.. autoclass:: lvsfunc.kernels.Example.resample
+    :members:
 
 All Available Kernels
 ^^^^^^^^^^^^^^^^^^^^^
