@@ -1,6 +1,8 @@
 lvsfunc.dehardsub
 -----------------
 
+Dehardsubbing functions and wrappers.
+
 .. autosummary::
 
    lvsfunc.dehardsub.bounded_dehardsub

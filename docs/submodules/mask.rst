@@ -1,6 +1,8 @@
 lvsfunc.mask
 -------------------
 
+Masking functions and wrappers.
+
 .. autosummary::
 
    lvsfunc.mask.BoundingBox

@@ -1,6 +1,8 @@
 lvsfunc.scale
 -------------------
 
+(De)scaling and conversion functions and wrappers.
+
 .. autosummary::
 
    lvsfunc.scale.comparative_descale

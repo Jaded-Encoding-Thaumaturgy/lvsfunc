@@ -1,6 +1,8 @@
 lvsfunc.comparison
 -------------------
 
+Comparison and analysis functions and wrappers.
+
 .. autosummary::
 
    lvsfunc.comparison.compare

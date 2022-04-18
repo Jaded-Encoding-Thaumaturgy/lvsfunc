@@ -1,6 +1,8 @@
 lvsfunc.render
 -------------------
 
+Clip rendering helpers.
+
 .. autosummary::
 
    lvsfunc.render.clip_async_render

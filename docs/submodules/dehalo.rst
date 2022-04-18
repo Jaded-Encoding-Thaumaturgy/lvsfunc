@@ -1,6 +1,8 @@
 lvsfunc.dehalo
 -------------------
 
+Dehaloing functions and wrappers.
+
 .. autosummary::
 
    lvsfunc.dehalo.bidehalo

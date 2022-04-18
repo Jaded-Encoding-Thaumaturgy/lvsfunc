@@ -1,6 +1,8 @@
 lvsfunc.deinterlace
 -------------------
 
+Deinterlacing, IVTC, and post-deinterlacing functions and wrappers.
+
 .. autosummary::
 
    lvsfunc.deinterlace.deblend

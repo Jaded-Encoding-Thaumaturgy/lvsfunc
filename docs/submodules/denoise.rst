@@ -1,6 +1,8 @@
 lvsfunc.denoise
 -------------------
 
+Denoising functions and wrappers.
+
 .. autosummary::
 
    lvsfunc.denoise.bm3d

@@ -1,6 +1,8 @@
 lvsfunc.deblock
 -------------------
 
+Deblocking functions and wrappers.
+
 .. autosummary::
 
    lvsfunc.deblock.autodb_dpir

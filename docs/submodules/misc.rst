@@ -1,6 +1,8 @@
 lvsfunc.misc
 -------------------
 
+Miscellaneous functions and wrappers that don't really have a place elsewhere.
+
 .. autosummary::
 
    lvsfunc.misc.allow_variable

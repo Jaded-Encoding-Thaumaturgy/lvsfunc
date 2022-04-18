@@ -1,6 +1,9 @@
 lvsfunc.util
 -------------------
 
+Helper functions for module functions and wrapper.
+Some of these may also be useful for regular scripting or other modules.
+
 .. autosummary::
 
    lvsfunc.util.clamp_values
