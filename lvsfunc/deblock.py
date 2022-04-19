@@ -143,12 +143,12 @@ def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 2
 
     You must install vs-mlrt. For more information, see the following links:
 
-    * https://github.com/AmusementClub/vs-mlrt
-    * https://github.com/AmusementClub/vs-mlrt/wiki/DPIR
-    * https://github.com/AmusementClub/vs-mlrt/releases/latest
+    * `vs-mlrt <https://github.com/AmusementClub/vs-mlrt>`_
+    * `vs-mlrt DPIR wiki page <https://github.com/AmusementClub/vs-mlrt/wiki/DPIR>`_
+    * `vs-mlrt latest release <https://github.com/AmusementClub/vs-mlrt/releases/latest>`_
 
     Converts to RGB -> runs DPIR -> converts back to original format, and with no subsampling if ``i444=True``.
-    For more information, see https://github.com/cszn/DPIR.
+    For more information, see `the original DPIR repository <https://github.com/cszn/DPIR>`_.
 
     Dependencies:
 

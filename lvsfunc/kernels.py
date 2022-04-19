@@ -418,8 +418,8 @@ class RobidouxSharp(Bicubic):
 
 class BicubicDidee(Bicubic):
     """
-    Kernel inspired by a Didée post.
-    See: https://forum.doom9.org/showthread.php?p=1748922#post1748922.
+    | Kernel inspired by a Didée post.
+    | `See this doom9 post for more information <https://forum.doom9.org/showthread.php?p=1748922#post1748922>`_.
 
     Bicubic b=-0.5, c=0.25
 

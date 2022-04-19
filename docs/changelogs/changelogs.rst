@@ -323,4 +323,8 @@ Updates to functions:
 
 ------------------
 
-Start of changelogs
+Older Versions
+^^^^^^^^^^^^^^
+
+This is the bottom of the changelogs.
+`lvsfunc` was undocumented before this version.

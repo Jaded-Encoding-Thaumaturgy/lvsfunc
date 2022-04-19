@@ -221,8 +221,8 @@ def deblend(clip: vs.VideoNode, start: int = 0,
     Doing this will result in some of the artifacting being added to the deblended frame,
     but we can mitigate that by repairing the frame with the non-blended frame before it.
 
-    For more information, please refer to this blogpost by torchlight:
-    https://mechaweaponsvidya.wordpress.com/2012/09/13/adventures-in-deblending/
+    For more information, please refer to `this blogpost by torchlight
+    <https://mechaweaponsvidya.wordpress.com/2012/09/13/adventures-in-deblending/>`_.
 
     Dependencies:
 

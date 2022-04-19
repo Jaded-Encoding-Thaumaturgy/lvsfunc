@@ -76,7 +76,7 @@ def regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1e
     Fit a line for every neighborhood of values of a given size in a clip
     with corresponding neighborhoods in one or more other clips.
 
-    More info: https://en.wikipedia.org/wiki/Simple_linear_regression
+    For more info see `this Wikipedia article <https://en.wikipedia.org/wiki/Simple_linear_regression>`_.
     """
 
     if radius <= 0:

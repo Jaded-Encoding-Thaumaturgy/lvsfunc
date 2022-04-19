@@ -128,7 +128,7 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
                   mthr: float = 0.25, opencl: bool = False) -> vs.VideoNode:
     """
     A function that clamps eedi3 to nnedi3 for the purpose of reducing eedi3 artifacts.
-    This should fix every issue created by eedi3. For example: https://i.imgur.com/hYVhetS.jpg
+    This should fix every issue created by eedi3. For example, `see this image <https://i.imgur.com/hYVhetS.jpg>`_.
 
     Original function written by Zastin, modified by LightArrowsEXE.
 

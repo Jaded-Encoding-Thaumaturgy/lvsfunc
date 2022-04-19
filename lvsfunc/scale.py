@@ -339,7 +339,7 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
     The downscaled images retain perceptually important features and details,
     resulting in an accurate and spatio-temporally consistent representation of the high resolution input.
 
-    Original gist: https://gist.github.com/Ichunjo/16ab1f893588aafcb096c1f35a0cfb15
+    `Original gist <https://gist.github.com/Ichunjo/16ab1f893588aafcb096c1f35a0cfb15>`_
 
     :param clip:        Input clip
     :param width:       Output width. If None, autocalculates using height
