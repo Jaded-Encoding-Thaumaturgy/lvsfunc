@@ -24,13 +24,13 @@ remove that from your system first.
 Install `lvsfunc` with the following command:
 
 ```sh
-$ pip3 install lvsfunc --no-cache-dir --upgrade
+$ pip3 install lvsfunc --no-cache-dir -U
 ```
 
 Or if you want the latest git version, install it with this command:
 
 ```sh
-$ python3 -m pip install --no-cache-dir --upgrade git+https://github.com/Irrational-Encoding-Wizardry/lvsfunc.git -U
+$ pip3 install git+https://github.com/Irrational-Encoding-Wizardry/lvsfunc.git --no-cache-dir -U
 ```
 
 ### Arch Linux
