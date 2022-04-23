@@ -218,7 +218,7 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     try:
         from havsfunc import DeHalo_alpha
     except ModuleNotFoundError:
-        raise ModuleNotFoundError("decomb: missing dependency 'havsfunc'")
+        raise ModuleNotFoundError("fine_dehalo: missing dependency 'havsfunc'")
 
     check_variable(clip, "fine_dehalo")
     assert clip.format
