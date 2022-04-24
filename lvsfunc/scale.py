@@ -245,7 +245,7 @@ def descale(clip: vs.VideoNode,
     resolutions = [Resolution(*r) for r in zip(width, height)]
 
     clip = depth(clip, 32)
-    assert clip.format is not None  # clip was modified by depth, but that wont make it variable
+    assert clip.format is not None  # clip was modified by depth, but that won't make it variable
     clip_y = get_y(clip) \
         .std.SetFrameProp('descaleResolution', intval=clip.height)
 
@@ -345,7 +345,7 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
     :param width:       Output width. If None, autocalculates using height
     :param height:      Output height (default: 720)
     :param smooth:      Image smoothening method.
-                        If you pass an int, it specifies the "radius" of the internel used boxfilter,
+                        If you pass an int, it specifies the "radius" of the internally-used boxfilter,
                         i.e. the window has a size of (2*smooth+1)x(2*smooth+1).
                         If you pass a float, it specifies the "sigma" of core.tcanny.TCanny,
                         i.e. the standard deviation of gaussian blur.
