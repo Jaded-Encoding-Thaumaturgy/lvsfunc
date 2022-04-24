@@ -306,7 +306,7 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
     :param clip:            Input clip
     :param shader_file:     Path to FSRCNNX shader file
     :param rfactor:         Image enlargement factor
-    :param tff:             Top-Field-First if true, Bottom-Field-First if alse
+    :param tff:             Top-Field-First if true, Bottom-Field-First if false
     :param mask_thr:        Threshold for the edge mask binarisation.
                             Scaled internally to match bitdepth of clip.
     :param show_mask:       Output mask

@@ -576,7 +576,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
                             If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
 
-    :return:                Clip with a logo or sign overlaid ontop for the given frame ranges,
+    :return:                Clip with a logo or sign overlaid on top for the given frame ranges,
                             either with or without a fade
     """
     try:

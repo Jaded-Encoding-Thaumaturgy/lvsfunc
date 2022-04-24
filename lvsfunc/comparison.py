@@ -46,7 +46,7 @@ class Comparer(ABC):
     Base class for comparison functions.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If given a dict, the names will be overlayed on the clips using
+                            If given a dict, the names will be overlaid on the clips using
                             ``VideoNode.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
@@ -86,7 +86,7 @@ class Comparer(ABC):
 
     def _marked_clips(self) -> List[vs.VideoNode]:
         """
-        If a `name` is only space characters, `'   '`, for example, the name will not be overlayed on the clip.
+        If a `name` is only space characters, `'   '`, for example, the name will not be overlaid on the clip.
         """
         if self.names:
             return [clip.text.Text(text=name, alignment=self.label_alignment) if name.strip() else clip
@@ -116,7 +116,7 @@ class Stack(Comparer):
     and either ``vapoursynth.core.std.StackHorizontal`` or ``vapoursynth.core.std.StackVertical``.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If given a dict, the names will be overlayed on the clips using
+                            If given a dict, the names will be overlaid on the clips using
                             ``VideoNode.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
@@ -157,7 +157,7 @@ class Interleave(Comparer):
     and ``vapoursynth.core.std.Interleave``.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If given a dict, the names will be overlayed on the clips using
+                            If given a dict, the names will be overlaid on the clips using
                             ``VideoNode.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
@@ -213,7 +213,7 @@ class Tile(Comparer):
         # the rows will be auto-padded with 0's to be the same length.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If given a dict, the names will be overlayed on the clips using
+                            If given a dict, the names will be overlaid on the clips using
                             ``VideoNode.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
@@ -280,7 +280,7 @@ class Split(Stack):
     For example, five `104 x 200` clips will result in a `((20 x 200) * 4) + (24 x 200)` horiztonal stack of clips.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If given a dict, the names will be overlayed on the clips using
+                            If given a dict, the names will be overlaid on the clips using
                             ``VideoNode.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.

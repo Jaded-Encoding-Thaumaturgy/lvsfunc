@@ -204,7 +204,7 @@ def descale(clip: vs.VideoNode,
                                     If a single height is given and upscaler is None,
                                     a constant resolution GRAY clip will be returned instead.
                                     Note that if upscaler is None, no upscaling will be performed
-                                    and neither detail masking nor proper fractional descaling can be preformed.
+                                    and neither detail masking nor proper fractional descaling can be performed.
                                     (Default: :py:func:`lvsfunc.scale.reupscale`)
     :param width:                   Width(s) to descale to (if None, auto-calculated)
     :param height:                  Height(s) to descale to. List indicates multiple resolutions,

@@ -49,7 +49,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     :param edgevalue:       Remove edges from the edgemask that exceed this threshold (higher means more edges removed)
     :param strs:            A list of DPIR strength values (higher means stronger deblocking).
                             You can pass any arbitrary number of values here.
-                            Sane deblocking strenghts lie between 1–20 for most regular deblocking.
+                            Sane deblocking strengths lie between 1–20 for most regular deblocking.
                             Going higher than 50 is not recommended outside of very extreme cases.
                             The amount of values in strs and thrs need to be equal.
     :param thrs:            A list of thresholds, written as [(EdgeValRef, NextFrameDiff, PrevFrameDiff)].

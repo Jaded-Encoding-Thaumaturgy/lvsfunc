@@ -101,7 +101,7 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
                             Must be between 0 and 100.
     :param highsens:        Upper sensitivity range. The higher this is, the more it will process.
                             Must be between 0 and 100.
-    :param rfactor:         Image enlargment factor. Set to >1 to enable some form of aliasing-protection.
+    :param rfactor:         Image enlargement factor. Set to >1 to enable some form of aliasing-protection.
                             Must be greater than 1.
     :param maskpull:        Mask pulling factor
     :param maskpush:        Mask pushing factor
@@ -209,7 +209,7 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
                             Must be between 0 and 100.
     :param highsens:        Upper sensitivity range. The higher this is, the more it will process.
                             Must be between 0 and 100.
-    :param rfactor:         Image enlargment factor. Set to >1 to enable some form of aliasing-protection.
+    :param rfactor:         Image enlargement factor. Set to >1 to enable some form of aliasing-protection.
                             Must be greater than 1.
     :param show_mask:       Return mask clip.
 

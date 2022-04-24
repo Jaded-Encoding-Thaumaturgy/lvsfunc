@@ -85,7 +85,7 @@ def clip_async_render(clip: vs.VideoNode,
     :param timecodes: Timecode v2 file TextIO handle. If None, timecodes will not be written.
     :param progress:  String to use for render progress display.
                       If empty or ``None``, no progress display.
-    :param callback:  Single or list of callbacks to be preformed. The callbacks are called
+    :param callback:  Single or list of callbacks to be performed. The callbacks are called
                       when each sequential frame is output, not when each frame is done.
                       Must have signature ``Callable[[int, vs.VideoNode], None]``
                       See :py:func:`lvsfunc.comparison.diff` for a use case (Default: None).

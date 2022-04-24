@@ -429,7 +429,7 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
 
         return core.std.Interleave(fixed).std.DoubleWeave()[::2]
 
-    # I want to catch this before it reaches SeperateFields and give newer users a more useful error
+    # I want to catch this before it reaches separateFields and give newer users a more useful error
     if get_prop(clip.get_frame(0), '_FieldBased', int) == 0 and tff is None:
         raise vs.Error("fix_telecined_fades: 'You must set `tff` for this clip!'")
     elif isinstance(tff, (bool, int)):
@@ -638,7 +638,7 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
 
     neutral = get_neutral_value(clip)
 
-    # Expression to find combing and seperate it from the rest of the clip
+    # Expression to find combing and separate it from the rest of the clip
     find_combs = clip.akarin.Expr(f'{neutral} n! x x 2 * x[0,-1] x[0,1] + + 4 / - n@ +')
 
     # Expression to decomb it (creates blending)
