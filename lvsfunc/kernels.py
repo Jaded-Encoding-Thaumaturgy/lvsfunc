@@ -480,6 +480,9 @@ class FmtConv(Kernel):
 class Box(FmtConv):
     """
     fmtconv's box resizer.
+
+    .. warning::
+        Currently unimplemented.
     """
     kernel = 'box'
 
@@ -487,6 +490,9 @@ class Box(FmtConv):
 class BlackMan(FmtConv):
     """
     fmtconv's blackman resizer.
+
+    .. warning::
+        Currently unimplemented.
     """
     kernel = 'blackman'
 
@@ -494,13 +500,19 @@ class BlackMan(FmtConv):
 class BlackManMinLobe(FmtConv):
     """
     fmtconv's blackmanminlobe resizer.
+
+    .. warning::
+        Currently unimplemented.
     """
     kernel = 'blackmanminlobe'
 
 
 class Sinc(FmtConv):
     """
-    fmtconv's gaussian resizer.
+    fmtconv's sinc resizer.
+
+    .. warning::
+        Currently unimplemented.
     """
     kernel = 'sinc'
 
