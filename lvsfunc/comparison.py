@@ -14,6 +14,7 @@ from vsutil import depth, get_subsampling, get_w
 from vsutil import split as split_planes
 
 from .dehardsub import hardsub_mask
+from .kernels import Catrom
 from .misc import get_matrix
 from .render import clip_async_render
 from .util import check_variable, get_prop
@@ -405,9 +406,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
 def stack_compare(*clips: vs.VideoNode,
                   make_diff: bool = True,
-                  height: int = 288,
-                  warn: Any = None
-                  ) -> vs.VideoNode:
+                  height: int | None = None) -> vs.VideoNode:
     """
     A simple wrapper that allows you to compare two clips by stacking them.
 
@@ -419,8 +418,8 @@ def stack_compare(*clips: vs.VideoNode,
     :param clips:     Clips to compare
     :param make_diff: Create and stack a diff (only works if two clips are given) (Default: ``True``)
     :param height:    Height in px to rescale clips to if `make_diff` is ``True``
-                      (MakeDiff clip will be twice this resolution) (Default: 288)
-    :param warn:      Unused parameter kept for backward compatibility
+                      (MakeDiff clip will be twice this resolution).
+                      This function will not scale above the first clip's height (Default: 288).
 
     :return:          Clip with `clips` stacked
     """
@@ -434,12 +433,20 @@ def stack_compare(*clips: vs.VideoNode,
         raise ValueError("stack_compare: `make_diff` only works for exactly 2 clips")
 
     clipa, clipb = clips
+
+    if not height:
+        height = 288
+    elif height > clipa.height / 2:
+        warnings.warn(f"stack_compare: 'Given 'height' ({height}) is bigger than clipa's height {clipa.height}!' "
+                      "Will be using clipa's height instead.")
+        height = int(clipa.height / 2)
+
     scaled_width = get_w(height, only_even=False)
 
     diff = core.std.MakeDiff(clipa=clipa, clipb=clipb)
-    diff = diff.resize.Spline36(width=scaled_width * 2, height=height * 2).text.FrameNum(8)
-    resized = [clipa.resize.Spline36(width=scaled_width, height=height).text.Text('Clip A', 3),
-               clipb.resize.Spline36(width=scaled_width, height=height).text.Text('Clip B', 1)]
+    diff = Catrom().scale(diff, scaled_width * 2, height * 2).text.FrameNum(8)
+    resized = [Catrom().scale(clipa, scaled_width, height).text.Text('Clip A', 3),
+               Catrom().scale(clipb, scaled_width, height).text.Text('Clip B', 1)]
 
     return Stack([Stack(resized).clip, diff], direction=Direction.VERTICAL).clip
 
