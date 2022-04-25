@@ -504,8 +504,8 @@ def diff_hardsub_mask(a: vs.VideoNode, b: vs.VideoNode, **kwargs: Any) -> vs.Vid
 
     :return:  Diff masked with :py:func:`lvsfunc.dehardsub.hardsub_mask`
     """
-    check_variable(a, "stack_planes")
-    check_variable(b, "stack_planes")
+    check_variable(a, "diff_hardsub_mask")
+    check_variable(b, "diff_hardsub_mask")
 
     return core.std.MaskedMerge(core.std.MakeDiff(a, a), core.std.MakeDiff(a, b), hardsub_mask(a, b, **kwargs))
 
