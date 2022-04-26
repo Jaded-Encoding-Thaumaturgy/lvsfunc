@@ -372,7 +372,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     def _resample(clip: vs.VideoNode) -> vs.VideoNode:
         # Resampling to 8 bit and RGB to properly display how it appears on your screen
         return core.resize.Bicubic(clip, format=vs.RGB24, matrix_in=get_matrix(clip),
-                                   prefer_props=True, dither_type='error_diffusion')
+                                   dither_type='error_diffusion')
 
     check_variable(clip_a, "compare")
     check_variable(clip_b, "compare")
