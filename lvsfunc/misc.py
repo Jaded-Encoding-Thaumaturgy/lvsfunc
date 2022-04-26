@@ -173,13 +173,14 @@ def edgefixer(clip: vs.VideoNode,
     return ef if full_range else core.std.Limiter(ef, 16.0, [235, 240])
 
 
-def get_matrix(clip: vs.VideoNode) -> int:
+def get_matrix(clip: vs.VideoNode, return_matrix: bool = True) -> Matrix | int:
     """
     Helper function to get the matrix for a clip.
 
-    :param clip:    src clip
+    :param clip:            Input clip
+    :param return_matrix:   Returns a Matrix instead of an int.
 
-    :return:        Value representing a matrix
+    :return:                Value representing a matrix
     """
     check_variable(clip, "get_matrix")
     assert clip.format
@@ -188,12 +189,12 @@ def get_matrix(clip: vs.VideoNode) -> int:
     w, h = frame.width, frame.height
 
     if frame.format.color_family == vs.RGB:
-        return 0
+        return Matrix.RGB if return_matrix else 0
     if w <= 1024 and h <= 576:
-        return 5
+        return Matrix.BT470BG if return_matrix else 5
     if w <= 2048 and h <= 1536:
-        return 1
-    return 9
+        return Matrix.BT709 if return_matrix else 1
+    return Matrix.BT2020NC if return_matrix else 9
 
 
 def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.VideoNode:
