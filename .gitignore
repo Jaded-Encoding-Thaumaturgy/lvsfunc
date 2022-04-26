@@ -1,14 +1,9 @@
 .mypy_cache/
-.vscode
-*.cfg
+.vscode/
+.vspreview/
+*.glsl
 *.pyc
 *.vpy
-tests/
-BACK-UP/
 build/
 dist/
-doc/_build
-doc/_static
-doc/_templates
 lvsfunc.egg-info/
-venv/
