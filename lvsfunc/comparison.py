@@ -682,7 +682,7 @@ def interleave(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode
 
 def split(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     """
-    Small convenience funciton for splitting clips along the x-axis and then stacking.
+    Small convenience function for splitting clips along the x-axis and then stacking.
     Accounts for odd-resolution clips by giving overflow columns to the last clip specified.
     All clips must have the same dimensions (width and height).
 
