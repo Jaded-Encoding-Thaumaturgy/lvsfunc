@@ -2,9 +2,13 @@
     Tests to make sure lvsfunc functions return the expected values.
     A lot of methods were taken from vsutil.
 """
+from __future__ import annotations
+
 import contextlib
 import os
 import shutil
+import subprocess
+import time
 import unittest
 from fractions import Fraction
 from pathlib import Path
@@ -21,8 +25,23 @@ __all__: List[str] = []
 
 class LvsfuncTests(unittest.TestCase):
     # Common arguments
+    # Filepaths and names
+    tests_in_cwd: bool = 'tests' in os.getcwd()
     DEPS: str = "dependencies"
 
+    if not tests_in_cwd:
+        DEPS = f"tests/{DEPS}"
+
+    output_clip_path: Path = Path(f'output')
+
+    if not tests_in_cwd:
+        output_clip_path = Path('tests') / output_clip_path
+
+    output_clip_file = output_clip_path / Path("test_clip.mkv")
+    output_clip_file_abs = output_clip_file.resolve()
+    output_clip_idx =  output_clip_path / Path("test_clip.mkv.lwi")
+
+    # Common values
     DEF_LENGTH: int = 100
 
     DEF_WIDTH: int = 160
@@ -30,11 +49,6 @@ class LvsfuncTests(unittest.TestCase):
 
     COLOR_BLACK: List[int] = [0, 128, 128]
     COLOR_WHITE: List[int] = [255, 128, 128]
-
-    COLOR_BLUE: List[int] = [0, 255, 0]
-    COLOR_GREEN: List[int] = [128, 0, 0]
-    COLOR_RED: List[int] = [0, 0, 255]
-    COLOR_YELLOW: List[int] = [255, 0, 255]
 
     # 16/9 256x144 clip
     SMALL_WIDTH: int = 256
@@ -47,6 +61,10 @@ class LvsfuncTests(unittest.TestCase):
     # 16/9 1920x1080 clip
     BIG_WIDTH: int = 1920
     BIG_HEIGHT: int = 1080
+
+    # 16/9 1920x1080 clip
+    VBIG_WIDTH: int = 3840
+    VBIG_HEIGHT: int = 2160
 
     # A bunch of blank clips with different (relatively) common formats
     DEF_VALUES: Dict[str, Any] = {
@@ -79,10 +97,26 @@ class LvsfuncTests(unittest.TestCase):
     GRAY16_CLIP = core.std.BlankClip(format=vs.GRAY16, **DEF_VALUES)
     GRAYS_CLIP = core.std.BlankClip(format=vs.GRAYS, **DEF_VALUES)
 
+    # Specific colourspaces, transfers, and primaries
+    BT709_CLIP = core.std.SetFrameProps(YUV420P8_CLIP,
+                                        _Matrix=lvf.types.Matrix.BT709,
+                                        _Transfer=lvf.types.Matrix.BT709,
+                                        _Primaries=lvf.types.Matrix.BT709)
+    BT470BG_CLIP = core.std.SetFrameProps(YUV420P8_CLIP,
+                                          _Matrix=lvf.types.Matrix.BT470BG,
+                                          _Transfer=lvf.types.Matrix.BT470BG,
+                                          _Primaries=lvf.types.Matrix.BT470BG)
+    BT2020NC_CLIP = core.std.SetFrameProps(YUV420P8_CLIP,
+                                          _Matrix=lvf.types.Matrix.BT2020NC,
+                                          _Transfer=lvf.types.Matrix.BT2020NC,
+                                          _Primaries=lvf.types.Matrix.BT2020NC)
+
+
     # Other kinds of blank clips
     SMALLER_SAMPLE_CLIP: vs.VideoNode = core.std.BlankClip(format=vs.YUV420P8, width=SMALL_WIDTH, height=SMALL_HEIGHT)
     MEDIUM_SAMPLE_CLIP: vs.VideoNode = core.std.BlankClip(format=vs.YUV420P8, width=MEDIUM_WIDTH, height=MEDIUM_HEIGHT)
     BIGGER_SAMPLE_CLIP: vs.VideoNode = core.std.BlankClip(format=vs.YUV420P8, width=BIG_WIDTH, height=BIG_HEIGHT)
+    VERYBIG_SAMPLE_CLIP: vs.VideoNode = core.std.BlankClip(format=vs.YUV420P8, width=VBIG_WIDTH, height=VBIG_HEIGHT)
 
     BLACK_SAMPLE_CLIP: vs.VideoNode = core.std.BlankClip(format=vs.YUV420P8, color=COLOR_BLACK, **DEF_VALUES)
     WHITE_SAMPLE_CLIP: vs.VideoNode = core.std.BlankClip(format=vs.YUV420P8, color=COLOR_WHITE, **DEF_VALUES)
@@ -100,17 +134,19 @@ class LvsfuncTests(unittest.TestCase):
     BLACK_SAMPLE_CLIP_30p = core.std.SetFieldBased(WHITE_SAMPLE_CLIP_30p, value=2)
 
     # Coloured clips
-    BLUE_SAMPLE_CLIP: vs.VideoNode = core.std.BlankClip(format=vs.YUV420P8, color=COLOR_BLUE,
+    BLUE_SAMPLE_CLIP: vs.VideoNode = core.std.BlankClip(format=vs.YUV420P8, color=[0, 255, 0],
                                                         width=MEDIUM_HEIGHT, height=MEDIUM_HEIGHT)
-    GREEN_SAMPLE_CLIP: vs.VideoNode = core.std.BlankClip(format=vs.YUV420P8, color=COLOR_GREEN,
+    GREEN_SAMPLE_CLIP: vs.VideoNode = core.std.BlankClip(format=vs.YUV420P8, color=[128, 0, 0],
                                                          width=MEDIUM_HEIGHT, height=MEDIUM_HEIGHT)
-    RED_SAMPLE_CLIP: vs.VideoNode = core.std.BlankClip(format=vs.YUV420P8, color=COLOR_RED,
+    RED_SAMPLE_CLIP: vs.VideoNode = core.std.BlankClip(format=vs.YUV420P8, color=[0, 0, 255],
                                                        width=MEDIUM_HEIGHT, height=MEDIUM_HEIGHT)
-    YELLOW_SAMPLE_CLIP: vs.VideoNode = core.std.BlankClip(format=vs.YUV420P8, color=COLOR_YELLOW,
+    YELLOW_SAMPLE_CLIP: vs.VideoNode = core.std.BlankClip(format=vs.YUV420P8, color=[255, 0, 255],
                                                           width=MEDIUM_HEIGHT, height=MEDIUM_HEIGHT)
 
     # Additional dependencies
-    SHADER_FILE: str = f"{DEPS}/FSRCNNX_x2_16-0-4-1.glsl"
+    ASS_FILE: str = os.path.abspath(f"{DEPS}/lvsfunc_test.ass")
+    PNG_FILE: str = os.path.abspath(f"{DEPS}/lvsfunc_test.png")
+    SHADER_FILE: str = os.path.abspath(f"{DEPS}/FSRCNNX_x2_16-0-4-1.glsl")
 
     # Basic assertions
     def assert_same_dimensions(self, a: vs.VideoNode, b: vs.VideoNode) -> None:
@@ -124,6 +160,9 @@ class LvsfuncTests(unittest.TestCase):
         """
         Assert that two clips have the same format (but not necessarily size).
         """
+        assert a.format
+        assert b.format
+
         self.assertEqual(a.format.id, b.format.id, f"Same format expected, was {a.format.id} and {b.format.id}.")
 
     def assert_same_bitdepth(self, a: vs.VideoNode, b: vs.VideoNode) -> None:
@@ -210,6 +249,7 @@ class LvsfuncTests(unittest.TestCase):
         try:
             assert clip.format is None
         except AssertionError:
+            assert clip.format
             raise ValueError(f"Expected clip to have a variable format, was {clip.format.id}.")
 
     def assert_variable_dimensions(self, clip: vs.VideoNode) -> None:
@@ -245,6 +285,64 @@ class LvsfuncTests(unittest.TestCase):
             assert lvf.util.get_prop(clip.get_frame(0), prop, ptype)
         except AssertionError:
             raise ValueError(f"Expected clip to have {prop} property.")
+
+    def assert_prop_value(self, clip: vs.VideoNode, prop: str, ptype: Any, value: Any) -> None:
+        """
+        Assert that a clip returns a frame.
+        """
+        try:
+            prop = lvf.util.get_prop(clip.get_frame(0), prop, ptype)
+            assert prop == value
+        except AssertionError:
+            raise ValueError(f"Expected clip to have {prop} property.")
+
+    def assert_file_exists(self, path: str | Path) -> None:
+        """
+        Assert that a clip returns a frame.
+        """
+        if isinstance(path, str):
+            path = Path(path)
+
+        try:
+            assert path.exists()
+        except AssertionError:
+            raise AssertionError(f"{path} does not exist!")
+
+    def create_clip(self, width: int = 1280, height: int = 720,
+                    ext: str | None = None, timer: float = 2.5) -> None:
+        """
+        Create a test clip using ffmpeg.
+        """
+
+        output_clip_name = Path(str(self.output_clip_file).replace('mkv', ext)) if ext \
+            else self.output_clip_file
+
+        with open(os.devnull, 'w') as devnull:
+            with contextlib.redirect_stdout(devnull):
+                subprocess.Popen([
+                    'ffmpeg', '-f', 'lavfi', '-i',
+                    f'testsrc=duration=1:size={width}x{height}:rate=24000/1001',
+                    output_clip_name
+                ], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+        time.sleep(timer)  # Allow it time to generate the clip
+
+    def clean_output_clip(self) -> None:
+        """
+        Delete the output clip generated by ffmpeg for some test cases.
+        """
+        try:
+            os.rename(self.output_clip_file_abs, self.output_clip_file_abs)
+            shutil.rmtree(self.output_clip_path.resolve())
+        except OSError as e:
+            raise PermissionError(e)
+
+
+    def final_cleanup(self) -> None:
+        """
+        Run after unit tests. Cleans up any remaining output files that may remain after errors.
+        """
+        self.clean_output_clip()
 
 
 # lvsfunc.aa
@@ -435,7 +533,7 @@ class LvsfuncTestDeinterlace(LvsfuncTests):
         clip = core.std.AssumeFPS(clip, self.BLACK_SAMPLE_CLIP)[2::]
         clip = core.std.SeparateFields(clip, tff=True)
         clip = core.std.SelectEvery(clip, cycle=8, offsets=[0, 1, 2, 3, 2, 5, 4, 7, 6, 7])
-        clip = core.std.DoubleWeave(clip, tff=True)[4::1]
+        clip = core.std.DoubleWeave(clip, tff=True)[2::]
 
         return clip
 
@@ -474,13 +572,274 @@ class LvsfuncTestDeinterlace(LvsfuncTests):
         self.assert_framerate(clip, Fraction(24000, 1001))
 
 
+class LvsfuncTestDenoise(LvsfuncTests):
+    def test_bm3d(self) -> None:
+        clip = lvf.denoise.bm3d(self.BLACK_SAMPLE_CLIP)
+        self.assert_runs(clip)
+
+
+class LvsfuncTestFun(LvsfuncTests):
+    def test_minecrafity(self) -> None:
+        clip = lvf.fun.minecraftify(self.BLACK_SAMPLE_CLIP)
+        self.assert_runs(clip)
+
+
+class LvsfuncTestKernels(LvsfuncTests):
+    def test_get_all_kernels(self) -> None:
+        kernels = lvf.kernels.get_all_kernels()
+        # TODO: Assert that every object in array inherits from a Kernel object.
+        self.assertIsInstance(kernels, list, f"Expected to return a list, instead returned {type(kernels)}")
+
+    def test_get_kernel(self) -> None:
+        kernel = lvf.kernels.get_kernel("catrom")
+        self.assertEqual(kernel, lvf.kernels.Catrom)
+
+    # TODO: Generic test that loops over every Kernel class?
+
+
+class LvsfuncTestMask(LvsfuncTests):
+    def test_detail_mask(self) -> None:
+        mask = lvf.mask.detail_mask(self.BLACK_SAMPLE_CLIP)
+        self.assert_runs(mask)
+
+    def test_detail_mask_neo(self) -> None:
+        mask = lvf.mask.detail_mask_neo(self.BLACK_SAMPLE_CLIP)
+        self.assert_runs(mask)
+
+    def test_halo_mask(self) -> None:
+        mask = lvf.mask.halo_mask(self.BLACK_SAMPLE_CLIP)
+        self.assert_runs(mask)
+
+    def test_range_mask(self) -> None:
+        mask = lvf.mask.range_mask(self.BLACK_SAMPLE_CLIP)
+        self.assert_runs(mask)
+
+    def test_mt_xxpand_multi(self) -> None:
+        masks = lvf.mask.mt_xxpand_multi(self.BLACK_SAMPLE_CLIP)
+        self.assertIsInstance(masks, list)
+
+        for mask in masks:
+            self.assert_runs(mask)
+
+    def test_BoundingBox(self) -> None:
+        mask = lvf.mask.BoundingBox((0, 0), (self.DEF_WIDTH, self.DEF_HEIGHT)).get_mask(self.BLACK_SAMPLE_CLIP)
+        self.assert_runs(mask)
+        self.assert_same_frame(mask, vsutil.get_y(self.WHITE_SAMPLE_CLIP), 0)  # `get_mask` outputs a GRAY clip
+
+
+class LvsfuncTestMisc(LvsfuncTests):
+    def test_source(self) -> None:
+        self.output_clip_path.mkdir(parents=True, exist_ok=True)
+
+        self.create_clip(timer=1.5)
+        clip = lvf.misc.source(str(self.output_clip_file), force_lsmas=True)
+
+        self.assert_runs(clip)
+        self.assert_file_exists(self.output_clip_file_abs)
+        self.assert_file_exists(self.output_clip_idx.resolve())
+
+        del clip
+
+        self.clean_output_clip()
+
+
+    def test_get_matrix(self) -> None:
+        matrix_rgb = lvf.misc.get_matrix(self.RGB24_CLIP)
+        matrix_big = lvf.misc.get_matrix(self.BIGGER_SAMPLE_CLIP)
+        matrix_sml = lvf.misc.get_matrix(self.SMALLER_SAMPLE_CLIP)
+        matrix_uhd = lvf.misc.get_matrix(self.VERYBIG_SAMPLE_CLIP)
+
+        self.assertEqual(matrix_rgb, 0)
+        self.assertEqual(matrix_big, 1)
+        self.assertEqual(matrix_sml, 5)
+        self.assertEqual(matrix_uhd, 9)
+
+    def test_shift_tint(self) -> None:
+        clip = lvf.misc.shift_tint(self.BLACK_SAMPLE_CLIP)
+        self.assert_runs(clip)
+
+    def test_limit_dark(self) -> None:
+        clip = lvf.misc.limit_dark(self.BLACK_SAMPLE_CLIP, self.WHITE_SAMPLE_CLIP)
+        self.assert_runs(clip)
+
+    def test_wipe_row(self) -> None:
+        clip = lvf.misc.wipe_row(self.BLACK_SAMPLE_CLIP)
+        self.assert_runs(clip)
+
+    def test_colored_clips(self) -> None:
+        clips = lvf.misc.colored_clips(amount=5)
+        self.assertIsInstance(clips, list)
+
+        for clip in clips:
+            self.assert_runs(clip)
+
+    def test_unsharpen(self) -> None:
+        clip = lvf.misc.unsharpen(self.BLACK_SAMPLE_CLIP)
+        self.assert_runs(clip)
+
+    def test_overlay_sign(self) -> None:
+        input_clip = core.resize.Bicubic(self.YUV420P8_CLIP, width=1920, height=1080,
+                                         matrix=1, matrix_in=1,
+                                         transfer=1, transfer_in=1,
+                                         primaries=1, primaries_in=1)
+
+        clip = lvf.misc.overlay_sign(input_clip, self.PNG_FILE)
+        self.assert_runs(clip)
+
+
+class LvsfuncTestRecon(LvsfuncTests):
+    def test_chroma_reconstruct(self) -> None:
+        clip = lvf.recon.chroma_reconstruct(self.BLACK_SAMPLE_CLIP)
+        clip_i444 = lvf.recon.chroma_reconstruct(self.BLACK_SAMPLE_CLIP, i444=True)
+
+        self.assert_runs(clip)
+        self.assert_same_format(clip_i444, self.YUV444P8_CLIP)
+
+
+class LvsfuncTestScale(LvsfuncTests):
+    # def test_descale(self) -> None:
+    #     # Create test clip because it throws an error with any of my generated blank clips???
+    #     self.output_clip_path.mkdir(parents=True, exist_ok=True)
+
+    #     self.create_clip(width=self.BIG_WIDTH, height=self.BIG_HEIGHT)
+    #     input_clip = lvf.misc.source(str(self.output_clip_file))
+
+    #     clip = lvf.scale.descale(input_clip, width=1280, height=720)
+    #     clip_down = lvf.scale.descale(input_clip, width=1280, height=720, upscaler=None)
+
+    #     self.assert_runs(clip)
+    #     self.assert_dimensions(clip, self.BIG_WIDTH, self.BIG_HEIGHT)
+    #     self.assert_dimensions(clip_down, self.MEDIUM_WIDTH, self.MEDIUM_HEIGHT)
+
+    #     del clip
+    #     del clip_down
+
+    #     self.clean_output_clip()
+
+    def test_ssim_downsample(self) -> None:
+        clip = lvf.scale.ssim_downsample(self.MEDIUM_SAMPLE_CLIP, height=486)
+        self.assert_runs(clip)
+        self.assert_dimensions(clip, 864, 486)
+        self.assert_same_format(clip, self.YUV420PS_CLIP)
+
+
+    def test_comparative_descale(self) -> None:
+        clip = lvf.scale.comparative_descale(self.BIGGER_SAMPLE_CLIP)
+        self.assert_runs(clip)
+        self.assert_dimensions(clip, 1280, 720)
+
+    def test_comparative_restore(self) -> None:
+        clip = lvf.scale.comparative_descale(self.BIGGER_SAMPLE_CLIP)
+        clip = lvf.scale.comparative_restore(clip, height=self.BIG_HEIGHT)
+        self.assert_runs(clip)
+        self.assert_dimensions(clip, self.BIG_WIDTH, self.BIG_HEIGHT)
+
+
+class LvsfuncTestUtil(LvsfuncTests):
+    def test_pick_repair(self) -> None:
+        repair = lvf.util.pick_repair(self.YUV420P8_CLIP)
+        self.assert_returns_callable(repair)
+
+    def test_pick_removegrain(self) -> None:
+        repair = lvf.util.pick_removegrain(self.YUV420P8_CLIP)
+        self.assert_returns_callable(repair)
+
+    def test_get_prop(self) -> None:
+        prop = lvf.util.get_prop(self.YUV420P8_CLIP.get_frame(0), '_DurationDen', int)
+        self.assertIsInstance(prop, int)
+
+    def test_normalize_ranges(self) -> None:
+        ranges: List[lvf.types.Range] = [(None, 20), 1, (60, None), -1]
+        nranges = lvf.util.normalize_ranges(self.BLACK_SAMPLE_CLIP, ranges)
+        self.assertEqual(nranges, [(0, 20), (1, 1), (60, 99), (98, 98)])
+
+    def test_replace_ranges(self) -> None:
+        clip_a = lvf.util.replace_ranges(self.BLACK_SAMPLE_CLIP, self.WHITE_SAMPLE_CLIP, [(0, 1)])
+        clip_b = lvf.util.replace_ranges(self.BLACK_SAMPLE_CLIP, self.WHITE_SAMPLE_CLIP, [(None, None)])
+        clip_c = lvf.util.replace_ranges(self.BLACK_SAMPLE_CLIP, self.WHITE_SAMPLE_CLIP, [(80, None)])
+        clip_d = lvf.util.replace_ranges(self.BLACK_SAMPLE_CLIP, self.WHITE_SAMPLE_CLIP, [(80, -1)])
+
+        self.assert_runs(clip_a)
+        self.assert_same_frame(clip_a, self.WHITE_SAMPLE_CLIP, 0)
+        self.assert_same_frame(clip_b, self.WHITE_SAMPLE_CLIP, 50)
+        self.assert_same_frame(clip_c, self.WHITE_SAMPLE_CLIP, 80)
+        self.assert_same_frame(clip_d, self.BLACK_SAMPLE_CLIP, 99)
+
+    def test_scale_thresh(self) -> None:
+        value_p8 = lvf.util.scale_thresh(thresh=0.5, clip=self.BLACK_SAMPLE_CLIP)
+        value_p16 = lvf.util.scale_thresh(thresh=0.5, clip=self.YUV420P16_CLIP)
+
+        self.assertEqual(value_p8, 128)
+        self.assertEqual(value_p16, 32768)
+
+        # TODO: Figured out how it works with float?
+
+    def test_scale_peak(self) -> None:
+        peak_p16 = lvf.util.scale_peak(value=128, peak=255 << 8)
+        peak_ps = lvf.util.scale_peak(value=128, peak=1)
+
+        self.assertEqual(peak_p16, 32768)
+        self.assertEqual(round(peak_ps, 2), 0.5)  # Rounding because of float imprecisions
+
+    def test_force_mod(self) -> None:
+        value = lvf.util.force_mod(x=150, mod=4)
+        self.assertEqual(value, 152)
+
+    def test_clamp_values(self) -> None:
+        value_positive = lvf.util.clamp_values(x=500, max_val=255, min_val=0)
+        value_negative = lvf.util.clamp_values(x=-500, max_val=255, min_val=0)
+
+        self.assertEqual(value_positive, 255)
+        self.assertEqual(value_negative, 0)
+
+    def test_get_neutral_value(self) -> None:
+        neutral_p16_yuv = lvf.util.get_neutral_value(self.YUV420P8_CLIP, chroma=True)
+        neutral_p16_y = lvf.util.get_neutral_value(self.YUV420P8_CLIP, chroma=False)
+
+        neutral_ps_yuv = lvf.util.get_neutral_value(self.YUV420PS_CLIP, chroma=True)
+        neutral_ps_y = lvf.util.get_neutral_value(self.YUV420PS_CLIP, chroma=False)
+
+        self.assertEqual(neutral_p16_yuv, 128)
+        self.assertEqual(neutral_p16_y, 128)
+
+        self.assertEqual(neutral_ps_yuv, 0)
+        self.assertEqual(neutral_ps_y, 0.5)
+
+    def test_padder(self) -> None:
+        clip = lvf.util.padder(self.BLACK_SAMPLE_CLIP)
+        self.assert_runs(clip)
+        self.assert_dimensions(clip, width=224, height=184)
+
+
 _not_implemented: List[str] = [
-    'lvsfunc.dehardsub.hardsub_mask', 'lvf.deblock.autodb_dpir (write_props=True)', 'lvsfunc.deinterlace.tivtc_vfr',
-    'lvsfunc.dehardsub.HardsubASS', 'lvsfunc.dehardsub.get_all_masks', 'lvsfunc.dehardsub.bounded_dehardsub',
-    'lvsfunc.dehardsub.HardsubLine', 'lvsfunc.dehardsub.HardsubLineFade', 'lvsfunc.dehardsub.HardsubSignFade',
-    'lvsfunc.dehardsub.HardsubMask', 'lvsfunc.dehardsub.HardsubSignKgf', 'lvsfunc.dehardsub.HardsubSign',
-    'lvsfunc.denoise', 'lvsfunc.fun', 'lvsfunc.kernels', 'lvsfunc.mask', 'lvsfunc.misc', 'lvsfunc.progress',
-    'lvsfunc.recon', 'lvsfunc.render', 'lvsfunc.scale', 'lvsfunc.types', 'lvsfunc.util'
+    'lvsfunc.deblock.autodb_dpir (write_props=True)',
+    'lvsfunc.dehardsub.bounded_dehardsub',
+    'lvsfunc.dehardsub.get_all_masks',
+    'lvsfunc.dehardsub.hardsub_mask',
+    'lvsfunc.dehardsub.HardsubASS',
+    'lvsfunc.dehardsub.HardsubLine',
+    'lvsfunc.dehardsub.HardsubLineFade',
+    'lvsfunc.dehardsub.HardsubMask',
+    'lvsfunc.dehardsub.HardsubSign',
+    'lvsfunc.dehardsub.HardsubSignFade',
+    'lvsfunc.dehardsub.HardsubSignKgf',
+    'lvsfunc.deinterlace.tivtc_vfr',
+    'lvsfunc.mask.DeferredMask',
+    'lvsfunc.misc.allow_variable',
+    'lvsfunc.misc.chroma_injector',
+    'lvsfunc.misc.frames_since_bookmark',
+    'lvsfunc.misc.load_bookmarks',
+    'lvsfunc.render.clip_async_render',
+    'lvsfunc.render.find_scene_changes',
+    'lvsfunc.render.finish_frame',
+    'lvsfunc.render.get_render_progress',
+    'lvsfunc.scale.descale_detail_mask',
+    'lvsfunc.scale.descale',
+    'lvsfunc.scale.gamma2linear',
+    'lvsfunc.scale.linear2gamma',
+    'lvsfunc.util.check_variable',
+    'lvsfunc.util.get_coefs',
+    'lvsfunc.util.quick_resample'
 ]
 
 
@@ -492,6 +851,7 @@ if __name__ == '__main__':
     for f in _not_implemented:
         print("    * ", f)
 
-    print("\n")
+    print(f"\nTotal unimplemented: {len(_not_implemented)}\n")
 
     unittest.main(verbosity=2)
+    LvsfuncTests().final_cleanup()

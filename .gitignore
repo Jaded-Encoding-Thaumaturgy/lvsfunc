@@ -4,6 +4,8 @@
 *.glsl
 *.pyc
 *.vpy
+/tests/dependencies/*
+/tests/output/*
 build/
 dist/
 lvsfunc.egg-info/
