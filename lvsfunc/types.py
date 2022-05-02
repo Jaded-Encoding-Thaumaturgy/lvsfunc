@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import (Any, List, NamedTuple, NoReturn, Optional, Protocol, Tuple,
-                    Union)
+from typing import (Any, List, Literal, NamedTuple, NoReturn, Optional,
+                    Protocol, Tuple, Union)
 
 import vapoursynth as vs
-
 
 __all__: List[str] = [
     'Range',

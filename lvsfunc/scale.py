@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from functools import partial
-from typing import Any, Callable, Dict, List, Literal, NamedTuple, cast
+from typing import Any, Callable, Dict, List, NamedTuple, cast
 
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
@@ -10,8 +10,8 @@ from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
 from .kernels import (Bicubic, BicubicSharp, Catrom, Kernel, Spline36,
                       get_kernel)
 from .types import CURVES, VSFunction
-from .util import (check_variable, get_coefs, get_matrix, get_prop,
-                   quick_resample, scale_thresh)
+from .util import (check_variable, get_coefs, get_matrix, get_matrix_curve,
+                   get_prop, quick_resample, scale_thresh)
 
 try:
     from cytoolz import functoolz
@@ -88,7 +88,7 @@ def _select_descale(n: int, f: vs.VideoFrame | List[vs.VideoFrame],
         f = [f]
     f = cast(List[vs.VideoFrame], f)
     best_res = max(f, key=lambda frame:
-                   math.log(clip.height - get_prop(frame, "descaleResolution", int), 2)
+                   math.log(clip.height - get_prop(frame, "descaleResolution", int), 2)  # type:ignore[no-any-return]
                    * round(1 / max(get_prop(frame, "PlaneStatsAverage", float), 1e-12))
                    ** 0.2)
 
@@ -395,6 +395,7 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
     d = core.std.Expr([m, r, l1, t], 'x y z * + a -')
 
     if gamma:
+        curve = cast(CURVES, curve)
         return linear2gamma(d, curve, sigmoid=sigmoid)
     return d
 

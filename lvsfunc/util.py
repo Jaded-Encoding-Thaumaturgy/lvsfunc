@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from typing import Any, Callable, List, Sequence, Tuple, Type, TypeVar, Union
+import warnings
 
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_subsampling
 
-from .types import Coefs, Range
+from .types import CURVES, Coefs, Matrix, Range
 
 core = vs.core
 
@@ -20,7 +21,7 @@ __all__: List[str] = [
     'clamp_values',
     'get_neutral_value', 'get_coefs',
     'check_variable',
-    'VideoProp'
+    'VideoProp',
     'get_matrix', 'get_matrix_curve'
 ]
 
@@ -378,7 +379,7 @@ def get_matrix_curve(matrix: int) -> CURVES:
         case 1:
             return vs.TransferCharacteristics.TRANSFER_BT709
         case 5 | 6:
-            return vs.TransferCharacteristics.TRANSFER_BT601,
+            return vs.TransferCharacteristics.TRANSFER_BT601
         case 7:
             return vs.TransferCharacteristics.TRANSFER_ST240_M
         case 13:
@@ -387,8 +388,7 @@ def get_matrix_curve(matrix: int) -> CURVES:
             return vs.TransferCharacteristics.TRANSFER_BT2020_10
         case 15:
             return vs.TransferCharacteristics.TRANSFER_BT2020_12
-        case _:
-            raise ValueError("get_matrix_curve: 'An invalid matrix value was passed!'")
+    raise ValueError("get_matrix_curve: 'An invalid matrix value was passed!'")
 
 
 # Aliases

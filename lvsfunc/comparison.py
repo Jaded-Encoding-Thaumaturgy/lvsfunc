@@ -250,7 +250,7 @@ class Tile(Comparer):
         max_length = max(map(len, self.arrangement))
         self.arrangement = [row + [0] * (max_length - len(row)) for row in self.arrangement]
 
-        array_count = sum(map(sum, self.arrangement))
+        array_count = sum(map(sum, self.arrangement))  # type:ignore[arg-type]
 
         if array_count != self.num_clips:
             raise ValueError('Tile: specified arrangement has an invalid number of clips')
