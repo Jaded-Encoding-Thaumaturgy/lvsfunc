@@ -318,29 +318,29 @@ class Split(Stack):
             raise ValueError("Split: resulting cropped width or height violates subsampling rules; "
                              "consider resampling to YUV444 or RGB before attempting to crop")
 
-        if self.direction == Direction.HORIZONTAL:
-            crop_width, overflow = divmod(self.width, self.num_clips)
+        match self.direction:
+            case Direction.HORIZONTAL:
+                crop_width, overflow = divmod(self.width, self.num_clips)
 
-            for key, clip in enumerate(self.clips):
-                left_crop = crop_width * key
-                right_crop = crop_width * (self.num_clips - 1 - key)
+                for key, clip in enumerate(self.clips):
+                    left_crop = crop_width * key
+                    right_crop = crop_width * (self.num_clips - 1 - key)
 
-                if key != (self.num_clips - 1):
-                    right_crop += overflow
+                    if key != (self.num_clips - 1):
+                        right_crop += overflow
 
-                self.clips[key] = clip.std.Crop(left=left_crop, right=right_crop)
+                    self.clips[key] = clip.std.Crop(left=left_crop, right=right_crop)
+            case Direction.VERTICAL:
+                crop_height, overflow = divmod(self.height, self.num_clips)
 
-        elif self.direction == Direction.VERTICAL:
-            crop_height, overflow = divmod(self.height, self.num_clips)
+                for key, clip in enumerate(self.clips):
+                    top_crop = crop_height * key
+                    bottom_crop = crop_height * (self.num_clips - 1 - key)
 
-            for key, clip in enumerate(self.clips):
-                top_crop = crop_height * key
-                bottom_crop = crop_height * (self.num_clips - 1 - key)
+                    if key != (self.num_clips - 1):
+                        bottom_crop += overflow
 
-                if key != (self.num_clips - 1):
-                    bottom_crop += overflow
-
-                self.clips[key] = clip.std.Crop(top=top_crop, bottom=bottom_crop)
+                    self.clips[key] = clip.std.Crop(top=top_crop, bottom=bottom_crop)
 
 
 def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
