@@ -386,14 +386,11 @@ def mt_xxpand_multi(clip: vs.VideoNode,
 
     sh = sh or sw
 
-    # TODO: Match case
-    if mode == Shapes.ELLIPSE:
-        coordinates = [[1] * 8, [0, 1, 0, 1, 1, 0, 1, 0],
-                       [0, 1, 0, 1, 1, 0, 1, 0]]
-    elif mode == Shapes.LOSANGE:
-        coordinates = [[0, 1, 0, 1, 1, 0, 1, 0]] * 3
-    else:
-        coordinates = [[1] * 8] * 3
+    match mode:
+        case Shapes.ELLIPSE: coordinates = [[1] * 8, [0, 1, 0, 1, 1, 0, 1, 0],
+                                                     [0, 1, 0, 1, 1, 0, 1, 0]]
+        case Shapes.LOSANGE: coordinates = [[0, 1, 0, 1, 1, 0, 1, 0]] * 3
+        case _: coordinates = [[1] * 8] * 3
 
     clips = [clip]
     end = int(min(sw, sh)) + start
