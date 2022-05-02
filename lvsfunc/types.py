@@ -11,7 +11,8 @@ __all__: List[str] = [
     'Range',
     'Coordinate', 'Position', 'Size',
     'Matrix', 'Coefs',
-    'VSFunction'
+    'VSFunction',
+    'CURVES'
 ]
 
 Range = Union[Optional[int], Tuple[Optional[int], Optional[int]]]
@@ -79,3 +80,13 @@ class Shapes(IntEnum):
     RECTANGLE = 0
     ELLIPSE = 1
     LOSANGE = 2
+
+
+CURVES = Literal[
+    vs.TransferCharacteristics.TRANSFER_IEC_61966_2_1,
+    vs.TransferCharacteristics.TRANSFER_BT709,
+    vs.TransferCharacteristics.TRANSFER_BT601,
+    vs.TransferCharacteristics.TRANSFER_ST240_M,
+    vs.TransferCharacteristics.TRANSFER_BT2020_10,
+    vs.TransferCharacteristics.TRANSFER_BT2020_12,
+]

@@ -10,6 +10,7 @@ from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
 from .kernels import (Bicubic, BicubicSharp, Catrom, Kernel, Spline36,
                       get_kernel)
 from .types import VSFunction
+from .types import CURVES, VSFunction
 from .util import (check_variable, get_coefs, get_prop, quick_resample,
                    scale_thresh)
 
@@ -26,7 +27,7 @@ core = vs.core
 
 __all__: List[str] = [
     'descale', 'descale_detail_mask', 'reupscale',
-    'ssim_downsample', 'CURVES',
+    'ssim_downsample',
     'gamma2linear', 'linear2gamma',
     'comparative_descale', 'comparative_restore',
     'mixed_rescale'
@@ -308,16 +309,6 @@ def descale(clip: vs.VideoNode,
     if clip.format.num_planes == 1 or upscaler is None:
         return upscaled
     return join([upscaled, plane(clip, 1), plane(clip, 2)])
-
-
-CURVES = Literal[
-    vs.TransferCharacteristics.TRANSFER_IEC_61966_2_1,
-    vs.TransferCharacteristics.TRANSFER_BT709,
-    vs.TransferCharacteristics.TRANSFER_BT601,
-    vs.TransferCharacteristics.TRANSFER_ST240_M,
-    vs.TransferCharacteristics.TRANSFER_BT2020_10,
-    vs.TransferCharacteristics.TRANSFER_BT2020_12,
-]
 
 
 def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 720,

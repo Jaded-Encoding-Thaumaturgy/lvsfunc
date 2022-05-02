@@ -341,5 +341,23 @@ def check_variable(clip: vs.VideoNode, function: str) -> None:
     assert clip.format
 
 
+def get_matrix_curve(matrix: int) -> CURVES:
+    match matrix:
+        case 1:
+            return vs.TransferCharacteristics.TRANSFER_BT709
+        case 5 | 6:
+            return vs.TransferCharacteristics.TRANSFER_BT601,
+        case 7:
+            return vs.TransferCharacteristics.TRANSFER_ST240_M
+        case 13:
+            return vs.TransferCharacteristics.TRANSFER_IEC_61966_2_1
+        case 14:
+            return vs.TransferCharacteristics.TRANSFER_BT2020_10
+        case 15:
+            return vs.TransferCharacteristics.TRANSFER_BT2020_12
+        case _:
+            raise ValueError("get_matrix_curve: 'An invalid matrix value was passed!'")
+
+
 # Aliases
 rfs = replace_ranges
