@@ -184,13 +184,11 @@ def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 2
 
     clip_32 = depth(clip, 32, dither_type=Dither.ERROR_DIFFUSION)
 
-    # TODO: Replace with a match-case?
-    if mode.lower() == 'deblock':
-        model = DPIRModel.drunet_deblocking_color if not is_gray else DPIRModel.drunet_deblocking_grayscale
-    elif mode.lower() == 'denoise':
-        model = DPIRModel.drunet_color if not is_gray else DPIRModel.drunet_gray
-    else:
-        raise ValueError(f"""vsdpir: '"{mode}" is not a valid mode!'""")
+    match mode.lower():
+        case 'deblock':  model = DPIRModel.drunet_deblocking_color if not is_gray \
+            else DPIRModel.drunet_deblocking_grayscale
+        case 'denoise': model = DPIRModel.drunet_color if not is_gray else DPIRModel.drunet_gray
+        case _: raise ValueError(f"""vsdpir: '"{mode}" is not a valid mode!'""")
 
     dpir_args |= dict(strength=strength, tiles=tiles, model=model)
 
