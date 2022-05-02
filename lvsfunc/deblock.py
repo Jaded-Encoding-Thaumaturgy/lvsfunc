@@ -14,7 +14,7 @@ core = vs.core
 
 
 __all__: List[str] = [
-    'vsdpir', 'autodb_dpir'
+    'autodb_dpir', 'vsdpir'
 ]
 
 

@@ -13,6 +13,17 @@ from .util import (check_variable, normalize_ranges, replace_ranges,
 
 core = vs.core
 
+__all__: List[str] = [
+    'bounded_dehardsub',
+    'get_all_masks',
+    'hardsub_mask',
+    'HardsubASS',
+    'HardsubLine', 'HardsubLineFade',
+    'HardsubMask',
+    'HardsubSign', 'HardsubSignFade',
+    'HardsubSignKgf',
+]
+
 
 class HardsubMask(DeferredMask, ABC):
     """

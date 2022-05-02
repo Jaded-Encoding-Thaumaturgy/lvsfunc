@@ -23,17 +23,19 @@ core = vs.core
 
 
 __all__: List[str] = [
-    'source', 'src',
-    'edgefixer', 'ef',
-    'shift_tint',
-    'limit_dark',
-    'wipe_row',
-    'load_bookmarks', 'frames_since_bookmark',
-    'allow_variable', 'chroma_injector',
+    'allow_variable',
+    'chroma_injector',
     'colored_clips',
-    'unsharpen',
+    'edgefixer', 'ef',
+    'frames_since_bookmark',
+    'get_matrix',
+    'limit_dark',
+    'load_bookmarks',
     'overlay_sign',
-    'get_matrix'
+    'shift_tint',
+    'source', 'src',
+    'unsharpen',
+    'wipe_row',
 ]
 
 

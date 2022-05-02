@@ -21,12 +21,13 @@ from .util import (check_variable, force_mod, get_neutral_value, get_prop,
 core = vs.core
 
 __all__: List[str] = [
-    'sivtc', 'SIVTC', 'tivtc_vfr', 'TIVTC_VFR',
-    'seek_cycle',
     'deblend', 'decomb',
     'descale_fields',
     'fix_telecined_fades',
     'ivtc_credits',
+    'seek_cycle',
+    'sivtc', 'SIVTC',
+    'tivtc_vfr', 'TIVTC_VFR',
     'vinverse'
 ]
 

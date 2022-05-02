@@ -21,13 +21,13 @@ from .util import check_variable, get_matrix, get_prop
 core = vs.core
 
 __all__: List[str] = [
-    'Comparer', 'Stack', 'Interleave', 'Tile', 'Split',
     'compare', 'comp', 'stack_compare', 'scomp',
-    'stack_planes',
+    'Comparer', 'Stack', 'Interleave', 'Tile', 'Split',
     'diff_hardsub_mask', 'diff',
+    'Direction',
     'interleave', 'split', 'tile',
     'stack_horizontal', 'stack_vertical',
-    'Direction'
+    'stack_planes',
 ]
 
 T = TypeVar('T')

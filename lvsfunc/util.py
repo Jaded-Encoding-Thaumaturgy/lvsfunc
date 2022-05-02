@@ -12,17 +12,17 @@ core = vs.core
 
 
 __all__: List[str] = [
-    'quick_resample',
-    'pick_repair', 'pick_removegrain',
+    'check_variable',
+    'clamp_values',
+    'force_mod', 'padder',
+    'get_matrix', 'get_matrix_curve',
+    'get_neutral_value', 'get_coefs',
     'get_prop',
     'normalize_ranges', 'replace_ranges', 'rfs',
+    'pick_repair', 'pick_removegrain',
+    'quick_resample',
     'scale_thresh', 'scale_peak',
-    'force_mod', 'padder',
-    'clamp_values',
-    'get_neutral_value', 'get_coefs',
-    'check_variable',
     'VideoProp',
-    'get_matrix', 'get_matrix_curve'
 ]
 
 

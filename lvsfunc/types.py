@@ -7,11 +7,11 @@ from typing import (Any, List, Literal, NamedTuple, NoReturn, Optional,
 import vapoursynth as vs
 
 __all__: List[str] = [
-    'Range',
     'Coordinate', 'Position', 'Size',
+    'CURVES',
     'Matrix', 'Coefs',
+    'Range',
     'VSFunction',
-    'CURVES'
 ]
 
 Range = Union[Optional[int], Tuple[Optional[int], Optional[int]]]

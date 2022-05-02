@@ -25,11 +25,11 @@ core = vs.core
 
 
 __all__: List[str] = [
-    'descale', 'descale_detail_mask', 'reupscale',
-    'ssim_downsample',
-    'gamma2linear', 'linear2gamma',
     'comparative_descale', 'comparative_restore',
-    'mixed_rescale'
+    'descale', 'descale_detail_mask', 'reupscale',
+    'gamma2linear', 'linear2gamma',
+    'mixed_rescale',
+    'ssim_downsample',
 ]
 
 

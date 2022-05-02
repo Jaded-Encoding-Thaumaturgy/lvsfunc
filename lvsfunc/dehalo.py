@@ -19,8 +19,8 @@ core = vs.core
 
 __all__: List[str] = [
     'bidehalo',
-    'masked_dha',
     'fine_dehalo',
+    'masked_dha',
 ]
 
 

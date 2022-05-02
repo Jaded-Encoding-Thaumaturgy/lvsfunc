@@ -15,13 +15,13 @@ core = vs.core
 
 
 __all__: List[str] = [
+    'based_aa',
     'clamp_aa',
-    'taa',
     'nnedi3', 'eedi3',
     'nneedi3_clamp',
+    'taa',
     'transpose_aa',
     'upscaled_sraa', 'sraa',
-    'based_aa'
 ]
 
 

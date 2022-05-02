@@ -10,10 +10,11 @@ core = vs.core
 
 
 __all__: List[str] = [
-    'chroma_reconstruct', 'ChromaReconstruct',
-    'crecon', 'demangle',
-    'regress', 'reconstruct_multi',
-    'RegressClips'
+    'chroma_reconstruct', 'ChromaReconstruct', 'crecon',
+    'demangle',
+    'reconstruct_multi',
+    'regress',
+    'RegressClips',
 ]
 
 

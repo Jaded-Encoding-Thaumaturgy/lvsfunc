@@ -1,11 +1,18 @@
-from typing import Any, Collection, Iterator, TypeVar
+from typing import Any, Collection, Iterator, List, TypeVar
 
-__all__ = ["BarColumn", "Progress", "TextColumn", "TimeRemainingColumn", "FPSColumn"]
+__all__: List[str] = [
+    "BarColumn",
+    "FPSColumn",
+    "Progress",
+    "TextColumn",
+    "TimeRemainingColumn"
+]
 
 T = TypeVar("T")
 
 try:
-    from rich.progress import BarColumn, Progress, ProgressColumn, TextColumn, Task, TimeRemainingColumn
+    from rich.progress import (BarColumn, Progress, ProgressColumn, Task,
+                               TextColumn, TimeRemainingColumn)
     from rich.text import Text
 
     class FPSColumn(ProgressColumn):
