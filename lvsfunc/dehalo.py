@@ -276,20 +276,13 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     mask = core.std.Convolution(mask, matrix=[1] * 9)
     mask = core.std.Expr([mask], expr="x 2 *").std.Limiter()
 
-    # TODO: Match case
-    if show_mask == 1:
-        return mask
-    elif show_mask == 2:
-        return shrink
-    elif show_mask == 3:
-        return edges
-    elif show_mask == 4:
-        return strong
-    elif show_mask == 5:
-        return light
-    elif show_mask == 6:
-        return large
-    elif show_mask == 7:
-        return shr_med
+    match show_mask:
+        case 1: return mask
+        case 2: return shrink
+        case 3: return edges
+        case 4: return strong
+        case 5: return light
+        case 6: return large
+        case 7: return shr_med
 
     return core.std.MaskedMerge(clip, dehaloed, mask, planes=[0])
