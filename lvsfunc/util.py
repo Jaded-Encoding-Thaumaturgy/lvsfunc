@@ -377,18 +377,12 @@ def get_matrix(clip: vs.VideoNode, return_matrix: bool = False) -> Matrix | int:
 def get_matrix_curve(matrix: int) -> CURVES:
     """Returns a matrix curve based on a given `matrix`."""
     match matrix:
-        case 1:
-            return vs.TransferCharacteristics.TRANSFER_BT709
-        case 5 | 6:
-            return vs.TransferCharacteristics.TRANSFER_BT601
-        case 7:
-            return vs.TransferCharacteristics.TRANSFER_ST240_M
-        case 13:
-            return vs.TransferCharacteristics.TRANSFER_IEC_61966_2_1
-        case 14:
-            return vs.TransferCharacteristics.TRANSFER_BT2020_10
-        case 15:
-            return vs.TransferCharacteristics.TRANSFER_BT2020_12
+        case 1: return vs.TransferCharacteristics.TRANSFER_BT709
+        case 5 | 6: return vs.TransferCharacteristics.TRANSFER_BT601
+        case 7: return vs.TransferCharacteristics.TRANSFER_ST240_M
+        case 13: return vs.TransferCharacteristics.TRANSFER_IEC_61966_2_1
+        case 14: return vs.TransferCharacteristics.TRANSFER_BT2020_10
+        case 15: return vs.TransferCharacteristics.TRANSFER_BT2020_12
     raise ValueError("get_matrix_curve: 'An invalid matrix value was passed!'")
 
 
