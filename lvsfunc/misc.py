@@ -13,7 +13,9 @@ from vsutil import depth, get_depth, get_w, get_y, is_image, scale_value
 from .kernels import Catrom
 from .mask import BoundingBox
 from .types import Matrix, Position, Range, Size
-from .util import check_variable, get_prop, normalize_ranges
+from .util import check_variable
+from .util import get_matrix as _get_matrix
+from .util import get_prop, normalize_ranges
 from .util import replace_ranges as _replace_ranges
 from .util import scale_thresh as _scale_thresh
 
@@ -30,7 +32,8 @@ __all__: List[str] = [
     'allow_variable', 'chroma_injector',
     'colored_clips',
     'unsharpen',
-    'overlay_sign'
+    'overlay_sign',
+    'get_matrix'
 ]
 
 
@@ -623,9 +626,10 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
 
 
 # Aliases
+ef = edgefixer
+get_matrix = _get_matrix
 replace_ranges = _replace_ranges
 scale_thresh = _scale_thresh
-ef = edgefixer
 src = source
 
 # TODO: Write function that only masks px of a certain color/threshold of colors.
