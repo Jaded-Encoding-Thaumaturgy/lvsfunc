@@ -104,7 +104,7 @@ def source(file: str, ref: vs.VideoNode | None = None,
         clip = core.imwri.Read(file, **index_args)
     else:
         match ext:
-            case 'd2v':  clip = core.d2v.Source(file, **index_args)
+            case 'd2v': clip = core.d2v.Source(file, **index_args)
             case '.dgi': clip = core.dgdecodenv.DGSource(file, **index_args)
             case '.mp4': clip = core.lsmas.LibavSMASHSource(file, **index_args)
             case '.m2ts': clip = core.lsmas.LWLibavSource(file, **index_args)
