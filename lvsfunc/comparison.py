@@ -15,9 +15,8 @@ from vsutil import split as split_planes
 
 from .dehardsub import hardsub_mask
 from .kernels import Catrom
-from .misc import get_matrix
 from .render import clip_async_render
-from .util import check_variable, get_prop
+from .util import check_variable, get_matrix, get_prop
 
 core = vs.core
 

@@ -43,7 +43,7 @@ About
 
 .. toctree::
     :maxdepth: 4
-    :caption: Functions
+    :caption: Submodules
     :titlesonly:
 
     submodules/aa

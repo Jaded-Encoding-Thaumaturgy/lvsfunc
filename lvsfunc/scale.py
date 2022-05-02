@@ -9,10 +9,9 @@ from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
 
 from .kernels import (Bicubic, BicubicSharp, Catrom, Kernel, Spline36,
                       get_kernel)
-from .types import VSFunction
 from .types import CURVES, VSFunction
-from .util import (check_variable, get_coefs, get_prop, quick_resample,
-                   scale_thresh)
+from .util import (check_variable, get_coefs, get_matrix, get_prop,
+                   quick_resample, scale_thresh)
 
 try:
     from cytoolz import functoolz

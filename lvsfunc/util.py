@@ -21,6 +21,7 @@ __all__: List[str] = [
     'get_neutral_value', 'get_coefs',
     'check_variable',
     'VideoProp'
+    'get_matrix', 'get_matrix_curve'
 ]
 
 
@@ -333,6 +334,7 @@ def get_coefs(curve: vs.TransferCharacteristics) -> Coefs:
 
 
 def check_variable(clip: vs.VideoNode, function: str) -> None:
+    """Check for variable format and a variable resolution, and return an error if found."""
     if clip.format is None:
         raise ValueError(f"{function}: 'Variable-format clips not supported!'")
     elif 0 in (clip.width, clip.height):
@@ -341,7 +343,37 @@ def check_variable(clip: vs.VideoNode, function: str) -> None:
     assert clip.format
 
 
+def get_matrix(clip: vs.VideoNode, return_matrix: bool = False) -> Matrix | int:
+    """
+    Helper function to get the matrix for a clip.
+
+    :param clip:            Input clip
+    :param return_matrix:   Returns a Matrix instead of an int.
+                            Set to False by default for backwards compatibility.
+
+    :return:                Value representing a matrix
+    """
+    check_variable(clip, "get_matrix")
+    assert clip.format
+
+    if not return_matrix:
+        warnings.warn("get_matrix: '`return_matrix=True` will be set to default in a future commit! "
+                      "Make sure you update your functions to work with `Matrix` objects!'")
+
+    frame = clip.get_frame(0)
+    w, h = frame.width, frame.height
+
+    if frame.format.color_family == vs.RGB:
+        return Matrix.RGB if return_matrix else 0
+    elif w <= 1024 and h <= 576:
+        return Matrix.BT470BG if return_matrix else 5
+    elif w <= 2048 and h <= 1536:
+        return Matrix.BT709 if return_matrix else 1
+    return Matrix.BT2020NC if return_matrix else 9
+
+
 def get_matrix_curve(matrix: int) -> CURVES:
+    """Returns a matrix curve based on a given `matrix`."""
     match matrix:
         case 1:
             return vs.TransferCharacteristics.TRANSFER_BT709

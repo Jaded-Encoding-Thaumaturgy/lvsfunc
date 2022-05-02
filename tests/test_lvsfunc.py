@@ -649,18 +649,6 @@ class LvsfuncTestMisc(LvsfuncTests):
 
         self.clean_output_clip()
 
-
-    def test_get_matrix(self) -> None:
-        matrix_rgb = lvf.misc.get_matrix(self.RGB24_CLIP)
-        matrix_big = lvf.misc.get_matrix(self.BIGGER_SAMPLE_CLIP)
-        matrix_sml = lvf.misc.get_matrix(self.SMALLER_SAMPLE_CLIP)
-        matrix_uhd = lvf.misc.get_matrix(self.VERYBIG_SAMPLE_CLIP)
-
-        self.assertEqual(matrix_rgb, 0)
-        self.assertEqual(matrix_big, 1)
-        self.assertEqual(matrix_sml, 5)
-        self.assertEqual(matrix_uhd, 9)
-
     def test_shift_tint(self) -> None:
         clip = lvf.misc.shift_tint(self.BLACK_SAMPLE_CLIP)
         self.assert_runs(clip)
@@ -819,6 +807,17 @@ class LvsfuncTestUtil(LvsfuncTests):
         clip = lvf.util.padder(self.BLACK_SAMPLE_CLIP)
         self.assert_runs(clip)
         self.assert_dimensions(clip, width=224, height=184)
+
+    def test_get_matrix(self) -> None:
+        matrix_rgb = lvf.util.get_matrix(self.RGB24_CLIP)
+        matrix_big = lvf.util.get_matrix(self.BIGGER_SAMPLE_CLIP)
+        matrix_sml = lvf.util.get_matrix(self.SMALLER_SAMPLE_CLIP)
+        matrix_uhd = lvf.util.get_matrix(self.VERYBIG_SAMPLE_CLIP)
+
+        self.assertEqual(matrix_rgb, 0)
+        self.assertEqual(matrix_big, 1)
+        self.assertEqual(matrix_sml, 5)
+        self.assertEqual(matrix_uhd, 9)
 
 
 _not_implemented: List[str] = [

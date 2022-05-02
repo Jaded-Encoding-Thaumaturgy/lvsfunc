@@ -9,6 +9,8 @@ Some of these may also be useful for regular scripting or other modules.
     lvsfunc.util.clamp_values
     lvsfunc.util.force_mod
     lvsfunc.util.get_coefs
+    lvsfunc.util.get_matrix
+    lvsfunc.util.get_matrix_curve
     lvsfunc.util.normalize_ranges
     lvsfunc.util.padder
     lvsfunc.util.pick_removegrain
