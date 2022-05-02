@@ -129,8 +129,8 @@ def tivtc_vfr(clip: vs.VideoNode,
               tfm_args: Dict[str, Any] = {},
               tdecimate_args: Dict[str, Any] = {}) -> vs.VideoNode:
     """
-    | Wrapper for performing TFM and TDecimate on a clip that is supposed to be VFR,
-    | including generating a metrics/matches/timecodes txt file.
+    Wrapper for performing TFM and TDecimate on a clip that is supposed to be VFR.
+    Includes automatic generation of a metrics/matches/timecodes txt file.
 
     | This function took *heavy* inspiration from atomchtools.TIVTC_VFR,
     | and is basically an improved rewrite on the concept.
