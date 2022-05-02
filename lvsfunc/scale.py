@@ -313,10 +313,10 @@ def descale(clip: vs.VideoNode,
 def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 720,
                     smooth: float | VSFunction = ((3 ** 2 - 1) / 12) ** 0.5,
                     kernel: Kernel | str = Catrom(), gamma: bool = False,
-                    curve: CURVES = vs.TransferCharacteristics.TRANSFER_BT709,
+                    curve: CURVES | None = None,
                     sigmoid: bool = False, epsilon: float = 1e-6) -> vs.VideoNode:
     """
-    muvsfunc.ssim_downsample rewrite taken from a Vardë gist.
+    muvsfunc.SSIM_downsample rewrite taken from a Vardë gist.
     Unlike muvsfunc's implementation, this function also works in float and does not use nnedi3_resample.
     Most of the documentation is taken from muvsfunc.
 
@@ -331,9 +331,9 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
 
     `Original gist <https://gist.github.com/Ichunjo/16ab1f893588aafcb096c1f35a0cfb15>`_
 
-    :param clip:        Input clip
-    :param width:       Output width. If None, autocalculates using height
-    :param height:      Output height (default: 720)
+    :param clip:        Input clip.
+    :param width:       Output width. If None, autocalculates using height.
+    :param height:      Output height (default: 720).
     :param smooth:      Image smoothening method.
                         If you pass an int, it specifies the "radius" of the internally-used boxfilter,
                         i.e. the window has a size of (2*smooth+1)x(2*smooth+1).
@@ -341,14 +341,18 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
                         i.e. the standard deviation of gaussian blur.
                         If you pass a function, it acts as a general smoother.
                         Default uses a gaussian blur.
-    :param curve:       Gamma mapping
+    :param curve:       Gamma mapping. Will auto-determine based on the input props or resolution.
+                        Can be forced with for example `curve=vs.TransferCharacteristics.TRANSFER_BT709`.
+    :param gamma:       Perform a gamma conversion prior to scaling and after scaling.
+                        This function MUST be set to `True` for `sigmoid` and `epsilon` to function.
     :param sigmoid:     When True, applies a sigmoidal curve after the power-like curve
                         (or before when converting from linear to gamma-corrected).
                         This helps reduce the dark halo artefacts found around sharp edges
                         caused by resizing in linear luminance.
-    :param epsilon:     Machine epsilon
+                        This parameter only works if `gamma=True`.
+    :param epsilon:     Machine epsilon. This parameter only works if `gamma=True`.
 
-    :return: Downsampled clip
+    :return:            Downsampled clip.
     """
     check_variable(clip, "ssim_downsample")
 
@@ -366,6 +370,12 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
         width = get_w(height, aspect_ratio=clip.width/clip.height)
 
     clip = depth(clip, 32)
+
+    if curve is None:
+        try:
+            curve = get_matrix_curve(get_prop(clip.get_frame(0), "_Matrix", int))
+        except ValueError:
+            curve = get_matrix_curve(get_matrix(clip, return_matrix=False))
 
     if gamma:
         clip = gamma2linear(clip, curve, sigmoid=sigmoid, epsilon=epsilon)
@@ -385,8 +395,7 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
     d = core.std.Expr([m, r, l1, t], 'x y z * + a -')
 
     if gamma:
-        d = linear2gamma(d, curve, sigmoid=sigmoid)
-
+        return linear2gamma(d, curve, sigmoid=sigmoid)
     return d
 
 
