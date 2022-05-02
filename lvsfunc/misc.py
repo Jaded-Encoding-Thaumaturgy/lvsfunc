@@ -67,49 +67,48 @@ def source(file: str, ref: vs.VideoNode | None = None,
     * dgdecodenv (optional: dgi sources)
     * VapourSynth-ReadMpls (optional: mpls sources)
 
-    :param file:              Input file
+    :param file:              Input file. This MUST have an extension.
     :param ref:               Use another clip as reference for the clip's format,
-                              resolution, and framerate (Default: None)
+                              resolution, and framerate (Default: None).
     :param force_lsmas:       Force files to be imported with L-SMASH (Default: False)
-    :param mpls:              Load in a mpls file (Default: False)
-    :param mpls_playlist:     Playlist number, which is the number in mpls file name (Default: 0)
-    :param mpls_angle:        Angle number to select in the mpls playlist (Default: 0)
-    :param kwargs:            Arguments passed to the indexing filter
+    :param mpls:              Load in a mpls file (Default: False).
+    :param mpls_playlist:     Playlist number, which is the number in mpls file name (Default: 0).
+    :param mpls_angle:        Angle number to select in the mpls playlist (Default: 0).
+    :param kwargs:            Arguments passed to the indexing filter.
 
-    :return:                  Vapoursynth clip representing input file
+    :return:                  Vapoursynth clip representing input file.
     """
-    # TODO: find a way to NOT have to rely on a million elif's
     if file.startswith('file:///'):
         file = file[8::]
 
+    fname, ext = os.path.splitext(file)
+
+    if not ext:
+        raise ValueError("source: 'No extension found in filename!'")
+
     # Error handling for some file types
-    if file.endswith('.mpls') and mpls is False:
+    if ext == '.mpls' and mpls is False:
         raise ValueError("source: 'Set \"mpls = True\" and pass a path to the base Blu-ray directory "
                          "for this kind of file'")
-    if os.path.splitext(file)[1].lower() in annoying_formats:
+
+    if ext in annoying_formats:
         raise ValueError("source: 'Use an external indexer like d2vwitch or DGIndexNV for this kind of file'")
 
     if force_lsmas:
         clip = core.lsmas.LWLibavSource(file, **index_args)
-
     elif mpls:
         mpls_in = core.mpls.Read(file, mpls_playlist, mpls_angle)
         clip = core.std.Splice([core.lsmas.LWLibavSource(mpls_in['clip'][i], **index_args)
                                 for i in range(mpls_in['count'])])
-
-    elif file.endswith('.d2v'):
-        clip = core.d2v.Source(file, **index_args)
-    elif file.endswith('.dgi'):
-        clip = core.dgdecodenv.DGSource(file, **index_args)
-    elif file.endswith('.mp4'):
-        clip = core.lsmas.LibavSMASHSource(file, **index_args)
     elif is_image(file):
         clip = core.imwri.Read(file, **index_args)
     else:
-        if file.endswith('.m2ts'):
-            clip = core.lsmas.LWLibavSource(file, **index_args)
-        else:
-            clip = core.ffms2.Source(file, **index_args)
+        match ext:
+            case 'd2v':  clip = core.d2v.Source(file, **index_args)
+            case '.dgi': clip = core.dgdecodenv.DGSource(file, **index_args)
+            case '.mp4': clip = core.lsmas.LibavSMASHSource(file, **index_args)
+            case '.m2ts': clip = core.lsmas.LWLibavSource(file, **index_args)
+            case _: clip = core.ffms2.Source(file, **index_args)
 
     if ref:
         check_variable(ref, "source")
