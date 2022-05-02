@@ -317,6 +317,7 @@ def padder(clip: vs.VideoNode,
 
 
 def get_coefs(curve: vs.TransferCharacteristics) -> Coefs:
+    """Returns transfer coefs."""
     srgb = Coefs(0.04045, 12.92, 0.055, 2.4)
     bt709 = Coefs(0.08145, 4.5, 0.0993, 2.22222)
     smpte240m = Coefs(0.0912, 4.0, 0.1115, 2.22222)
