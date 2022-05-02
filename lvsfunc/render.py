@@ -197,6 +197,7 @@ def clip_async_render(clip: vs.VideoNode,
 
 
 def get_render_progress() -> Progress:
+    """Returns render progress."""
     return Progress(
         TextColumn("{task.description}"),
         BarColumn(),
