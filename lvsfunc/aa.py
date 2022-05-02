@@ -68,7 +68,7 @@ def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode]) -> vs
     y = get_y(clip)
 
     aa = aafun(y.std.Transpose())
-    aa = Catrom().scale(aa, width=clip.width, height=clip.width, shift=(0.5, 0))
+    aa = Catrom().scale(aa, width=clip.height, height=clip.width, shift=(0.5, 0))
     aa = aafun(aa.std.Transpose())
     aa = Catrom().scale(aa, width=clip.width, height=clip.height, shift=(0.5, 0))
 
