@@ -403,6 +403,7 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
 def gamma2linear(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  epsilon: float = 1e-6) -> vs.VideoNode:
+    """Converts from gamma to linear."""
     check_variable(clip, "gamma2linear")
     assert clip.format
 
@@ -425,6 +426,7 @@ def gamma2linear(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
 def linear2gamma(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  ) -> vs.VideoNode:
+    """Converts from linear to gamma."""
     check_variable(clip, "linear2gamma")
     assert clip.format
 
