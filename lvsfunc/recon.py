@@ -113,6 +113,15 @@ def regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1e
 
 
 def reconstruct_multi(c: vs.VideoNode, r: RegressClips, radius: int = 2) -> vs.VideoNode:
+    """
+    Tries to reconstruct regressed clips using a base video clip.
+
+    :param c:       Original clip.
+    :param r:       Regressed clips.
+    :param radius:  Internal boxblur radii.
+
+    :returns:       Fixed regressed clips.
+    """
     check_variable(c, "reconstruct_multi")
 
     weights = core.std.Expr(r.correlation, 'x 0.5 - 0.5 / 0 max')
