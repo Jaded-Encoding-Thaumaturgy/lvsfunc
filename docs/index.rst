@@ -13,6 +13,8 @@ About
 .. image:: https://img.shields.io/readthedocs/lvsfunc
     :target: https://lvsfunc.encode.moe/
 
+.. image:: https://img.shields.io/pypi/pyversions/lvsfunc
+
 .. image:: https://img.shields.io/pypi/v/lvsfunc
     :target: https://pypi.org/project/lvsfunc/
 
