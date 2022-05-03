@@ -54,10 +54,10 @@ About
     submodules/dehalo
     submodules/dehardsub
     submodules/deinterlace
-    submodules/denoise
     submodules/kernels
     submodules/mask
     submodules/misc
+    submodules/noise
     submodules/recon
     submodules/render
     submodules/scale
