@@ -29,4 +29,4 @@ from .scale import *
 from .types import *
 from .util import *
 
-noise = denoise
+denoise = noise
