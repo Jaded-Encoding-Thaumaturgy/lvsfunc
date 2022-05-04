@@ -681,6 +681,10 @@ class LvsfuncTestNoise(LvsfuncTests):
         clip = lvf.noise.bm3d(self.BLACK_SAMPLE_CLIP)
         self.assert_runs(clip)
 
+    def test_chickendream(self) -> None:
+        clip = lvf.noise.chickendream(self.BLACK_SAMPLE_CLIP)
+        self.assert_runs(clip)
+
 
 # lvsfunc.recon
 class LvsfuncTestRecon(LvsfuncTests):
