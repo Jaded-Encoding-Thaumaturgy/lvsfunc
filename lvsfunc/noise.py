@@ -104,11 +104,11 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35, rad: float = 0.025, re
                  chroma: bool = False, seed: int = 42069, matrix: Matrix | int | None = None,
                  kernel: Kernel | str = Bicubic(b=0, c=0.5), **chkdr_args: Any) -> vs.VideoNode:
     """
-    .. warning::
-        This function is _incredibly_ slow! It may take multiple minutes to render your clip!
-
     A wrapper around the graining plugin, `chickendream`,
     a plug-in that implements a realistic film grain generator.
+
+    .. warning::
+        This function is _incredibly_ slow! It may take multiple minutes to render your clip!
 
     The generated grain is quite significant, but you can blend the output with the input to attenuate the effect.
     For this function to work at its best, the image must be in linear light and MUST be an SRGB or GRAY clip.
