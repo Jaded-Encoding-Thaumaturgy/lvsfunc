@@ -98,8 +98,8 @@ def source(file: str, ref: vs.VideoNode | None = None,
         clip = core.lsmas.LWLibavSource(file, **index_args)
     elif mpls:
         mpls_in = core.mpls.Read(file, mpls_playlist, mpls_angle)
-        clip = core.std.Splice([core.lsmas.LWLibavSource(mpls_in['clip'][i], **index_args)
-                                for i in range(mpls_in['count'])])
+        clip = core.std.Splice([core.lsmas.LWLibavSource(mpls_in['clip'][i], **index_args)  # type:ignore[call-overload]
+                                for i in range(mpls_in['count'])])  # type:ignore[call-overload]
     elif is_image(file):
         clip = core.imwri.Read(file, **index_args)
     else:
@@ -172,8 +172,9 @@ def edgefixer(clip: vs.VideoNode,
     if bottom is None:
         bottom = top
 
-    ef = core.edgefixer.ContinuityFixer(clip, left, top, right, bottom, radius)
-    return ef if full_range else core.std.Limiter(ef, 16.0, [235, 240])
+    ef = core.cf.ContinuityFixer(clip, left, top, right, bottom, radius)
+    limit: vs.VideoNode = ef if full_range else core.std.Limiter(ef, 16.0, [235, 240])
+    return limit
 
 
 def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.VideoNode:
