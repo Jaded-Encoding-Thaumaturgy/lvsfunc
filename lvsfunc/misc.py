@@ -536,13 +536,17 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     Wrapper to overlay a logo or sign onto another clip. Rewrite of fvsfunc.InsertSign.
     This wrapper also allows you to set fades to fade a logo in and out.
 
-    Requires:
+    Dependencies:
 
     * vs-imwri
 
-    :param clip:            Base clip
+    Optional Dependencies:
+
+    * kagefunc
+
+    :param clip:            Input clip.
     :param overlay:         Sign or logo to overlay. Must be the png loaded in through imwri.Read()
-                            or a path string to the image file.
+                            or a path string to the image file, and MUST be the same dimensions as the input clip.
     :param frame_ranges:    Frame ranges or starting frame to apply the overlay to. See ``types.Range`` for more info.
                             If None, overlays the entire clip.
                             If a Range is passed, the overlaid clip will only show up inside that range.
@@ -557,12 +561,13 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
                             in which case it stays as `None`.
 
     :return:                Clip with a logo or sign overlaid on top for the given frame ranges,
-                            either with or without a fade
+                            either with or without a fade.
     """
-    try:
-        from kagefunc import crossfade
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("overlay_sign: 'missing dependency `kagefunc`'")
+    if fade_length > 0:
+        try:
+            from kagefunc import crossfade
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("overlay_sign: 'missing dependency `kagefunc`'")
 
     check_variable(clip, "overlay_sign")
     assert clip.format
@@ -576,10 +581,9 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     elif isinstance(overlay, str):
         overlay = core.imwri.Read(overlay, alpha=True)
 
-    if not all([clip.width, overlay.width]) or not all([clip.height, overlay.height]):
+    if (clip.width != overlay.width) or (clip.height != overlay.height):
         raise ValueError("overlay_sign: 'Your overlay clip must have the same dimensions as your input clip!'")
 
-    # wtf mypy this IS reachable
     if isinstance(frame_ranges, list) and len(frame_ranges) > 1:
         warnings.warn("overlay_sign: 'Only one range is currently supported! "
                       "Grabbing the first item in list.'")
@@ -610,7 +614,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
         else:
             raise ValueError("overlay_sign: 'Please make sure you loaded your sign in using imwri.Read!'")
 
-    merge = core.std.MaskedMerge(clip, overlay, depth(mask, get_depth(overlay)))
+    merge = core.std.MaskedMerge(clip, overlay, depth(mask, get_depth(overlay)).std.Limiter())
 
     if not frame_ranges:
         return merge
