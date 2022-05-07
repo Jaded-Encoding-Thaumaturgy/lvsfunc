@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import colorsys
 import random
 import warnings

@@ -7,6 +7,8 @@
     These functions are undocumented and will never be full features. Probably.
     Don't tell louis this exists though, else I'm a dead man.
 """
+from __future__ import annotations
+
 from typing import List
 
 import vapoursynth as vs

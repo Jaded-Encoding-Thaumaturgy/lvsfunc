@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, Collection, Iterator, List, TypeVar
 
 __all__: List[str] = [

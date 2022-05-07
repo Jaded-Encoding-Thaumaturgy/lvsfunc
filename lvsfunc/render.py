@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from concurrent.futures import Future
 from functools import partial
 from threading import Condition

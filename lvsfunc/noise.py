@@ -1,6 +1,5 @@
-"""
-    Denoising functions and wrappers.
-"""
+from __future__ import annotations
+
 from typing import Any, Dict, List
 
 import vapoursynth as vs

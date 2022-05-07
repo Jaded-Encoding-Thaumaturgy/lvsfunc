@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from enum import IntEnum
 from typing import (Any, Callable, List, Literal, NamedTuple, NoReturn,
                     Optional, Protocol, Sequence, Tuple, TypeVar, Union)
