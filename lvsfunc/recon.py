@@ -1,27 +1,20 @@
 from functools import partial
-from typing import List, NamedTuple
+from typing import List
 
 import vapoursynth as vs
 from vsutil import depth, get_depth, join, split
 
+from .types import RegressClips
 from .util import check_variable
 
 core = vs.core
 
 
 __all__: List[str] = [
-    'chroma_reconstruct', 'ChromaReconstruct', 'crecon',
-    'demangle',
+    'chroma_reconstruct',
     'reconstruct_multi',
     'regress',
-    'RegressClips',
 ]
-
-
-class RegressClips(NamedTuple):
-    slope: vs.VideoNode
-    intercept: vs.VideoNode
-    correlation: vs.VideoNode
 
 
 def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) -> vs.VideoNode:
@@ -81,7 +74,7 @@ def regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1e
     """
 
     if radius <= 0:
-        raise ValueError("Regress: 'radius must be greater than zero'")
+        raise ValueError("Regress: 'radius must be greater than zero!'")
 
     Expr = core.std.Expr
     E = partial(vs.core.std.BoxBlur, hradius=radius, vradius=radius)
@@ -133,9 +126,3 @@ def reconstruct_multi(c: vs.VideoNode, r: RegressClips, radius: int = 2) -> vs.V
 
 def _mean(c: vs.VideoNode, radius: int) -> vs.VideoNode:
     return core.std.BoxBlur(c, hradius=radius, vradius=radius)
-
-
-# Aliases
-ChromaReconstruct = chroma_reconstruct
-crecon = chroma_reconstruct
-demangle = chroma_reconstruct

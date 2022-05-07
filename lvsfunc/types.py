@@ -1,20 +1,38 @@
-from __future__ import annotations
-
 from enum import IntEnum
-from typing import (Any, List, Literal, NamedTuple, NoReturn, Optional,
-                    Protocol, Tuple, Union)
+from typing import (Any, Callable, List, Literal, NamedTuple, NoReturn,
+                    Optional, Protocol, Sequence, Tuple, TypeVar, Union)
 
 import vapoursynth as vs
 
 __all__: List[str] = [
-    'Coordinate', 'Position', 'Size',
-    'CURVES',
-    'Matrix', 'Coefs',
-    'Range',
-    'VSFunction',
+    'Coefs', 'Coordinate', 'CreditMask', 'CURVES', 'CustomScaler', 'Direction', 'F', 'Matrix', 'Position', 'Range',
+    'RegressClips', 'Resolution', 'ScaleAttempt', 'SceneChangeMode', 'Size', 'T', 'VideoProp', 'VSFunction'
 ]
 
+
+CreditMask = Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode]
+CustomScaler = Callable[[vs.VideoNode, int, int], vs.VideoNode]
 Range = Union[Optional[int], Tuple[Optional[int], Optional[int]]]
+
+
+VideoProp = Union[
+    int, Sequence[int],
+    float, Sequence[float],
+    str, Sequence[str],
+    vs.VideoNode, Sequence[vs.VideoNode],
+    vs.VideoFrame, Sequence[vs.VideoFrame],
+    Callable[..., Any], Sequence[Callable[..., Any]]
+]
+
+F = TypeVar("F", bound=Callable[..., vs.VideoNode])
+T = TypeVar("T", bound=VideoProp)
+
+
+class Coefs(NamedTuple):
+    k0: float
+    phi: float
+    alpha: float
+    gamma: float
 
 
 class Coordinate():
@@ -29,6 +47,47 @@ class Coordinate():
             raise ValueError(f"{self.__class__.__name__}: 'Can't be negative!'")
         self.x = x
         self.y = y
+
+
+class Direction(IntEnum):
+    """
+    Enum to simplify direction argument.
+    """
+    HORIZONTAL = 0
+    VERTICAL = 1
+
+
+class Resolution(NamedTuple):
+    """ Tuple representing a resolution. """
+
+    width: int
+    """ Width. """
+
+    height: int
+    """ Height. """
+
+
+class ScaleAttempt(NamedTuple):
+    """ Tuple representing a descale attempt. """
+
+    descaled: vs.VideoNode
+    """ Descaled frame in native resolution. """
+
+    rescaled: vs.VideoNode
+    """ Descaled frame reupscaled with the same kernel. """
+
+    resolution: Resolution
+    """ The native resolution. """
+
+    diff: vs.VideoNode
+    """ The subtractive difference between the original and descaled frame. """
+
+
+class SceneChangeMode(IntEnum):
+    WWXD = 0
+    SCXVID = 1
+    WWXD_SCXVID_UNION = 2
+    WWXD_SCXVID_INTERSECTION = 3
 
 
 class Position(Coordinate):
@@ -63,13 +122,6 @@ class Matrix(IntEnum):
         raise PermissionError
 
 
-class Coefs(NamedTuple):
-    k0: float
-    phi: float
-    alpha: float
-    gamma: float
-
-
 class VSFunction(Protocol):
     def __call__(self, clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
         ...
@@ -79,6 +131,12 @@ class Shapes(IntEnum):
     RECTANGLE = 0
     ELLIPSE = 1
     LOSANGE = 2
+
+
+class RegressClips(NamedTuple):
+    slope: vs.VideoNode
+    intercept: vs.VideoNode
+    correlation: vs.VideoNode
 
 
 CURVES = Literal[

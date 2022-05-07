@@ -13,4 +13,3 @@ Chroma reconstruction functions and wrappers.
     :members:
     :undoc-members:
     :show-inheritance:
-    :exclude-members: ChromaReconstruct, crecon, demangle

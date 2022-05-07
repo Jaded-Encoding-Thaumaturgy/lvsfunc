@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import os
 import sys
 import time
@@ -12,16 +10,19 @@ from typing import Any, Dict, List
 import vapoursynth as vs
 from vsutil import Dither, depth, get_depth, get_w, get_y, scale_value
 
-from .comparison import Direction, Stack
+from .comparison import Stack
+from .exceptions import InvalidFramerateError
 from .kernels import Bicubic, BicubicDidee, Catrom, Kernel, get_kernel
 from .render import get_render_progress
+from .types import Direction
 from .util import (check_variable, check_variable_format, force_mod,
                    get_neutral_value, get_prop, pick_repair)
 
 core = vs.core
 
 __all__: List[str] = [
-    'deblend', 'decomb',
+    'deblend',
+    'decomb',
     'descale_fields',
     'fix_telecined_fades',
     'ivtc_credits',
@@ -158,7 +159,7 @@ def tivtc_vfr(clip: vs.VideoNode,
     :return:                    IVTC'd VFR clip with external timecode/matches/metrics txt files
     """
     if int(decimate) not in (-1, 0, 1):
-        raise ValueError("TIVTC_VFR: 'Invalid `decimate` argument. Must be True/False, their integer values, or -1'")
+        raise TypeError("TIVTC_VFR: 'Invalid `decimate` argument. Must be True/False, their integer values, or -1!'")
 
     tfm_f = tdec_f = timecodes_f = Path()
 
@@ -295,7 +296,7 @@ def decomb(clip: vs.VideoNode,
     try:
         from havsfunc import QTGMC
     except ModuleNotFoundError:
-        raise ModuleNotFoundError("decomb: missing dependency 'havsfunc'")
+        raise ModuleNotFoundError("decomb: missing dependency `havsfunc`!")
 
     VFM_TFF = int(tff)
 
@@ -488,7 +489,7 @@ def ivtc_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None,
     try:
         from havsfunc import QTGMC, DitherLumaRebuild
     except ModuleNotFoundError:
-        raise ModuleNotFoundError("ivtc_credits: missing dependency 'havsfunc'")
+        raise ModuleNotFoundError("ivtc_credits: missing dependency `havsfunc`!")
 
     check_variable(clip, "ivtc_credits")
 
@@ -509,7 +510,7 @@ def ivtc_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None,
 
         if dec:
             warnings.warn("ivtc_credits: 'Fieldmatched clip passed to function! "
-                          "dec is set to True. If you want to disable this, set dec=False!'")
+                          "dec is set to True. If you want to disable this, set `dec=False`!'")
 
     # motion vector and other values
     field_ref = frame_ref * 2
@@ -530,7 +531,8 @@ def ivtc_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None,
     bobbed = bob_clip or QTGMC(clip, **qtgmc_kwargs)
 
     if bobbed.fps != Fraction(60000, 1001):
-        raise ValueError("ivtc_credits: 'Your bobbed clip must have a framerate of 60000/1001!'")
+        raise InvalidFramerateError("ivtc_credits", bobbed,
+                                    "{func} 'Your bobbed clip *must* have a framerate of 60000/1001!'")
 
     if interlaced:  # 60i credits. Start of ABBCD
         if dec:  # Decimate the clip instead of properly IVTC

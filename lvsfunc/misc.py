@@ -1,36 +1,25 @@
-from __future__ import annotations
-
-import colorsys
 import os
-import random
+
 import warnings
-from functools import partial, wraps
-from typing import Any, Callable, Dict, List, Sequence, Tuple, TypeVar, cast
+from functools import partial
+from typing import Any, List, Sequence, Tuple
 
 import vapoursynth as vs
-from vsutil import depth, get_depth, get_w, get_y, is_image, scale_value
+from vsutil import depth, get_depth, is_image, scale_value
 
+from .exceptions import InvalidMatrixError
 from .kernels import Catrom
 from .mask import BoundingBox
 from .types import Matrix, Position, Range, Size
-from .util import check_variable
-from .util import get_matrix as _get_matrix
-from .util import get_prop, normalize_ranges
-from .util import replace_ranges as _replace_ranges
-from .util import scale_thresh as _scale_thresh
+from .util import (check_variable, get_matrix, get_prop, normalize_ranges,
+                   replace_ranges)
 
 core = vs.core
 
 
 __all__: List[str] = [
-    'allow_variable',
-    'chroma_injector',
-    'colored_clips',
     'edgefixer', 'ef',
-    'frames_since_bookmark',
-    'get_matrix',
     'limit_dark',
-    'load_bookmarks',
     'overlay_sign',
     'shift_tint',
     'source', 'src',
@@ -89,10 +78,10 @@ def source(file: str, ref: vs.VideoNode | None = None,
     # Error handling for some file types
     if ext == '.mpls' and mpls is False:
         raise ValueError("source: 'Set \"mpls = True\" and pass a path to the base Blu-ray directory "
-                         "for this kind of file'")
+                         "for this kind of file!'")
 
     if ext in annoying_formats:
-        raise ValueError("source: 'Use an external indexer like d2vwitch or DGIndexNV for this kind of file'")
+        raise ValueError("source: 'Use an external indexer like d2vwitch or DGIndexNV for this kind of file!'")
 
     if force_lsmas:
         clip = core.lsmas.LWLibavSource(file, **index_args)
@@ -207,10 +196,10 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
     elif len(values) == 3:
         val = (values[0], values[1], values[2])
     else:
-        raise ValueError("shift_tint: 'Too many values supplied'")
+        raise ValueError("shift_tint: 'Too many values supplied!'")
 
     if any(v > 255 or v < -255 for v in val):
-        raise ValueError("shift_tint: 'Every value in \"values\" must be below 255'")
+        raise ValueError("shift_tint: 'Every value in \"values\" must be below 255!'")
 
     cdepth = get_depth(clip)
     cv: List[float] = [scale_value(v, 8, cdepth) for v in val] if cdepth != 8 else list(val)
@@ -245,7 +234,7 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
 
     if threshold_range and threshold_range > threshold:
         raise ValueError(f"limit_dark: '\"threshold_range\" ({threshold_range}) must be "
-                         "a lower value than \"threshold\" ({threshold})'")
+                         f"a lower value than \"threshold\" ({threshold})!'")
 
     avg = core.std.PlaneStats(clip)
     return core.std.FrameEval(clip, partial(_diff, clip=clip, filtered=filtered,
@@ -282,214 +271,6 @@ def wipe_row(clip: vs.VideoNode,
     if show_mask:
         return sqmask
     return core.std.MaskedMerge(clip, ref, sqmask)
-
-
-def load_bookmarks(bookmark_path: str) -> List[int]:
-    """
-    VSEdit bookmark loader.
-
-    load_bookmarks(os.path.basename(__file__)+".bookmarks")
-    will load the VSEdit bookmarks for the current Vapoursynth script.
-
-    :param bookmark_path:  Path to bookmarks file
-
-    :return:               A list of bookmarked frames
-    """
-    with open(bookmark_path) as f:
-        bookmarks = [int(i) for i in f.read().split(", ")]
-
-        if bookmarks[0] != 0:
-            bookmarks.insert(0, 0)
-
-    return bookmarks
-
-
-def frames_since_bookmark(clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoNode:
-    """
-    Displays frames since last bookmark to create easily reusable scenefiltering.
-    Can be used in tandem with :py:func:`lvsfunc.misc.load_bookmarks` to import VSEdit bookmarks.
-
-    :param clip:        Input clip
-    :param bookmarks:   A list of bookmarks
-
-    :return:            Clip with bookmarked frames
-    """
-    def _frames_since_bookmark(n: int, clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoNode:
-        for i, bookmark in enumerate(bookmarks):
-            frames_since = n - bookmark
-
-            if frames_since >= 0 and i + 1 >= len(bookmarks):
-                result = frames_since
-            elif frames_since >= 0 and n - bookmarks[i + 1] < 0:
-                result = frames_since
-                break
-
-        return core.text.Text(clip, str(result))
-    return core.std.FrameEval(clip, partial(_frames_since_bookmark, clip=clip, bookmarks=bookmarks))
-
-
-F = TypeVar("F", bound=Callable[..., vs.VideoNode])
-
-
-def allow_variable(width: int | None = None, height: int | None = None,
-                   format: int | None = None
-                   ) -> Callable[[Callable[..., vs.VideoNode]], Callable[..., vs.VideoNode]]:
-    """
-    Decorator allowing a variable-res and/or variable-format clip to be passed
-    to a function that otherwise would not be able to accept it. Implemented by
-    FrameEvaling and resizing the clip to each frame. Does not work when the
-    function needs to return a different format unless an output format is
-    specified. As such, this decorator must be called as a function when used
-    (e.g. ``@allow_variable()`` or ``@allow_variable(format=vs.GRAY16)``). If
-    the provided clip is variable format, no output format is required to be
-    specified.
-
-    :param width:       Output clip width
-    :param height:      Output clip height
-    :param format:      Output clip format
-
-    :return:            Function decorator for the given output format.
-    """
-    if height is not None:
-        width = width if width else get_w(height)
-
-    def inner(func: F) -> F:
-        @wraps(func)
-        def inner2(clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
-            def frameeval_wrapper(n: int, f: vs.VideoFrame) -> vs.VideoNode:
-                res = func(clip.resize.Point(f.width, f.height, format=f.format.id), *args, **kwargs)
-                return res.resize.Point(format=format) if format else res
-
-            clip_out = clip.resize.Point(format=format) if format else clip
-            clip_out = clip_out.resize.Point(width, height) if width and height else clip_out
-            return core.std.FrameEval(clip_out, frameeval_wrapper, prop_src=[clip])
-
-        return cast(F, inner2)
-
-    return inner
-
-
-def chroma_injector(func: F) -> F:
-    """
-    Decorator allowing injection of reference chroma into a function which
-    would normally only receive luma, such as an upscaler passed to
-    :py:func:`lvsfunc.scale.descale`. The chroma is resampled to the input
-    clip's width, height, and pixel format, shuffled to YUV444PX, then passed
-    to the function. Luma is then extracted from the function result and
-    returned. The first argument of the function is assumed to be the luma
-    source. This works with variable resolution and may work with variable
-    format, however the latter is wholly untested and likely a bad idea in
-    every conceivable use case.
-
-    :param func:        Function to call with injected chroma
-
-    :return:            Decorated function
-    """
-
-    @wraps(func)
-    def inner(_chroma: vs.VideoNode, clip: vs.VideoNode, *args: Any,
-              **kwargs: Any) -> vs.VideoNode:
-
-        def upscale_chroma(n: int, f: vs.VideoFrame) -> vs.VideoNode:
-            luma = y.resize.Point(f.width, f.height, format=f.format.id)
-            if out_fmt is not None:
-                fmt = out_fmt
-            else:
-                fmt = core.register_format(vs.YUV, f.format.sample_type,
-                                           f.format.bits_per_sample, 0, 0)
-            chroma = _chroma.resize.Spline36(f.width, f.height,
-                                             format=fmt.id)
-            res = core.std.ShufflePlanes([luma, chroma], planes=[0, 1, 2],
-                                         colorfamily=vs.YUV)
-            return res
-
-        out_fmt: vs.VideoFormat | None = None
-        if clip.format is not None:
-            if clip.format.color_family not in (vs.GRAY, vs.YUV):
-                raise ValueError("chroma_injector: only YUV and GRAY clips are supported")
-
-            in_fmt = core.register_format(vs.GRAY, clip.format.sample_type,
-                                          clip.format.bits_per_sample, 0, 0)
-            y = allow_variable(format=in_fmt.id)(get_y)(clip)
-            # We want to use YUV444PX for chroma injection
-            out_fmt = core.register_format(vs.YUV, clip.format.sample_type,
-                                           clip.format.bits_per_sample, 0, 0)
-        else:
-            y = allow_variable()(get_y)(clip)
-
-        if y.width != 0 and y.height != 0 and out_fmt is not None:
-            chroma = _chroma.resize.Spline36(y.width, y.height, format=out_fmt.id)
-            clip_in = core.std.ShufflePlanes([y, chroma], planes=[0, 1, 2],
-                                             colorfamily=vs.YUV)
-        else:
-            y_f = y.resize.Point(format=out_fmt.id) if out_fmt is not None else y
-            clip_in = core.std.FrameEval(y_f, upscale_chroma, prop_src=[y])
-
-        result = func(clip_in, *args, **kwargs)
-
-        if result.format is not None:
-            if result.format.color_family not in (vs.GRAY, vs.YUV):
-                raise ValueError("chroma_injector: can only decorate function with YUV and/or GRAY format return")
-
-            if result.format.color_family == vs.GRAY:
-                return result
-
-            res_fmt = core.register_format(vs.GRAY, result.format.sample_type,
-                                           result.format.bits_per_sample, 0, 0)
-            return allow_variable(format=res_fmt.id)(get_y)(result)
-        else:
-            return allow_variable()(get_y)(result)
-
-    return cast(F, inner)
-
-
-def colored_clips(amount: int,
-                  max_hue: int = 300,
-                  rand: bool = True,
-                  seed: bytearray | bytes | float | str | None = None,
-                  **kwargs: Any
-                  ) -> List[vs.VideoNode]:
-    """
-    Returns a list of BlankClips with unique colors in sequential or random order.
-    The colors will be evenly spaced by hue in the HSL colorspace.
-
-    Useful maybe for comparison functions or just for getting multiple uniquely colored BlankClips for testing purposes.
-
-    Will always return a pure red clip in the list as this is the RGB equivalent of the lowest HSL hue possible (0).
-
-    Written by Dave <orangechannel@pm.me>.
-
-    :param amount:  Number of ``vapoursynth.VideoNode``\\s to return
-    :param max_hue: Maximum hue (0 < hue <= 360) in degrees to generate colors from (uses the HSL color model).
-                    Setting this higher than ``315`` will result in the clip colors looping back towards red
-                    and is not recommended for visually distinct colors.
-                    If the `amount` of clips is higher than the `max_hue` expect there to be identical
-                    or visually similar colored clips returned (Default: 300)
-    :param rand:    Randomizes order of the returned list (Default: True)
-    :param seed:    Bytes-like object passed to ``random.seed`` which allows for consistent randomized order
-                    of the resulting clips (Default: None)
-    :param kwargs:  Arguments passed to ``vapoursynth.core.std.BlankClip`` (Default: keep=1)
-
-    :return:        List of uniquely colored clips in sequential or random order.
-    """
-    if amount < 2:
-        raise ValueError("colored_clips: `amount` must be at least 2")
-    if not (0 < max_hue <= 360):
-        raise ValueError("colored_clips: `max_hue` must be greater than 0 and less than 360 degrees")
-
-    blank_clip_args: Dict[str, Any] = {'keep': 1, **kwargs}
-
-    hues: List[float] = [i * max_hue / (amount - 1) for i in range(amount - 1)]
-    hues.append(max_hue)
-
-    hls_color_list: List[Tuple[float, float, float]] = [colorsys.hls_to_rgb(h / 360, 0.5, 1) for h in hues]
-    rgb_color_list = [[int(f * 255) for f in color] for color in hls_color_list]
-
-    if rand:
-        shuffle = random.shuffle if seed is None else random.Random(seed).shuffle
-        shuffle(rgb_color_list)
-
-    return [core.std.BlankClip(color=color, **blank_clip_args) for color in rgb_color_list]
 
 
 def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
@@ -568,7 +349,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
         try:
             from kagefunc import crossfade
         except ModuleNotFoundError:
-            raise ModuleNotFoundError("overlay_sign: 'missing dependency `kagefunc`'")
+            raise ModuleNotFoundError("overlay_sign: 'missing dependency `kagefunc`!'")
 
     check_variable(clip, "overlay_sign")
     assert clip.format
@@ -596,8 +377,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
         matrix = get_prop(clip.get_frame(0), "_Matrix", int)
 
     if matrix == 2:
-        raise ValueError("overlay_sign: 'You can't set a matrix of 2! "
-                         "Please set the correct matrix in the parameters!'")
+        raise InvalidMatrixError("overlay_sign")
 
     assert overlay.format
 
@@ -613,7 +393,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
         if ov_type is str:
             raise ValueError("overlay_sign: 'Please make sure your image has an alpha channel!'")
         else:
-            raise ValueError("overlay_sign: 'Please make sure you loaded your sign in using imwri.Read!'")
+            raise TypeError("overlay_sign: 'Please make sure you loaded your sign in using imwri.Read!'")
 
     merge = core.std.MaskedMerge(clip, overlay, depth(mask, get_depth(overlay)).std.Limiter())
 
@@ -633,9 +413,6 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
 
 # Aliases
 ef = edgefixer
-get_matrix = _get_matrix
-replace_ranges = _replace_ranges
-scale_thresh = _scale_thresh
 src = source
 
 # TODO: Write function that only masks px of a certain color/threshold of colors.

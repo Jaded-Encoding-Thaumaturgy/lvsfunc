@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from abc import ABC
 from typing import Any, List, Tuple
 
@@ -105,7 +103,8 @@ class HardsubSignKgf(HardsubMask):
         try:
             from kagefunc import hardsubmask_fades
         except ModuleNotFoundError:
-            raise ModuleNotFoundError("HardsubSignKgf: missing dependency 'kagefunc'")
+            raise ModuleNotFoundError("HardsubSignKgf: missing dependency `kagefunc`!")
+
         self.hardsubmask_fades = hardsubmask_fades
         self.highpass = highpass
         self.expand = expand
@@ -158,7 +157,8 @@ class HardsubLine(HardsubMask):
         try:
             from kagefunc import hardsubmask
         except ModuleNotFoundError:
-            raise ModuleNotFoundError("HardsubLine: missing dependency 'kagefunc'")
+            raise ModuleNotFoundError("HardsubLine: missing dependency `kagefunc`!")
+
         self.hardsubmask = hardsubmask
         super().__init__(*args, **kwargs)
 

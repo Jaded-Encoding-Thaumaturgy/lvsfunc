@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from functools import partial
 from typing import Any, Callable, Dict, List, Tuple
@@ -17,10 +15,13 @@ core = vs.core
 
 
 __all__: List[str] = [
-    'BoundingBox', 'DeferredMask',
-    'detail_mask', 'detail_mask_neo',
-    'halo_mask', 'range_mask',
-    'mt_xxpand_multi', 'minm', 'maxm'
+    'BoundingBox',
+    'DeferredMask',
+    'detail_mask_neo',
+    'detail_mask',
+    'halo_mask',
+    'mt_xxpand_multi', 'minm', 'maxm',
+    'range_mask',
 ]
 
 
@@ -206,8 +207,7 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
     if radc == 0:
         clip = get_y(clip)
 
-    if clip.format is None:
-        raise ValueError("range_mask: 'Variable-format clips not supported'")
+    assert clip.format
 
     if clip.format.color_family == vs.GRAY:
         ma = _minmax(clip, rad, True)
@@ -266,9 +266,7 @@ class BoundingBox():
         :return:    Square mask representing the bounding box.
         """
         check_variable(ref, "get_mask")
-
-        if ref.format is None:
-            raise ValueError("BoundingBox: 'Variable-format clips not supported'")
+        assert ref.format
 
         if self.pos.x + self.size.x > ref.width or self.pos.y + self.size.y > ref.height:
             raise ValueError("BoundingBox: Bounds exceed clip size!")

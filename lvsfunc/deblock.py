@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from functools import partial
 from typing import Any, List, Optional, Sequence, SupportsFloat, Tuple
 
@@ -171,7 +169,7 @@ def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 2
     try:
         from vsmlrt import DPIR, Backend, DPIRModel
     except ModuleNotFoundError:
-        raise ModuleNotFoundError("vsdpir: 'vsmlrt is required to use vsdpir functions.'")
+        raise ModuleNotFoundError("vsdpir: 'missing dependency `vsmlrt`!'")
 
     check_variable(clip, "vsdpir")
     assert clip.format
@@ -188,7 +186,7 @@ def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 2
         case 'deblock': model = DPIRModel.drunet_deblocking_color if not is_gray \
             else DPIRModel.drunet_deblocking_grayscale
         case 'denoise': model = DPIRModel.drunet_color if not is_gray else DPIRModel.drunet_gray
-        case _: raise ValueError(f"""vsdpir: '"{mode}" is not a valid mode!'""")
+        case _: raise TypeError(f"vsdpir: '\"{mode}\" is not a valid mode!'")
 
     dpir_args |= dict(strength=strength, tiles=tiles, model=model)
 

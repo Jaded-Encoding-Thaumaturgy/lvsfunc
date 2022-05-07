@@ -1,7 +1,4 @@
-from __future__ import annotations
-
 from concurrent.futures import Future
-from enum import Enum
 from functools import partial
 from threading import Condition
 from typing import BinaryIO, Callable, Dict, List, TextIO
@@ -10,6 +7,7 @@ import vapoursynth as vs
 
 from .progress import (BarColumn, FPSColumn, Progress, TextColumn,
                        TimeRemainingColumn)
+from .types import SceneChangeMode
 from .util import get_prop
 
 core = vs.core
@@ -19,7 +17,7 @@ RenderCallback = Callable[[int, vs.VideoFrame], None]
 
 __all__: List[str] = [
     'clip_async_render',
-    'find_scene_changes', 'SceneChangeMode',
+    'find_scene_changes',
     'finish_frame',
     'get_render_progress',
     'RenderContext',
@@ -166,7 +164,7 @@ def clip_async_render(clip: vs.VideoNode,
             elif ss == (0, 1):
                 y4mformat = "440"
             else:
-                raise ValueError("clip_async_render: 'What have you done'")
+                raise ValueError("clip_async_render: 'What have you done?'")
 
         y4mformat = f"{y4mformat}p{clip.format.bits_per_sample}" if clip.format.bits_per_sample > 8 else y4mformat
 
@@ -206,13 +204,6 @@ def get_render_progress() -> Progress:
         FPSColumn(),
         TimeRemainingColumn(),
     )
-
-
-class SceneChangeMode(Enum):
-    WWXD = 0
-    SCXVID = 1
-    WWXD_SCXVID_UNION = 2
-    WWXD_SCXVID_INTERSECTION = 3
 
 
 def find_scene_changes(clip: vs.VideoNode, mode: SceneChangeMode = SceneChangeMode.WWXD) -> List[int]:

@@ -1,8 +1,6 @@
 """
     Denoising functions and wrappers.
 """
-from __future__ import annotations
-
 from typing import Any, Dict, List
 
 import vapoursynth as vs
@@ -16,7 +14,8 @@ core = vs.core
 
 
 __all__: List[str] = [
-    'bm3d', 'chickendream'
+    'bm3d',
+    'chickendream'
 ]
 
 
@@ -60,12 +59,15 @@ def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
     sigmal = [sigma] * 3 if not isinstance(sigma, list) else sigma + [sigma[-1]]*(3-len(sigma))
     sigmal = [sigmal[0], 0, 0] if is_gray else sigmal
     is_gray = True if sigmal[1] == 0 and sigmal[2] == 0 else is_gray
+
     if len(sigmal) != 3:
-        raise ValueError("bm3d: 'invalid number of sigma parameters supplied'")
+        raise ValueError("bm3d: 'invalid number of sigma parameters supplied!'")
+
     radiusl = [0, 0] if radius is None else [radius] * 2 if not isinstance(radius, list) \
         else radius + [radius[-1]]*(2-len(radius))
+
     if len(radiusl) != 2:
-        raise ValueError("bm3d: 'invalid number or radius parameters supplied'")
+        raise ValueError("bm3d: 'invalid number or radius parameters supplied!'")
 
     if sigmal[0] == 0 and sigmal[1] == 0 and sigmal[2] == 0:
         return clip

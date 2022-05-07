@@ -72,6 +72,15 @@ Which in turn allows users to call the function in multiple ways:
 
 Easy as pie!
 
+Functions
+^^^^^^^^^
+
+.. autoclass:: lvsfunc.kernels.get_kernel
+    :members:
+
+.. autoclass:: lvsfunc.kernels.get_all_kernels
+    :members:
+
 Methods
 ^^^^^^^
 

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from math import ceil
 from typing import Any, Callable, Dict, List
 
@@ -269,7 +267,7 @@ def upscaled_sraa(clip: vs.VideoNode,
     luma = get_y(clip)
 
     if rfactor < 1:
-        raise ValueError("upscaled_sraa: '\"rfactor\" must be above 1'")
+        raise ValueError("upscaled_sraa: '\"rfactor\" must be above 1!'")
 
     ssw = round(clip.width * rfactor)
     ssw = (ssw + 1) & ~1
@@ -356,7 +354,7 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
 
     if not lmask:
         if mask_thr > 255:
-            raise ValueError(f"based_aa: 'mask_thr must be equal to or lower than 255 (current: {mask_thr})'")
+            raise ValueError(f"based_aa: '`mask_thr` must be equal to or lower than 255 (current: {mask_thr})!'")
 
         mask_thr = scale_value(mask_thr, 8, get_depth(clip))
 
