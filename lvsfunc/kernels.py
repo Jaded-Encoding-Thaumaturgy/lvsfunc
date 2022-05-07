@@ -1,9 +1,7 @@
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
-from math import sqrt
 from functools import lru_cache
-from typing import Any, Dict, Generator, Tuple, Sequence, List, Type
+from math import sqrt
+from typing import Any, Dict, Generator, List, Sequence, Tuple, Type
 
 import vapoursynth as vs
 
@@ -11,17 +9,11 @@ core = vs.core
 
 
 __all__: List[str] = [
-    'BSpline', 'Bessel', 'Bicubic', 'BicubicDidee',
-    'BicubicDogWay', 'BicubicSharp', 'Bilinear',
-    'BlackHarris', 'BlackMan', 'BlackManMinLobe',
-    'BlackNuttall', 'Bohman', 'Box', 'Catrom',
-    'Cosine', 'FlatTop', 'FmtConv', 'Gaussian',
-    'Ginseng', 'Hamming', 'Hann', 'Hermite',
-    'Impulse', 'Kaiser', 'Lanczos', 'MinSide',
-    'Mitchell', 'NearestNeighbour', 'Parzen',
-    'Point', 'Quadratic', 'Robidoux', 'RobidouxSharp',
-    'RobidouxSoft', 'Sinc', 'Spline16', 'Spline36',
-    'Spline64', 'Welch', 'Wiener',
+    'Bicubic', 'Bilinear', 'FmtConv', 'Lanczos', 'Point', 'Spline16', 'Spline36', 'Spline64',
+    'Bessel', 'BicubicDidee', 'BicubicDogWay', 'BicubicSharp', 'BlackHarris', 'BlackMan', 'BlackManMinLobe',
+    'BlackNuttall', 'Bohman', 'Box', 'BSpline', 'Catrom', 'Cosine', 'FlatTop', 'Gaussian', 'Ginseng', 'Hamming',
+    'Hann', 'Hermite', 'Impulse', 'Kaiser', 'MinSide', 'Mitchell', 'NearestNeighbour', 'Parzen', 'Point', 'Quadratic',
+    'Robidoux', 'RobidouxSharp', 'RobidouxSoft', 'Sinc', 'Welch', 'Wiener',
     'get_all_kernels', 'get_kernel'
 ]
 

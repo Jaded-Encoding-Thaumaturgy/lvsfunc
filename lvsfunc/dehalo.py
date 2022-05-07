@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import math
 from functools import partial
 from typing import Any, Dict, List
@@ -7,9 +5,9 @@ from typing import Any, Dict, List
 import vapoursynth as vs
 from vsutil import depth, fallback, get_depth, get_y
 
-from .noise import bm3d
 from .kernels import BSpline, Catrom
 from .mask import maxm, minm
+from .noise import bm3d
 from .types import Shapes
 from .util import (check_variable, clamp_values, force_mod, pick_repair,
                    scale_peak)

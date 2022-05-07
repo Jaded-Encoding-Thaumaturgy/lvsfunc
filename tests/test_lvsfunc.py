@@ -2,8 +2,6 @@
     Tests to make sure lvsfunc functions return the expected values.
     A lot of methods were taken from vsutil.
 """
-from __future__ import annotations
-
 import contextlib
 import os
 import shutil
