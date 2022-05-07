@@ -10,10 +10,11 @@ from typing import Any, Dict, List
 import vapoursynth as vs
 from vsutil import Dither, depth, get_depth, get_w, get_y, scale_value
 
-from .comparison import Direction, Stack
+from .comparison import Stack
 from .exceptions import InvalidFramerateError
 from .kernels import Bicubic, BicubicDidee, Catrom, Kernel, get_kernel
 from .render import get_render_progress
+from .types import Direction
 from .util import (check_variable, check_variable_format, force_mod,
                    get_neutral_value, get_prop, pick_repair)
 
