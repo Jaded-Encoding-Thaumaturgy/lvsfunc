@@ -14,7 +14,8 @@ core = vs.core
 
 
 __all__: List[str] = [
-    'bm3d', 'chickendream'
+    'bm3d',
+    'chickendream'
 ]
 
 

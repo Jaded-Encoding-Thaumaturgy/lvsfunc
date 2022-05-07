@@ -21,7 +21,8 @@ from .util import (check_variable, check_variable_format, force_mod,
 core = vs.core
 
 __all__: List[str] = [
-    'deblend', 'decomb',
+    'deblend',
+    'decomb',
     'descale_fields',
     'fix_telecined_fades',
     'ivtc_credits',

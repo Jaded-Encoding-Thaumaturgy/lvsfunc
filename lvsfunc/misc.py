@@ -19,7 +19,6 @@ core = vs.core
 
 __all__: List[str] = [
     'edgefixer', 'ef',
-    'get_matrix',
     'limit_dark',
     'overlay_sign',
     'shift_tint',

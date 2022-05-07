@@ -22,12 +22,21 @@ from .util import (check_variable, check_variable_format,
 core = vs.core
 
 __all__: List[str] = [
-    'compare', 'comp', 'stack_compare', 'scomp',
-    'Comparer', 'Stack', 'Interleave', 'Tile', 'Split',
-    'diff_hardsub_mask', 'diff',
-    'interleave', 'split', 'tile',
-    'stack_horizontal', 'stack_vertical',
+    'compare', 'comp',
+    'Comparer',
+    'diff_hardsub_mask',
+    'diff',
+    'Interleave',
+    'interleave',
+    'Split',
+    'split',
+    'stack_compare', 'scomp',
+    'stack_horizontal',
     'stack_planes',
+    'stack_vertical',
+    'Stack',
+    'Tile',
+    'tile',
 ]
 
 T = TypeVar('T')

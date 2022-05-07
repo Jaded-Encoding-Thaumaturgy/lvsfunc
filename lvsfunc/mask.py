@@ -15,10 +15,13 @@ core = vs.core
 
 
 __all__: List[str] = [
-    'BoundingBox', 'DeferredMask',
-    'detail_mask', 'detail_mask_neo',
-    'halo_mask', 'range_mask',
-    'mt_xxpand_multi', 'minm', 'maxm'
+    'BoundingBox',
+    'DeferredMask',
+    'detail_mask_neo',
+    'detail_mask',
+    'halo_mask',
+    'mt_xxpand_multi', 'minm', 'maxm',
+    'range_mask',
 ]
 
 
