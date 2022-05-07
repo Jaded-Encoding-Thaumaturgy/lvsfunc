@@ -1,20 +1,69 @@
 from __future__ import annotations
 
-from enum import IntEnum
-from typing import (Any, List, Literal, NamedTuple, NoReturn, Optional,
-                    Protocol, Tuple, Union)
+from enum import Enum, IntEnum
+from typing import (Any, Callable, List, Literal, NamedTuple, NoReturn,
+                    Optional, Protocol, Tuple, Union)
 
 import vapoursynth as vs
 
 __all__: List[str] = [
+    'CreditMask', 'CustomScaler',
+    'Resolution', 'ScaleAttempt',
+    'SceneChangeMode',
+    'Direction',
     'Coordinate', 'Position', 'Size',
     'CURVES',
     'Matrix', 'Coefs',
     'Range',
+    'RegressClips',
     'VSFunction',
 ]
 
+
+CreditMask = Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode]
+CustomScaler = Callable[[vs.VideoNode, int, int], vs.VideoNode]
 Range = Union[Optional[int], Tuple[Optional[int], Optional[int]]]
+
+
+class Resolution(NamedTuple):
+    """ Tuple representing a resolution. """
+
+    width: int
+    """ Width. """
+
+    height: int
+    """ Height. """
+
+
+class ScaleAttempt(NamedTuple):
+    """ Tuple representing a descale attempt. """
+
+    descaled: vs.VideoNode
+    """ Descaled frame in native resolution. """
+
+    rescaled: vs.VideoNode
+    """ Descaled frame reupscaled with the same kernel. """
+
+    resolution: Resolution
+    """ The native resolution. """
+
+    diff: vs.VideoNode
+    """ The subtractive difference between the original and descaled frame. """
+
+
+class SceneChangeMode(Enum):
+    WWXD = 0
+    SCXVID = 1
+    WWXD_SCXVID_UNION = 2
+    WWXD_SCXVID_INTERSECTION = 3
+
+
+class Direction(IntEnum):
+    """
+    Enum to simplify direction argument.
+    """
+    HORIZONTAL = 0
+    VERTICAL = 1
 
 
 class Coordinate():
@@ -79,6 +128,12 @@ class Shapes(IntEnum):
     RECTANGLE = 0
     ELLIPSE = 1
     LOSANGE = 2
+
+
+class RegressClips(NamedTuple):
+    slope: vs.VideoNode
+    intercept: vs.VideoNode
+    correlation: vs.VideoNode
 
 
 CURVES = Literal[

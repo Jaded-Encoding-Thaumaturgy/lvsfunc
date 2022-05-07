@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from concurrent.futures import Future
-from enum import Enum
 from functools import partial
 from threading import Condition
 from typing import BinaryIO, Callable, Dict, List, TextIO
@@ -10,6 +9,7 @@ import vapoursynth as vs
 
 from .progress import (BarColumn, FPSColumn, Progress, TextColumn,
                        TimeRemainingColumn)
+from .types import SceneChangeMode
 from .util import get_prop
 
 core = vs.core
@@ -206,13 +206,6 @@ def get_render_progress() -> Progress:
         FPSColumn(),
         TimeRemainingColumn(),
     )
-
-
-class SceneChangeMode(Enum):
-    WWXD = 0
-    SCXVID = 1
-    WWXD_SCXVID_UNION = 2
-    WWXD_SCXVID_INTERSECTION = 3
 
 
 def find_scene_changes(clip: vs.VideoNode, mode: SceneChangeMode = SceneChangeMode.WWXD) -> List[int]:

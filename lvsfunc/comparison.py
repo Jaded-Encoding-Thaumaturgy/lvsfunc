@@ -4,7 +4,6 @@ import math
 import random
 import warnings
 from abc import ABC, abstractmethod
-from enum import IntEnum
 from itertools import groupby, zip_longest
 from typing import (Any, Callable, Dict, Iterable, Iterator, List, Literal,
                     Sequence, Set, Tuple, TypeVar, overload)
@@ -18,6 +17,7 @@ from .exceptions import (ClipsAndNamedClipsError, InvalidFormatError,
                          NotEqualFormatsError, VariableFormatError)
 from .kernels import Catrom
 from .render import clip_async_render
+from .types import Direction
 from .util import (check_variable, check_variable_format,
                    check_variable_resolution, get_matrix, get_prop)
 
@@ -34,14 +34,6 @@ __all__: List[str] = [
 ]
 
 T = TypeVar('T')
-
-
-class Direction(IntEnum):
-    """
-    Enum to simplify direction argument.
-    """
-    HORIZONTAL = 0
-    VERTICAL = 1
 
 
 class Comparer(ABC):

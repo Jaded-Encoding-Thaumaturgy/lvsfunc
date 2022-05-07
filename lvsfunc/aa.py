@@ -7,7 +7,6 @@ import vapoursynth as vs
 from vsutil import (depth, fallback, get_depth, get_w, get_y, join, plane,
                     scale_value)
 
-from .exceptions import InvalidFormatError
 from .kernels import Bicubic, Catrom, Point
 from .scale import ssim_downsample
 from .util import (check_variable, check_variable_format, pick_repair,

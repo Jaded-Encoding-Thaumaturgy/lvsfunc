@@ -1,9 +1,10 @@
 from functools import partial
-from typing import List, NamedTuple
+from typing import List
 
 import vapoursynth as vs
 from vsutil import depth, get_depth, join, split
 
+from .types import RegressClips
 from .util import check_variable
 
 core = vs.core
@@ -16,12 +17,6 @@ __all__: List[str] = [
     'regress',
     'RegressClips',
 ]
-
-
-class RegressClips(NamedTuple):
-    slope: vs.VideoNode
-    intercept: vs.VideoNode
-    correlation: vs.VideoNode
 
 
 def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) -> vs.VideoNode:

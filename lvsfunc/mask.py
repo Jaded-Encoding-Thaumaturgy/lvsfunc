@@ -202,10 +202,11 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
     :return:        Range mask
     """
     check_variable(clip, "range_mask")
-    assert clip.format
 
     if radc == 0:
         clip = get_y(clip)
+
+    assert clip.format
 
     if clip.format.color_family == vs.GRAY:
         ma = _minmax(clip, rad, True)

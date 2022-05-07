@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from functools import partial
-from typing import Any, Callable, Dict, List, NamedTuple, cast
+from typing import Any, Callable, Dict, List, cast
 
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
@@ -10,7 +10,8 @@ from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
 from .exceptions import CompareSameKernelError
 from .kernels import (Bicubic, BicubicSharp, Catrom, Kernel, Spline36,
                       get_kernel)
-from .types import CURVES, VSFunction
+from .types import (CURVES, CreditMask, CustomScaler, Resolution, ScaleAttempt,
+                    VSFunction)
 from .util import (check_variable, check_variable_format,
                    check_variable_resolution, get_coefs, get_matrix,
                    get_matrix_curve, get_prop, quick_resample, scale_thresh)
@@ -33,36 +34,6 @@ __all__: List[str] = [
     'mixed_rescale',
     'ssim_downsample',
 ]
-
-
-class Resolution(NamedTuple):
-    """ Tuple representing a resolution. """
-
-    width: int
-    """ Width. """
-
-    height: int
-    """ Height. """
-
-
-class ScaleAttempt(NamedTuple):
-    """ Tuple representing a descale attempt. """
-
-    descaled: vs.VideoNode
-    """ Descaled frame in native resolution. """
-
-    rescaled: vs.VideoNode
-    """ Descaled frame reupscaled with the same kernel. """
-
-    resolution: Resolution
-    """ The native resolution. """
-
-    diff: vs.VideoNode
-    """ The subtractive difference between the original and descaled frame. """
-
-
-CreditMask = Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode]
-CustomScaler = Callable[[vs.VideoNode, int, int], vs.VideoNode]
 
 
 def _transpose_shift(n: int, f: vs.VideoFrame, clip: vs.VideoNode,

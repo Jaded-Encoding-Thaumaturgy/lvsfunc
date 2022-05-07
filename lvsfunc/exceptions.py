@@ -2,12 +2,14 @@ from typing import List
 
 import vapoursynth as vs
 
-from kernels import Kernel, get_kernel
+from .kernels import Kernel, get_kernel
 
 __all__: List[str] = [
     "VariableFormatError", "VariableResolutionError", "NotEqualFormatsError",
-    "InvalidFormatError", "ClipsAndNamedClipsError", "UnsupportedFramerateError"
+    "InvalidFormatError", "ClipsAndNamedClipsError", "InvalidFramerateError",
+    "CompareSameKernelError"
 ]
+
 
 class VariableFormatError(ValueError):
     "Raised when clip is of a variable format."
