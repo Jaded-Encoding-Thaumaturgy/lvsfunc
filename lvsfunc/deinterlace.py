@@ -15,8 +15,8 @@ from vsutil import Dither, depth, get_depth, get_w, get_y, scale_value
 from .comparison import Direction, Stack
 from .kernels import Bicubic, BicubicDidee, Catrom, Kernel, get_kernel
 from .render import get_render_progress
-from .util import (check_variable, force_mod, get_neutral_value, get_prop,
-                   pick_repair)
+from .util import (check_variable, check_variable_format, force_mod,
+                   get_neutral_value, get_prop, pick_repair)
 
 core = vs.core
 
@@ -631,7 +631,7 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
 
     :return:        Clip with residual combing largely removed
     """
-    check_variable(clip, "vinverse")
+    check_variable_format(clip, "vinverse")
     assert clip.format
 
     if amount > 255:

@@ -10,8 +10,9 @@ from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
 from .kernels import (Bicubic, BicubicSharp, Catrom, Kernel, Spline36,
                       get_kernel)
 from .types import CURVES, VSFunction
-from .util import (check_variable, get_coefs, get_matrix, get_matrix_curve,
-                   get_prop, quick_resample, scale_thresh)
+from .util import (check_variable, check_variable_format,
+                   check_variable_resolution, get_coefs, get_matrix,
+                   get_matrix_curve, get_prop, quick_resample, scale_thresh)
 
 try:
     from cytoolz import functoolz
@@ -159,8 +160,8 @@ def descale_detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
 
     :return:               Mask of lost detail
     """
-    check_variable(clip, "descale_detail_mask")
-    check_variable(rescaled_clip, "descale_detail_mask")
+    check_variable_resolution(clip, "descale_detail_mask")
+    check_variable_resolution(rescaled_clip, "descale_detail_mask")
 
     mask = core.std.Expr([get_y(clip), get_y(rescaled_clip)], 'x y - abs') \
         .std.Binarize(threshold)
@@ -404,7 +405,7 @@ def gamma2linear(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  epsilon: float = 1e-6) -> vs.VideoNode:
     """Converts from gamma to linear."""
-    check_variable(clip, "gamma2linear")
+    check_variable_format(clip, "gamma2linear")
     assert clip.format
 
     if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
@@ -427,7 +428,7 @@ def linear2gamma(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  ) -> vs.VideoNode:
     """Converts from linear to gamma."""
-    check_variable(clip, "linear2gamma")
+    check_variable_format(clip, "linear2gamma")
     assert clip.format
 
     if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
@@ -470,7 +471,7 @@ def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: in
 
         return sharp if other_diff - thr > sharp_diff else other
 
-    check_variable(clip, "comparative_descale")
+    check_variable_resolution(clip, "comparative_descale")
 
     if isinstance(kernel, str):
         kernel = get_kernel(kernel)()
@@ -517,7 +518,7 @@ def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: in
 
     :return:            Reupscaled clip
     """
-    check_variable(clip, "comparative_restore")
+    check_variable_resolution(clip, "comparative_restore")
 
     if isinstance(kernel, str):
         kernel = get_kernel(kernel)()
@@ -581,7 +582,6 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
     :return:                Rescaled clip with a downscaled clip merged with it and credits masked.
     """
     check_variable(clip, "mixed_rescale")
-
     assert clip.format
 
     if not 0 <= mask_thr <= 1:

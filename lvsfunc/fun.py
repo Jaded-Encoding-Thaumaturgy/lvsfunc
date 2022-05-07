@@ -10,12 +10,12 @@
 
 from __future__ import annotations
 
-import vapoursynth as vs
-
 from typing import List
 
+import vapoursynth as vs
+
 from .kernels import Point
-from .util import force_mod, check_variable
+from .util import check_variable_resolution, force_mod
 
 core = vs.core
 
@@ -35,7 +35,7 @@ def minecraftify(clip: vs.VideoNode, div: float = 64.0, mod: int | None = None) 
 
     :return:        A Minecraft.
     """
-    check_variable(clip, "minecraftify")
+    check_variable_resolution(clip, "minecraftify")
 
     ow, oh = round(clip.width/div), round(clip.height/div)
 
