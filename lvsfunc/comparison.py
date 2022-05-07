@@ -16,7 +16,8 @@ from vsutil import split as split_planes
 from .dehardsub import hardsub_mask
 from .kernels import Catrom
 from .render import clip_async_render
-from .util import check_variable, get_matrix, get_prop
+from .util import (check_variable, check_variable_format,
+                   check_variable_resolution, get_matrix, get_prop)
 
 core = vs.core
 
@@ -373,8 +374,8 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
         return core.resize.Bicubic(clip, format=vs.RGB24, matrix_in=get_matrix(clip),
                                    dither_type='error_diffusion')
 
-    check_variable(clip_a, "compare")
-    check_variable(clip_b, "compare")
+    check_variable_resolution(clip_a, "compare")
+    check_variable_resolution(clip_b, "compare")
 
     # Error handling
     if frames and len(frames) > clip_a.num_frames:
@@ -383,8 +384,12 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     if force_resample:
         clip_a, clip_b = _resample(clip_a), _resample(clip_b)
     elif mismatch is False:
-        if clip_a.format is None or clip_b.format is None:
-            raise ValueError("compare: 'Variable-format clips not supported'")
+        check_variable_format(clip_a, "compare")
+        check_variable_format(clip_b, "compare")
+
+        assert clip_a.format
+        assert clip_b.format
+
         if clip_a.format.id != clip_b.format.id:
             raise ValueError("compare: 'The format of both clips must be equal'")
 

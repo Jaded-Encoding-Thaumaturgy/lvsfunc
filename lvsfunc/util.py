@@ -39,7 +39,7 @@ def quick_resample(clip: vs.VideoNode,
 
     :return:          Filtered clip in original depth
     """
-    check_variable(clip, "quick_resample")
+    check_variable_format(clip, "quick_resample")
     assert clip.format
 
     try:  # Excepts all generic because >plugin/script writers being consistent >_>
@@ -67,9 +67,12 @@ def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 
     :return:     Appropriate repair function for input clip's depth
     """
-    check_variable(clip, "pick_repair")
+    check_variable_format(clip, "pick_repair")
     assert clip.format
-    return core.rgvs.Repair if clip.format.bits_per_sample < 32 else core.rgsf.Repair
+
+    is_float = clip.format.sample_type == vs.FLOAT
+
+    return core.rgvs.Repair if is_float else core.rgsf.Repair
 
 
 def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
@@ -85,9 +88,12 @@ def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 
     :return:     Appropriate RemoveGrain function for input clip's depth
     """
-    check_variable(clip, "pick_removegrain")
+    check_variable_format(clip, "pick_removegrain")
     assert clip.format
-    return core.rgvs.RemoveGrain if clip.format.bits_per_sample < 32 else core.rgsf.RemoveGrain
+
+    is_float = clip.format.sample_type == vs.FLOAT
+
+    return core.rgvs.RemoveGrain if is_float else core.rgsf.RemoveGrain
 
 
 VideoProp = Union[
@@ -232,7 +238,7 @@ def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -
 
     :return:       Threshold scaled to [0, 2^clip.depth - 1] (if vs.INTEGER)
     """
-    check_variable(clip, "scale_thresh")
+    check_variable_format(clip, "scale_thresh")
     assert clip.format
 
     if thresh < 0:
@@ -279,7 +285,7 @@ def get_neutral_value(clip: vs.VideoNode, chroma: bool = False) -> float:
 
     :return:            Neutral value.
     """
-    check_variable(clip, "get_neutral_value")
+    check_variable_format(clip, "get_neutral_value")
     assert clip.format
 
     is_float = clip.format.sample_type == vs.FLOAT
@@ -363,7 +369,7 @@ def get_matrix(clip: vs.VideoNode, return_matrix: bool = False) -> Matrix | int:
 
     :return:                Value representing a matrix
     """
-    check_variable(clip, "get_matrix")
+    check_variable_format(clip, "get_matrix")
     assert clip.format
 
     if not return_matrix:

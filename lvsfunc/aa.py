@@ -9,7 +9,8 @@ from vsutil import (depth, fallback, get_depth, get_w, get_y, join, plane,
 
 from .kernels import Bicubic, Catrom, Point
 from .scale import ssim_downsample
-from .util import check_variable, pick_repair, scale_thresh
+from .util import (check_variable, check_variable_format, pick_repair,
+                   scale_thresh)
 
 core = vs.core
 
@@ -39,10 +40,14 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
 
     :return:         Clip with clamped anti-aliasing.
     """
-    check_variable(src, "clamp_aa")
+    check_variable_format(src, "clamp_aa")
+    check_variable_format(weak, "clamp_aa")
+    check_variable_format(strong, "clamp_aa")
 
-    if src.format is None or weak.format is None or strong.format is None:
-        raise ValueError("clamp_aa: 'Variable-format clips not supported'")
+    assert src.format
+    assert weak.format
+    assert strong.format
+
     thr = strength * (1 << (src.format.bits_per_sample - 8)) if src.format.sample_type == vs.INTEGER \
         else strength/219
     clamp = core.std.Expr([get_y(src), get_y(weak), get_y(strong)],

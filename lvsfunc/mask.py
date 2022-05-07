@@ -10,8 +10,8 @@ from vsutil import depth, get_y, iterate, join, split
 
 from . import util
 from .types import Position, Range, Shapes, Size
-from .util import (check_variable, pick_removegrain, replace_ranges,
-                   scale_thresh)
+from .util import (check_variable, check_variable_resolution, pick_removegrain,
+                   replace_ranges, scale_thresh)
 
 core = vs.core
 
@@ -48,7 +48,7 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
 
     :return:            Detail mask
     """
-    check_variable(clip, "detail_mask")
+    check_variable_resolution(clip, "detail_mask")
 
     brz_a = scale_thresh(brz_a, clip)
     brz_b = scale_thresh(brz_b, clip)
@@ -226,10 +226,15 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
 
 # Helper functions
 def _minmax(clip: vs.VideoNode, iterations: int, maximum: bool) -> vs.VideoNode:
+    check_variable(clip, "_minmax")
+    assert clip.format
+
     func = core.std.Maximum if maximum else core.std.Minimum
+
     for i in range(1, iterations + 1):
         coord = [0, 1, 0, 1, 1, 0, 1, 0] if (i % 3) != 1 else [1] * 8
         clip = func(clip, coordinates=coord)
+
     return clip
 
 
