@@ -9,6 +9,69 @@ on Github should always be up-to-date.
 
 ------------------
 
+v0.4.2
+^^^^^^
+
+**lvsfunc now requires Python 3.10 and VapourSynth 58!**
+
+**Changelog**
+* setup.py updates, should now show extra info on pypi
+* Docs overhaul
+* Lots of docstrings updated to include additional information and warnings
+* Add shields to README
+* Create unittests for most lvsfunc functions
+* Move around certain functions (mainly to `types` and `util`)
+* `denoise` renamed to `noise`. Temporary alias still exists.
+
+**New additions**
+* `get_matrix_curve`
+    - Returns a `TransferCharacteristics` based on a given `matrix`.
+* `chickendream`
+    - A wrapper around the graining plugin, chickendream, a plug-in that implements a realistic film grain generator.
+* `check_variable_format`
+* `check_variable_resolution`
+    - Separated functionality from `check_variable` into their own functions. `check_variable` still checks both.
+* New custom exceptions. Please check [the documentation for a full list](https://lvsfunc.encode.moe/en/latest/submodules/exceptions.html).
+
+**Updates**
+* All masking functions now automatically limit their output (This means no weird masking shenanigans because of out-of-range values)
+* `get_matrix`: New option to return `types.Matrix` instead of an int. This will at some point become the default behaviour.
+* `tivtc_vfr`: Should now properly allow users to do an analysis pass without erroring (See: #90. Thanks @Setsugennoao and @RivenSkaye!)
+* `tivtc_vfr`: `mode=4` during the analysis pass can now be overridden
+* `ssim_downsample`: Automatically determine `curve` if None is passed
+* `taa`: Fix the wrong width being passed
+* `overlay_sign`: Fix float clip range issues
+* Remove the following aliases: `misc.get_matrix`, `misc.replace_ranges`, `misc.scale_thresh`, `recon.ChromaReconstruct`, `recon.crecon`, `recon.demangle`.
+* A lot of other minor changes and fixes
+
+* Move the following functions to `util`:
+    - misc.get_matrix
+    - misc.allow_variable
+    - misc.colored_clips
+    - misc.frames_since_bookmark
+    - misc.load_bookmarks
+    - misc.get_prop
+    - misc.check_variable
+    - misc.chroma_injector
+    - misc.get_neutral_value
+
+* Move the following types to `types`:
+    - CURVES
+    - CreditMask
+    - CustomScaler
+    - Direction
+    - F
+    - RegressClips
+    - Resolution
+    - ScaleAttempt
+    - SceneChangeMode
+    - T
+    - VideoProp
+
+
+------------------
+
+
 v0.4.1
 ^^^^^^
 
