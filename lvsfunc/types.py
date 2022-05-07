@@ -1,18 +1,31 @@
 from enum import IntEnum
 from typing import (Any, Callable, List, Literal, NamedTuple, NoReturn,
-                    Optional, Protocol, Tuple, Union)
+                    Optional, Protocol, Sequence, Tuple, TypeVar, Union)
 
 import vapoursynth as vs
 
 __all__: List[str] = [
-    'Coefs', 'Coordinate', 'CreditMask', 'CURVES', 'CustomScaler', 'Direction', 'Matrix', 'Position', 'Range',
-    'RegressClips', 'Resolution', 'ScaleAttempt', 'SceneChangeMode', 'Size', 'VSFunction'
+    'Coefs', 'Coordinate', 'CreditMask', 'CURVES', 'CustomScaler', 'Direction', 'F', 'Matrix', 'Position', 'Range',
+    'RegressClips', 'Resolution', 'ScaleAttempt', 'SceneChangeMode', 'Size', 'T', 'VideoProp', 'VSFunction'
 ]
 
 
 CreditMask = Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode]
 CustomScaler = Callable[[vs.VideoNode, int, int], vs.VideoNode]
 Range = Union[Optional[int], Tuple[Optional[int], Optional[int]]]
+
+
+VideoProp = Union[
+    int, Sequence[int],
+    float, Sequence[float],
+    str, Sequence[str],
+    vs.VideoNode, Sequence[vs.VideoNode],
+    vs.VideoFrame, Sequence[vs.VideoFrame],
+    Callable[..., Any], Sequence[Callable[..., Any]]
+]
+
+F = TypeVar("F", bound=Callable[..., vs.VideoNode])
+T = TypeVar("T", bound=VideoProp)
 
 
 class Coefs(NamedTuple):
