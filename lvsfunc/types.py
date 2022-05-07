@@ -1,28 +1,49 @@
 from __future__ import annotations
 
-from enum import Enum, IntEnum
+from enum import IntEnum
 from typing import (Any, Callable, List, Literal, NamedTuple, NoReturn,
                     Optional, Protocol, Tuple, Union)
 
 import vapoursynth as vs
 
 __all__: List[str] = [
-    'CreditMask', 'CustomScaler',
-    'Resolution', 'ScaleAttempt',
-    'SceneChangeMode',
-    'Direction',
-    'Coordinate', 'Position', 'Size',
-    'CURVES',
-    'Matrix', 'Coefs',
-    'Range',
-    'RegressClips',
-    'VSFunction',
+    'Coefs', 'Coordinate', 'CreditMask', 'CURVES', 'CustomScaler', 'Direction', 'Matrix', 'Position', 'Range',
+    'RegressClips', 'Resolution', 'ScaleAttempt', 'SceneChangeMode', 'Size', 'VSFunction'
 ]
 
 
 CreditMask = Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode]
 CustomScaler = Callable[[vs.VideoNode, int, int], vs.VideoNode]
 Range = Union[Optional[int], Tuple[Optional[int], Optional[int]]]
+
+
+class Coefs(NamedTuple):
+    k0: float
+    phi: float
+    alpha: float
+    gamma: float
+
+
+class Coordinate():
+    """
+    A positive set of (x, y) coordinates.
+    """
+    x: int
+    y: int
+
+    def __init__(self, x: int, y: int):
+        if x < 0 or y < 0:
+            raise ValueError(f"{self.__class__.__name__}: 'Can't be negative!'")
+        self.x = x
+        self.y = y
+
+
+class Direction(IntEnum):
+    """
+    Enum to simplify direction argument.
+    """
+    HORIZONTAL = 0
+    VERTICAL = 1
 
 
 class Resolution(NamedTuple):
@@ -51,33 +72,11 @@ class ScaleAttempt(NamedTuple):
     """ The subtractive difference between the original and descaled frame. """
 
 
-class SceneChangeMode(Enum):
+class SceneChangeMode(IntEnum):
     WWXD = 0
     SCXVID = 1
     WWXD_SCXVID_UNION = 2
     WWXD_SCXVID_INTERSECTION = 3
-
-
-class Direction(IntEnum):
-    """
-    Enum to simplify direction argument.
-    """
-    HORIZONTAL = 0
-    VERTICAL = 1
-
-
-class Coordinate():
-    """
-    A positive set of (x, y) coordinates.
-    """
-    x: int
-    y: int
-
-    def __init__(self, x: int, y: int):
-        if x < 0 or y < 0:
-            raise ValueError(f"{self.__class__.__name__}: 'Can't be negative!'")
-        self.x = x
-        self.y = y
 
 
 class Position(Coordinate):
@@ -110,13 +109,6 @@ class Matrix(IntEnum):
     @property
     def RESERVED(self) -> NoReturn:
         raise PermissionError
-
-
-class Coefs(NamedTuple):
-    k0: float
-    phi: float
-    alpha: float
-    gamma: float
 
 
 class VSFunction(Protocol):
