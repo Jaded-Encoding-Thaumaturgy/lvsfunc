@@ -27,7 +27,6 @@ __all__: List[str] = [
     'compare', 'comp', 'stack_compare', 'scomp',
     'Comparer', 'Stack', 'Interleave', 'Tile', 'Split',
     'diff_hardsub_mask', 'diff',
-    'Direction',
     'interleave', 'split', 'tile',
     'stack_horizontal', 'stack_vertical',
     'stack_planes',

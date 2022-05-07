@@ -19,7 +19,7 @@ RenderCallback = Callable[[int, vs.VideoFrame], None]
 
 __all__: List[str] = [
     'clip_async_render',
-    'find_scene_changes', 'SceneChangeMode',
+    'find_scene_changes',
     'finish_frame',
     'get_render_progress',
     'RenderContext',

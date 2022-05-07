@@ -15,7 +15,6 @@ __all__: List[str] = [
     'demangle',
     'reconstruct_multi',
     'regress',
-    'RegressClips',
 ]
 
 
