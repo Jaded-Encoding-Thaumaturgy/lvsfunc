@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, Callable, List, Sequence, Tuple, Type, TypeVar, Union
 import warnings
+from typing import Any, Callable, List, Sequence, Tuple, Type, TypeVar, Union
 
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_subsampling
 
+from .exceptions import VariableFormatError, VariableResolutionError
 from .types import CURVES, Coefs, Matrix, Range
 
 core = vs.core
@@ -334,14 +335,22 @@ def get_coefs(curve: vs.TransferCharacteristics) -> Coefs:
     return gamma_linear_map[curve]
 
 
+def check_variable_format(clip: vs.VideoNode, function: str) -> None:
+    """Check for variable format, and return an error if found."""
+    if clip.format is None:
+        raise VariableFormatError(function)
+
+
+def check_variable_resolution(clip: vs.VideoNode, function: str) -> None:
+    """Check for variable width or height, and return an error if found."""
+    if 0 in (clip.width, clip.height):
+        raise VariableResolutionError(function)
+
+
 def check_variable(clip: vs.VideoNode, function: str) -> None:
     """Check for variable format and a variable resolution, and return an error if found."""
-    if clip.format is None:
-        raise ValueError(f"{function}: 'Variable-format clips not supported!'")
-    elif 0 in (clip.width, clip.height):
-        raise ValueError(f"{function}: 'Variable-resolution clips not supported!'")
-
-    assert clip.format
+    check_variable_format(clip, function)
+    check_variable_resolution(clip, function)
 
 
 def get_matrix(clip: vs.VideoNode, return_matrix: bool = False) -> Matrix | int:
