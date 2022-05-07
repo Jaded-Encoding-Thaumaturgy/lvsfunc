@@ -10,19 +10,20 @@
 # flake8: noqa
 
 from . import (aa, comparison, deblock, dehalo, dehardsub, deinterlace,
-               noise, fun, kernels, mask, misc, recon, render, scale, types,
-               util)
+               exceptions, fun, kernels, mask, misc, noise, recon, render,
+               scale, types, util)
 from .aa import *
 from .comparison import *
 from .deblock import *
 from .dehalo import *
 from .dehardsub import *
 from .deinterlace import *
-from .noise import *
+from .exceptions import *
 from .fun import *
 from .kernels import *
 from .mask import *
 from .misc import *
+from .noise import *
 from .recon import *
 from .render import *
 from .scale import *
