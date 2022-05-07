@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, List, NamedTuple, cast
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
 
+from .exceptions import CompareSameKernelError
 from .kernels import (Bicubic, BicubicSharp, Catrom, Kernel, Spline36,
                       get_kernel)
 from .types import CURVES, VSFunction
@@ -241,7 +242,7 @@ def descale(clip: vs.VideoNode,
     width = cast(List[int], width)
 
     if len(width) != len(height):
-        raise ValueError("descale: Asymmetric number of heights and widths specified")
+        raise ValueError("descale: Asymmetric number of heights and widths specified!")
 
     resolutions = [Resolution(*r) for r in zip(width, height)]
 
@@ -285,7 +286,7 @@ def descale(clip: vs.VideoNode,
                                        src_top=-src_top)
 
     if upscaled.format is None:
-        raise RuntimeError("descale: 'Upscaler cannot return variable-format clips'")
+        raise RuntimeError("descale: 'Upscaler cannot return variable-format clips!'")
 
     if mask:
         clip_y = clip_y.resize.Point(format=upscaled.format.id)
@@ -409,7 +410,7 @@ def gamma2linear(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
     assert clip.format
 
     if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
-        raise ValueError("gamma2linear: 'Only 32 bits float is allowed'")
+        raise ValueError("gamma2linear: 'Your clip must be 32bit float!'")
 
     c = get_coefs(curve)
 
@@ -432,7 +433,7 @@ def linear2gamma(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
     assert clip.format
 
     if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
-        raise ValueError("linear2gamma: 'Only 32 bits float is allowed'")
+        raise ValueError("linear2gamma: 'Your clip must be 32bit float!'")
 
     c = get_coefs(curve)
 
@@ -480,7 +481,7 @@ def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: in
     kernel = kernel or Spline36()
 
     if isinstance(kernel, Bicubic) and bsharp.b == kernel.b and bsharp.c == kernel.c:
-        raise ValueError("comparative_descale: 'You may not compare BicubicSharp with itself!'")
+        raise CompareSameKernelError("comparative_descale", kernel=bsharp)
 
     if width is None:
         width = get_w(height, aspect_ratio=clip.width/clip.height)
@@ -527,7 +528,7 @@ def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: in
     kernel = kernel or Spline36()
 
     if isinstance(kernel, Bicubic) and bsharp.b == kernel.b and bsharp.c == kernel.c:
-        raise ValueError("comparative_restore: 'You may not compare BicubicSharp with itself!'")
+        raise CompareSameKernelError("comparative_descale", kernel=bsharp)
 
     if width is None:
         width = get_w(height, aspect_ratio=clip.width/clip.height)

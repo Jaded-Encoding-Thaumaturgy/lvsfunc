@@ -6,7 +6,8 @@ from typing import Any, Callable, List, Sequence, Tuple, Type, TypeVar, Union
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_subsampling
 
-from .exceptions import VariableFormatError, VariableResolutionError
+from .exceptions import (InvalidMatrixError, VariableFormatError,
+                         VariableResolutionError)
 from .types import CURVES, Coefs, Matrix, Range
 
 core = vs.core
@@ -122,10 +123,10 @@ def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
     try:
         prop = frame.props[key]
     except KeyError:
-        raise KeyError(f"get_prop: 'Key {key} not present in props'")
+        raise KeyError(f"get_prop: 'Key {key} not present in props!'")
 
     if not isinstance(prop, t):
-        raise ValueError(f"get_prop: 'Key {key} did not contain expected type: Expected {t} got {type(prop)}'")
+        raise ValueError(f"get_prop: 'Key {key} did not contain expected type: Expected {t} got {type(prop)}!'")
 
     return prop
 
@@ -242,7 +243,7 @@ def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -
     assert clip.format
 
     if thresh < 0:
-        raise ValueError("scale_thresh: 'Thresholds must be positive.'")
+        raise ValueError("scale_thresh: 'Thresholds must be positive!'")
     if thresh > 1:
         return thresh if not assume \
             else round(thresh/((1 << assume) - 1) * ((1 << clip.format.bits_per_sample) - 1))
@@ -397,7 +398,7 @@ def get_matrix_curve(matrix: int) -> CURVES:
         case 13: return vs.TransferCharacteristics.TRANSFER_IEC_61966_2_1
         case 14: return vs.TransferCharacteristics.TRANSFER_BT2020_10
         case 15: return vs.TransferCharacteristics.TRANSFER_BT2020_12
-    raise ValueError("get_matrix_curve: 'An invalid matrix value was passed!'")
+        case _: raise InvalidMatrixError("get_matrix_curve", message="{func}: 'An invalid matrix value was passed!'")
 
 
 # Aliases

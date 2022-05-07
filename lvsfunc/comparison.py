@@ -14,6 +14,8 @@ from vsutil import depth, get_subsampling, get_w
 from vsutil import split as split_planes
 
 from .dehardsub import hardsub_mask
+from .exceptions import (ClipsAndNamedClipsError, InvalidFormatError,
+                         NotEqualFormatsError, VariableFormatError)
 from .kernels import Catrom
 from .render import clip_async_render
 from .util import (check_variable, check_variable_format,
@@ -63,11 +65,11 @@ class Comparer(ABC):
                  label_alignment: int = 7
                  ) -> None:
         if len(clips) < 2:
-            raise ValueError("Comparer: compare functions must be used on at least 2 clips")
+            raise ValueError("Comparer: Compare functions must be used on at least 2 clips!")
         if label_alignment not in list(range(1, 10)):
-            raise ValueError("Comparer: `label_alignment` must be an integer from 1 to 9")
+            raise ValueError("Comparer: `label_alignment` must be an integer from 1 to 9!")
         if not isinstance(clips, (dict, Sequence)):
-            raise ValueError(f"Comparer: unexpected type {type(clips)} for `clips` argument")
+            raise TypeError(f"Comparer: Unexpected type {type(clips)} for `clips` argument!")
 
         self.clips: List[vs.VideoNode] = list(clips.values()) if isinstance(clips, dict) else list(clips)
         self.names: List[str] | None = list(clips.keys()) if isinstance(clips, dict) else None
@@ -141,11 +143,11 @@ class Stack(Comparer):
     def _compare(self) -> vs.VideoNode:
         if self.direction == Direction.HORIZONTAL:
             if not self.height:
-                raise ValueError("Stack: StackHorizontal requires that all clips be the same height")
+                raise ValueError("Stack: StackHorizontal requires that all clips be the same height!")
             return core.std.StackHorizontal(self._marked_clips())
 
         if not self.width:
-            raise ValueError("Stack: StackVertical requires that all clips be the same width")
+            raise ValueError("Stack: StackVertical requires that all clips be the same width!")
         return core.std.StackVertical(self._marked_clips())
 
 
@@ -236,14 +238,14 @@ class Tile(Comparer):
         super().__init__(clips, label_alignment=label_alignment)
 
         if not self.width or not self.height:
-            raise ValueError("Tile: all clip widths, and heights must be the same")
+            raise ValueError("Tile: All clip widths and heights must be the same!")
 
         if arrangement is None:
             self.arrangement = self._auto_arrangement()
         else:
             is_one_dim = len(arrangement) < 2 or all(len(row) == 1 for row in arrangement)
             if is_one_dim:
-                raise ValueError("Tile: use Stack instead if the array is one dimensional")
+                raise ValueError("Tile: Use Stack instead if the array is one dimensional!")
             self.arrangement = arrangement
 
         self.blank_clip = core.std.BlankClip(clip=self.clips[0], keep=1)
@@ -254,7 +256,7 @@ class Tile(Comparer):
         array_count = sum(map(sum, self.arrangement))  # type:ignore[arg-type]
 
         if array_count != self.num_clips:
-            raise ValueError('Tile: specified arrangement has an invalid number of clips')
+            raise ValueError('Tile: Specified arrangement has an invalid number of clips!')
 
     def _compare(self) -> vs.VideoNode:
         clips = self._marked_clips()
@@ -306,7 +308,7 @@ class Split(Stack):
     def _smart_crop(self) -> None:  # has to alter self.clips to send clips to _marked_clips() in Stack's _compare()
         """Crops self.clips in place accounting for odd resolutions."""
         if not self.width or not self.height:
-            raise ValueError("Split: all clips must have same width and height")
+            raise ValueError("Split: All clips must have same width and height!")
 
         breaks_subsampling = ((self.direction == Direction.HORIZONTAL and (((self.width // self.num_clips) % 2)
                                                                            or ((self.width % self.num_clips) % 2)))
@@ -316,8 +318,8 @@ class Split(Stack):
         is_subsampled = not all(get_subsampling(clip) in ('444', None) for clip in self.clips)
 
         if breaks_subsampling and is_subsampled:
-            raise ValueError("Split: resulting cropped width or height violates subsampling rules; "
-                             "consider resampling to YUV444 or RGB before attempting to crop")
+            raise ValueError("Split: Resulting cropped width or height violates subsampling rules! "
+                             "Consider resampling to YUV444 or RGB before attempting to crop!")
 
         match self.direction:
             case Direction.HORIZONTAL:
@@ -379,7 +381,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     # Error handling
     if frames and len(frames) > clip_a.num_frames:
-        raise ValueError("compare: 'More comparisons requested than frames available'")
+        raise ValueError("compare: 'More comparisons requested than frames available!'")
 
     if force_resample:
         clip_a, clip_b = _resample(clip_a), _resample(clip_b)
@@ -391,7 +393,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
         assert clip_b.format
 
         if clip_a.format.id != clip_b.format.id:
-            raise ValueError("compare: 'The format of both clips must be equal'")
+            raise NotEqualFormatsError("compare")
 
     if print_frame:
         clip_a = clip_a.text.Text("Clip A").text.FrameNum(alignment=9)
@@ -471,7 +473,7 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
     assert clip.format
 
     if clip.format.num_planes != 3:
-        raise ValueError("stack_planes: input clip must be in YUV or RGB planar format")
+        raise InvalidFormatError("stack_planes", "{func}: Input clip must be of a YUV or RGB planar format!")
 
     yuv_planes = split_planes(clip)
 
@@ -480,7 +482,7 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
     elif clip.format.color_family == vs.ColorFamily.RGB:
         planes = {'R': yuv_planes[0], 'G': yuv_planes[1], 'B': yuv_planes[2]}
     else:
-        raise ValueError(f"stack_planes: unexpected color family {clip.format.color_family.name}")
+        raise TypeError(f"stack_planes: Unexpected color family: {clip.format.color_family.name}!")
 
     direction: Direction = Direction.HORIZONTAL if not stack_vertical else Direction.VERTICAL
 
@@ -495,7 +497,7 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
         return Stack([y_plane, subsampled_planes], direction=direction).clip
 
     else:
-        raise ValueError(f"stack_planes: unexpected subsampling {get_subsampling(clip)}")
+        raise TypeError(f"stack_planes: Unexpected subsampling {get_subsampling(clip)}!")
 
 
 def diff_hardsub_mask(a: vs.VideoNode, b: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
@@ -582,18 +584,18 @@ def diff(*clips: vs.VideoNode,
                                 Furthermore, the function will print the ranges of all the diffs found.
     """
     if clips and namedclips:
-        raise ValueError("diff: positional clips and named keyword clips cannot both be given")
+        raise ClipsAndNamedClipsError("diff")
 
     if (clips and len(clips) != 2) or (namedclips and len(namedclips) != 2):
-        raise ValueError("diff: must pass exactly 2 `clips` or `namedclips`")
+        raise ValueError("diff: Must pass exactly 2 `clips` or `namedclips`!")
 
     if thr >= 128:
-        raise ValueError("diff: `thr` must be below 128")
+        raise ValueError("diff: `thr` must be below 128!")
 
     if clips and any(c.format is None for c in clips):
-        raise ValueError("diff: variable-format clips not supported")
+        raise VariableFormatError("diff")
     elif namedclips and any(nc.format is None for nc in namedclips.values()):
-        raise ValueError("diff: variable-format namedclips not supported")
+        raise VariableFormatError("diff")
 
     def _to_ranges(iterable: List[int]) -> Iterable[Tuple[int, int]]:
         iterable = sorted(set(iterable))
@@ -629,7 +631,7 @@ def diff(*clips: vs.VideoNode,
         clip_async_render(diff, progress="Diffing clips...", callback=_cb)
 
     if not frames:
-        raise ValueError("diff: no differences found")
+        raise StopIteration("diff: No differences found!")
 
     frames.sort()
 
@@ -680,7 +682,7 @@ def interleave(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode
     :return: An interleaved clip of all the `clips`/`namedclips` specified
     """
     if clips and namedclips:
-        raise ValueError("interleave: positional clips and named keyword clips cannot both be given")
+        raise ClipsAndNamedClipsError("interleave")
     return Interleave(clips if clips else namedclips).clip
 
 
@@ -698,7 +700,7 @@ def split(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
              with all `clips`/`namedclips` represented as individual vertical slices.
     """
     if clips and namedclips:
-        raise ValueError("split: positional clips and named keyword clips cannot both be given")
+        raise ClipsAndNamedClipsError("split")
     return Split(clips if clips else namedclips, label_alignment=2).clip
 
 
@@ -713,7 +715,7 @@ def stack_horizontal(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.Vid
     :return: A horizontal stack of the `clips`/`namedclips`
     """
     if clips and namedclips:
-        raise ValueError("stack_horizontal: positional clips and named keyword clips cannot both be given")
+        raise ClipsAndNamedClipsError("stack_horizontal")
     return Stack(clips if clips else namedclips).clip
 
 
@@ -728,7 +730,7 @@ def stack_vertical(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.Video
     :return: A vertical stack of the `clips`/`namedclips`
     """
     if clips and namedclips:
-        raise ValueError("stack_vertical: positional clips and named keyword clips cannot both be given")
+        raise ClipsAndNamedClipsError("stack_vertical")
     return Stack(clips if clips else namedclips, direction=Direction.VERTICAL).clip
 
 
@@ -747,7 +749,7 @@ def tile(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
              into a rectangular arrrangement
     """
     if clips and namedclips:
-        raise ValueError("tile: positional clips and named keyword clips cannot both be given")
+        raise ClipsAndNamedClipsError("tile")
     return Tile(clips if clips else namedclips).clip
 
 

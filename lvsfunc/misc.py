@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, List, Sequence, Tuple, TypeVar, cast
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_w, get_y, is_image, scale_value
 
+from .exceptions import InvalidFormatError, InvalidMatrixError
 from .kernels import Catrom
 from .mask import BoundingBox
 from .types import Matrix, Position, Range, Size
@@ -89,10 +90,10 @@ def source(file: str, ref: vs.VideoNode | None = None,
     # Error handling for some file types
     if ext == '.mpls' and mpls is False:
         raise ValueError("source: 'Set \"mpls = True\" and pass a path to the base Blu-ray directory "
-                         "for this kind of file'")
+                         "for this kind of file!'")
 
     if ext in annoying_formats:
-        raise ValueError("source: 'Use an external indexer like d2vwitch or DGIndexNV for this kind of file'")
+        raise ValueError("source: 'Use an external indexer like d2vwitch or DGIndexNV for this kind of file!'")
 
     if force_lsmas:
         clip = core.lsmas.LWLibavSource(file, **index_args)
@@ -207,10 +208,10 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
     elif len(values) == 3:
         val = (values[0], values[1], values[2])
     else:
-        raise ValueError("shift_tint: 'Too many values supplied'")
+        raise ValueError("shift_tint: 'Too many values supplied!'")
 
     if any(v > 255 or v < -255 for v in val):
-        raise ValueError("shift_tint: 'Every value in \"values\" must be below 255'")
+        raise ValueError("shift_tint: 'Every value in \"values\" must be below 255!'")
 
     cdepth = get_depth(clip)
     cv: List[float] = [scale_value(v, 8, cdepth) for v in val] if cdepth != 8 else list(val)
@@ -245,7 +246,7 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
 
     if threshold_range and threshold_range > threshold:
         raise ValueError(f"limit_dark: '\"threshold_range\" ({threshold_range}) must be "
-                         "a lower value than \"threshold\" ({threshold})'")
+                         f"a lower value than \"threshold\" ({threshold})!'")
 
     avg = core.std.PlaneStats(clip)
     return core.std.FrameEval(clip, partial(_diff, clip=clip, filtered=filtered,
@@ -406,7 +407,7 @@ def chroma_injector(func: F) -> F:
         out_fmt: vs.VideoFormat | None = None
         if clip.format is not None:
             if clip.format.color_family not in (vs.GRAY, vs.YUV):
-                raise ValueError("chroma_injector: only YUV and GRAY clips are supported")
+                raise InvalidFormatError("chroma_injector", "{func}: 'Input clip must be of a YUV or GRAY format!'")
 
             in_fmt = core.register_format(vs.GRAY, clip.format.sample_type,
                                           clip.format.bits_per_sample, 0, 0)
@@ -429,7 +430,7 @@ def chroma_injector(func: F) -> F:
 
         if result.format is not None:
             if result.format.color_family not in (vs.GRAY, vs.YUV):
-                raise ValueError("chroma_injector: can only decorate function with YUV and/or GRAY format return")
+                raise ValueError("chroma_injector: can only decorate function with YUV and/or GRAY format return!")
 
             if result.format.color_family == vs.GRAY:
                 return result
@@ -473,9 +474,9 @@ def colored_clips(amount: int,
     :return:        List of uniquely colored clips in sequential or random order.
     """
     if amount < 2:
-        raise ValueError("colored_clips: `amount` must be at least 2")
+        raise ValueError("colored_clips: `amount` must be at least 2!")
     if not (0 < max_hue <= 360):
-        raise ValueError("colored_clips: `max_hue` must be greater than 0 and less than 360 degrees")
+        raise ValueError("colored_clips: `max_hue` must be greater than 0 and less than 360 degrees!")
 
     blank_clip_args: Dict[str, Any] = {'keep': 1, **kwargs}
 
@@ -568,7 +569,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
         try:
             from kagefunc import crossfade
         except ModuleNotFoundError:
-            raise ModuleNotFoundError("overlay_sign: 'missing dependency `kagefunc`'")
+            raise ModuleNotFoundError("overlay_sign: 'missing dependency `kagefunc`!'")
 
     check_variable(clip, "overlay_sign")
     assert clip.format
@@ -596,8 +597,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
         matrix = get_prop(clip.get_frame(0), "_Matrix", int)
 
     if matrix == 2:
-        raise ValueError("overlay_sign: 'You can't set a matrix of 2! "
-                         "Please set the correct matrix in the parameters!'")
+        raise InvalidMatrixError("overlay_sign")
 
     assert overlay.format
 
@@ -613,7 +613,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
         if ov_type is str:
             raise ValueError("overlay_sign: 'Please make sure your image has an alpha channel!'")
         else:
-            raise ValueError("overlay_sign: 'Please make sure you loaded your sign in using imwri.Read!'")
+            raise TypeError("overlay_sign: 'Please make sure you loaded your sign in using imwri.Read!'")
 
     merge = core.std.MaskedMerge(clip, overlay, depth(mask, get_depth(overlay)).std.Limiter())
 

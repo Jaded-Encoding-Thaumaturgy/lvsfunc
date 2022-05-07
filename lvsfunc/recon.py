@@ -81,7 +81,7 @@ def regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1e
     """
 
     if radius <= 0:
-        raise ValueError("Regress: 'radius must be greater than zero'")
+        raise ValueError("Regress: 'radius must be greater than zero!'")
 
     Expr = core.std.Expr
     E = partial(vs.core.std.BoxBlur, hradius=radius, vradius=radius)

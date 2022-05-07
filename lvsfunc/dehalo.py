@@ -114,13 +114,13 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
 
     # Original silently changed values around, which I hate. Throwing errors instead.
     if not all(x >= 1 for x in (rfactor, rx, ry)):
-        raise ValueError("masked_dha: 'rfactor, rx, and ry must all be bigger than 1.0'")
+        raise ValueError("masked_dha: 'rfactor, rx, and ry must all be bigger than 1.0!'")
 
     if not 0 <= darkstr <= 1:
-        raise ValueError("masked_dha: 'darkstr must be between 1.0 and 0.0'")
+        raise ValueError("masked_dha: 'darkstr must be between 1.0 and 0.0!'")
 
     if not all(0 < sens < 100 for sens in (lowsens, highsens)):
-        raise ValueError("masked_dha: 'lowsens and highsens must be between 0 and 100'")
+        raise ValueError("masked_dha: 'lowsens and highsens must be between 0 and 100!'")
 
     # These are the only two I'm going to keep, as these will still give expected results.
     maskpull = clamp_values(maskpull, max_val=254, min_val=0)
@@ -218,7 +218,7 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     try:
         from havsfunc import DeHalo_alpha
     except ModuleNotFoundError:
-        raise ModuleNotFoundError("fine_dehalo: missing dependency 'havsfunc'")
+        raise ModuleNotFoundError("fine_dehalo: missing dependency `havsfunc`!'")
 
     check_variable(clip, "fine_dehalo")
     assert clip.format
@@ -229,13 +229,13 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
 
     # Original silently changed values around, which I hate. Throwing errors instead.
     if not all(x >= 1 for x in (rfactor, rx, ry)):
-        raise ValueError("fine_dehalo: 'rfactor, rx, and ry must all be bigger than 1.0'")
+        raise ValueError("fine_dehalo: 'rfactor, rx, and ry must all be bigger than 1.0!'")
 
     if not 0 <= darkstr <= 1:
-        raise ValueError("fine_dehalo: 'darkstr must be between 1.0 and 0.0'")
+        raise ValueError("fine_dehalo: 'darkstr must be between 1.0 and 0.0!'")
 
     if not all(0 < sens < 100 for sens in (lowsens, highsens)):
-        raise ValueError("fine_dehalo: 'lowsens and highsens must be between 0 and 100'")
+        raise ValueError("fine_dehalo: 'lowsens and highsens must be between 0 and 100!'")
 
     if not 0 <= int(show_mask) < 7:
         raise ValueError("fine_dehalo: 'Valid values for show_mask are 0-7!'")

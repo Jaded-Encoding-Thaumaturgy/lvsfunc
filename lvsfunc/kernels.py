@@ -841,4 +841,4 @@ def get_kernel(name: str) -> Type[Kernel]:
         if kernel.__name__.lower() == search_str:
             return kernel
 
-    raise ValueError(f"get_kernel: 'Unknown kernel: {name}'")
+    raise ValueError(f"get_kernel: 'Unknown kernel: {name}!'")

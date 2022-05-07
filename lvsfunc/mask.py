@@ -202,12 +202,10 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
     :return:        Range mask
     """
     check_variable(clip, "range_mask")
+    assert clip.format
 
     if radc == 0:
         clip = get_y(clip)
-
-    if clip.format is None:
-        raise ValueError("range_mask: 'Variable-format clips not supported'")
 
     if clip.format.color_family == vs.GRAY:
         ma = _minmax(clip, rad, True)
@@ -266,9 +264,7 @@ class BoundingBox():
         :return:    Square mask representing the bounding box.
         """
         check_variable(ref, "get_mask")
-
-        if ref.format is None:
-            raise ValueError("BoundingBox: 'Variable-format clips not supported'")
+        assert ref.format
 
         if self.pos.x + self.size.x > ref.width or self.pos.y + self.size.y > ref.height:
             raise ValueError("BoundingBox: Bounds exceed clip size!")
