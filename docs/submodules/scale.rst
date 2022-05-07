@@ -15,20 +15,7 @@ lvsfunc.scale
     lvsfunc.scale.reupscale
     lvsfunc.scale.ssim_downsample
 
-.. autoclass:: lvsfunc.scale.Resolution
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :member-order: bysource
-
-.. autoclass:: lvsfunc.scale.ScaleAttempt
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :member-order: bysource
-
 .. automodule:: lvsfunc.scale
     :members:
     :undoc-members:
     :show-inheritance:
-    :exclude-members: Resolution, ScaleAttempt
