@@ -18,7 +18,7 @@ About
 .. image:: https://img.shields.io/pypi/v/lvsfunc
     :target: https://pypi.org/project/lvsfunc/
 
-.. image:: https://img.shields.io/github/commits-since/Irrational-Encoding-Wizardry/lvsfunc/v0.4.1
+.. image:: https://img.shields.io/github/commits-since/Irrational-Encoding-Wizardry/lvsfunc/latest
     :target: https://github.com/Irrational-Encoding-Wizardry/lvsfunc/commits/master
 
 .. image:: https://img.shields.io/pypi/l/lvsfunc
