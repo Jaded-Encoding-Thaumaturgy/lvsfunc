@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 import vapoursynth as vs
 from vsutil import depth, fallback, get_depth, get_y
 
-from .denoise import bm3d
+from .noise import bm3d
 from .kernels import BSpline, Catrom
 from .mask import maxm, minm
 from .types import Shapes
@@ -44,7 +44,7 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     :param sigmaR_final:        Bilateral's range weight sigma.
                                 if `None`, same as `sigmaR`
     :param bilateral_args:      Additional parameters to pass to bilateral
-    :param bm3d_args:           Additional parameters to pass to :py:class:`lvsfunc.denoise.bm3d`
+    :param bm3d_args:           Additional parameters to pass to :py:class:`lvsfunc.noise.bm3d`
 
     :return:                    Dehalo'd clip
     """

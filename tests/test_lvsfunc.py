@@ -574,13 +574,6 @@ class LvsfuncTestDeinterlace(LvsfuncTests):
         self.assert_framerate(clip, Fraction(24000, 1001))
 
 
-# lvsfunc.denoise
-class LvsfuncTestDenoise(LvsfuncTests):
-    def test_bm3d(self) -> None:
-        clip = lvf.denoise.bm3d(self.BLACK_SAMPLE_CLIP)
-        self.assert_runs(clip)
-
-
 # lvsfunc.fun
 class LvsfuncTestFun(LvsfuncTests):
     def test_minecrafity(self) -> None:
@@ -679,6 +672,17 @@ class LvsfuncTestMisc(LvsfuncTests):
                                          primaries=1, primaries_in=1)
 
         clip = lvf.misc.overlay_sign(input_clip, self.PNG_FILE)
+        self.assert_runs(clip)
+
+
+# lvsfunc.noise
+class LvsfuncTestNoise(LvsfuncTests):
+    def test_bm3d(self) -> None:
+        clip = lvf.noise.bm3d(self.BLACK_SAMPLE_CLIP)
+        self.assert_runs(clip)
+
+    def test_chickendream(self) -> None:
+        clip = lvf.noise.chickendream(self.BLACK_SAMPLE_CLIP)
         self.assert_runs(clip)
 
 

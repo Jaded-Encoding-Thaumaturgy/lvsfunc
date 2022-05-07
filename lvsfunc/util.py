@@ -205,8 +205,7 @@ def replace_ranges(clip_a: vs.VideoNode,
     nranges = normalize_ranges(clip_b, ranges)
 
     if use_plugin and hasattr(core, 'remap'):
-        return core.remap.ReplaceFramesSimple(clip_a, clip_b, mappings=' '  # type:ignore  # TODO: Fix stubs
-                                              .join(f'[{s} {e}]' for s, e in nranges))
+        return core.remap.ReplaceFramesSimple(clip_a, clip_b, mappings=' '.join(f'[{s} {e}]' for s, e in nranges))
 
     out = clip_a
 
