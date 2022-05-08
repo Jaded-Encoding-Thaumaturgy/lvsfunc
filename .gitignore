@@ -1,11 +1,12 @@
+.eggs/
 .mypy_cache/
 .vscode/
 .vspreview/
 *.glsl
 *.pyc
 *.vpy
+*.egg-info/*
 /tests/dependencies/*
 /tests/output/*
 build/
 dist/
-lvsfunc.egg-info/
