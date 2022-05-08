@@ -153,20 +153,14 @@ def clip_async_render(clip: vs.VideoNode,
             y4mformat = "mono"
         else:
             ss = (clip.format.subsampling_w, clip.format.subsampling_h)
-            if ss == (1, 1):
-                y4mformat = "420"
-            elif ss == (1, 0):
-                y4mformat = "422"
-            elif ss == (0, 0):
-                y4mformat = "444"
-            elif ss == (2, 2):
-                y4mformat = "410"
-            elif ss == (2, 0):
-                y4mformat = "411"
-            elif ss == (0, 1):
-                y4mformat = "440"
-            else:
-                raise ValueError("clip_async_render: 'What have you done?'")
+            match ss:
+                case (1, 1): y4mformat = "420"
+                case (1, 0): y4mformat = "422"
+                case (0, 0): y4mformat = "444"
+                case (2, 2): y4mformat = "420"
+                case (2, 0): y4mformat = "411"
+                case (0, 1): y4mformat = "440"
+                case _: raise ValueError("clip_async_render: 'What have you done?'")
 
         y4mformat = f"{y4mformat}p{clip.format.bits_per_sample}" if clip.format.bits_per_sample > 8 else y4mformat
 
@@ -236,18 +230,20 @@ def find_scene_changes(clip: vs.VideoNode, mode: SceneChangeMode = SceneChangeMo
         clip = clip.scxvid.Scxvid()
 
     def _cb(n: int, f: vs.VideoFrame) -> None:
-        if mode == SceneChangeMode.WWXD:
-            if get_prop(f, "Scenechange", int) == 1:
-                frames.append(n)
-        elif mode == SceneChangeMode.SCXVID:
-            if get_prop(f, "_SceneChangePrev", int) == 1:
-                frames.append(n)
-        elif mode == SceneChangeMode.WWXD_SCXVID_UNION:
-            if get_prop(f, "Scenechange", int) == 1 or get_prop(f, "_SceneChangePrev", int) == 1:
-                frames.append(n)
-        elif mode == SceneChangeMode.WWXD_SCXVID_INTERSECTION:
-            if get_prop(f, "Scenechange", int) == 1 and get_prop(f, "_SceneChangePrev", int) == 1:
-                frames.append(n)
+        match mode:
+            case SceneChangeMode.WWXD:
+                if get_prop(f, "Scenechange", int) == 1:
+                    frames.append(n)
+            case SceneChangeMode.SCXVID:
+                if get_prop(f, "Scenechange", int) == 1:
+                    frames.append(n)
+            case SceneChangeMode.WWXD_SCXVID_UNION:
+                if get_prop(f, "Scenechange", int) == 1 or get_prop(f, "_SceneChangePrev", int) == 1:
+                    frames.append(n)
+            case SceneChangeMode.WWXD_SCXVID_INTERSECTION:
+                if get_prop(f, "Scenechange", int) == 1 and get_prop(f, "_SceneChangePrev", int) == 1:
+                    frames.append(n)
+            case _: raise TypeError("find_scene_changes: 'Invalid `mode` passed!'")
 
     clip_async_render(clip, progress="Detecting scene changes...", callback=_cb)
 
