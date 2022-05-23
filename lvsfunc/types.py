@@ -100,7 +100,7 @@ class Size(Coordinate):
     pass
 
 
-class Matrix(IntEnum):
+class Matrix(vs.MatrixCoefficients):
     """Matrix coefficients (ITU-T H.265 Table E.5)"""
     RGB = 0
     GBR = 0
