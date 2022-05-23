@@ -7,7 +7,7 @@
     <a href="https://github.com/Irrational-Encoding-Wizardry/lvsfunc/commits/master"><img alt="GitHub commits since tagged version" src="https://img.shields.io/github/commits-since/Irrational-Encoding-Wizardry/lvsfunc/latest"></a>
     <a href="https://github.com/Irrational-Encoding-Wizardry/lvsfunc/blob/master/LICENSE"><img alt="PyPI - License" src="https://img.shields.io/pypi/l/lvsfunc"></a>
     <a href="https://discord.gg/qxTxVJGtst"><img alt="Discord" src="https://img.shields.io/discord/856381934052704266?label=discord"></a>
-    <img alt="Downloads" src="https://static.pepy.tech/personalized-badge/lvsfunc?period=total&units=international_system&left_color=grey&right_color=blue&left_text=Downloads">
+    <img alt="downloads" src="https://static.pepy.tech/personalized-badge/lvsfunc?period=total&units=international_system&left_color=grey&right_color=blue&left_text=downloads">
 </p>
 
 A collection of VapourSynth functions and wrappers
