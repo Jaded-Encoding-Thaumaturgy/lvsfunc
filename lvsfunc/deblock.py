@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, List, Optional, Sequence, SupportsFloat, Tuple, Literal
+from typing import Any, List, Optional, Sequence, SupportsFloat, Tuple, Dict, Literal
 
 import vapoursynth as vs
 from vsutil import Dither, depth, get_depth
 
-from .types import Matrix
 from .kernels import Catrom, Kernel, Point, get_kernel
-from .util import check_variable, get_prop
+from .types import Matrix, Range
+from .util import check_variable, get_prop, replace_ranges
 
 core = vs.core
 
@@ -137,8 +137,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
 def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 'deblock',
            matrix: Matrix | int | None = None, tiles: int | Tuple[int] | None = None,
-           **dpir_args: Any) -> vs.VideoNode:
            cuda: bool | Literal['trt'] = True, i444: bool = False, kernel: Kernel | str = Catrom(),
+           zones: Dict[VSDPIR_STRENGTH_TYPE, Range] | None = None, **dpir_args: Any) -> vs.VideoNode:
     """
     A simple vs-mlrt DPIR wrapper for convenience.
 
@@ -164,6 +164,10 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
                             in which case it stays as `None`.
     :param cuda:            Use CUDA backend if True, else CPU backend
     :param i444:            Forces the returned clip to be YUV444PS instead of the input clip's format
+    :param zones:           A mapping to zone dpir strength avoiding to call it multiple times.
+                            The key should be a `float` / ``VideoNode`` (a normalised mask, for example)
+                            or `None` to pass the input clip.
+                            The values should be a range that will be passed to ``replace_ranges``
     :param dpir_args:       Additional args to pass to vs-mlrt.
                             Note: strength, tiles, and model cannot be overridden!
 
@@ -190,10 +194,32 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
         case 'denoise': model = DPIRModel.drunet_color if not is_gray else DPIRModel.drunet_gray
         case _: raise TypeError(f"vsdpir: '\"{mode}\" is not a valid mode!'")
 
-    dpir_args |= dict(strength=strength, tiles=tiles, model=model)
+    dpir_args |= dict(tiles=tiles, model=model)
 
     if "backend" not in dpir_args:
         dpir_args |= dict(backend=(Backend.TRT if cuda == 'trt' else Backend.ORT_CUDA) if cuda else Backend.OV_CPU)
+
+    def _get_strength_clip(strength: SupportsFloat) -> vs.VideoNode:
+        return clip.std.BlankClip(format=vs.GRAYS, color=float(strength))
+
+    if isinstance(strength, vs.VideoNode):
+        assert strength.format
+
+        if strength.format.color_family != vs.GRAY:
+            raise ValueError("vsdpir: '`strength` must be a GRAY clip!'")
+
+        if strength.format.id != vs.GRAYS:
+            strength = strength.std.Expr("x", vs.GRAYS)
+
+        if strength.width != clip.width or strength.height != clip.height:
+            strength = kernel.scale(strength, clip.width, clip.height)
+
+        if strength.num_frames != clip.num_frames:
+            raise ValueError("vsdpir: '`strength` must be of the same length as \"clip\"'")
+    elif isinstance(strength, SupportsFloat):
+        strength = float(strength)
+    else:
+        raise TypeError("vsdpir: '`strength` must be a float or a clip'")
 
     if matrix is None:
         matrix = get_prop(clip.get_frame(0), "_Matrix", int)
@@ -215,7 +241,31 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
             clip_rgb, d_width, d_height, (-mod_h, -mod_w)
         )
 
-    run_dpir = DPIR(clip_rgb, **dpir_args)
+        if isinstance(strength, vs.VideoNode) and to_pad:
+            strength = Point(src_width=d_width, src_height=d_height).scale(
+                strength, d_width, d_height, (-mod_h, -mod_w)
+            )
+
+    if isinstance(strength, vs.VideoNode):
+        strength_clip = strength
+    else:
+        strength_clip = _get_strength_clip(strength)
+
+    no_dpir_zones = []
+
+    if zones:
+        for zstr, ranges in zones.items():
+            if zstr:
+                strength_clip = replace_ranges(
+                    strength_clip, zstr if isinstance(zstr, vs.VideoNode) else _get_strength_clip(zstr), ranges
+                )
+            else:
+                no_dpir_zones.append(ranges)
+
+    run_dpir = DPIR(clip_rgb, strength_clip, **dpir_args)
+
+    if no_dpir_zones:
+        run_dpir = replace_ranges(run_dpir, clip_rgb, no_dpir_zones)
 
     if to_pad:
         run_dpir = run_dpir.std.Crop(0, mod_w, mod_h, 0)
