@@ -167,7 +167,7 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35, rad: float = 0.025, re
     if is_rgb:
         input_clip = clip_32
     elif chroma:
-        input_clip = kernel.resample(clip_32, vs.RGBS, matrix_in=targ_matrix).std.Limiter()  # type:ignore[arg-type]
+        input_clip = kernel.resample(clip_32, vs.RGBS, matrix_in=targ_matrix).std.Limiter()
         input_clip = core.fmtc.transfer(input_clip, transs="srgb", transd="linear")
     else:
         input_clip = get_y(clip_32)

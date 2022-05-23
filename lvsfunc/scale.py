@@ -65,7 +65,7 @@ def _select_descale(n: int, f: vs.VideoFrame | List[vs.VideoFrame],
         f = [f]
     f = cast(List[vs.VideoFrame], f)
     best_res = max(f, key=lambda frame:
-                   math.log(clip.height - get_prop(frame, "descaleResolution", int), 2)  # type:ignore[no-any-return]
+                   math.log(clip.height - get_prop(frame, "descaleResolution", int), 2)
                    * round(1 / max(get_prop(frame, "PlaneStatsAverage", float), 1e-12))
                    ** 0.2)
 

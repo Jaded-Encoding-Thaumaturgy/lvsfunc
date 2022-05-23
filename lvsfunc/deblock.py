@@ -185,8 +185,7 @@ def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 2
     clip_32 = depth(clip, 32, dither_type=Dither.ERROR_DIFFUSION)
 
     match mode.lower():
-        case 'deblock': model = DPIRModel.drunet_deblocking_color if not is_gray \
-            else DPIRModel.drunet_deblocking_grayscale
+        case 'deblock': model = DPIRModel.drunet_deblocking_grayscale if is_gray else DPIRModel.drunet_deblocking_color
         case 'denoise': model = DPIRModel.drunet_color if not is_gray else DPIRModel.drunet_gray
         case _: raise TypeError(f"vsdpir: '\"{mode}\" is not a valid mode!'")
 
@@ -204,7 +203,7 @@ def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 2
     if is_rgb or is_gray:
         clip_rgb = clip_32.std.Limiter()
     else:
-        clip_rgb = kernel.resample(clip_32, vs.RGBS, matrix_in=targ_matrix).std.Limiter()  # type:ignore[arg-type]
+        clip_rgb = kernel.resample(clip_32, vs.RGBS, matrix_in=targ_matrix).std.Limiter()
 
     mod_w, mod_h = clip_rgb.width % 8, clip_rgb.height % 8
 
@@ -223,4 +222,4 @@ def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 2
     if is_rgb or is_gray:
         return depth(run_dpir, bit_depth)
 
-    return kernel.resample(run_dpir, targ_format, targ_matrix)  # type:ignore[arg-type]
+    return kernel.resample(run_dpir, targ_format, targ_matrix)
