@@ -138,7 +138,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 'deblock',
            matrix: Matrix | int | None = None, tiles: int | Tuple[int] | None = None,
            cuda: bool | Literal['trt'] = True, i444: bool = False, kernel: Kernel | str = Catrom(),
-           zones: Dict[VSDPIR_STRENGTH_TYPE, Range] | None = None, **dpir_args: Any) -> vs.VideoNode:
+           zones: List[Tuple[Range, VSDPIR_STRENGTH_TYPE]] | None = None, **dpir_args: Any) -> vs.VideoNode:
     """
     A simple vs-mlrt DPIR wrapper for convenience.
 
@@ -254,7 +254,7 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
     no_dpir_zones = []
 
     if zones:
-        for zstr, ranges in zones.items():
+        for ranges, zstr in zones:
             if zstr:
                 strength_clip = replace_ranges(
                     strength_clip, zstr if isinstance(zstr, vs.VideoNode) else _get_strength_clip(zstr), ranges
