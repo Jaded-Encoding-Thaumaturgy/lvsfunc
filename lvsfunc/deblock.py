@@ -6,12 +6,13 @@ from typing import Any, List, Optional, Sequence, SupportsFloat, Tuple, Literal
 import vapoursynth as vs
 from vsutil import Dither, depth, get_depth
 
-from .kernels import Bicubic, Kernel, Point, get_kernel
 from .types import Matrix
+from .kernels import Catrom, Kernel, Point, get_kernel
 from .util import check_variable, get_prop
 
 core = vs.core
 
+VSDPIR_STRENGTH_TYPE = SupportsFloat | vs.VideoNode | None
 
 __all__: List[str] = [
     'autodb_dpir', 'vsdpir'
@@ -134,10 +135,10 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     return core.resize.Bicubic(debl, format=clip.format.id, matrix=matrix if not is_rgb else None)
 
 
-def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 25, mode: str = 'deblock',
+def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 'deblock',
            matrix: Matrix | int | None = None, tiles: int | Tuple[int] | None = None,
-           cuda: bool | Literal['trt'] = True, i444: bool = False, kernel: Kernel | str = Bicubic(b=0, c=0.5),
            **dpir_args: Any) -> vs.VideoNode:
+           cuda: bool | Literal['trt'] = True, i444: bool = False, kernel: Kernel | str = Catrom(),
     """
     A simple vs-mlrt DPIR wrapper for convenience.
 
