@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, List, Optional, Sequence, SupportsFloat, Tuple
+from typing import Any, List, Optional, Sequence, SupportsFloat, Tuple, Literal
 
 import vapoursynth as vs
 from vsutil import Dither, depth, get_depth
@@ -136,7 +136,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
 def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 25, mode: str = 'deblock',
            matrix: Matrix | int | None = None, tiles: int | Tuple[int] | None = None,
-           cuda: bool = True, i444: bool = False, kernel: Kernel | str = Bicubic(b=0, c=0.5),
+           cuda: bool | Literal['trt'] = True, i444: bool = False, kernel: Kernel | str = Bicubic(b=0, c=0.5),
            **dpir_args: Any) -> vs.VideoNode:
     """
     A simple vs-mlrt DPIR wrapper for convenience.
@@ -193,7 +193,7 @@ def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 2
     dpir_args |= dict(strength=strength, tiles=tiles, model=model)
 
     if "backend" not in dpir_args:
-        dpir_args |= dict(backend=Backend.ORT_CUDA if cuda else Backend.OV_CPU)
+        dpir_args |= dict(backend=(Backend.TRT if cuda == 'trt' else Backend.ORT_CUDA) if cuda else Backend.OV_CPU)
 
     if matrix is None:
         matrix = get_prop(clip.get_frame(0), "_Matrix", int)
