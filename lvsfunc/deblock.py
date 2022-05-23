@@ -195,16 +195,16 @@ def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 2
     if "backend" not in dpir_args:
         dpir_args |= dict(backend=Backend.ORT_CUDA if cuda else Backend.OV_CPU)
 
-    if is_rgb or is_gray:
-        return depth(DPIR(clip_32.std.Limiter(), **dpir_args), bit_depth)
-
     if matrix is None:
         matrix = get_prop(clip.get_frame(0), "_Matrix", int)
 
     targ_matrix = Matrix(matrix)
     targ_format = clip.format.replace(subsampling_w=0, subsampling_h=0) if i444 else clip.format
 
-    clip_rgb = kernel.resample(clip_32, vs.RGBS, matrix_in=targ_matrix).std.Limiter()  # type:ignore[arg-type]
+    if is_rgb or is_gray:
+        clip_rgb = clip_32.std.Limiter()
+    else:
+        clip_rgb = kernel.resample(clip_32, vs.RGBS, matrix_in=targ_matrix).std.Limiter()  # type:ignore[arg-type]
 
     mod_w, mod_h = clip_rgb.width % 8, clip_rgb.height % 8
 
@@ -219,5 +219,8 @@ def vsdpir(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 2
 
     if to_pad:
         run_dpir = run_dpir.std.Crop(0, mod_w, mod_h, 0)
+
+    if is_rgb or is_gray:
+        return depth(run_dpir, bit_depth)
 
     return kernel.resample(run_dpir, targ_format, targ_matrix)  # type:ignore[arg-type]
