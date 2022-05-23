@@ -164,7 +164,7 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
                             in which case it stays as `None`.
     :param cuda:            Use CUDA backend if True, else CPU backend
     :param i444:            Forces the returned clip to be YUV444PS instead of the input clip's format
-    :param zones:           A mapping to zone dpir strength avoiding to call it multiple times.
+    :param zones:           A mapping to zone the DPIR strength so you don't have to call it multiple times.
                             The key should be a `float` / ``VideoNode`` (a normalised mask, for example)
                             or `None` to pass the input clip.
                             The values should be a range that will be passed to ``replace_ranges``
@@ -219,7 +219,7 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
     elif isinstance(strength, SupportsFloat):
         strength = float(strength)
     else:
-        raise TypeError("vsdpir: '`strength` must be a float or a clip'")
+        raise TypeError("vsdpir: '`strength` must be a float or a GRAYS clip'")
 
     if matrix is None:
         matrix = get_prop(clip.get_frame(0), "_Matrix", int)
