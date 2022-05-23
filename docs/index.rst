@@ -27,6 +27,9 @@ About
 .. image:: https://img.shields.io/discord/856381934052704266?label=discord
     :target: https://discord.gg/qxTxVJGtst
 
+.. image:: https://static.pepy.tech/personalized-badge/lvsfunc?period=total&units=international_system&left_color=black&right_color=blue&left_text=Downloads
+    :target: https://pepy.tech/project/lvsfunc
+
 
 .. automodule:: lvsfunc
     :members:
