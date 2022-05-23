@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, List, Optional, Sequence, SupportsFloat, Tuple, Dict, Literal
+from typing import Any, List, Optional, Sequence, SupportsFloat, Tuple, Literal
 
 import vapoursynth as vs
 from vsutil import Dither, depth, get_depth
