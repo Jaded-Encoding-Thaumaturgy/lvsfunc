@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from enum import IntEnum
 from typing import (Any, Callable, List, Literal, NamedTuple, NoReturn,
-                    Optional, Protocol, Sequence, Tuple, TypeVar, Union)
+                    Optional, Protocol, Sequence, SupportsFloat, Tuple,
+                    TypeVar, Union)
 
 import vapoursynth as vs
 
@@ -15,6 +16,7 @@ __all__: List[str] = [
 CreditMask = Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode]
 CustomScaler = Callable[[vs.VideoNode, int, int], vs.VideoNode]
 Range = Union[Optional[int], Tuple[Optional[int], Optional[int]]]
+VSDPIR_STRENGTH_TYPE = Optional[Union[SupportsFloat, vs.VideoNode]]
 
 
 VideoProp = Union[

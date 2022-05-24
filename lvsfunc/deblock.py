@@ -7,12 +7,10 @@ import vapoursynth as vs
 from vsutil import Dither, depth, get_depth
 
 from .kernels import Catrom, Kernel, Point, get_kernel
-from .types import Matrix, Range
+from .types import Matrix, Range, VSDPIR_STRENGTH_TYPE
 from .util import check_variable, get_prop, replace_ranges
 
 core = vs.core
-
-VSDPIR_STRENGTH_TYPE = SupportsFloat | vs.VideoNode | None
 
 __all__: List[str] = [
     'autodb_dpir', 'vsdpir'
