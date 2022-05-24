@@ -7,12 +7,10 @@ import vapoursynth as vs
 from vsutil import Dither, depth, get_depth
 
 from .kernels import Catrom, Kernel, Point, get_kernel
-from .types import Matrix, Range
+from .types import Matrix, Range, VSDPIR_STRENGTH_TYPE
 from .util import check_variable, get_prop, replace_ranges
 
 core = vs.core
-
-VSDPIR_STRENGTH_TYPE = SupportsFloat | vs.VideoNode | None
 
 __all__: List[str] = [
     'autodb_dpir', 'vsdpir'
@@ -138,7 +136,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 'deblock',
            matrix: Matrix | int | None = None, tiles: int | Tuple[int] | None = None,
            cuda: bool | Literal['trt'] = True, i444: bool = False, kernel: Kernel | str = Catrom(),
-           zones: List[Tuple[Range, VSDPIR_STRENGTH_TYPE]] | None = None, **dpir_args: Any) -> vs.VideoNode:
+           zones: List[Tuple[Range | List[Range] | None, VSDPIR_STRENGTH_TYPE]] | None = None,
+           **dpir_args: Any) -> vs.VideoNode:
     """
     A simple vs-mlrt DPIR wrapper for convenience.
 
@@ -260,7 +259,10 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
                     strength_clip, zstr if isinstance(zstr, vs.VideoNode) else _get_strength_clip(zstr), ranges
                 )
             else:
-                no_dpir_zones.append(ranges)
+                if isinstance(ranges, List):
+                    no_dpir_zones.extend(ranges)
+                else:
+                    no_dpir_zones.append(ranges)
 
     run_dpir = DPIR(clip_rgb, strength_clip, **dpir_args)
 

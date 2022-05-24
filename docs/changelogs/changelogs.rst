@@ -15,6 +15,7 @@ v0.4.2
 **lvsfunc now requires Python 3.10 and VapourSynth 58!**
 
 **Changelog**
+
 * setup.py updates, should now show extra info on pypi
 * Docs overhaul
 * Lots of docstrings updated to include additional information and warnings
@@ -24,16 +25,18 @@ v0.4.2
 * `denoise` renamed to `noise`. Temporary alias still exists.
 
 **New additions**
+
 * `get_matrix_curve`
-    - Returns a `TransferCharacteristics` based on a given `matrix`.
+    * Returns a `TransferCharacteristics` based on a given `matrix`.
 * `chickendream`
-    - A wrapper around the graining plugin, chickendream, a plug-in that implements a realistic film grain generator.
+    * A wrapper around the graining plugin, chickendream, a plug-in that implements a realistic film grain generator.
 * `check_variable_format`
 * `check_variable_resolution`
-    - Separated functionality from `check_variable` into their own functions. `check_variable` still checks both.
+    * Separated functionality from `check_variable` into their own functions. `check_variable` still checks both.
 * New custom exceptions. Please check [the documentation for a full list](https://lvsfunc.encode.moe/en/latest/submodules/exceptions.html).
 
 **Updates**
+
 * All masking functions now automatically limit their output (This means no weird masking shenanigans because of out-of-range values)
 * `get_matrix`: New option to return `types.Matrix` instead of an int. This will at some point become the default behaviour.
 * `tivtc_vfr`: Should now properly allow users to do an analysis pass without erroring (See: #90. Thanks @Setsugennoao and @RivenSkaye!)
