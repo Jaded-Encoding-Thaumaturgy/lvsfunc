@@ -16,4 +16,4 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install -r docs/requirements.txt
       - name: Running sphinx
-        run: python3 setup.py build_sphinx
+        run: python3 setup.py build_sphinx -W --keep-going
