@@ -25,12 +25,12 @@ v0.4.2
 
 **New additions**
 * `get_matrix_curve`
-    - Returns a `TransferCharacteristics` based on a given `matrix`.
+    * Returns a `TransferCharacteristics` based on a given `matrix`.
 * `chickendream`
-    - A wrapper around the graining plugin, chickendream, a plug-in that implements a realistic film grain generator.
+    * A wrapper around the graining plugin, chickendream, a plug-in that implements a realistic film grain generator.
 * `check_variable_format`
 * `check_variable_resolution`
-    - Separated functionality from `check_variable` into their own functions. `check_variable` still checks both.
+    * Separated functionality from `check_variable` into their own functions. `check_variable` still checks both.
 * New custom exceptions. Please check [the documentation for a full list](https://lvsfunc.encode.moe/en/latest/submodules/exceptions.html).
 
 **Updates**
