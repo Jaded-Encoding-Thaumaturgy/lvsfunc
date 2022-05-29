@@ -12,8 +12,8 @@ from __future__ import annotations
 from typing import List
 
 import vapoursynth as vs
+from vskernels import Point
 
-from .kernels import Point
 from .util import check_variable_resolution, force_mod
 
 core = vs.core

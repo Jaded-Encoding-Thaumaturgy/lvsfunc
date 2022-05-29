@@ -58,7 +58,6 @@ About
     submodules/dehardsub
     submodules/deinterlace
     submodules/exceptions
-    submodules/kernels
     submodules/mask
     submodules/misc
     submodules/noise

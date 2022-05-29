@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 import vapoursynth as vs
+from vskernels import Bicubic, Kernel, get_kernel
 from vsutil import Dither, Range, depth, get_depth, get_y, iterate, join, plane
 
-from .kernels import Bicubic, Kernel, get_kernel
 from .types import Matrix
 from .util import check_variable, get_prop
 

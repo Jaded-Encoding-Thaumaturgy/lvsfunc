@@ -10,11 +10,11 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import vapoursynth as vs
+from vskernels import Bicubic, BicubicDidee, Catrom, Kernel, get_kernel
 from vsutil import Dither, depth, get_depth, get_w, get_y, scale_value
 
 from .comparison import Stack
 from .exceptions import InvalidFramerateError
-from .kernels import Bicubic, BicubicDidee, Catrom, Kernel, get_kernel
 from .render import get_render_progress
 from .types import Direction
 from .util import (check_variable, check_variable_format, force_mod,
@@ -340,8 +340,8 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
     This function also sets a frameprop with the kernel that was used.
 
     The kernel is set using an lvsfunc.Kernel object.
-    You can call these by doing for example ``kernel=lvf.kernels.Bilinear()``.
-    You can also set specific values manually. For example: ``kernel=lvf.kernels.Bicubic(b=0, c=1)``.
+    You can call these by doing for example ``kernel=vskernels.Bilinear()``.
+    You can also set specific values manually. For example: ``kernel=vskernels.Bicubic(b=0, c=1)``.
     For more information, check the documentation on Kernels.
 
     ``src_top`` allows you to to shift the clip prior to descaling.

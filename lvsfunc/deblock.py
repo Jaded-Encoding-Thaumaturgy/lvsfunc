@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, List, Optional, Sequence, SupportsFloat, Tuple, Literal
+from typing import Any, List, Literal, Optional, Sequence, SupportsFloat, Tuple
 
 import vapoursynth as vs
+from vskernels import Catrom, Kernel, Point, get_kernel
 from vsutil import Dither, depth, get_depth
 
-from .kernels import Catrom, Kernel, Point, get_kernel
-from .types import Matrix, Range, VSDPIR_STRENGTH_TYPE
+from .types import VSDPIR_STRENGTH_TYPE, Matrix, Range
 from .util import check_variable, get_prop, replace_ranges
 
 core = vs.core

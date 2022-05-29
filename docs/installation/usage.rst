@@ -49,9 +49,9 @@ You can also import individual functions from submodules.
 
 .. code-block:: py
 
-    from lvsfunc.kernels import Bicubic
+    from lvsfunc.noise import chickendream
 
-    upscaled_clip = Bicubic(b=1/3, c=1/3).scale(clip, 3840, 2160)
+    upscaled_clip = chickendream(clip)
 
 This is useful if you only need a single function and don't want to pollute your autocompletion
 with all the other `lvsfunc` functions.

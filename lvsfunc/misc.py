@@ -6,10 +6,10 @@ from functools import partial
 from typing import Any, List, Sequence, Tuple
 
 import vapoursynth as vs
+from vskernels import Catrom
 from vsutil import depth, get_depth, is_image, scale_value
 
 from .exceptions import InvalidMatrixError
-from .kernels import Catrom
 from .mask import BoundingBox
 from .types import Matrix, Position, Range, Size
 from .util import (check_variable, get_matrix, get_prop, normalize_ranges,
