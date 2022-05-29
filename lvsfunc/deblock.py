@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, List, Literal, Optional, Sequence, SupportsFloat, Tuple
+from typing import Any, List, Literal, Sequence, SupportsFloat, Tuple
 
 import vapoursynth as vs
 from vskernels import Bicubic, Catrom, Kernel, Point, get_kernel
