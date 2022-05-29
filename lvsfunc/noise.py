@@ -162,7 +162,7 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35, rad: float = 0.025, re
     if matrix is None:
         matrix = get_prop(clip.get_frame(0), "_Matrix", int)
 
-    targ_matrix = Matrix(matrix)
+    targ_matrix = vs.MatrixCoefficients(matrix)
 
     if is_rgb:
         input_clip = clip_32
