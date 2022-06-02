@@ -1,9 +1,13 @@
-name: Upload Python Package to PyPi on New Tag
+name: release
 
 on:
   push:
     tags:
       - '*'
+  workflow_run:
+    workflows: ["lint", "docs"]
+    types:
+      - completed
 
 jobs:
   deploy:
