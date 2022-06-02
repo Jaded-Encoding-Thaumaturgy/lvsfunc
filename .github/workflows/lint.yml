@@ -1,6 +1,9 @@
 name: lint
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - "**.py"
 
 jobs:
   lint:
