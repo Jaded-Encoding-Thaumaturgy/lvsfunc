@@ -157,12 +157,12 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
 
         if rfactor == 1:
             ssc = pick_repair(clip)(clip_y, mmg, 1)
-
-        ss_w, ss_h = force_mod(clip.width * rfactor, 4), force_mod(clip.height * rfactor, 4)
-        ssc = Catrom().scale(clip_y, ss_w, ss_h)
-        ssc = core.std.Expr([ssc, Catrom().scale(mmg.std.Maximum(), ss_w, ss_h)], 'x y min')
-        ssc = core.std.Expr([ssc, Catrom().scale(mmg.std.Minimum(), ss_w, ss_h)], 'x y max')
-        ssc = Catrom().scale(ssc, clip.width, clip.height)
+        else:
+            ss_w, ss_h = force_mod(clip.width * rfactor, 4), force_mod(clip.height * rfactor, 4)
+            ssc = Catrom().scale(clip_y, ss_w, ss_h)
+            ssc = core.std.Expr([ssc, Catrom().scale(mmg.std.Maximum(), ss_w, ss_h)], 'x y min')
+            ssc = core.std.Expr([ssc, Catrom().scale(mmg.std.Minimum(), ss_w, ss_h)], 'x y max')
+            ssc = Catrom().scale(ssc, clip.width, clip.height)
 
         umfc = core.std.Expr([clip_y, ssc], f'x y < x dup y - {darkstr} * - x dup y - {brightstr} * - ?')
 
