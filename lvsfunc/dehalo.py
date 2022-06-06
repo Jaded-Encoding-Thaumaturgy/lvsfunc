@@ -255,7 +255,7 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
         raise ValueError("fine_dehalo: 'lowsens and highsens must be between 0 and 100!'")
 
     if show_mask is not False and not (0 < int(show_mask) <= 7):
-            raise ValueError("fine_dehalo: 'Valid values for show_mask are 0–7!'")
+        raise ValueError("fine_dehalo: 'Valid values for show_mask are 0–7!'")
 
     dehaloed = ref or DeHalo_alpha(clip, rx=rx, ry=ry, darkstr=darkstr, brightstr=brightstr,
                                    lowsens=lowsens, highsens=highsens, ss=rfactor)
