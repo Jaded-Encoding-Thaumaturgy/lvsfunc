@@ -12,6 +12,7 @@ All masks also come limited by default, so you don't need to worry about illegal
     lvsfunc.mask.DeferredMask
     lvsfunc.mask.detail_mask
     lvsfunc.mask.detail_mask_neo
+    lvsfunc.mask.fine_dehalo_mask
     lvsfunc.mask.halo_mask
     lvsfunc.mask.mt_xxpand_multi
     lvsfunc.mask.range_mask
