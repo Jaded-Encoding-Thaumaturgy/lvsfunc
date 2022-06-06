@@ -9,7 +9,6 @@ from vsutil import depth, fallback, get_depth, get_y
 from .kernels import BSpline, Catrom
 from .mask import fine_dehalo_mask
 from .noise import bm3d
-from .types import Shapes
 from .util import (check_variable, clamp_values, force_mod,
                    pick_repair, scale_peak)
 
@@ -26,6 +25,7 @@ __all__: List[str] = [
 def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
              sigmaS: float = 1.5, sigmaR: float = 5/255,
              sigmaS_final: float | None = None, sigmaR_final: float | None = None,
+             planes: int | Sequence[int] | None = None,
              bilateral_args: Dict[str, Any] = {},
              bm3d_args: Dict[str, Any] = {},
              ) -> vs.VideoNode:
@@ -44,10 +44,12 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
                                 if `None`, same as `sigmaR`
     :param bilateral_args:      Additional parameters to pass to bilateral
     :param bm3d_args:           Additional parameters to pass to :py:class:`lvsfunc.noise.bm3d`
+    :param planes:              Specifies which planes will be processed.
+                                Any unprocessed planes will be simply copied.
 
     :return:                    Dehalo'd clip
     """
-    bm3ddh_args: Dict[str, Any] = dict(sigma=8, radius=1, pre=clip)
+    bm3ddh_args: Dict[str, Any] = dict(sigma=8, radius=1, pre=clip, planes=planes)
     bm3ddh_args.update(bm3d_args)
 
     check_variable(clip, "bidehalo")
@@ -59,8 +61,9 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     if ref is None:
         den = depth(bm3d(clip, **bm3ddh_args), 16)
 
-        ref = den.bilateral.Bilateral(sigmaS=sigmaS, sigmaR=sigmaR, **bilateral_args)
-        bidh = den.bilateral.Bilateral(ref=ref, sigmaS=sigmaS_final, sigmaR=sigmaR_final, **bilateral_args)
+        ref = den.bilateral.Bilateral(sigmaS=sigmaS, sigmaR=sigmaR, planes=planes, **bilateral_args)
+        bidh = den.bilateral.Bilateral(ref=ref, sigmaS=sigmaS_final, sigmaR=sigmaR_final, planes=planes,
+                                       **bilateral_args)
         bidh = depth(bidh, clip.format.bits_per_sample)
     else:
         bidh = depth(ref, clip.format.bits_per_sample)
@@ -212,6 +215,8 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     :param rfactor:         Image enlargement factor. Set to >1 to enable some form of aliasing-protection.
                             Must be greater than 1.
     :param show_mask:       Return mask clip. Valid options are 1–7.
+    :param planes:          Specifies which planes will be processed.
+                            Any unprocessed planes will be simply copied.
 
     :return:                Dehalo'd clip or halo mask clip
     """
