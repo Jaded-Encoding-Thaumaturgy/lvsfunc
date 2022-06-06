@@ -1,9 +1,7 @@
 name: release
 
 on:
-  push:
-    tags:
-      - '*'
+  release:
   workflow_run:
     workflows: ["lint", "docs"]
     types:
