@@ -101,15 +101,18 @@ def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
     return den
 
 
-def chickendream(clip: vs.VideoNode, sigma: float = 0.35, rad: float = 0.025, res: int = 1024,
-                 chroma: bool = False, seed: int = 42069, matrix: Matrix | int | None = None,
+def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
+                 rad: float = 0.025, res: int = 1024,
+                 chroma: bool = False, seed: int = 42069,
+                 matrix: Matrix | int | None = None,
                  kernel: Kernel | str = Bicubic(b=0, c=0.5), **chkdr_args: Any) -> vs.VideoNode:
     """
     A wrapper around the graining plugin, `chickendream`,
     a plug-in that implements a realistic film grain generator.
 
     .. warning::
-        This function is _incredibly_ slow! It may take multiple minutes to render your clip!
+        | This function is _incredibly_ slow! It may take multiple minutes to render your clip!
+        | If you still want to use it, I highly recommend setting ``draft=True``!
 
     The generated grain is quite significant, but you can blend the output with the input to attenuate the effect.
     For this function to work at its best, the image must be in linear light and MUST be an SRGB or GRAY clip.
@@ -146,7 +149,7 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35, rad: float = 0.025, re
     check_variable(clip, "chickendream")
     assert clip.format
 
-    chkdr_args |= dict(sigma=sigma, rad=rad, seed=seed)
+    chkdr_args |= dict(sigma=sigma, rad=rad, seed=seed, res=res)
 
     if isinstance(kernel, str):
         kernel = get_kernel(kernel)()
