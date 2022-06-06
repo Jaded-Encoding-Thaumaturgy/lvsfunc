@@ -10,7 +10,7 @@ from vsutil import Range as CRange
 from vsutil import depth, get_depth, get_y, iterate, join, split
 
 from . import util
-from .types import Position, Range, Size
+from .types import Position, Range, Shapes, Size
 from .util import (check_variable, check_variable_resolution, pick_removegrain,
                    replace_ranges, scale_peak, scale_thresh)
 
