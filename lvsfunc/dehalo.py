@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from functools import partial
 from typing import Any, Dict, List, Sequence
 
@@ -9,8 +10,8 @@ from vsutil import depth, fallback, get_depth, get_y
 from .kernels import BSpline, Catrom
 from .mask import fine_dehalo_mask
 from .noise import bm3d
-from .util import (check_variable, clamp_values, force_mod,
-                   pick_repair, scale_peak)
+from .util import (check_variable, clamp_values, force_mod, pick_repair,
+                   scale_peak)
 
 core = vs.core
 
@@ -178,6 +179,9 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
                 show_mask: bool | int = False,
                 planes: int | Sequence[int] | None = None) -> vs.VideoNode:
     """
+    .. warning::
+        | This function has been deprecated! It will removed in a future commit.
+
     Slight rewrite of fine_dehalo.
 
     This is a slight rewrite of the standalone script that has been floating around
@@ -220,6 +224,9 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
 
     :return:                Dehalo'd clip or halo mask clip
     """
+    warnings.warn("fine_dehalo: 'This function is deprecated in favor of `stgfunc.dehalo.fine_dehalo` "
+                  "(soon `vsdehalo.fine_dehalo`)! This function will be removed in a future commit.",
+                  DeprecationWarning)
     try:
         from havsfunc import DeHalo_alpha
     except ModuleNotFoundError:
