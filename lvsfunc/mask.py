@@ -220,7 +220,7 @@ def fine_dehalo_mask(clip: vs.VideoNode,
     if not all(x >= 1 for x in (rx, ry)):
         raise ValueError("halo_mask: 'rx and ry must both be bigger than 1.0!'")
 
-    if not 0 < int(show_mask) < 7:
+    if show_mask is not False and not (0 < int(show_mask) <= 7):
         raise ValueError("halo_mask: 'Valid values for show_mask are 1–7!'")
 
     bits = get_depth(clip)
