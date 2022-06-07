@@ -135,11 +135,11 @@ def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
 
 
 def normalize_ranges(clip: vs.VideoNode, ranges: Range | List[Range]) -> List[Tuple[int, int]]:
-    """
-    Normalize ``Range``\(s) to a list of inclusive positive integer ranges.
+    r"""
+    Normalize ``Range``\\(s) to a list of inclusive positive integer ranges.
 
     :param clip:   Reference clip used for length.
-    :param ranges: Single ``Range`` or list of ``Range``\s.
+    :param ranges: Single ``Range`` or list of ``Range``\\s.
 
     :return:       List of inclusive positive ranges.
     """
@@ -557,7 +557,7 @@ def colored_clips(amount: int,
                   seed: bytearray | bytes | float | str | None = None,
                   **kwargs: Any
                   ) -> List[vs.VideoNode]:
-    """
+    r"""
     Return a list of BlankClips with unique colors in sequential or random order.
 
     The colors will be evenly spaced by hue in the HSL colorspace.
@@ -566,9 +566,9 @@ def colored_clips(amount: int,
 
     Will always return a pure red clip in the list as this is the RGB equivalent of the lowest HSL hue possible (0).
 
-    Written by `Dave <orangechannel@pm.me>_`.
+    Written by `Dave <mailto:orangechannel@pm.me>`_.
 
-    :param amount:  Number of ``vapoursynth.VideoNode``\s to return
+    :param amount:  Number of ``vapoursynth.VideoNode``\\s to return
     :param max_hue: Maximum hue (0 < hue <= 360) in degrees to generate colors from (uses the HSL color model).
                     Setting this higher than ``315`` will result in the clip colors looping back towards red
                     and is not recommended for visually distinct colors.
