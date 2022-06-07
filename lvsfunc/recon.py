@@ -37,10 +37,10 @@ def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) 
     Aliases for this function are `lvsfunc.demangle` and `lvsfunc.crecon`.
 
     :param clip:    Clip to process.
-    :param radius:  Boxblur radius
-    :param i444:    Return a 4:4:4 clip
+    :param radius:  Boxblur radius.
+    :param i444:    Return a 4:4:4 clip.
 
-    :return:        Clip with demangled chroma in either 4:2:0 or 4:4:4
+    :return:        Clip with demangled chroma in either 4:2:0 or 4:4:4.
     """
     check_variable(clip, "chroma_reconstruct")
     assert clip.format

@@ -80,7 +80,7 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
                lowsens: float = 50, highsens: float = 50, rfactor: float = 1.0,
                maskpull: float = 48, maskpush: float = 192, show_mask: bool = False) -> vs.VideoNode:
     """
-    Dehalo that combines the best of DeHalo_alpha and BlindDeHalo3.
+    Dehalo function that combines the best of DeHalo_alpha and BlindDeHalo3.
 
     This function is rather sensitive to the rx and ry settings.
     Set them as low as possible! If the radii are set too high, it will start missing small spots.

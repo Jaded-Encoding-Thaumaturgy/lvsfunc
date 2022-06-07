@@ -76,10 +76,8 @@ Functions
 ^^^^^^^^^
 
 .. autofunction:: lvsfunc.kernels.get_kernel
-    :members:
 
 .. autofunction:: lvsfunc.kernels.get_all_kernels
-    :members:
 
 Methods
 ^^^^^^^
