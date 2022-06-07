@@ -42,7 +42,7 @@ main_file = "{yourScriptName}_" if main_file in ("__main___", "setup_") else mai
 def sivtc(clip: vs.VideoNode, pattern: int = 0,
           tff: bool = True, decimate: bool = True) -> vs.VideoNode:
     """
-    A very simple fieldmatching function.
+    Simplest form of a fieldmatching function.
 
     This is essentially a stripped-down JIVTC offering JUST the basic fieldmatching and decimation part.
     As such, you may need to combine multiple instances if patterns change throughout the clip.
@@ -64,7 +64,9 @@ def sivtc(clip: vs.VideoNode, pattern: int = 0,
 
 def seek_cycle(clip: vs.VideoNode, write_props: bool = True, scale: int = -1) -> vs.VideoNode:
     """
-    Purely visual tool to view telecining cycles. This is purely a visual tool!
+    Purely visual tool to view telecining cycles.
+
+    This is purely a visual tool!
     This function has no matching parameters, just use wobbly instead if you need that.
 
     Displays the current frame, two previous and two future frames,
@@ -132,7 +134,8 @@ def tivtc_vfr(clip: vs.VideoNode,
               tfm_args: Dict[str, Any] = {},
               tdecimate_args: Dict[str, Any] = {}) -> vs.VideoNode:
     """
-    Wrapper for performing TFM and TDecimate on a clip that is supposed to be VFR.
+    Perform TFM and TDecimate on a clip that is supposed to be VFR.
+
     Includes automatic generation of a metrics/matches/timecodes txt file.
 
     | This function took *heavy* inspiration from atomchtools.TIVTC_VFR,
@@ -215,8 +218,7 @@ def tivtc_vfr(clip: vs.VideoNode,
 def deblend(clip: vs.VideoNode, start: int = 0,
             rep: int | None = None, decimate: bool = True) -> vs.VideoNode:
     """
-    A simple function to fix deblending for interlaced video with an AABBA blending pattern,
-    where A is a regular frame and B is a blended frame.
+    Deblending function for blended AABBA patterns.
 
     Assuming there's a constant pattern of frames (labeled A, B, C, CD, and DA in this function),
     blending can be fixed by calculating the D frame by getting halves of CD and DA, and using that
@@ -268,7 +270,8 @@ def decomb(clip: vs.VideoNode,
            vinv_args: Dict[str, Any] = {},
            qtgmc_args: Dict[str, Any] = {}) -> vs.VideoNode:
     """
-    A filter that performs relatively aggressive filtering to get rid of the combing on a interlaced/telecined source.
+    Perform relatively aggressive filtering to get rid of the combing on a interlaced/telecined source.
+
     Decimation can be disabled if the user wishes to decimate the clip themselves.
 
     Enabling vinverse will result in more aggressive decombing at the cost of potential detail loss.
@@ -336,7 +339,8 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
                    kernel: Kernel | str = Bicubic(b=0, c=0.5),
                    src_top: float = 0.0) -> vs.VideoNode:
     """
-    Simple descaling wrapper for interwoven upscaled fields.
+    Descale interwoven upscaled fields, also known as a cross conversion.
+
     This function also sets a frameprop with the kernel that was used.
 
     The kernel is set using an lvsfunc.Kernel object.
@@ -373,7 +377,9 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
 
 def bob(clip: vs.VideoNode, tff: bool | None = None) -> vs.VideoNode:
     """
-    Very simple bobbing function. Shouldn't be used for regular filtering,
+    Very simple bobbing function.
+
+    Shouldn't be used for regular filtering,
     but as a very cheap bobber for other functions.
 
     :param clip:    Input clip
@@ -393,8 +399,9 @@ def bob(clip: vs.VideoNode, tff: bool | None = None) -> vs.VideoNode:
 def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
                         thr: float = 2.2) -> vs.VideoNode:
     """
-    A filter that gives a mathematically perfect solution to fades made *after* telecining
-    (which made perfect IVTC impossible). This is an improved version of the Fix-Telecined-Fades plugin
+    Give a mathematically perfect solution to fades made *after* telecining (which made perfect IVTC impossible).
+
+    This is an improved version of the Fix-Telecined-Fades plugin
     that deals with overshoot/undershoot by adding a check.
 
     Make sure to run this *after* IVTC/deinterlacing!
@@ -462,6 +469,7 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
                      ) -> vs.VideoNode:
     """
     Deinterlacing function for interlaced credits (60i/30p) on top of telecined video (24p).
+
     This is a combination of havsfunc's dec_txt60mc, ivtc_txt30mc, and ivtc_txt60mc functions.
     The credits are interpolated and decimated to match the output clip.
 
@@ -623,7 +631,8 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
 def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
              amount: int = 128, scale: float = 1.5) -> vs.VideoNode:
     """
-    A simple function to clean up residual combing after a deinterlacing pass.
+    Clean up residual combing after a deinterlacing pass.
+
     This is Setsugen_no_ao's implementation, adopted into lvsfunc.
 
     :param clip:    Input clip.

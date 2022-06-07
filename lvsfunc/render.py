@@ -14,6 +14,8 @@ from .util import get_prop
 
 core = vs.core
 
+# flake8: noqa
+
 RenderCallback = Callable[[int, vs.VideoFrame], None]
 
 

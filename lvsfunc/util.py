@@ -45,7 +45,8 @@ def quick_resample(clip: vs.VideoNode,
                    function: Callable[[vs.VideoNode], vs.VideoNode]
                    ) -> vs.VideoNode:
     """
-    A function to quickly resample to 32/16/8 bit and back to the original depth in a one-liner.
+    Quickly resample to 32/16/8 bit and back to the original depth in a one-liner.
+
     Useful for filters that only work in 16 bit or lower when you're working in float.
 
     :param clip:      Input clip
@@ -72,7 +73,8 @@ def quick_resample(clip: vs.VideoNode,
 
 def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
     """
-    Returns rgvs.Repair if the clip is 16 bit or lower, else rgsf.Repair.
+    Return rgvs.Repair if the clip is 16 bit or lower, else rgsf.Repair.
+
     This is done because rgvs doesn't work with float, but rgsf does for whatever reason.
 
     Dependencies: rgsf
@@ -91,7 +93,8 @@ def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 
 def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
     """
-    Returns rgvs.RemoveGrain if the clip is 16 bit or lower, else rgsf.RemoveGrain.
+    Return rgvs.RemoveGrain if the clip is 16 bit or lower, else rgsf.RemoveGrain.
+
     This is done because rgvs doesn't work with float, but rgsf does for whatever reason.
 
     Dependencies:
@@ -112,8 +115,7 @@ def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 
 def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
     """
-    Gets FrameProp ``prop`` from frame ``frame`` with expected type ``t``
-    to satisfy the type checker.
+    Get FrameProp ``prop`` from frame ``frame`` with expected type ``t`` to satisfy the type checker.
 
     :param frame:   Frame containing props
     :param key:     Prop to get
@@ -134,10 +136,10 @@ def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
 
 def normalize_ranges(clip: vs.VideoNode, ranges: Range | List[Range]) -> List[Tuple[int, int]]:
     """
-    Normalize ``Range``\\(s) to a list of inclusive positive integer ranges.
+    Normalize ``Range``(s) to a list of inclusive positive integer ranges.
 
     :param clip:   Reference clip used for length.
-    :param ranges: Single ``Range`` or list of ``Range``\\s.
+    :param ranges: Single ``Range`` or list of ``Range``s.
 
     :return:       List of inclusive positive ranges.
     """
@@ -172,7 +174,8 @@ def replace_ranges(clip_a: vs.VideoNode,
                    exclusive: bool = False,
                    use_plugin: bool = True) -> vs.VideoNode:
     """
-    A replacement for ReplaceFramesSimple that uses ints and tuples rather than a string.
+    Remaps frame indicdes in a clip using ints and tuples rather than a string.
+
     Frame ranges are inclusive. This behaviour can be changed by setting `exclusive=True`.
 
     If you're trying to splice in clips, it's recommended you use `vsutil.insert_clip` instead.
@@ -255,7 +258,7 @@ def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -
 
     :param thresh: Threshold [0, 1]. If greater than 1, assumed to be in native clip range
     :param clip:   Clip to scale to
-    :param assume: Assume input is this depth when given input >1. If ``None``\\, assume ``clip``\\'s format.
+    :param assume: Assume input is this depth when given input >1. If ``None``, assume ``clip``'s format.
                    (Default: None)
 
     :return:       Threshold scaled to [0, 2^clip.depth - 1] (if vs.INTEGER)
@@ -273,34 +276,30 @@ def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -
 
 
 def scale_peak(value: float, peak: float) -> float:
-    """
-    Full-range scale function that scales a value from [0, 255] to [0, peak]
-    """
+    """Full-range scale function that scales a value from [0, 255] to [0, peak]."""
     return value * peak / 255
 
 
 def force_mod(x: float, mod: int = 4) -> int:
     """
     Force output to fit a specific MOD.
+
     Minimum returned value will always be mod².
     """
     return mod ** 2 if x < mod ** 2 else int(x / mod + 0.5) * mod
 
 
 def clamp_values(x: float, max_val: float, min_val: float) -> float:
-    """
-    Forcibly clamps the given value x to a max and/or min value.
-    """
+    """Forcibly clamp the given value x to a max and/or min value."""
     return min_val if x < min_val else max_val if x > max_val else x
 
 
 def get_neutral_value(clip: vs.VideoNode, chroma: bool = False) -> float:
     """
+    Return the neutral value for the combination of the plane type and bit depth/type of the clip as float.
+
     Taken from vsutil. This isn't in any new versions yet, so mypy complains.
     Will remove once vsutil does another version bump.
-
-    Returns the neutral value for the combination
-    of the plane type and bit depth/type of the clip as float.
 
     :param clip:        Input clip.
     :param chroma:      Whether to get luma or chroma plane value
@@ -319,7 +318,8 @@ def padder(clip: vs.VideoNode,
            left: int = 32, right: int = 32,
            top: int = 32, bottom: int = 32) -> vs.VideoNode:
     """
-    Pads out the pixels on the side by the given amount of pixels.
+    Pad out the pixels on the side by the given amount of pixels.
+
     For a 4:2:0 clip, the output must be an even resolution.
 
     :param clip:        Input clip
@@ -345,7 +345,7 @@ def padder(clip: vs.VideoNode,
 
 
 def get_coefs(curve: vs.TransferCharacteristics) -> Coefs:
-    """Returns transfer coefs."""
+    """Return transfer coefs."""
     srgb = Coefs(0.04045, 12.92, 0.055, 2.4)
     bt709 = Coefs(0.08145, 4.5, 0.0993, 2.22222)
     smpte240m = Coefs(0.0912, 4.0, 0.1115, 2.22222)
@@ -364,26 +364,26 @@ def get_coefs(curve: vs.TransferCharacteristics) -> Coefs:
 
 
 def check_variable_format(clip: vs.VideoNode, function: str) -> None:
-    """Check for variable format, and return an error if found."""
+    """Check for variable format and return an error if found."""
     if clip.format is None:
         raise VariableFormatError(function)
 
 
 def check_variable_resolution(clip: vs.VideoNode, function: str) -> None:
-    """Check for variable width or height, and return an error if found."""
+    """Check for variable width or height and return an error if found."""
     if 0 in (clip.width, clip.height):
         raise VariableResolutionError(function)
 
 
 def check_variable(clip: vs.VideoNode, function: str) -> None:
-    """Check for variable format and a variable resolution, and return an error if found."""
+    """Check for variable format and a variable resolution and return an error if found."""
     check_variable_format(clip, function)
     check_variable_resolution(clip, function)
 
 
 def get_matrix(clip: vs.VideoNode, return_matrix: bool = False) -> Matrix | int:
     """
-    Helper function to get the matrix for a clip.
+    Get the matrix of a clip.
 
     :param clip:            Input clip
     :param return_matrix:   Returns a Matrix instead of an int.
@@ -411,7 +411,7 @@ def get_matrix(clip: vs.VideoNode, return_matrix: bool = False) -> Matrix | int:
 
 
 def get_matrix_curve(matrix: int) -> CURVES:
-    """Returns a matrix curve based on a given `matrix`."""
+    """Return the matrix curve based on a given `matrix`."""
     match matrix:
         case 1: return vs.TransferCharacteristics.TRANSFER_BT709
         case 5 | 6: return vs.TransferCharacteristics.TRANSFER_BT601
@@ -424,7 +424,7 @@ def get_matrix_curve(matrix: int) -> CURVES:
 
 def load_bookmarks(bookmark_path: str) -> List[int]:
     """
-    VSEdit bookmark loader.
+    Load VSEdit bookmarks.
 
     load_bookmarks(os.path.basename(__file__)+".bookmarks")
     will load the VSEdit bookmarks for the current Vapoursynth script.
@@ -444,7 +444,8 @@ def load_bookmarks(bookmark_path: str) -> List[int]:
 
 def frames_since_bookmark(clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoNode:
     """
-    Displays frames since last bookmark to create easily reusable scenefiltering.
+    Display frames since last bookmark to create easily reusable scenefiltering.
+
     Can be used in tandem with :py:func:`lvsfunc.misc.load_bookmarks` to import VSEdit bookmarks.
 
     :param clip:        Input clip
@@ -468,21 +469,31 @@ def frames_since_bookmark(clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoN
 
 def chroma_injector(func: F) -> F:
     """
-    Decorator allowing injection of reference chroma into a function which
-    would normally only receive luma, such as an upscaler passed to
-    :py:func:`lvsfunc.scale.descale`. The chroma is resampled to the input
-    clip's width, height, and pixel format, shuffled to YUV444PX, then passed
-    to the function. Luma is then extracted from the function result and
-    returned. The first argument of the function is assumed to be the luma
-    source. This works with variable resolution and may work with variable
-    format, however the latter is wholly untested and likely a bad idea in
-    every conceivable use case.
+    Inject reference chroma.
+
+    This is a function decorator. That means it must be called above a function. For example:
+
+    .. code-block:: py
+
+        @chroma_injector()
+        def function(clip: vs.VideoNode) -> vs.VideoNode:
+            ...
+
+    This can be used to inject reference chroma into a function which would normally
+    only receive luma, such as an upscaler passed to :py:func:`lvsfunc.scale.descale`.
+
+    The chroma is resampled to the input clip's width, height, and pixel format,
+    shuffled to YUV444PX, then passed to the function.
+    Luma is then extracted from the function result and returned.
+
+    The first argument of the function is assumed to be the luma source.
+    This works with variable resolution and may work with variable format,
+    however the latter is wholly untested and likely a bad idea in every conceivable use case.
 
     :param func:        Function to call with injected chroma
 
     :return:            Decorated function
     """
-
     @wraps(func)
     def inner(_chroma: vs.VideoNode, clip: vs.VideoNode, *args: Any,
               **kwargs: Any) -> vs.VideoNode:
@@ -547,7 +558,8 @@ def colored_clips(amount: int,
                   **kwargs: Any
                   ) -> List[vs.VideoNode]:
     """
-    Returns a list of BlankClips with unique colors in sequential or random order.
+    Return a list of BlankClips with unique colors in sequential or random order.
+
     The colors will be evenly spaced by hue in the HSL colorspace.
 
     Useful maybe for comparison functions or just for getting multiple uniquely colored BlankClips for testing purposes.
@@ -556,7 +568,7 @@ def colored_clips(amount: int,
 
     Written by Dave <orangechannel@pm.me>.
 
-    :param amount:  Number of ``vapoursynth.VideoNode``\\s to return
+    :param amount:  Number of ``vapoursynth.VideoNode``s to return
     :param max_hue: Maximum hue (0 < hue <= 360) in degrees to generate colors from (uses the HSL color model).
                     Setting this higher than ``315`` will result in the clip colors looping back towards red
                     and is not recommended for visually distinct colors.
@@ -593,14 +605,24 @@ def allow_variable(width: int | None = None, height: int | None = None,
                    format: int | None = None
                    ) -> Callable[[Callable[..., vs.VideoNode]], Callable[..., vs.VideoNode]]:
     """
-    Decorator allowing a variable-res and/or variable-format clip to be passed
-    to a function that otherwise would not be able to accept it. Implemented by
-    FrameEvaling and resizing the clip to each frame. Does not work when the
-    function needs to return a different format unless an output format is
-    specified. As such, this decorator must be called as a function when used
-    (e.g. ``@allow_variable()`` or ``@allow_variable(format=vs.GRAY16)``). If
-    the provided clip is variable format, no output format is required to be
-    specified.
+    Allow a variable-res and/or variable-format clip to be passed to a function.
+
+    This is a function decorator. That means it must be called above a function. For example:
+
+    .. code-block:: py
+
+        @allow_variable()
+        def function(clip: vs.VideoNode) -> vs.VideoNode:
+            ...
+
+    This can be used on functions that otherwise would not be able to accept it.
+    Implemented by FrameEvaling and resizing the clip to each frame.
+
+    Does not work when the function needs to return a different format unless an output format is specified.
+    As such, this decorator must be called as a function when used (e.g. ``@allow_variable()``
+    or ``@allow_variable(format=vs.GRAY16)``).
+
+    If the provided clip is variable format, no output format is required to be specified.
 
     :param width:       Output clip width
     :param height:      Output clip height
