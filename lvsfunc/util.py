@@ -169,10 +169,11 @@ def normalize_ranges(clip: vs.VideoNode, ranges: Range | List[Range]) -> List[Tu
 def replace_ranges(clip_a: vs.VideoNode,
                    clip_b: vs.VideoNode,
                    ranges: Range | List[Range] | None,
+                   exclusive: bool = False,
                    use_plugin: bool = True) -> vs.VideoNode:
     """
     A replacement for ReplaceFramesSimple that uses ints and tuples rather than a string.
-    Frame ranges are inclusive.
+    Frame ranges are inclusive. This behaviour can be changed by setting `exclusive=True`.
 
     If you're trying to splice in clips, it's recommended you use `vsutil.insert_clip` instead.
 
@@ -208,7 +209,8 @@ def replace_ranges(clip_a: vs.VideoNode,
                             * Single None value in list: Last frame in clip_b
                             * None as first value of tuple: 0
                             * None as second value of tuple: Last frame in clip_b
-    :param use_plugin:  Use the ReplaceFramesSimple plugin for the rfs call.
+    :param exclusive:   Use exclusive ranges (Default: False).
+    :param use_plugin:  Use the ReplaceFramesSimple plugin for the rfs call (Default: True).
 
     :return:           Clip with ranges from clip_a replaced with clip_b
     """
@@ -230,18 +232,18 @@ def replace_ranges(clip_a: vs.VideoNode,
             return core.remap.ReplaceFramesSimple(clip_a, clip_b, mismatch=True,
                                                   mappings=' '.join(f'[{s} {e}]' for s, e in nranges))
         except vs.Error as e:
-            raise vs.Error("replace_ranges: 'Some kind of error occured when running the plugin!\n"
+            raise RuntimeError("replace_ranges: 'Some kind of error occured when running the plugin!\n"
                            f"This was the error: \"{str(e)[21:]}\".\n"
                            "If you don't know how to fix this, consider setting `use_plugin=False`.'")
 
     out = clip_a
 
     for start, end in nranges:
-        tmp = clip_b[start:end + 1]
+        tmp = clip_b[start:end + exclusive]
         if start != 0:
             tmp = out[: start] + tmp
         if end < out.num_frames - 1:
-            tmp = tmp + out[end + 1:]
+            tmp = tmp + out[end + exclusive:]
         out = tmp
 
     return out
