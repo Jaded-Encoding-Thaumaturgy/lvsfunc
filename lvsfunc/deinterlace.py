@@ -486,7 +486,7 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
     :param qtgmc_args:      Arguments to pass on to QTGMC.
                             Accepts any parameter except for FPSDivisor and TFF.
 
-    :return:                IVTC'd/decimated clip with deinterlaced credits
+    :return:                IVTC'd/decimated clip with credits pulled down to 24p.
     """
     try:
         from havsfunc import QTGMC, DitherLumaRebuild
