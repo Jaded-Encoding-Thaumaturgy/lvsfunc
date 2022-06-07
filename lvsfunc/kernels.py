@@ -287,7 +287,7 @@ class Example(Kernel):
         """
         Perform a regular scaling operation
 
-        :param clip:        Input clip
+        :param clip:        Clip to process.
         :param width:       Output width
         :param height:      Output height
         :param shift:       Shift clip during the operation.
@@ -303,7 +303,7 @@ class Example(Kernel):
         """
         Perform a regular descaling operation
 
-        :param clip:        Input clip
+        :param clip:        Clip to process.
         :param width:       Output width
         :param height:      Output height
         :param shift:       Shift clip during the operation.
@@ -319,7 +319,7 @@ class Example(Kernel):
         """
         Perform a regular resampling operation
 
-        :param clip:        Input clip
+        :param clip:        Clip to process.
         :param format:      Output format
         :param matrix:      Output matrix. If `None`, will take the matrix from the input clip's frameprops.
         :param matrix_in:   Input matrix. If `None`, will take the matrix from the input clip's frameprops.
@@ -335,7 +335,7 @@ class Example(Kernel):
         """
         Perform a regular shifting operation
 
-        :param clip:        Input clip
+        :param clip:        Clip to process.
         :param shift:       Shift clip during the operation.
                             Expects a tuple of (src_top, src_left).
         """

@@ -27,16 +27,12 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     """
     Rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
 
-    This function checks for differences between a frame and an edgemask with some processing done on it,
+    This function checks for differences between a frame and an edge mask with some processing done on it,
     and for differences between the current frame and the next frame.
     For frames where both thresholds are exceeded, it will perform deblocking at a specified strength.
     This will ideally be frames that show big temporal *and* spatial inconsistencies.
 
-    Thresholds and calculations are added to the frameprops to use as reference when setting the thresholds.
-
-    Keep in mind that vsdpir is not perfect; it may cause weird, black dots to appear sometimes.
-    If that happens, you can perform a denoise on the original clip (maybe even using vsdpir's denoising mode)
-    and grab the brightest pixels from your two clips. That should return a perfectly fine clip.
+    Thresholds and calculations are added to the frameprops to use as a reference when setting the thresholds.
 
     Thanks Vardë, louis, setsugen_no_ao!
 
@@ -44,8 +40,9 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     * vs-dpir
 
-    :param clip:            Input clip
-    :param edgevalue:       Remove edges from the edgemask that exceed this threshold (higher means more edges removed)
+    :param clip:            Clip to process.
+    :param edgevalue:       Remove edges from the edge mask that exceed this threshold
+                            (higher means more edges removed).
     :param strs:            A list of DPIR strength values (higher means stronger deblocking).
                             You can pass any arbitrary number of values here.
                             Sane deblocking strengths lie between 1–20 for most regular deblocking.
@@ -54,14 +51,14 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     :param thrs:            A list of thresholds, written as [(EdgeValRef, NextFrameDiff, PrevFrameDiff)].
                             You can pass any arbitrary number of values here.
                             The amount of values in strs and thrs need to be equal.
-    :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
+    :param matrix:          Enum for the matrix of the Clip to process. See ``types.Matrix`` for more info.
                             If `None`, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
-    :param cuda:            Use CUDA backend if True, else CPU backend
-    :param write_props:     Will write verbose props
-    :param vsdpir_args:     Additional args to pass to ``vsdpir``
+    :param cuda:            Use CUDA backend if True, else CPU backend.
+    :param write_props:     Will write verbose props.
+    :param vsdpir_args:     Additional args to pass to ``vsdpir``.
 
-    :return:                Deblocked clip
+    :return:                Deblocked clip.
     """
     check_variable(clip, "autodb_dpir")
     assert clip.format
@@ -133,13 +130,18 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     return core.resize.Bicubic(debl, format=clip.format.id, matrix=matrix if not is_rgb else None)
 
 
-def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 'deblock',
-           matrix: Matrix | int | None = None, tiles: int | Tuple[int] | None = None,
-           cuda: bool | Literal['trt'] = True, i444: bool = False, kernel: Kernel | str = Catrom(),
+def vsdpir(clip: vs.VideoNode,
+           strength: VSDPIR_STRENGTH_TYPE = 25,
+           mode: str = 'deblock',
+           matrix: Matrix | int | None = None,
+           tiles: int | Tuple[int] | None = None,
+           cuda: bool | Literal['trt'] = True,
+           i444: bool = False,
+           kernel: Kernel | str = Catrom(),
            zones: List[Tuple[Range | List[Range] | None, VSDPIR_STRENGTH_TYPE]] | None = None,
            **dpir_args: Any) -> vs.VideoNode:
     """
-    DPIR, or Plug-and-Play Image Restoration with Deep Denoiser Prior, is a denoise and deblocking neural network.
+    DPIR, or Plug-and-Play Image Restoration with Deep Denoiser Prior, is a denoising and deblocking neural network.
 
     You must install vs-mlrt. For more information, see the following links:
 
@@ -154,23 +156,24 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
 
     * vs-mlrt
 
-    :param clip:            Input clip
+    :param clip:            Clip to process.
     :param strength:        DPIR strength. Sane values lie between 1–20 for ``mode='deblock'``,
-                            and 1–3 for ``mode='denoise'``
+                            and 1–3 for ``mode='denoise'``.
     :param mode:            DPIR mode. Valid modes are 'deblock' and 'denoise'.
-    :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
+    :param matrix:          Enum for the matrix of the Clip to process. See ``types.Matrix`` for more info.
                             If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
-    :param cuda:            Use CUDA backend if True, else CPU backend
+    :param tiles:           Tiling. Higher tiling may take less resources.
+    :param cuda:            Use CUDA backend if True, else CPU backend.
     :param i444:            Forces the returned clip to be YUV444PS instead of the input clip's format
     :param zones:           A mapping to zone the DPIR strength so you don't have to call it multiple times.
                             The key should be a `float` / ``VideoNode`` (a normalised mask, for example)
-                            or `None` to pass the input clip.
-                            The values should be a range that will be passed to ``replace_ranges``
+                            or `None` to pass the Clip to process.
+                            The values should be a range that will be passed to ``replace_ranges``.
     :param dpir_args:       Additional args to pass to vs-mlrt.
                             Note: strength, tiles, and model cannot be overridden!
 
-    :return:                Deblocked or denoised clip in either the given clip's format or YUV444PS
+    :return:                Deblocked or denoised clip in either the given clip's format or YUV444PS.
     """
     try:
         from vsmlrt import DPIR, Backend, DPIRModel
@@ -195,8 +198,11 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
 
     dpir_args |= dict(tiles=tiles, model=model)
 
-    if "backend" not in dpir_args:
+    if 'backend' not in dpir_args:
         dpir_args |= dict(backend=(Backend.TRT if cuda == 'trt' else Backend.ORT_CUDA) if cuda else Backend.OV_CPU)
+
+    if 'overlap' not in dpir_args:
+        dpir_args |= dict(overlap=8)
 
     def _get_strength_clip(strength: SupportsFloat) -> vs.VideoNode:
         return clip.std.BlankClip(format=vs.GRAYS, color=float(strength))
@@ -214,11 +220,11 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
             strength = kernel.scale(strength, clip.width, clip.height)
 
         if strength.num_frames != clip.num_frames:
-            raise ValueError("vsdpir: '`strength` must be of the same length as \"clip\"'")
+            raise ValueError("vsdpir: '`strength` must be of the same length as \"clip\".'")
     elif isinstance(strength, SupportsFloat):
         strength = float(strength)
     else:
-        raise TypeError("vsdpir: '`strength` must be a float or a GRAYS clip'")
+        raise TypeError("vsdpir: '`strength` must be a float or a GRAYS clip.'")
 
     if matrix is None:
         matrix = get_prop(clip.get_frame(0), "_Matrix", int)

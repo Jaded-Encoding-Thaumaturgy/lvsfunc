@@ -42,17 +42,17 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
     * VapourSynth-Bilateral (optional: sigma)
     * RGSF (optional: 32 bit clip)
 
-    :param clip:        Input clip
-    :param sigma:       Sigma for Bilateral for pre-blurring (Default: False)
-    :param rad:         The luma equivalent of gradfun3's "mask" parameter
+    :param clip:        Clip to process.
+    :param sigma:       Sigma for Bilateral for pre-blurring (Default: False).
+    :param rad:         The luma equivalent of gradfun3's "mask" parameter.
     :param brz_a:       Binarizing thresh for the detail mask.
                         Scaled to clip's depth if between 0 and 1 (inclusive),
-                        else assumed to be in native range. (Default: 0.025)
+                        else assumed to be in native range. (Default: 0.025).
     :param brz_b:       Binarizing thresh for the edge mask.
                         Scaled to clip's depth if between 0 and 1 (inclusive),
-                        else assumed to be in native range. (Default: 0.045)
+                        else assumed to be in native range. (Default: 0.045).
 
-    :return:            Detail mask
+    :return:            Detail mask.
     """
     check_variable_resolution(clip, "detail_mask")
 
@@ -84,7 +84,7 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
 
     This mask will catch a whole lot of stuff, including noise and grain.
 
-    :param clip:            Input clip
+    :param clip:            Clip to process.
     :param sigma:           Sigma for the detail mask.
                             Higher means more detail and noise will be caught.
     :param detail_brz:      Binarizing for the detail mask.
@@ -96,10 +96,10 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
     :param blur_func:       Blurring function used for the detail detection.
                             Must accept the following parameters: ``clip``, ``ref_clip``, ``sigma``.
                             Uses `bilateral.Bilateral` by default.
-    :param edgemask_func:   Edgemasking function used for the edge detection
-    :param rg_mode:         Removegrain mode performed on the final output
+    :param edgemask_func:   Edge masking function used for the edge detection.
+    :param rg_mode:         Removegrain mode performed on the final output.
 
-    :return:                Detail mask
+    :return:                Detail mask.
     """
     check_variable(clip, "detail_mask_neo")
     assert clip.format
@@ -148,16 +148,16 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
     but the masks themselves use rounded rx/ry values, so there's no reason to bother with floats here.
 
     All thresholds are float and will be scaled to ``clip``'s format.
-    If thresholds are greater than 1, they will be asummed to be in 8-bit and scaled accordingly.
+    If thresholds are greater than 1, they will be assumed to be in 8-bit and scaled accordingly.
 
-    :param clip:            Input clip.
+    :param clip:            Clip to process.
     :param rad:             Radius for the mask.
     :param brz:             Binarizing for shrinking mask (Default: 0.35).
     :param thmi:            Minimum threshold for sharp edges; keep only the sharpest edges.
     :param thma:            Maximum threshold for sharp edges; keep only the sharpest edges.
     :param thlimi:          Minimum limiting threshold; includes more edges than previously, but ignores simple details.
     :param thlima:          Maximum limiting threshold; includes more edges than previously, but ignores simple details.
-    :param edgemask:        Edgemask to use. If None, uses ``clip.std.Prewitt()`` (Default: None)..
+    :param edgemask:        Edge mask to use. If None, uses ``clip.std.Prewitt()`` (Default: None).
 
     :return:                Halo mask.
     """
@@ -204,9 +204,17 @@ def fine_dehalo_mask(clip: vs.VideoNode,
 
     You can return the mask at different stages during the process with `show_mask`.
 
-    * 1 = Full mask (for backwards and fine_dehalo compatibility)
+    The `show_mask` parameter will return the following values depending on the int passed:
 
-    :param clip:            Input clip
+    1. Full mask (for backwards and fine_dehalo compatibility).
+    2. Grown mask.
+    3. Prewitt mask, the base building block of this mask.
+    4. Mask with only the sharpest line edges.
+    5. Mask that includes more edges, but less detail.
+    6. Extended version of mask 4.
+    7. Merge of mask 2 and 4.
+
+    :param clip:            Clip to process.
     :param rx:              Horizontal radius for halo removal. Must be greater than 1. Will be rounded up.
     :param ry:              Vertical radius for halo removal. Must be greater than 1.  Will be rounded up.
     :param thmi:            Minimum threshold for sharp edges. Keep only the sharpest edges (line edges).
@@ -217,7 +225,7 @@ def fine_dehalo_mask(clip: vs.VideoNode,
     :param thlima:          Maximum limiting threshold. Includes more edges than previously, but ignores simple details.
     :param show_mask:       Return mask clip at various stages in the operation. Valid options are 1–7.
 
-    :return:                Halo mask clip
+    :return:                Halo mask clip.
     """
     check_variable(clip, "halo_mask")
 
@@ -284,11 +292,11 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
 
     When radii are equal to 1, this filter becomes identical to mt_edge("min/max", 0, 255, 0, 255).
 
-    :param clip:    Input clip
-    :param rad:     Depth in pixels of the detail/edge masking
-    :param radc:    Chroma equivalent to ``rad``
+    :param clip:    Clip to process.
+    :param rad:     Depth in pixels of the detail/edge masking.
+    :param radc:    Chroma equivalent to ``rad``.
 
-    :return:        Range mask
+    :return:        Range mask.
     """
     check_variable(clip, "range_mask")
 
@@ -334,10 +342,10 @@ class BoundingBox():
 
     Uses Position + Size, like provided by GIMP's rectangle selection tool.
 
-    :param pos:  Offset of top-left corner of the bounding box from the top-left corner of the frame.
-                 Supports either a :py:class:`lvsfunc.types.Position` or a tuple that will be converted.
-    :param size: Offset of the bottom-right corner of the bounding box from the top-left corner of the bounding box.
-                 Supports either a :py:class:`lvsfunc.types.Size` or a tuple that will be converted.
+    :param pos:     Offset of top-left corner of the bounding box from the top-left corner of the frame.
+                    Supports either a :py:class:`lvsfunc.types.Position` or a tuple that will be converted.
+    :param size:    Offset of the bottom-right corner of the bounding box from the top-left corner of the bounding box.
+                    Supports either a :py:class:`lvsfunc.types.Size` or a tuple that will be converted.
     """
 
     pos: Position
@@ -379,13 +387,13 @@ class DeferredMask(ABC):
     Provides an interface to use different preconfigured masking functions.
     Provides support for ranges, reference frames, and bounding.
 
-    :param range:    A single range or list of ranges to replace,
-                     compatible with :py:class:`lvsfunc.misc.replace_ranges`
-    :param bound:    A :py:class:`lvsfunc.mask.BoundingBox` or a tuple that will be converted.
-                     (Default: ``None``, no bounding)
-    :param blur:     Blur the bounding mask (Default: False)
-    :param refframe: A single frame number to use to generate the mask
-                     or a list of frame numbers with the same length as ``range``
+    :param range:       A single range or list of ranges to replace,
+                        compatible with :py:class:`lvsfunc.misc.replace_ranges`.
+    :param bound:       A :py:class:`lvsfunc.mask.BoundingBox` or a tuple that will be converted
+                        (Default: ``None``, no bounding).
+    :param blur:        Blur the bounding mask (Default: False).
+    :param refframe:    A single frame number to use to generate the mask
+                        or a list of frame numbers with the same length as ``range``.
     """
 
     ranges: List[Range]
@@ -421,10 +429,10 @@ class DeferredMask(ABC):
         """
         Get the bounded mask.
 
-        :param clip:  Source
-        :param ref:   Reference clip
+        :param clip:  Source clip.
+        :param ref:   Reference clip.
 
-        :return:      Bounded mask
+        :return:      Bounded mask.
         """
         check_variable(clip, "get_mask")
         check_variable(ref, "get_mask")

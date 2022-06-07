@@ -52,9 +52,9 @@ def finish_frame(outfile: BinaryIO | None, timecodes: TextIO | None, ctx: Render
     """
     Output a frame.
 
-    :param outfile:   Output IO handle for Y4MPEG
-    :param timecodes: Output IO handle for timecodesv2
-    :param ctx:       Rendering context
+    :param outfile:   Output IO handle for Y4MPEG.
+    :param timecodes: Output IO handle for timecodesv2.
+    :param ctx:       Rendering context.
     """
     if timecodes:
         timecodes.write(f"{round(ctx.timecodes[ctx.frames_rendered]*1000):d}\n")
@@ -83,7 +83,7 @@ def clip_async_render(clip: vs.VideoNode,
 
     :param clip:      Clip to render.
     :param outfile:   Y4MPEG render output BinaryIO handle. If None, no Y4M output is performed.
-                      Use ``sys.stdout.buffer`` for stdout. (Default: None)
+                      Use ``sys.stdout.buffer`` for stdout (Default: None).
     :param timecodes: Timecode v2 file TextIO handle. If None, timecodes will not be written.
     :param progress:  String to use for render progress display.
                       If empty or ``None``, no progress display.
@@ -222,10 +222,10 @@ def find_scene_changes(clip: vs.VideoNode, mode: SceneChangeMode = SceneChangeMo
     :param clip:   Clip to search for scene changes. Will be rendered in its entirety.
     :param mode:   Scene change detection mode:
 
-                   * WWXD: Use wwxd
-                   * SCXVID: Use scxvid
-                   * WWXD_SCXVID_UNION: Union of wwxd and sxcvid (must be detected by at least one)
-                   * WWXD_SCXVID_INTERSECTION: Intersection of wwxd and scxvid (must be detected by both)
+                   * WWXD: Use wwxd.
+                   * SCXVID: Use scxvid.
+                   * WWXD_SCXVID_UNION: Union of wwxd and sxcvid (must be detected by at least one).
+                   * WWXD_SCXVID_INTERSECTION: Intersection of wwxd and scxvid (must be detected by both).
 
     :return:       List of scene changes.
     """

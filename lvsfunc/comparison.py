@@ -49,14 +49,13 @@ class Comparer(ABC):
     Base class for comparison functions.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If given a dict, the names will be overlaid on the clips using
-                            ``VideoNode.text.Text``.
+                            If given a dict, the names will be overlaid on the clips using ``VideoNode.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
                             The order of the clips in either a dict or a sequence will be kept in the comparison.
     :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
                             Only used if `clips` is a dict.
-                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7)
+                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7).
     """
 
     def __init__(self,
@@ -118,15 +117,14 @@ class Stack(Comparer):
     and either ``vapoursynth.core.std.StackHorizontal`` or ``vapoursynth.core.std.StackVertical``.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If given a dict, the names will be overlaid on the clips using
-                            ``VideoNode.text.Text``.
+                            If given a dict, the names will be overlaid on the clips using ``VideoNode.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
                             The order of the clips in either a dict or a sequence will be kept in the comparison.
-    :param direction:       Direction of the stack (Default: :py:attr:`lvsfunc.comparison.Direction.HORIZONTAL`)
+    :param direction:       Direction of the stack (Default: :py:attr:`lvsfunc.comparison.Direction.HORIZONTAL`).
     :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
                             Only used if `clips` is a dict.
-                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7)
+                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7).
     """
 
     def __init__(self,
@@ -160,14 +158,13 @@ class Interleave(Comparer):
     and ``vapoursynth.core.std.Interleave``.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If given a dict, the names will be overlaid on the clips using
-                            ``VideoNode.text.Text``.
+                            If given a dict, the names will be overlaid on the clips using ``VideoNode.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
                             The order of the clips in either a dict or a sequence will be kept in the comparison.
     :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
                             Only used if `clips` is a dict.
-                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7)
+                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7).
     """
 
     def __init__(self,
@@ -216,16 +213,15 @@ class Tile(Comparer):
         # the rows will be auto-padded with 0's to be the same length.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If given a dict, the names will be overlaid on the clips using
-                            ``VideoNode.text.Text``.
+                            If given a dict, the names will be overlaid on the clips using ``VideoNode.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
                             The order of the clips in either a dict or a sequence will be kept in the comparison.
     :param arrangement:     2-dimension array (list of lists) of 0s and 1s representing a list of rows of clips(`1`)
-                            or blank spaces(`0`) (Default: ``None``)
+                            or blank spaces(`0`) (Default: ``None``).
     :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
                             Only used if `clips` is a dict.
-                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7)
+                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7).
     """
 
     def __init__(self,
@@ -281,19 +277,18 @@ class Split(Stack):
 
     The remaining pixel width/height (``clip.dimension % number_of_clips``)
     will be always given to the last clip specified.
-    For example, five `104 x 200` clips will result in a `((20 x 200) * 4) + (24 x 200)` horiztonal stack of clips.
+    For example, five `104 x 200` clips will result in a `((20 x 200) * 4) + (24 x 200)` horizontal stack of clips.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If given a dict, the names will be overlaid on the clips using
-                            ``VideoNode.text.Text``.
+                            If given a dict, the names will be overlaid on the clips using ``VideoNode.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
                             The order of the clips in either a dict or a sequence will be kept in the comparison.
     :param direction:       Determines the axis to split the clips on
-                            (Default: :py:attr:`lvsfunc.comparison.Direction.HORIZONTAL`)
+                            (Default: :py:attr:`lvsfunc.comparison.Direction.HORIZONTAL`).
     :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
                             Only used if `clips` is a dict.
-                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7)
+                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7).
     """
 
     def __init__(self,
@@ -363,15 +358,15 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     Alias for this function is `lvsfunc.comp`.
 
-    :param clip_a:         Clip to compare
-    :param clip_b:         Second clip to compare
-    :param frames:         List of frames to compare (Default: ``None``)
-    :param rand_total:     Number of random frames to pick (Default: ``None``)
-    :param force_resample: Forcibly resamples the clip to RGB24 (Default: ``True``)
-    :param print_frame:    Print frame numbers (Default: ``True``)
-    :param mismatch:       Allow for clips with different formats and dimensions to be compared (Default: ``False``)
+    :param clip_a:         Clip to compare.
+    :param clip_b:         Second clip to compare.
+    :param frames:         List of frames to compare (Default: ``None``).
+    :param rand_total:     Number of random frames to pick (Default: ``None``).
+    :param force_resample: Forcibly resamples the clip to RGB24 (Default: ``True``).
+    :param print_frame:    Print frame numbers (Default: ``True``).
+    :param mismatch:       Allow for clips with different formats and dimensions to be compared (Default: ``False``).
 
-    :return:               Interleaved clip containing specified frames from `clip_a` and `clip_b`
+    :return:               Interleaved clip containing specified frames from `clip_a` and `clip_b`.
     """
     def _resample(clip: vs.VideoNode) -> vs.VideoNode:
         # Resampling to 8 bit and RGB to properly display how it appears on your screen
@@ -423,13 +418,13 @@ def stack_compare(*clips: vs.VideoNode,
 
     When not using `make_diff`, `Stack` is heavily recommended instead.
 
-    :param clips:     Clips to compare
-    :param make_diff: Create and stack a diff (only works if two clips are given) (Default: ``True``)
+    :param clips:     Clips to compare.
+    :param make_diff: Create and stack a diff (only works if two clips are given) (Default: ``True``).
     :param height:    Height in px to rescale clips to if `make_diff` is ``True``
                       (MakeDiff clip will be twice this resolution).
                       This function will not scale above the first clip's height (Default: 288).
 
-    :return:          Clip with `clips` stacked
+    :return:          Clip with `clips` stacked.
     """
     if not make_diff:
         warnings.warn("stack_compare has been deprecated in favour of `lvsfunc.comparison.Stack` "
@@ -466,16 +461,16 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
     (vertical by default),
     then stacked with the full-sized plane in the direction specified (horizontal by default).
 
-    :param clip:           Input clip (must be in YUV or RGB planar format)
-    :param stack_vertical: Stack the planes vertically (Default: ``False``)
+    :param clip:           Clip to process (must be in YUV or RGB planar format).
+    :param stack_vertical: Stack the planes vertically (Default: ``False``).
 
-    :return:               Clip with stacked planes
+    :return:               Clip with stacked planes.
     """
     check_variable(clip, "stack_planes")
     assert clip.format
 
     if clip.format.num_planes != 3:
-        raise InvalidFormatError("stack_planes", "{func}: Input clip must be of a YUV or RGB planar format!")
+        raise InvalidFormatError("stack_planes", "{func}: Clip to process. must be of a YUV or RGB planar format!")
 
     yuv_planes = split_planes(clip)
 
@@ -508,10 +503,10 @@ def diff_hardsub_mask(a: vs.VideoNode, b: vs.VideoNode, **kwargs: Any) -> vs.Vid
 
     This is kinda slow.
 
-    :param a: Clip A
-    :param b: Clip B
+    :param a:   Clip A.
+    :param b:   Clip B.
 
-    :return:  Diff masked with :py:func:`lvsfunc.dehardsub.hardsub_mask`
+    :return:    Diff masked with :py:func:`lvsfunc.dehardsub.hardsub_mask`.
     """
     check_variable(a, "diff_hardsub_mask")
     check_variable(b, "diff_hardsub_mask")
@@ -568,20 +563,20 @@ def diff(*clips: vs.VideoNode,
 
     Alias for this function is `lvsfunc.diff`.
 
-    :param clips:               Clips for comparison (order is kept)
+    :param clips:               Clips for comparison (order is kept).
     :param namedclips:          Keyword arguments of `name=clip` for all clips in the comparison.
                                 Clips will be labeled at the top left with their `name`.
     :param thr:                 Threshold, <= 1 uses PlaneStatsDiff, > 1 uses Max/Min.
                                 Higher values will catch more differences.
-                                Value must be lower than 128
+                                Value must be lower than 128.
     :param height:              Height in px to downscale clips to if `interleave` is ``False``
-                                (MakeDiff clip will be twice this resolution)
+                                (MakeDiff clip will be twice this resolution).
     :param interleave:          Return clip as an interleaved comparison
                                 (using :py:class:`lvsfunc.comparison.Interleave`).
-                                This will not return a diff clip
-    :param return_ranges:       Return a list of ranges in addition to the comparison clip
-    :param exclusion_ranges:    Excludes a list of frame ranges from difference checking output (but not processing)
-    :param diff_func:           Function for calculating diff in PlaneStatsMin/Max mode
+                                This will not return a diff clip.
+    :param return_ranges:       Return a list of ranges in addition to the comparison clip.
+    :param exclusion_ranges:    Excludes a list of frame ranges from difference checking output (but not processing).
+    :param diff_func:           Function for calculating diff in PlaneStatsMin/Max mode.
 
     :return:                    Either an interleaved clip of the differences between the two clips
                                 or a stack of both input clips on top of MakeDiff clip.
@@ -603,7 +598,7 @@ def diff(*clips: vs.VideoNode,
 
     def _to_ranges(iterable: List[int]) -> Iterable[Tuple[int, int]]:
         iterable = sorted(set(iterable))
-        for key, group in groupby(enumerate(iterable), lambda t: t[1] - t[0]):
+        for _, group in groupby(enumerate(iterable), lambda t: t[1] - t[0]):
             groupl = list(group)
             yield groupl[0][1], groupl[-1][1]
 
@@ -679,11 +674,11 @@ def interleave(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode
     """
     Small convenience function for interleaving clips.
 
-    :param clips:      Clips for comparison (order is kept)
-    :param namedclips: Keyword arguments of `name=clip` for all clips in the comparison.
-                       Clips will be labeled at the top left with their `name`.
+    :param clips:       Clips for comparison (order is kept).
+    :param namedclips:  Keyword arguments of `name=clip` for all clips in the comparison.
+                        Clips will be labeled at the top left with their `name`.
 
-    :return: An interleaved clip of all the `clips`/`namedclips` specified
+    :return:            An interleaved clip of all the `clips`/`namedclips` specified.
     """
     if clips and namedclips:
         raise ClipsAndNamedClipsError("interleave")
@@ -692,17 +687,17 @@ def interleave(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode
 
 def split(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     """
-    Small convenience function for splitting clips along the x-axis and then stacking.
+    Small convenience function for splitting clips along the x-axis and then stacking them.
 
     Accounts for odd-resolution clips by giving overflow columns to the last clip specified.
     All clips must have the same dimensions (width and height).
 
-    :param clips:      Clips for comparison (order is kept left to right)
-    :param namedclips: Keyword arguments of `name=clip` for all clips in the comparison.
-                       Clips will be labeled at the bottom with their `name`.
+    :param clips:       Clips for comparison (order is kept left to right).
+    :param namedclips:  Keyword arguments of `name=clip` for all clips in the comparison.
+                        Clips will be labeled at the bottom with their `name`.
 
-    :return: A clip with the same dimensions as any one of the input clips
-             with all `clips`/`namedclips` represented as individual vertical slices.
+    :return:            A clip with the same dimensions as any one of the input clips
+                        with all `clips`/`namedclips` represented as individual vertical slices.
     """
     if clips and namedclips:
         raise ClipsAndNamedClipsError("split")
@@ -713,11 +708,11 @@ def stack_horizontal(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.Vid
     """
     Small convenience function for stacking clips horizontally.
 
-    :param clips:      Clips for comparison (order is kept left to right)
-    :param namedclips: Keyword arguments of `name=clip` for all clips in the comparison.
-                       Clips will be labeled at the top left with their `name`.
+    :param clips:       Clips for comparison (order is kept left to right).
+    :param namedclips:  Keyword arguments of `name=clip` for all clips in the comparison.
+                        Clips will be labeled at the top left with their `name`.
 
-    :return: A horizontal stack of the `clips`/`namedclips`
+    :return:            A horizontal stack of the `clips`/`namedclips`.
     """
     if clips and namedclips:
         raise ClipsAndNamedClipsError("stack_horizontal")
@@ -728,11 +723,11 @@ def stack_vertical(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.Video
     """
     Small convenience function for stacking clips vertically.
 
-    :param clips:      Clips for comparison (order is kept top to bottom)
-    :param namedclips: Keyword arguments of `name=clip` for all clips in the comparison.
-                       Clips will be labeled at the top left with their `name`.
+    :param clips:       Clips for comparison (order is kept top to bottom).
+    :param namedclips:  Keyword arguments of `name=clip` for all clips in the comparison.
+                        Clips will be labeled at the top left with their `name`.
 
-    :return: A vertical stack of the `clips`/`namedclips`
+    :return:            A vertical stack of the `clips`/`namedclips`.
     """
     if clips and namedclips:
         raise ClipsAndNamedClipsError("stack_vertical")
@@ -747,12 +742,12 @@ def tile(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     If 3 clips are given, a 2x2 square with one blank slot will be returned.
     If 6 clips are given, a 3x2 rectangle will be returned.
 
-    :param clips:      Clips for comparison
-    :param namedclips: Keyword arguments of `name=clip` for all clips in the comparison.
-                       Clips will be labeled at the top left with their `name`.
+    :param clips:       Clips for comparison.
+    :param namedclips:  Keyword arguments of `name=clip` for all clips in the comparison.
+                        Clips will be labeled at the top left with their `name`.
 
-    :return: A clip with all input `clips`/`namedclips` automatically tiled most optimally
-             into a rectangular arrrangement
+    :return:            A clip with all input `clips`/`namedclips` automatically tiled most optimally
+                        into a rectangular arrrangement.
     """
     if clips and namedclips:
         raise ClipsAndNamedClipsError("tile")

@@ -49,10 +49,10 @@ def quick_resample(clip: vs.VideoNode,
 
     Useful for filters that only work in 16 bit or lower when you're working in float.
 
-    :param clip:      Input clip
-    :param function:  Filter to run after resampling (accepts and returns clip)
+    :param clip:      Clip to process.
+    :param function:  Filter to run after resampling (must accept and return a VideoNode).
 
-    :return:          Filtered clip in original depth
+    :return:          Filtered clip in original depth.
     """
     check_variable_format(clip, "quick_resample")
     assert clip.format
@@ -79,9 +79,9 @@ def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 
     Dependencies: rgsf
 
-    :param clip: Input clip
+    :param clip:    Clip to process.
 
-    :return:     Appropriate repair function for input clip's depth
+    :return:        Appropriate repair function for input clip's depth.
     """
     check_variable_format(clip, "pick_repair")
     assert clip.format
@@ -101,9 +101,9 @@ def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 
     * RGSF
 
-    :param clip: Input clip
+    :param clip:    Clip to process.
 
-    :return:     Appropriate RemoveGrain function for input clip's depth
+    :return:        Appropriate RemoveGrain function for input clip's depth.
     """
     check_variable_format(clip, "pick_removegrain")
     assert clip.format
@@ -117,11 +117,11 @@ def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
     """
     Get FrameProp ``prop`` from frame ``frame`` with expected type ``t`` to satisfy the type checker.
 
-    :param frame:   Frame containing props
-    :param key:     Prop to get
-    :param t:       Type of prop
+    :param frame:   Frame containing props.
+    :param key:     Prop to get.
+    :param t:       Type of prop.
 
-    :return:        frame.prop[key]
+    :return:        `frame.prop[key]`.
     """
     try:
         prop = frame.props[key]
@@ -138,10 +138,10 @@ def normalize_ranges(clip: vs.VideoNode, ranges: Range | List[Range]) -> List[Tu
     r"""
     Normalize ``Range``\\(s) to a list of inclusive positive integer ranges.
 
-    :param clip:   Reference clip used for length.
-    :param ranges: Single ``Range`` or list of ``Range``\\s.
+    :param clip:    Reference clip used for length.
+    :param ranges:  Single ``Range`` or list of ``Range``\\s.
 
-    :return:       List of inclusive positive ranges.
+    :return:        List of inclusive positive ranges.
     """
     ranges = ranges if isinstance(ranges, list) else [ranges]
 
@@ -196,8 +196,8 @@ def replace_ranges(clip_a: vs.VideoNode,
 
     Dependencies: VapourSynth-RemapFrames
 
-    :param clip_a:          Original clip
-    :param clip_b:          Replacement clip
+    :param clip_a:          Original clip.
+    :param clip_b:          Replacement clip.
     :param ranges:          Ranges to replace clip_a (original clip) with clip_b (replacement clip).
 
                             Integer values in the list indicate single frames,
@@ -208,14 +208,14 @@ def replace_ranges(clip_a: vs.VideoNode,
 
                             None values are context dependent:
 
-                                * None provided as sole value to ranges: no-op
-                                * Single None value in list: Last frame in clip_b
-                                * None as first value of tuple: 0
-                                * None as second value of tuple: Last frame in clip_b
+                                * None provided as sole value to ranges: no-op.
+                                * Single None value in list: Last frame in clip_b.
+                                * None as first value of tuple: 0.
+                                * None as second value of tuple: Last frame in clip_b.
     :param exclusive:       Use exclusive ranges (Default: False).
     :param use_plugin:      Use the ReplaceFramesSimple plugin for the rfs call (Default: True).
 
-    :return:                Clip with ranges from clip_a replaced with clip_b
+    :return:                Clip with ranges from clip_a replaced with clip_b.
     """
     if ranges is None:
         return clip_a
@@ -256,12 +256,12 @@ def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -
     """
     Scale binarization thresholds from float to int.
 
-    :param thresh: Threshold [0, 1]. If greater than 1, assumed to be in native clip range
-    :param clip:   Clip to scale to
-    :param assume: Assume input is this depth when given input >1. If ``None``, assume ``clip``'s format.
-                   (Default: None)
+    :param thresh:  Threshold [0, 1]. If greater than 1, assumed to be in native clip range.
+    :param clip:    Clip to scale the threshold to.
+    :param assume:  Assume input is this depth when given input >1. If ``None``, assume ``clip``'s format
+                    (Default: None).
 
-    :return:       Threshold scaled to [0, 2^clip.depth - 1] (if vs.INTEGER)
+    :return:         Threshold scaled to [0, 2^clip.depth - 1] (if vs.INTEGER).
     """
     check_variable_format(clip, "scale_thresh")
     assert clip.format
@@ -276,7 +276,14 @@ def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -
 
 
 def scale_peak(value: float, peak: float) -> float:
-    """Full-range scale function that scales a value from [0, 255] to [0, peak]."""
+    """
+    Full-range scale function that scales a value from [0, 255] to [0, peak].
+
+    :param value:   Value to process.
+    :param peak:    Peak to scale to.
+
+    :return:        Value scaled according to the given peak.
+    """
     return value * peak / 255
 
 
@@ -285,12 +292,25 @@ def force_mod(x: float, mod: int = 4) -> int:
     Force output to fit a specific MOD.
 
     Minimum returned value will always be mod².
+
+    :param x:       Value to process.
+    :param mod:     MOD to fit into.
+
+    :return:        Value made to fit into the given MOD.
     """
     return mod ** 2 if x < mod ** 2 else int(x / mod + 0.5) * mod
 
 
 def clamp_values(x: float, max_val: float, min_val: float) -> float:
-    """Forcibly clamp the given value x to a max and/or min value."""
+    """
+    Forcibly clamp the given value x to a max and/or min value.
+
+    :param x:           Value to process.
+    :param max_val:     Maximum value to clamp to.
+    :param min_val:     Minimum value to clamp to.
+
+    :return:            Clamped value.
+    """
     return min_val if x < min_val else max_val if x > max_val else x
 
 
@@ -301,8 +321,8 @@ def get_neutral_value(clip: vs.VideoNode, chroma: bool = False) -> float:
     Taken from vsutil. This isn't in any new versions yet, so mypy complains.
     Will remove once vsutil does another version bump.
 
-    :param clip:        Input clip.
-    :param chroma:      Whether to get luma or chroma plane value
+    :param clip:        Clip to process.
+    :param chroma:      Whether to get luma or chroma plane value.
 
     :return:            Neutral value.
     """
@@ -322,13 +342,13 @@ def padder(clip: vs.VideoNode,
 
     For a 4:2:0 clip, the output must be an even resolution.
 
-    :param clip:        Input clip
-    :param left:        Padding added to the left side of the clip
-    :param right:       Padding added to the right side of the clip
-    :param top:         Padding added to the top side of the clip
-    :param bottom:      Padding added to the bottom side of the clip
+    :param clip:        Clip to process.
+    :param left:        Padding added to the left side of the clip.
+    :param right:       Padding added to the right side of the clip.
+    :param top:         Padding added to the top side of the clip.
+    :param bottom:      Padding added to the bottom side of the clip.
 
-    :return:            Padded clip
+    :return:            Padded clip.
     """
     check_variable(clip, "padder")
 
@@ -364,19 +384,40 @@ def get_coefs(curve: vs.TransferCharacteristics) -> Coefs:
 
 
 def check_variable_format(clip: vs.VideoNode, function: str) -> None:
-    """Check for variable format and return an error if found."""
+    """
+    Check for variable format and return an error if found.
+
+    :param clip:        Clip to process.
+    :param function:    Name of the function as a string.
+
+    :return:            Error if the given clip is of a variable format.
+    """
     if clip.format is None:
         raise VariableFormatError(function)
 
 
 def check_variable_resolution(clip: vs.VideoNode, function: str) -> None:
-    """Check for variable width or height and return an error if found."""
+    """
+    Check for variable width or height and return an error if found.
+
+    :param clip:        Clip to process.
+    :param function:    Name of the function as a string.
+
+    :return:            Error if the given clip is of a variable resolution.
+    """
     if 0 in (clip.width, clip.height):
         raise VariableResolutionError(function)
 
 
 def check_variable(clip: vs.VideoNode, function: str) -> None:
-    """Check for variable format and a variable resolution and return an error if found."""
+    """
+    Check for variable format and a variable resolution and return an error if found.
+
+    :param clip:        Clip to process.
+    :param function:    Name of the function as a string.
+
+    :return:            Error if the given clip is of a variable resolution or format.
+    """
     check_variable_format(clip, function)
     check_variable_resolution(clip, function)
 
@@ -385,11 +426,11 @@ def get_matrix(clip: vs.VideoNode, return_matrix: bool = False) -> Matrix | int:
     """
     Get the matrix of a clip.
 
-    :param clip:            Input clip
+    :param clip:            Clip to process.
     :param return_matrix:   Returns a Matrix instead of an int.
                             Set to False by default for backwards compatibility.
 
-    :return:                Value representing a matrix
+    :return:                Value representing a matrix.
     """
     check_variable_format(clip, "get_matrix")
     assert clip.format
@@ -411,7 +452,13 @@ def get_matrix(clip: vs.VideoNode, return_matrix: bool = False) -> Matrix | int:
 
 
 def get_matrix_curve(matrix: int) -> CURVES:
-    """Return the matrix curve based on a given `matrix`."""
+    """
+    Return the matrix curve based on a given `matrix`.
+
+    :param matrix:  Reference matrix.
+
+    :return:        Matrix curve.
+    """
     match matrix:
         case 1: return vs.TransferCharacteristics.TRANSFER_BT709
         case 5 | 6: return vs.TransferCharacteristics.TRANSFER_BT601
@@ -429,9 +476,9 @@ def load_bookmarks(bookmark_path: str) -> List[int]:
     load_bookmarks(os.path.basename(__file__)+".bookmarks")
     will load the VSEdit bookmarks for the current Vapoursynth script.
 
-    :param bookmark_path:  Path to bookmarks file
+    :param bookmark_path:  Path to bookmarks file.
 
-    :return:               A list of bookmarked frames
+    :return:               A list of bookmarked frames.
     """
     with open(bookmark_path) as f:
         bookmarks = [int(i) for i in f.read().split(", ")]
@@ -448,10 +495,10 @@ def frames_since_bookmark(clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoN
 
     Can be used in tandem with :py:func:`lvsfunc.misc.load_bookmarks` to import VSEdit bookmarks.
 
-    :param clip:        Input clip
-    :param bookmarks:   A list of bookmarks
+    :param clip:        Clip to process.
+    :param bookmarks:   A list of bookmarks.
 
-    :return:            Clip with bookmarked frames
+    :return:            Clip with bookmarked frames.
     """
     def _frames_since_bookmark(n: int, clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoNode:
         for i, bookmark in enumerate(bookmarks):
@@ -490,9 +537,9 @@ def chroma_injector(func: F) -> F:
     This works with variable resolution and may work with variable format,
     however the latter is wholly untested and likely a bad idea in every conceivable use case.
 
-    :param func:        Function to call with injected chroma
+    :param func:        Function to call with injected chroma.
 
-    :return:            Decorated function
+    :return:            Decorated function.
     """
     @wraps(func)
     def inner(_chroma: vs.VideoNode, clip: vs.VideoNode, *args: Any,
@@ -568,16 +615,16 @@ def colored_clips(amount: int,
 
     Written by `Dave <mailto:orangechannel@pm.me>`_.
 
-    :param amount:  Number of ``vapoursynth.VideoNode``\\s to return
+    :param amount:  Number of ``vapoursynth.VideoNode``\\s to return.
     :param max_hue: Maximum hue (0 < hue <= 360) in degrees to generate colors from (uses the HSL color model).
                     Setting this higher than ``315`` will result in the clip colors looping back towards red
                     and is not recommended for visually distinct colors.
                     If the `amount` of clips is higher than the `max_hue` expect there to be identical
-                    or visually similar colored clips returned (Default: 300)
-    :param rand:    Randomizes order of the returned list (Default: True)
+                    or visually similar colored clips returned (Default: 300).
+    :param rand:    Randomizes order of the returned list (Default: True).
     :param seed:    Bytes-like object passed to ``random.seed`` which allows for consistent randomized order
-                    of the resulting clips (Default: None)
-    :param kwargs:  Arguments passed to ``vapoursynth.core.std.BlankClip`` (Default: keep=1)
+                    of the resulting clips (Default: None).
+    :param kwargs:  Arguments passed to ``vapoursynth.core.std.BlankClip`` (Default: keep=1).
 
     :return:        List of uniquely colored clips in sequential or random order.
     """
@@ -624,9 +671,9 @@ def allow_variable(width: int | None = None, height: int | None = None,
 
     If the provided clip is variable format, no output format is required to be specified.
 
-    :param width:       Output clip width
-    :param height:      Output clip height
-    :param format:      Output clip format
+    :param width:       Output clip width.
+    :param height:      Output clip height.
+    :param format:      Output clip format.
 
     :return:            Function decorator for the given output format.
     """

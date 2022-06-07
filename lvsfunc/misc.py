@@ -61,7 +61,7 @@ def source(file: str, ref: vs.VideoNode | None = None,
     :param file:              Input file. This MUST have an extension.
     :param ref:               Use another clip as reference for the clip's format,
                               resolution, and framerate (Default: None).
-    :param force_lsmas:       Force files to be imported with L-SMASH (Default: False)
+    :param force_lsmas:       Force files to be imported with L-SMASH (Default: False).
     :param mpls:              Load in a mpls file (Default: False).
     :param mpls_playlist:     Playlist number, which is the number in mpls file name (Default: 0).
     :param mpls_angle:        Angle number to select in the mpls playlist (Default: 0).
@@ -137,15 +137,15 @@ def edgefixer(clip: vs.VideoNode,
 
     * VS-ContinuityFixer
 
-    :param clip:        Input clip
-    :param left:        Number of pixels to fix on the left (Default: None)
-    :param right:       Number of pixels to fix on the right (Default: None)
-    :param top:         Number of pixels to fix on the top (Default: None)
-    :param bottom:      Number of pixels to fix on the bottom (Default: None)
-    :param radius:      Radius for edgefixing (Default: None)
-    :param full_range:  Does not run the expression over the clip to fix over/undershoot (Default: False)
+    :param clip:        Clip to process.
+    :param left:        Number of pixels to fix on the left (Default: None).
+    :param right:       Number of pixels to fix on the right (Default: None).
+    :param top:         Number of pixels to fix on the top (Default: None).
+    :param bottom:      Number of pixels to fix on the bottom (Default: None).
+    :param radius:      Radius for edgefixing (Default: None).
+    :param full_range:  Does not run the expression over the clip to fix over/undershoot (Default: False).
 
-    :return:            Clip with fixed edges
+    :return:            Clip with fixed edges.
     """
     warnings.warn("edgefixer: This function's functionality will change in a future version, "
                   "and will likely be renamed. Please make sure to update your older scripts once it does.",
@@ -178,14 +178,14 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
     Values passed should mimic those of an 8bit clip.
     If your clip is not 8bit, they will be scaled accordingly.
 
-    If you only pass 1 value, it will copied to every plane.
+    If you only pass 1 value, it will be copied to every plane.
     If you pass 2, the 2nd one will be copied over to the 3rd.
     Don't pass more than three.
 
-    :param clip:    Input clip
-    :param values:  Value added to every pixel, scales accordingly to your clip's depth (Default: 16)
+    :param clip:        Clip to process.
+    :param values:      Value added to every pixel, scales accordingly to your clip's depth (Default: 16).
 
-    :return:        Clip with pixel values added
+    :return:            Clip with pixel values added.
     """
     val: Tuple[float, float, float]
 
@@ -219,12 +219,12 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
     There is one caveat, however: You can get scenes where every other frame is filtered
     rather than the entire scene. Please do take care to avoid that if possible.
 
-    :param clip:              Input clip
-    :param filtered:          Filtered clip
-    :param threshold:         Threshold for frame averages to be filtered (Default: 0.25)
-    :param threshold_range:   Threshold for a range of frame averages to be filtered (Default: None)
+    :param clip:              Clip to process.
+    :param filtered:          Filtered clip.
+    :param threshold:         Threshold for frame averages to be filtered (Default: 0.25).
+    :param threshold_range:   Threshold for a range of frame averages to be filtered (Default: None).
 
-    :return:                  Conditionally filtered clip
+    :return:                  Conditionally filtered clip.
     """
     def _diff(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
               filtered: vs.VideoNode, threshold: float,
@@ -255,14 +255,14 @@ def wipe_row(clip: vs.VideoNode,
 
     You can also give it a different clip to replace a row with.
 
-    :param clip:           Input clip
-    :param secondary:      Clip to replace wiped rows with (Default: None)
-    :param width:          Width of row (Default: 1)
-    :param height:         Height of row (Default: 1)
-    :param offset_x:       X-offset of row (Default: 0)
-    :param offset_y:       Y-offset of row (Default: 0)
+    :param clip:           Clip to process.
+    :param secondary:      Clip to replace wiped rows with (Default: None).
+    :param width:          Width of row (Default: 1).
+    :param height:         Height of row (Default: 1).
+    :param offset_x:       X-offset of row (Default: 0).
+    :param offset_y:       Y-offset of row (Default: 0).
 
-    :return:               Clip with given rows or columns wiped
+    :return:               Clip with given rows or columns wiped.
     """
     check_variable(clip, "wipe_row")
 
@@ -283,14 +283,14 @@ def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
     Diff'd unsharpening function.
 
     Performs one-dimensional sharpening as such: "Original + (Original - blurred) * Strength"
-    It then merges back noise and detail that was prefiltered away,
+    It then merges back noise and detail that was pre-filtered away,
 
     Negative values will blur instead. This can be useful for trying to undo sharpening.
 
     This function is not recommended for normal use,
-    but may be useful as prefiltering for detail- or edgemasks.
+    but may be useful as pre-filtering for detail- or edge masks.
 
-    :param clip:                Input clip.
+    :param clip:                Clip to process.
     :param strength:            Amount to multiply blurred clip with original clip by.
                                 Negative values will blur the clip instead.
     :param sigma:               Sigma for the gaussian blur.
@@ -298,7 +298,7 @@ def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
     :param prefilter_sigma:     Strength for the pre-denoising.
     :param show_mask:           Show halo mask.
 
-    :return:                    Unsharpened clip
+    :return:                    Unsharpened clip.
     """
     check_variable(clip, "unsharpen")
     assert clip.format
@@ -334,9 +334,9 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
 
     * kagefunc
 
-    :param clip:            Input clip.
+    :param clip:            Clip to process.
     :param overlay:         Sign or logo to overlay. Must be the png loaded in through imwri.Read()
-                            or a path string to the image file, and MUST be the same dimensions as the input clip.
+                            or a path string to the image file, and MUST be the same dimensions as the Clip to process.
     :param frame_ranges:    Frame ranges or starting frame to apply the overlay to. See ``types.Range`` for more info.
                             If None, overlays the entire clip.
                             If a Range is passed, the overlaid clip will only show up inside that range.
@@ -346,7 +346,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     :param fade_length:     Length to fade the clips into each other.
                             The fade will start and end on the frames given in frame_ranges.
                             If set to 0, it won't fade and the sign will simply pop in.
-    :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
+    :param matrix:          Enum for the matrix of the Clip to process. See ``types.Matrix`` for more info.
                             If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
 

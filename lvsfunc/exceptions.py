@@ -43,7 +43,7 @@ class NotEqualFormatsError(ValueError):
 class InvalidFormatError(ValueError):
     """Raised when the given clip uses an invalid format."""
 
-    def __init__(self, function: str, message: str = "{func}: 'Input clip must be of a YUV format!'") -> None:
+    def __init__(self, function: str, message: str = "{func}: 'Clip to process. must be of a YUV format!'") -> None:
         self.function: str = function
         self.message: str = message
         super().__init__(self.message.format(func=self.function))

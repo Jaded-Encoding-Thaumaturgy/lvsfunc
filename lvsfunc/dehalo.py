@@ -35,21 +35,21 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
 
     If a ref clip is passed, that will be masked onto the clip instead of a blurred clip.
 
-    :param clip:                Source clip
-    :param ref:                 Ref clip
-    :param sigmaS:              Bilateral's spatial weight sigma
-    :param sigmaR:              Bilateral's range weight sigma
+    :param clip:                Clip to process.
+    :param ref:                 Reference clip.
+    :param sigmaS:              Bilateral's spatial weight sigma.
+    :param sigmaR:              Bilateral's range weight sigma.
     :param sigmaS_final:        Final bilateral call's spatial weight sigma.
                                 You'll want this to be much weaker than the initial `sigmaS`.
                                 If `None`, 1/3rd of `sigmaS`.
     :param sigmaR_final:        Bilateral's range weight sigma.
-                                if `None`, same as `sigmaR`
-    :param bilateral_args:      Additional parameters to pass to bilateral
-    :param bm3d_args:           Additional parameters to pass to :py:class:`lvsfunc.noise.bm3d`
+                                if `None`, same as `sigmaR`.
+    :param bilateral_args:      Additional parameters to pass to bilateral.
+    :param bm3d_args:           Additional parameters to pass to :py:class:`lvsfunc.noise.bm3d`.
     :param planes:              Specifies which planes will be processed.
                                 Any unprocessed planes will be simply copied.
 
-    :return:                    Dehalo'd clip
+    :return:                    Dehalo'd clip.
     """
     bm3ddh_args: Dict[str, Any] = dict(sigma=8, radius=1, pre=clip, planes=planes)
     bm3ddh_args.update(bm3d_args)
@@ -80,7 +80,7 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
                lowsens: float = 50, highsens: float = 50, rfactor: float = 1.0,
                maskpull: float = 48, maskpush: float = 192, show_mask: bool = False) -> vs.VideoNode:
     """
-    Bombines the best of DeHalo_alpha and BlindDeHalo3, and adds some tweaks to the masking.
+    Dehalo that combines the best of DeHalo_alpha and BlindDeHalo3.
 
     This function is rather sensitive to the rx and ry settings.
     Set them as low as possible! If the radii are set too high, it will start missing small spots.
@@ -92,14 +92,14 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     In essence, they define the window between how weak an effect is for it to be processed,
     and how strong it has to be before it's fully discarded.
 
-    Adopted from G41Fun, original by ``Orum <https://forum.doom9.org/showthread.php?t=148498>``.
+    Adopted from G41Fun, original by `Orum <https://forum.doom9.org/showthread.php?t=148498>`_.
     Heavily modified by LightArrowsEXE.
 
-    :param clip:            Input clip
+    :param clip:            Clip to process.
     :param ref:             Reference clip. Will replace regular dehaloing with the given clip.
     :param rx:              Horizontal radius for halo removal. Must be greater than 1.
     :param ry:              Vertical radius for halo removal. Must be greater than 1.
-    :param brightstr:       Strength for bright halo removal
+    :param brightstr:       Strength for bright halo removal.
     :param darkstr:         Strength for dark halo removal. Must be between 0 and 1.
     :param lowsens:         Lower sensitivity range. The lower this is, the more it will process.
                             Must be between 0 and 100.
@@ -107,11 +107,11 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
                             Must be between 0 and 100.
     :param rfactor:         Image enlargement factor. Set to >1 to enable some form of aliasing-protection.
                             Must be greater than 1.
-    :param maskpull:        Mask pulling factor
-    :param maskpush:        Mask pushing factor
-    :param show_mask:       Return mask clip
+    :param maskpull:        Mask pulling factor.
+    :param maskpush:        Mask pushing factor.
+    :param show_mask:       Return mask clip.
 
-    :return:                Dehalo'd clip or halo mask clip
+    :return:                Dehalo'd clip or halo mask clip.
     """
     check_variable(clip, "masked_dha")
     assert clip.format
@@ -183,10 +183,10 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     Light's rewrite of fine_dehalo.py.
 
     .. warning::
-        | This function has been deprecated! It will removed in a future commit.
+        | This function has been deprecated! It will be removed in a future commit.
 
     This is a slight rewrite of the standalone script that has been floating around
-    with support for a ``ref`` clip. Original can be found in havsfunc if requested.
+    with support for a ``ref`` clip. Original can be found in havsfunc.
 
     There have been changes made to the way the masks are expanded/inpanded, as well as strengths.
     This isn't strictly better or worse than the original version, just different.
@@ -201,11 +201,11 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     In essence, they define the window between how weak an effect is for it to be processed,
     and how strong it has to be before it's fully discarded.
 
-    :param clip:            Input clip
+    :param clip:            Clip to process.
     :param ref:             Reference clip. Will replace regular dehaloing.
     :param rx:              Horizontal radius for halo removal. Must be greater than 1. Will be rounded up.
     :param ry:              Vertical radius for halo removal. Must be greater than 1. Will be rounded up.
-    :param brightstr:       Strength for bright halo removal
+    :param brightstr:       Strength for bright halo removal.
     :param darkstr:         Strength for dark halo removal. Must be between 0 and 1.
     :param thmi:            Minimum threshold for sharp edges. Keep only the sharpest edges (line edges).
                             To see the effects of this setting take a look at the strong mask (show_mask=4).
@@ -223,7 +223,7 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     :param planes:          Specifies which planes will be processed.
                             Any unprocessed planes will be simply copied.
 
-    :return:                Dehalo'd clip or halo mask clip
+    :return:                Dehalo'd clip or halo mask clip.
     """
     warnings.warn("fine_dehalo: 'This function is deprecated in favor of `stgfunc.dehalo.fine_dehalo` "
                   "(soon `vsdehalo.fine_dehalo`)! This function will be removed in a future commit.",

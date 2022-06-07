@@ -31,14 +31,13 @@ class HardsubMask(DeferredMask, ABC):
 
     Provides extra functions potentially useful for dehardsubbing.
 
-    :param range:    A single range or list of ranges to replace,
-                     compatible with :py:class:`lvsfunc.misc.replace_ranges`
-    :param bound:    A :py:class:`lvsfunc.mask.BoundingBox` or a tuple that will be converted.
-                     (Default: ``None``, no bounding)
-    :param blur:     Blur the bounding mask (Default: True)
-    :param refframe: A single frame number to use to generate the mask
-                     or a list of frame numbers with the same length as ``range``
-
+    :param range:       A single range or list of ranges to replace,
+                        compatible with :py:class:`lvsfunc.misc.replace_ranges`.
+    :param bound:       A :py:class:`lvsfunc.mask.BoundingBox` or a tuple that will be converted.
+                        (Default: ``None``, no bounding).
+    :param blur:        Blur the bounding mask (Default: True).
+    :param refframe:    A single frame number to use to generate the mask
+                        or a list of frame numbers with the same length as ``range``.
     """
 
     def get_progressive_dehardsub(self, hrdsb: vs.VideoNode, ref: vs.VideoNode,
@@ -46,11 +45,11 @@ class HardsubMask(DeferredMask, ABC):
         """
         Dehardsub using multiple superior hardsubbed sources and one inferior non-subbed source.
 
-        :param hrdsb:    Hardsub master source (eg Wakanim RU dub)
-        :param ref:      Non-subbed reference source (eg CR, Funi, Amazon)
-        :param partials: Sources to use for partial dehardsubbing (eg Waka DE, FR, SC)
+        :param hrdsb:       Hardsub master source (eg Wakanim RU dub).
+        :param ref:         Non-subbed reference source (eg CR, Funi, Amazon).
+        :param partials:    Sources to use for partial dehardsubbing (eg Waka DE, FR, SC).
 
-        :return:         Dehardsub stages and masks used for progressive dehardsub
+        :return:            Dehardsub stages and masks used for progressive dehardsub.
         """
         masks = [self.get_mask(hrdsb, ref)]
         pdhs = [hrdsb]
@@ -72,11 +71,11 @@ class HardsubMask(DeferredMask, ABC):
         """
         Apply dehardsubbing to a clip.
 
-        :param hrdsb:    Hardsubbed source
-        :param ref:      Non-hardsubbed source
-        :param partials: Other hardsubbed sources
+        :param hrdsb:       Hardsubbed source.
+        :param ref:         Non-hardsubbed source.
+        :param partials:    Other hardsubbed sources.
 
-        :return:         Dehardsubbed clip
+        :return:            Dehardsubbed clip.
         """
         if partials:
             return replace_ranges(hrdsb,
@@ -96,8 +95,8 @@ class HardsubSignKgf(HardsubMask):
 
     * kagefunc
 
-    :param highpass: Highpass filter for hardsub detection (16-bit, Default: 5000)
-    :param expand:   ``kgf.hardsubmask_fades`` expand parameter (Default: 8)
+    :param highpass:    Highpass filter for hardsub detection (16-bit, Default: 5000).
+    :param expand:      ``kgf.hardsubmask_fades`` expand parameter (Default: 8).
     """
 
     highpass: int
@@ -122,9 +121,9 @@ class HardsubSign(HardsubMask):
     """
     Hardsub scenefiltering helper using Zastin's hardsub mask.
 
-    :param thresh:  Binarization threshold, [0, 1] (Default: 0.06)
-    :param expand:  std.Maximum iterations (Default: 8)
-    :param inflate: std.Inflate iterations (Default: 7)
+    :param thresh:      Binarization threshold, [0, 1] (Default: 0.06).
+    :param expand:      ``vapoursynth.core.std.Maximum`` iterations (Default: 8).
+    :param inflate:     ``vapoursynth.core.std.Inflate`` iterations (Default: 7).
     """
 
     thresh: float
@@ -153,7 +152,7 @@ class HardsubLine(HardsubMask):
 
     * kagefunc
 
-    :param expand: ``kgf.hardsubmask`` expand parameter (Default: clip.width // 200)
+    :param expand:  ``kgf.hardsubmask`` expand parameter (Default: clip.width // 200).
     """
 
     expand: int | None
@@ -179,8 +178,8 @@ class HardsubLineFade(HardsubLine):
     Similar to :py:class:`lvsfunc.dehardsub.HardsubLine` but
     automatically sets the reference frame to the range's midpoint.
 
-    :param refframe: Desired reference point as a percent of the frame range.
-                     0 = first frame, 1 = last frame, 0.5 = midpoint (Default)
+    :param refframe:    Desired reference point as a percent of the frame range.
+                        0 = first frame, 1 = last frame, 0.5 = midpoint (Default).
     """
 
     ref_float: float
@@ -207,8 +206,8 @@ class HardsubSignFade(HardsubSign):
     Similar to :py:class:`lvsfunc.dehardsub.HardsubSign` but
     automatically sets the reference frame to the range's midpoint.
 
-    :param refframe: Desired reference point as a percent of the frame range.
-                     0 = first frame, 1 = last frame, 0.5 = midpoint (Default)
+    :param refframe:    Desired reference point as a percent of the frame range.
+                        0 = first frame, 1 = last frame, 0.5 = midpoint (Default).
     """
 
     ref_float: float
@@ -231,10 +230,10 @@ class HardsubASS(HardsubMask):
     """
     Generate a mask using an ass script, such as for dehardubbing AoD with CR DE.
 
-    :param filename: Path to ASS script.
-    :param fontdir:  Extra fonts path.
-    :param shift:    Offset to apply to the script, in frames.
-                     May misbehave due to timestamp rounding.
+    :param filename:    Path to ASS script.
+    :param fontdir:     Extra fonts path.
+    :param shift:       Offset to apply to the script, in frames.
+                        May misbehave due to timestamp rounding.
     """
 
     filename: str
@@ -262,11 +261,11 @@ def get_all_masks(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[HardsubMas
     """
     Get a clip of :py:class:`lvsfunc.dehardsub.HardsubSign` masks.
 
-    :param hrdsb: Hardsubbed source
-    :param ref:   Reference clip
-    :param signs: List of :py:class:`lvsfunc.dehardsub.HardsubSign` to generate masks for
+    :param hrdsb:   Hardsubbed source.
+    :param ref:     Reference clip.
+    :param signs:   List of :py:class:`lvsfunc.dehardsub.HardsubSign` to generate masks for.
 
-    :return:      Clip of all hardsub masks
+    :return:        Clip of all hardsub masks.
     """
     check_variable(hrdsb, "get_all_masks")
     check_variable(ref, "get_all_masks")
@@ -283,11 +282,11 @@ def bounded_dehardsub(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[Hardsu
     """
     Apply a list of :py:class:`lvsfunc.dehardsub.HardsubSign`.
 
-    :param hrdsb: Hardsubbed source
-    :param ref:   Reference clip
-    :param signs: List of :py:class:`lvsfunc.dehardsub.HardsubSign` to apply
+    :param hrdsb:   Hardsubbed source.
+    :param ref:     Reference clip.
+    :param signs:   List of :py:class:`lvsfunc.dehardsub.HardsubSign` to apply.
 
-    :return:      Dehardsubbed clip
+    :return:        Dehardsubbed clip.
     """
     for sign in signs:
         hrdsb = sign.apply_dehardsub(hrdsb, ref, partials)
@@ -300,14 +299,14 @@ def hardsub_mask(hrdsb: vs.VideoNode, ref: vs.VideoNode, thresh: float = 0.06,
     """
     Zastin's spatially-aware hardsub mask.
 
-    :param hrdsb:   Hardsubbed source
-    :param ref:     Reference clip
-    :param thresh:  Binarization threshold, [0, 1] (Default: 0.06)
-    :param minimum: Times to minimize the max (Default: 1)
-    :param expand:  Times to maximize the mask (Default: 8)
-    :param inflate: Times to inflate the mask (Default: 7)
+    :param hrdsb:       Hardsubbed source.
+    :param ref:         Reference clip.
+    :param thresh:      Binarization threshold, [0, 1] (Default: 0.06).
+    :param minimum:     Times to minimize the max (Default: 1).
+    :param expand:      Times to maximize the mask (Default: 8).
+    :param inflate:     Times to inflate the mask (Default: 7).
 
-    :return:        Hardsub mask
+    :return:            Hardsub mask.
     """
     check_variable(hrdsb, "hardsub_mask")
     check_variable(ref, "hardsub_mask")
