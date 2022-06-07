@@ -75,10 +75,10 @@ Easy as pie!
 Functions
 ^^^^^^^^^
 
-.. autoclass:: lvsfunc.kernels.get_kernel
+.. autofunction:: lvsfunc.kernels.get_kernel
     :members:
 
-.. autoclass:: lvsfunc.kernels.get_all_kernels
+.. autofunction:: lvsfunc.kernels.get_all_kernels
     :members:
 
 Methods

@@ -8,10 +8,7 @@ Deblocking functions and wrappers.
     lvsfunc.deblock.vsdpir
     lvsfunc.deblock.autodb_dpir
 
-.. autoclass:: lvsfunc.deblock.vsdpir
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. autofunction:: lvsfunc.deblock.vsdpir
 
 .. automodule:: lvsfunc.deblock
     :members:

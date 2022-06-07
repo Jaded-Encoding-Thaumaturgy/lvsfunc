@@ -48,7 +48,7 @@ About
 
 .. toctree::
     :maxdepth: 4
-    :caption: Submodules
+    :caption: Sub-Modules
     :titlesonly:
 
     submodules/aa

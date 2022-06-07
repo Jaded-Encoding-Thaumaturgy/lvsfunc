@@ -2,7 +2,7 @@ Basic Usage
 -----------
 
 `lvsfunc` is a Python module,
-meaning it must be imported into your script before it can be accessed.
+which means you must import into your script before it can be accessed.
 You can import it by doing the following:
 
 .. code-block:: py
@@ -32,7 +32,7 @@ and writing a function name behind it.
     clip = lvf.source("PATH/TO/YOUR/VIDEO")
 
 `lvsfunc` exposes every function in the global scope,
-but also exposes every submodule individually.
+but also exposes every sub-module individually.
 Both of the following calls will call the same function:
 
 .. code-block:: py
@@ -42,10 +42,10 @@ Both of the following calls will call the same function:
     descaled_clip_a = lvf.descale(clip)
     descaled_clip_b = lvf.scale.descale(clip)
 
-Calling them from the relevant submodule is considered good practice,
+Calling them from the relevant sub-module is considered good practice,
 but for convenience, it may be easier to call the function directly.
 
-You can also import individual functions from submodules.
+You can also import individual functions from sub-modules.
 
 .. code-block:: py
 
@@ -53,7 +53,7 @@ You can also import individual functions from submodules.
 
     upscaled_clip = Bicubic(b=1/3, c=1/3).scale(clip, 3840, 2160)
 
-This is useful if you only need a single function and don't want to pollute your autocompletion
+This is useful if you only need a single function and don't want to pollute your auto-completion
 with all the other `lvsfunc` functions.
 
 For further information about specific functions, please refer to their individual documentations.

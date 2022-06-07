@@ -1,10 +1,10 @@
 lvsfunc.mask
 -------------------
 
-Masks are used to limit where filtering takes place, and how strong the filtering applied is.
+Masks are used to limit where filtering takes place, and how strong the filtering is applied.
 `lvsfunc` offers a couple of masks, and they're often used internally in other functions.
 
-All masks also come limited by default, so you don't need to worry about illegal ranges messing with your masked output.
+All masks come limited by default, so you don't need to worry about illegal ranges messing with your masked output.
 
 .. autosummary::
 
