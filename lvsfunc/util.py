@@ -186,6 +186,8 @@ def replace_ranges(clip_a: vs.VideoNode,
         * ``replace_ranges(black, white, [(200, -1)])``: replace 200 until the end with ``white``,
           leaving 1 frame of ``black``
 
+    Alias for this function is `lvsfunc.rfs`.
+
     Dependencies: VapourSynth-RemapFrames
 
     :param clip_a:      Original clip
