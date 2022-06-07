@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from typing import Any, Collection, Iterator, List, TypeVar
 
+# flake8: noqa
+
 __all__: List[str] = [
-    "BarColumn",
-    "FPSColumn",
-    "Progress",
-    "TextColumn",
-    "TimeRemainingColumn"
+    'BarColumn',
+    'FPSColumn',
+    'Progress',
+    'TextColumn',
+    'TimeRemainingColumn'
 ]
 
 T = TypeVar("T")

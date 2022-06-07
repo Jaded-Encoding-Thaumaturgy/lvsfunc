@@ -21,9 +21,11 @@ __all__: List[str] = [
 
 def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) -> vs.VideoNode:
     """
-    A function to demangle messed-up chroma, like for example chroma
-    that was downscaled using Nearest Neighbour, or the chroma found on DVDs.
+    Chroma reconstruction filter using regress.
+
     This function should be used with care, and not blindly applied to anything.
+    Ideally you should see how the function works,
+    and then mangle the luma of your source to match how your chroma was mangled.
 
     This function can also return a 4:4:4 clip. This is not recommended
     except for very specific cases, like for example where you're
@@ -69,12 +71,13 @@ def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) 
 
 def regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1e-7) -> List[RegressClips]:
     """
+    Regress a clip using mangled luma and chroma.
+
     Fit a line for every neighborhood of values of a given size in a clip
     with corresponding neighborhoods in one or more other clips.
 
     For more info see `this Wikipedia article <https://en.wikipedia.org/wiki/Simple_linear_regression>`_.
     """
-
     if radius <= 0:
         raise ValueError("Regress: 'radius must be greater than zero!'")
 
@@ -109,7 +112,7 @@ def regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1e
 
 def reconstruct_multi(c: vs.VideoNode, r: RegressClips, radius: int = 2) -> vs.VideoNode:
     """
-    Tries to reconstruct regressed clips using a base video clip.
+    Reconstruct regressed clips using a base video clip.
 
     :param c:       Original clip.
     :param r:       Regressed clips.

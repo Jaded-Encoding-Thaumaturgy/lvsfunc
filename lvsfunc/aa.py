@@ -29,6 +29,7 @@ __all__: List[str] = [
 def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, strength: float = 1) -> vs.VideoNode:
     """
     Clamp stronger AAs to weaker AAs.
+
     Useful for clamping upscaled_sraa or eedi3 to nnedi3 for a strong but precise AA.
 
     Stolen from Zastin.
@@ -60,6 +61,7 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
 def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode]) -> vs.VideoNode:
     """
     Perform transpose AA.
+
     Example for nnedi3cl: taa(clip, nnedi3(opencl=True))
 
     :param clip:   Input clip.
@@ -132,7 +134,8 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
                   mask: vs.VideoNode | None = None,
                   mthr: float = 0.25, opencl: bool = False) -> vs.VideoNode:
     """
-    A function that clamps eedi3 to nnedi3 for the purpose of reducing eedi3 artifacts.
+    Clamp eedi3 to nnedi3 for the purpose of reducing eedi3 artifacts.
+
     This should fix every issue created by eedi3. For example, `see this image <https://i.imgur.com/hYVhetS.jpg>`_.
 
     Original function written by Zastin, modified by LightArrowsEXE.
@@ -161,7 +164,8 @@ def transpose_aa(clip: vs.VideoNode,
                  eedi3: bool = False,
                  rep: int = 13) -> vs.VideoNode:
     """
-    Function that performs anti-aliasing over a clip by using nnedi3/eedi3 and transposing multiple times.
+    Tranpose and aa a clip multiple times using nnedi3/eedi3.
+
     This results in overall stronger anti-aliasing.
     Useful for shows like Yuru Camp with bad lineart problems.
 
@@ -235,8 +239,7 @@ def upscaled_sraa(clip: vs.VideoNode,
                   = Bicubic(b=0, c=1/2).scale,
                   aafun: Callable[[vs.VideoNode], vs.VideoNode] = _eedi3_singlerate) -> vs.VideoNode:
     """
-    A function that performs a supersampled single-rate AA to deal with heavy aliasing and broken-up lineart.
-    Useful for heavy antialiasing.
+    Supersampled single-rate AA for heavy aliasing and broken lineart.
 
     It works by supersampling the clip, performing AA, and then downscaling again.
     Downscaling can be disabled by setting `downscaler` to `None`, returning the supersampled luma clip.
@@ -298,8 +301,10 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
              mask_thr: float = 60, show_mask: bool = False,
              lmask: vs.VideoNode | None = None, **eedi3_args: Any) -> vs.VideoNode:
     """
-    As the name implies, this is a based anti-aliaser. Thank you, based Zastin.
-    This relies on FSRCNNX being very sharp, and as such it very much acts like the main "AA" here.
+    Based anti-aliaser written by the based Zastin.
+
+    This function relies on FSRCNNX being very sharp,
+    and as such it very much acts like the main "AA" here.
 
     Original function by Zastin, modified by LightArrowsEXE.
 

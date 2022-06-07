@@ -12,6 +12,8 @@ from .types import Matrix
 core = vs.core
 
 
+# flake8: noqa
+
 __all__: List[str] = [
     'Bicubic', 'Bilinear', 'FmtConv', 'Lanczos', 'Point', 'Spline16', 'Spline36', 'Spline64',
     'Bessel', 'BicubicDidee', 'BicubicDogWay', 'BicubicSharp', 'BlackHarris', 'BlackMan', 'BlackManMinLobe',

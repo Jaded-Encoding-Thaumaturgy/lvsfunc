@@ -31,7 +31,8 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
              bm3d_args: Dict[str, Any] = {},
              ) -> vs.VideoNode:
     """
-    A simple dehaloing function using bilateral and BM3D to remove bright haloing around edges.
+    Dehaloing function that uses bilateral and BM3D to remove bright haloing around edges.
+
     If a ref clip is passed, that will be masked onto the clip instead of a blurred clip.
 
     :param clip:                Source clip
@@ -79,7 +80,7 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
                lowsens: float = 50, highsens: float = 50, rfactor: float = 1.0,
                maskpull: float = 48, maskpush: float = 192, show_mask: bool = False) -> vs.VideoNode:
     """
-    A combination of the best of DeHalo_alpha and BlindDeHalo3, plus a few minor tweaks to the masking.
+    Bombines the best of DeHalo_alpha and BlindDeHalo3, and adds some tweaks to the masking.
 
     This function is rather sensitive to the rx and ry settings.
     Set them as low as possible! If the radii are set too high, it will start missing small spots.
@@ -179,10 +180,10 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
                 show_mask: bool | int = False,
                 planes: int | Sequence[int] | None = None) -> vs.VideoNode:
     """
+    Light's rewrite of fine_dehalo.py.
+
     .. warning::
         | This function has been deprecated! It will removed in a future commit.
-
-    Slight rewrite of fine_dehalo.
 
     This is a slight rewrite of the standalone script that has been floating around
     with support for a ``ref`` clip. Original can be found in havsfunc if requested.

@@ -83,7 +83,7 @@ def reupscale(clip: vs.VideoNode,
               kernel: Kernel | str = Bicubic(b=0, c=1/2),
               **kwargs: Any) -> vs.VideoNode:
     """
-    A quick 'n easy wrapper used to re-upscale a clip descaled with descale using znedi3.
+    Quick 'n easy wrapper to re-upscale a clip descaled with descale using znedi3.
 
     Function is curried to allow parameter tuning when passing to :py:func:`lvsfunc.scale.descale`
 
@@ -125,8 +125,7 @@ def reupscale(clip: vs.VideoNode,
 def descale_detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
                         threshold: float = 0.05) -> vs.VideoNode:
     """
-    Generate a detail mask given a clip and a clip rescaled with the same
-    kernel.
+    Generate a detail mask given a clip and a clip rescaled with the same kernel.
 
     Function is curried to allow parameter tuning when passing to :py:func:`lvsfunc.scale.descale`
 
@@ -156,7 +155,8 @@ def descale(clip: vs.VideoNode,
             = descale_detail_mask, src_left: float = 0.0, src_top: float = 0.0,
             show_mask: bool = False) -> vs.VideoNode:
     """
-    A unified descaling function.
+    Unified descaling function.
+
     Includes support for handling fractional resolutions (experimental),
     multiple resolutions, detail masking, and conditional scaling.
 
@@ -196,7 +196,7 @@ def descale(clip: vs.VideoNode,
     :param src_top:                 Vertical shifting for fractional resolutions (Default: 0.0)
     :param show_mask:               Return detail mask
 
-    :return:                       Descaled and re-upscaled clip with float bitdepth
+    :return:                        Descaled and re-upscaled clip with float bitdepth
     """
     check_variable(clip, "descale")
     assert clip.format
@@ -293,7 +293,8 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
                     curve: CURVES | None = None,
                     sigmoid: bool = False, epsilon: float = 1e-6) -> vs.VideoNode:
     """
-    muvsfunc.SSIM_downsample rewrite taken from a Vardë gist.
+    SSIM_downsample rewrite taken from a Vardë gist.
+
     Unlike muvsfunc's implementation, this function also works in float and does not use nnedi3_resample.
     Most of the documentation is taken from muvsfunc.
 
@@ -380,7 +381,7 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
 def gamma2linear(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  epsilon: float = 1e-6) -> vs.VideoNode:
-    """Converts from gamma to linear."""
+    """Convert gamma to linear."""
     check_variable_format(clip, "gamma2linear")
     assert clip.format
 
@@ -403,7 +404,7 @@ def gamma2linear(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
 def linear2gamma(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  ) -> vs.VideoNode:
-    """Converts from linear to gamma."""
+    """Convert linear to gamma."""
     check_variable_format(clip, "linear2gamma")
     assert clip.format
 
@@ -428,8 +429,7 @@ def linear2gamma(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
 def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: int = 720,
                         kernel: Kernel | str | None = None, thr: float = 5e-8) -> vs.VideoNode:
     """
-    Easy wrapper to descale to SharpBicubic and an additional kernel,
-    compare them, and then pick one or the other.
+    Descale to SharpBicubic and an additional kernel, compare them, then pick one or the other.
 
     The output clip has props that can be used to frameeval specific kernels by the user.
 
@@ -484,8 +484,7 @@ def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: in
 def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: int = 720,
                         kernel: Kernel | str | None = None) -> vs.VideoNode:
     """
-    Companion function to go with comparative_descale
-    to reupscale the clip for descale detail masking.
+    Companion function for comparative_descale to reupscale the clip for descale detail masking.
 
     :param clip:        Input clip
     :param width:       Width to upscale to (if None, auto-calculated)
@@ -525,7 +524,8 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
                   mix_strength: float = 0.25, show_mask: bool | int = False,
                   nnedi3_args: Dict[str, Any] = {}, eedi3_args: Dict[str, Any] = {}) -> vs.VideoNode:
     """
-    InsaneAA rewrite to be a much saner and easier to read function.
+    Rewrite of InsaneAA to make it easier to use and maintain.
+
     Descales and downscales the given clip and merges them together with a set strength.
 
     This can be useful for dealing with a source that you can't accurately descale,
