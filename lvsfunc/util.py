@@ -86,7 +86,7 @@ def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 
     is_float = clip.format.sample_type == vs.FLOAT
 
-    return core.rgvs.Repair if is_float else core.rgsf.Repair
+    return core.rgsf.Repair if is_float else core.rgvs.Repair
 
 
 def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
@@ -107,7 +107,7 @@ def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 
     is_float = clip.format.sample_type == vs.FLOAT
 
-    return core.rgvs.RemoveGrain if is_float else core.rgsf.RemoveGrain
+    return core.rgsf.RemoveGrain if is_float else core.rgvs.RemoveGrain
 
 
 def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
