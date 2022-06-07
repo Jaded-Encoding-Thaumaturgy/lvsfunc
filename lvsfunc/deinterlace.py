@@ -417,8 +417,8 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
         | If you pass your own float clip, you'll want to make sure to properly dither it down after.
         | If you don't do this, you'll run into some serious issues!
 
-    Taken from this gist and modified by LightArrowsEXE.
-    <https://gist.github.com/blackpilling/bf22846bfaa870a57ad77925c3524eb1>
+    Taken from `this gist <https://gist.github.com/blackpilling/bf22846bfaa870a57ad77925c3524eb1>`_
+    and modified by LightArrowsEXE.
 
     :param clip:        Clip to process.
     :param tff:         Field order for deinterlacing. Used when the `_FieldBased` property is not set.
