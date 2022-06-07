@@ -172,7 +172,7 @@ def replace_ranges(clip_a: vs.VideoNode,
                    use_plugin: bool = True) -> vs.VideoNode:
     """
     A replacement for ReplaceFramesSimple that uses ints and tuples rather than a string.
-    Frame ranges are inclusive. Optionally strings can still be used.
+    Frame ranges are inclusive.
 
     This function will try to call the `VapourSynth-RemapFrames` plugin before doing any of its own processing.
     This should come with a speed boost, so it's recommended you install it.
@@ -211,10 +211,19 @@ def replace_ranges(clip_a: vs.VideoNode,
     if ranges is None:
         return clip_a
 
+    if isinstance(ranges, str):
+        raise ValueError("replace_ranges: 'This function does not take strings! Please use a list of tuples or ints!")
+
+    if clip_a.num_frames != clip_b.num_frames:
+        warnings.warn("replace_ranges: "
+                      f"'The number of frames ({clip_a.num_frames} vs. {clip_b.num_frames}) do not match! "
+                      "The function will still work, but you may run into unintended errors with the output clip!'")
+
     nranges = normalize_ranges(clip_b, ranges)
 
     if use_plugin and hasattr(core, 'remap'):
-        return core.remap.ReplaceFramesSimple(clip_a, clip_b, mappings=' '.join(f'[{s} {e}]' for s, e in nranges))
+        return core.remap.ReplaceFramesSimple(clip_a, clip_b, mismatch=True,
+                                              mappings=' '.join(f'[{s} {e}]' for s, e in nranges))
 
     out = clip_a
 
