@@ -152,6 +152,17 @@ def vsdpir(clip: vs.VideoNode,
     Converts to RGB -> runs DPIR -> converts back to original format, and with no subsampling if ``i444=True``.
     For more information, see `the original DPIR repository <https://github.com/cszn/DPIR>`_.
 
+    `vsdpir` can also zoned using :py:func:`lvsfunc.util.replace_ranges` syntax,
+    along with strenghts zet at specific ranges. Below is an example:
+
+    .. code-block:: py
+
+        lvf.deblock.vsdpir(src, strength=25, zones=[
+            ([(100, 200), 500, 800, (1200, 1400)], 5),
+            ([(600, 750), (1000, 1050)], 50),
+            ([(2000, 2156)], 100),
+        ])
+
     Dependencies:
 
     * vs-mlrt
