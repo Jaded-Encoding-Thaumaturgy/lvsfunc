@@ -174,6 +174,8 @@ def replace_ranges(clip_a: vs.VideoNode,
     A replacement for ReplaceFramesSimple that uses ints and tuples rather than a string.
     Frame ranges are inclusive.
 
+    If you're trying to splice in clips, it's recommended you use `vsutil.insert_clip` instead.
+
     This function will try to call the `VapourSynth-RemapFrames` plugin before doing any of its own processing.
     This should come with a speed boost, so it's recommended you install it.
 
@@ -213,7 +215,7 @@ def replace_ranges(clip_a: vs.VideoNode,
     if ranges is None:
         return clip_a
 
-    if isinstance(ranges, str):
+    if isinstance(ranges, str):  # type:ignore[unreachable]
         raise ValueError("replace_ranges: 'This function does not take strings! Please use a list of tuples or ints!")
 
     if clip_a.num_frames != clip_b.num_frames:
