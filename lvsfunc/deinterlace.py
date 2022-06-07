@@ -27,7 +27,7 @@ __all__: List[str] = [
     'decomb',
     'descale_fields',
     'fix_telecined_fades',
-    'ivtc_credits',
+    'pulldown_credits', 'ivtc_credits',
     'seek_cycle',
     'sivtc', 'SIVTC',
     'tivtc_vfr', 'TIVTC_VFR',
@@ -456,10 +456,10 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
     return ftf
 
 
-def ivtc_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None,
-                 interlaced: bool = True, dec: bool | None = None,
-                 bob_clip: vs.VideoNode | None = None, qtgmc_args: Dict[str, Any] = {}
-                 ) -> vs.VideoNode:
+def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None,
+                     interlaced: bool = True, dec: bool | None = None,
+                     bob_clip: vs.VideoNode | None = None, qtgmc_args: Dict[str, Any] = {}
+                     ) -> vs.VideoNode:
     """
     Deinterlacing function for interlaced credits (60i/30p) on top of telecined video (24p).
     This is a combination of havsfunc's dec_txt60mc, ivtc_txt30mc, and ivtc_txt60mc functions.
@@ -486,20 +486,20 @@ def ivtc_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None,
     :param qtgmc_args:      Arguments to pass on to QTGMC.
                             Accepts any parameter except for FPSDivisor and TFF.
 
-    :return:                IVTC'd/decimated clip with deinterlaced credits
+    :return:                IVTC'd/decimated clip with credits pulled down to 24p.
     """
     try:
         from havsfunc import QTGMC, DitherLumaRebuild
     except ModuleNotFoundError:
-        raise ModuleNotFoundError("ivtc_credits: missing dependency `havsfunc`!")
+        raise ModuleNotFoundError("pulldown_credits: missing dependency `havsfunc`!")
 
-    check_variable(clip, "ivtc_credits")
+    check_variable(clip, "pulldown_credits")
 
     if clip.fps != Fraction(30000, 1001):
-        raise ValueError("ivtc_credits: 'Your clip must have a framerate of 30000/1001!'")
+        raise ValueError("pulldown_credits: 'Your clip must have a framerate of 30000/1001!'")
 
     if get_prop(clip.get_frame(0), '_FieldBased', int) == 0 and tff is None:
-        raise vs.Error("ivtc_credits: 'You must set `tff` for this clip!'")
+        raise vs.Error("pulldown_credits: 'You must set `tff` for this clip!'")
     elif isinstance(tff, (bool, int)):
         clip = clip.std.SetFieldBased(int(tff) + 1)
 
@@ -511,7 +511,7 @@ def ivtc_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None,
         dec = any(x in clip.get_frame(0).props for x in {"VFMMatch", "TFMMatch"})
 
         if dec:
-            warnings.warn("ivtc_credits: 'Fieldmatched clip passed to function! "
+            warnings.warn("pulldown_credits: 'Fieldmatched clip passed to function! "
                           "dec is set to True. If you want to disable this, set `dec=False`!'")
 
     # motion vector and other values
@@ -533,7 +533,7 @@ def ivtc_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None,
     bobbed = bob_clip or QTGMC(clip, **qtgmc_kwargs)
 
     if bobbed.fps != Fraction(60000, 1001):
-        raise InvalidFramerateError("ivtc_credits", bobbed,
+        raise InvalidFramerateError("pulldown_credits", bobbed,
                                     "{func} 'Your bobbed clip *must* have a framerate of 60000/1001!'")
 
     if interlaced:  # 60i credits. Start of ABBCD
@@ -663,3 +663,4 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
 # Temporary aliases
 SIVTC = sivtc
 TIVTC_VFR = tivtc_vfr
+ivtc_credits = pulldown_credits
