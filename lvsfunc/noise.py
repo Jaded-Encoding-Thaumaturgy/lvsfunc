@@ -23,7 +23,7 @@ def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
          pre: vs.VideoNode | None = None, refine: int = 1, matrix_s: str = "709",
          basic_args: Dict[str, Any] = {}, final_args: Dict[str, Any] = {}) -> vs.VideoNode:
     """
-    A wrapper function for the BM3D denoiser.
+    BM3D denoising filter using the CPU.
 
     Dependencies:
 
@@ -107,8 +107,7 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
                  matrix: Matrix | int | None = None,
                  kernel: Kernel | str = Bicubic(b=0, c=0.5), **chkdr_args: Any) -> vs.VideoNode:
     """
-    A wrapper around the graining plugin, `chickendream`,
-    a plug-in that implements a realistic film grain generator.
+    Realistic film grain generator.
 
     .. warning::
         | This function is _incredibly_ slow! It may take multiple minutes to render your clip!

@@ -1,6 +1,6 @@
 [flake8]
 count = True
-ignore = W503,E226
+ignore = W503,E226,D100,D107,D301
 max-line-length = 120
 exclude = stubs/*
 show-source = True

@@ -6,14 +6,15 @@ import vapoursynth as vs
 from vskernels import Kernel, get_kernel
 
 __all__: List[str] = [
-    "VariableFormatError", "VariableResolutionError", "NotEqualFormatsError",
-    "InvalidFormatError", "ClipsAndNamedClipsError", "InvalidFramerateError",
-    "CompareSameKernelError"
+    'VariableFormatError', 'VariableResolutionError', 'NotEqualFormatsError',
+    'InvalidFormatError', 'ClipsAndNamedClipsError', 'InvalidFramerateError',
+    'CompareSameKernelError'
 ]
 
 
 class VariableFormatError(ValueError):
-    "Raised when clip is of a variable format."
+    """Raised when clip is of a variable format."""
+
     def __init__(self, function: str, message: str = "{func}: 'Variable-format clips not supported!'") -> None:
         self.function: str = function
         self.message: str = message
@@ -21,7 +22,8 @@ class VariableFormatError(ValueError):
 
 
 class VariableResolutionError(ValueError):
-    "Raised when clip is of a variable resolution."
+    """Raised when clip is of a variable resolution."""
+
     def __init__(self, function: str, message: str = "{func}: 'Variable-resolution clips not supported!'") -> None:
         self.function: str = function
         self.message: str = message
@@ -29,7 +31,8 @@ class VariableResolutionError(ValueError):
 
 
 class NotEqualFormatsError(ValueError):
-    "Raised when clips with different formats are given"
+    """Raised when clips with different formats are given."""
+
     def __init__(self, function: str, message: str = "{func}: 'The format of both clips must be equal!'") -> None:
         self.function: str = function
         self.message: str = message
@@ -37,7 +40,8 @@ class NotEqualFormatsError(ValueError):
 
 
 class InvalidFormatError(ValueError):
-    "Raised when the given clip uses an invalid format"
+    """Raised when the given clip uses an invalid format."""
+
     def __init__(self, function: str, message: str = "{func}: 'Input clip must be of a YUV format!'") -> None:
         self.function: str = function
         self.message: str = message
@@ -45,7 +49,8 @@ class InvalidFormatError(ValueError):
 
 
 class InvalidMatrixError(ValueError):
-    "Raised when an invalid matrix is passed"
+    """Raised when an invalid matrix is passed."""
+
     def __init__(self, function: str, matrix: int = 2,
                  message: str = "{func}: 'You can't set a matrix of {matrix}!'") -> None:
         self.function: str = function
@@ -55,16 +60,18 @@ class InvalidMatrixError(ValueError):
 
 
 class ClipsAndNamedClipsError(ValueError):
-    "Raised when both positional clips and named clips are given"
+    """Raised when both positional clips and named clips are given."""
+
     def __init__(self, function: str,
-                 message: str = "{func}: 'Positional clips and named keyword clips cannot both be given!'") -> None:
+                 message: str = "{func}: 'Positional clips and named keyword clips cannot both be given!") -> None:
         self.function: str = function
         self.message: str = message
         super().__init__(self.message.format(func=self.function))
 
 
 class InvalidFramerateError(ValueError):
-    "Raised when the given clip has an invalid framerate"
+    """Raised when the given clip has an invalid framerate."""
+
     def __init__(self, function: str, clip: vs.VideoNode,
                  message: str = "{func}: '{fps} clips are not allowed!'") -> None:
         self.function: str = function
@@ -74,7 +81,8 @@ class InvalidFramerateError(ValueError):
 
 
 class CompareSameKernelError(ValueError):
-    "Raised when two of the same kernels are compared to each other"
+    """Raised when two of the same kernels are compared to each other."""
+
     def __init__(self, function: str, kernel: Kernel | str,
                  message: str = "{func}: 'You may not compare {kernel} with itself!'") -> None:
         self.function: str = function

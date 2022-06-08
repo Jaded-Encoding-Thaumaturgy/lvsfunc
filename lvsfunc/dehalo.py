@@ -31,7 +31,8 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
              bm3d_args: Dict[str, Any] = {},
              ) -> vs.VideoNode:
     """
-    A simple dehaloing function using bilateral and BM3D to remove bright haloing around edges.
+    Dehaloing function that uses bilateral and BM3D to remove bright haloing around edges.
+
     If a ref clip is passed, that will be masked onto the clip instead of a blurred clip.
 
     :param clip:                Source clip
@@ -79,7 +80,7 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
                lowsens: float = 50, highsens: float = 50, rfactor: float = 1.0,
                maskpull: float = 48, maskpush: float = 192, show_mask: bool = False) -> vs.VideoNode:
     """
-    A combination of the best of DeHalo_alpha and BlindDeHalo3, plus a few minor tweaks to the masking.
+    Bombines the best of DeHalo_alpha and BlindDeHalo3, and adds some tweaks to the masking.
 
     This function is rather sensitive to the rx and ry settings.
     Set them as low as possible! If the radii are set too high, it will start missing small spots.
@@ -157,12 +158,12 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
 
         if rfactor == 1:
             ssc = pick_repair(clip)(clip_y, mmg, 1)
-
-        ss_w, ss_h = force_mod(clip.width * rfactor, 4), force_mod(clip.height * rfactor, 4)
-        ssc = Catrom().scale(clip_y, ss_w, ss_h)
-        ssc = core.std.Expr([ssc, Catrom().scale(mmg.std.Maximum(), ss_w, ss_h)], 'x y min')
-        ssc = core.std.Expr([ssc, Catrom().scale(mmg.std.Minimum(), ss_w, ss_h)], 'x y max')
-        ssc = Catrom().scale(ssc, clip.width, clip.height)
+        else:
+            ss_w, ss_h = force_mod(clip.width * rfactor, 4), force_mod(clip.height * rfactor, 4)
+            ssc = Catrom().scale(clip_y, ss_w, ss_h)
+            ssc = core.std.Expr([ssc, Catrom().scale(mmg.std.Maximum(), ss_w, ss_h)], 'x y min')
+            ssc = core.std.Expr([ssc, Catrom().scale(mmg.std.Minimum(), ss_w, ss_h)], 'x y max')
+            ssc = Catrom().scale(ssc, clip.width, clip.height)
 
         umfc = core.std.Expr([clip_y, ssc], f'x y < x dup y - {darkstr} * - x dup y - {brightstr} * - ?')
 
@@ -179,10 +180,10 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
                 show_mask: bool | int = False,
                 planes: int | Sequence[int] | None = None) -> vs.VideoNode:
     """
+    Light's rewrite of fine_dehalo.py.
+
     .. warning::
         | This function has been deprecated! It will removed in a future commit.
-
-    Slight rewrite of fine_dehalo.
 
     This is a slight rewrite of the standalone script that has been floating around
     with support for a ``ref`` clip. Original can be found in havsfunc if requested.
@@ -254,8 +255,8 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     if not all(0 <= sens < 100 for sens in (lowsens, highsens)):
         raise ValueError("fine_dehalo: 'lowsens and highsens must be between 0 and 100!'")
 
-    if not 0 <= int(show_mask) <= 7:
-        raise ValueError("fine_dehalo: 'Valid values for show_mask are 1–7!'")
+    if show_mask is not False and not (0 < int(show_mask) <= 7):
+        raise ValueError("fine_dehalo: 'Valid values for show_mask are 0–7!'")
 
     dehaloed = ref or DeHalo_alpha(clip, rx=rx, ry=ry, darkstr=darkstr, brightstr=brightstr,
                                    lowsens=lowsens, highsens=highsens, ss=rfactor)

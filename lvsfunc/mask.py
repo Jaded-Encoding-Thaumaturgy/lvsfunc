@@ -32,7 +32,8 @@ __all__: List[str] = [
 def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
                 rad: int = 3, brz_a: float = 0.025, brz_b: float = 0.045) -> vs.VideoNode:
     """
-    A wrapper for creating a detail mask to be used during denoising and/or debanding.
+    Create a detail mask to be used during denoising and/or debanding.
+
     The detail mask is created using debandshit's range mask,
     and is then merged with Prewitt to catch lines it may have missed.
 
@@ -79,8 +80,9 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
                     edgemask_func: Callable[[vs.VideoNode], vs.VideoNode] = core.std.Prewitt,
                     rg_mode: int = 17) -> vs.VideoNode:
     """
-    A detail mask aimed at preserving as much detail as possible within darker areas,
-    even if it winds up being mostly noise.
+    Detail mask aimed at preserving as much detail as possible.
+
+    This mask will catch a whole lot of stuff, including noise and grain.
 
     :param clip:            Input clip
     :param sigma:           Sigma for the detail mask.
@@ -134,7 +136,10 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
               thlimi: float = 0.195, thlima: float = 0.392,
               edgemask: vs.VideoNode | None = None) -> vs.VideoNode:
     """
-    A halo mask to catch basic haloing, inspired by the mask from FineDehalo.
+    Halo mask to catch basic haloing.
+
+    Inspired by the mask from FineDehalo.
+
     Most of it was copied from there, but some key adjustments have been made
     to center it specifically around masking.
 
@@ -142,7 +147,7 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
     Float made sense for FineDehalo since it uses DeHalo_alpha for dehaloing,
     but the masks themselves use rounded rx/ry values, so there's no reason to bother with floats here.
 
-    All thresholds are float and will be scaled to ``clip``\\'s format.
+    All thresholds are float and will be scaled to ``clip``'s format.
     If thresholds are greater than 1, they will be asummed to be in 8-bit and scaled accordingly.
 
     :param clip:            Input clip.
@@ -193,7 +198,8 @@ def fine_dehalo_mask(clip: vs.VideoNode,
                      thlimi: float = 50, thlima: float = 100,
                      show_mask: bool | int = False) -> vs.VideoNode:
     """
-    The fine_dehalo mask as its own module.
+    Create the mask for fine_dehalo.
+
     This allows you to use the mask without having to jump through all the other code in fine_dehalo.
 
     You can return the mask at different stages during the process with `show_mask`.
@@ -220,7 +226,7 @@ def fine_dehalo_mask(clip: vs.VideoNode,
     if not all(x >= 1 for x in (rx, ry)):
         raise ValueError("halo_mask: 'rx and ry must both be bigger than 1.0!'")
 
-    if not 0 < int(show_mask) < 7:
+    if show_mask is not False and not (0 < int(show_mask) <= 7):
         raise ValueError("halo_mask: 'Valid values for show_mask are 1–7!'")
 
     bits = get_depth(clip)
@@ -322,8 +328,9 @@ def _minmax(clip: vs.VideoNode, iterations: int, maximum: bool) -> vs.VideoNode:
 
 class BoundingBox():
     """
-    A positional bounding box.
-    Basically kagefunc.squaremask but can be configured then deferred.
+    Positional bounding box.
+
+    Basically kagefunc.squaremask, but can be configured and then deferred.
 
     Uses Position + Size, like provided by GIMP's rectangle selection tool.
 
@@ -332,6 +339,7 @@ class BoundingBox():
     :param size: Offset of the bottom-right corner of the bounding box from the top-left corner of the bounding box.
                  Supports either a :py:class:`lvsfunc.types.Size` or a tuple that will be converted.
     """
+
     pos: Position
     size: Size
 
@@ -341,7 +349,7 @@ class BoundingBox():
 
     def get_mask(self, ref: vs.VideoNode) -> vs.VideoNode:
         """
-        Get a mask representing the bounding box
+        Get a mask representing the bounding box.
 
         :param ref: Reference clip for format, resolution, and length.
 
@@ -378,8 +386,8 @@ class DeferredMask(ABC):
     :param blur:     Blur the bounding mask (Default: False)
     :param refframe: A single frame number to use to generate the mask
                      or a list of frame numbers with the same length as ``range``
-
     """
+
     ranges: List[Range]
     bound: BoundingBox | None
     refframes: List[int | None]

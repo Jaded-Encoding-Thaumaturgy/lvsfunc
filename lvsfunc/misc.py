@@ -38,7 +38,8 @@ def source(file: str, ref: vs.VideoNode | None = None,
            mpls: bool = False, mpls_playlist: int = 0, mpls_angle: int = 0,
            **index_args: Any) -> vs.VideoNode:
     """
-    Generic clip import function.
+    Load video clips for use in VapourSynth automatically.
+
     Automatically determines if ffms2 or L-SMASH should be used to import a clip, but L-SMASH can be forced.
     It also automatically determines if an image has been imported.
     You can set its fps using 'fpsnum' and 'fpsden', or using a reference clip with 'ref'.
@@ -47,7 +48,7 @@ def source(file: str, ref: vs.VideoNode | None = None,
 
     .. warning::
         | WARNING: This function will be rewritten in the future, and functionality may change!
-        |         No warning is currently printed for this in your terminal to avoid spam.
+        |          No warning is currently printed for this in your terminal to avoid spam.
 
     Dependencies:
 
@@ -121,10 +122,9 @@ def edgefixer(clip: vs.VideoNode,
               radius: List[int] | None = None,
               full_range: bool = False) -> vs.VideoNode:
     """
-    A wrapper for ContinuityFixer (https://github.com/MonoS/VS-ContinuityFixer).
+    Fix the issues with over- and undershoot for `ContinuityFixer <https://github.com/MonoS/VS-ContinuityFixer>`_.
 
-    Fixes the issues with over- and undershoot that it may create when fixing the edges,
-    and adds what are in my opinion "more sane" ways of handling the parameters and given values.
+    This also adds what are in my opinion "more sane" ways of handling the parameters and given values.
 
     ...If possible, you should be using bbmod instead, though.
 
@@ -169,7 +169,8 @@ def edgefixer(clip: vs.VideoNode,
 
 def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.VideoNode:
     """
-    A function for forcibly adding pixel values to a clip.
+    Forcibly adds pixel values to a clip.
+
     Can be used to fix green tints in Crunchyroll sources, for example.
     Only use this if you know what you're doing!
 
@@ -211,7 +212,8 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
 def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
                threshold: float = 0.25, threshold_range: int | None = None) -> vs.VideoNode:
     """
-    Replaces frames in a clip with a filtered clip when the frame's darkness exceeds the threshold.
+    Replace frames in a clip with a filtered clip when the frame's luminosity exceeds the threshold.
+
     This way you can run lighter (or heavier) filtering on scenes that are almost entirely dark.
 
     There is one caveat, however: You can get scenes where every other frame is filtered
@@ -249,7 +251,8 @@ def wipe_row(clip: vs.VideoNode,
              show_mask: bool = False
              ) -> vs.VideoNode:
     """
-    Simple function to wipe a row or column with a blank clip.
+    Wipe a row or column with a blank clip.
+
     You can also give it a different clip to replace a row with.
 
     :param clip:           Input clip
@@ -278,6 +281,7 @@ def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
               prefilter: bool = True, prefilter_sigma: float = 0.75) -> vs.VideoNode:
     """
     Diff'd unsharpening function.
+
     Performs one-dimensional sharpening as such: "Original + (Original - blurred) * Strength"
     It then merges back noise and detail that was prefiltered away,
 
@@ -316,7 +320,10 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
                  frame_ranges: Range | List[Range] | None = None, fade_length: int = 0,
                  matrix: Matrix | int | None = None) -> vs.VideoNode:
     """
-    Wrapper to overlay a logo or sign onto another clip. Rewrite of fvsfunc.InsertSign.
+    Overlay a logo or sign onto another clip.
+
+    This is a rewrite of fvsfunc.InsertSign.
+
     This wrapper also allows you to set fades to fade a logo in and out.
 
     Dependencies:

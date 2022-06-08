@@ -25,7 +25,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 cuda: bool = True, write_props: bool = False,
                 **vsdpir_args: Any) -> vs.VideoNode:
     """
-    A rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
+    Rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
 
     This function checks for differences between a frame and an edgemask with some processing done on it,
     and for differences between the current frame and the next frame.
@@ -148,7 +148,7 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
            zones: List[Tuple[Range | List[Range] | None, VSDPIR_STRENGTH_TYPE]] | None = None,
            **dpir_args: Any) -> vs.VideoNode:
     """
-    A simple vs-mlrt DPIR wrapper for convenience.
+    DPIR, or Plug-and-Play Image Restoration with Deep Denoiser Prior, is a denoise and deblocking neural network.
 
     You must install vs-mlrt. For more information, see the following links:
 

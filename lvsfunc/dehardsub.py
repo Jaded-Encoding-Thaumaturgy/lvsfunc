@@ -40,6 +40,7 @@ class HardsubMask(DeferredMask, ABC):
                      or a list of frame numbers with the same length as ``range``
 
     """
+
     def get_progressive_dehardsub(self, hrdsb: vs.VideoNode, ref: vs.VideoNode,
                                   partials: List[vs.VideoNode]) -> Tuple[List[vs.VideoNode], List[vs.VideoNode]]:
         """
@@ -98,6 +99,7 @@ class HardsubSignKgf(HardsubMask):
     :param highpass: Highpass filter for hardsub detection (16-bit, Default: 5000)
     :param expand:   ``kgf.hardsubmask_fades`` expand parameter (Default: 8)
     """
+
     highpass: int
     expand: int
 
@@ -124,6 +126,7 @@ class HardsubSign(HardsubMask):
     :param expand:  std.Maximum iterations (Default: 8)
     :param inflate: std.Inflate iterations (Default: 7)
     """
+
     thresh: float
     minimum: int
     expand: int
@@ -152,6 +155,7 @@ class HardsubLine(HardsubMask):
 
     :param expand: ``kgf.hardsubmask`` expand parameter (Default: clip.width // 200)
     """
+
     expand: int | None
 
     def __init__(self, *args: Any, expand: int | None = None, **kwargs: Any) -> None:
@@ -171,12 +175,14 @@ class HardsubLine(HardsubMask):
 class HardsubLineFade(HardsubLine):
     """
     Hardsub scenefiltering helper using kgf.hardsubmask.
+
     Similar to :py:class:`lvsfunc.dehardsub.HardsubLine` but
     automatically sets the reference frame to the range's midpoint.
 
     :param refframe: Desired reference point as a percent of the frame range.
                      0 = first frame, 1 = last frame, 0.5 = midpoint (Default)
     """
+
     ref_float: float
 
     def __init__(self, ranges: Range | List[Range], *args: Any,
@@ -188,6 +194,7 @@ class HardsubLineFade(HardsubLine):
         super().__init__(ranges, *args, refframes=None, **kwargs)
 
     def get_mask(self, clip: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
+        """Get the mask."""
         self.refframes = [r[0]+round((r[1]-r[0])*self.ref_float) for r in normalize_ranges(ref, self.ranges)]
         return super().get_mask(clip, ref)
 
@@ -196,12 +203,14 @@ class HardsubLineFade(HardsubLine):
 class HardsubSignFade(HardsubSign):
     """
     Hardsub scenefiltering helper using Zastin's sign mask.
+
     Similar to :py:class:`lvsfunc.dehardsub.HardsubSign` but
     automatically sets the reference frame to the range's midpoint.
 
     :param refframe: Desired reference point as a percent of the frame range.
                      0 = first frame, 1 = last frame, 0.5 = midpoint (Default)
     """
+
     ref_float: float
 
     def __init__(self, ranges: Range | List[Range], *args: Any,
@@ -213,6 +222,7 @@ class HardsubSignFade(HardsubSign):
         super().__init__(ranges, *args, refframes=None, **kwargs)
 
     def get_mask(self, clip: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
+        """Get the mask."""
         self.refframes = [r[0]+round((r[1]-r[0])*self.ref_float) for r in normalize_ranges(ref, self.ranges)]
         return super().get_mask(clip, ref)
 
@@ -226,6 +236,7 @@ class HardsubASS(HardsubMask):
     :param shift:    Offset to apply to the script, in frames.
                      May misbehave due to timestamp rounding.
     """
+
     filename: str
     fontdir: str | None
     shift: int | None
@@ -244,7 +255,7 @@ class HardsubASS(HardsubMask):
         mask = mask.std.Binarize(1)
         mask = iterate(mask, core.std.Maximum, 3)
         mask = iterate(mask, core.std.Inflate, 3)
-        return mask
+        return mask.std.Limiter()
 
 
 def get_all_masks(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[HardsubMask]) -> vs.VideoNode:
@@ -264,13 +275,13 @@ def get_all_masks(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[HardsubMas
     mask = core.std.BlankClip(ref, format=ref.format.replace(color_family=vs.GRAY, subsampling_w=0, subsampling_h=0).id)
     for sign in signs:
         mask = replace_ranges(mask, core.std.Expr([mask, sign.get_mask(hrdsb, ref)], 'x y +'), sign.ranges)
-    return mask
+    return mask.std.Limiter()
 
 
 def bounded_dehardsub(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[HardsubMask],
                       partials: List[vs.VideoNode] | None = None) -> vs.VideoNode:
     """
-    Apply a list of :py:class:`lvsfunc.dehardsub.HardsubSign`
+    Apply a list of :py:class:`lvsfunc.dehardsub.HardsubSign`.
 
     :param hrdsb: Hardsubbed source
     :param ref:   Reference clip
@@ -278,7 +289,6 @@ def bounded_dehardsub(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[Hardsu
 
     :return:      Dehardsubbed clip
     """
-
     for sign in signs:
         hrdsb = sign.apply_dehardsub(hrdsb, ref, partials)
 

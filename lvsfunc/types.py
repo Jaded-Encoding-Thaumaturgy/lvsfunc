@@ -33,6 +33,8 @@ T = TypeVar("T", bound=VideoProp)
 
 
 class Coefs(NamedTuple):
+    """Coefficients for matrix conversions."""
+
     k0: float
     phi: float
     alpha: float
@@ -40,9 +42,8 @@ class Coefs(NamedTuple):
 
 
 class Coordinate():
-    """
-    A positive set of (x, y) coordinates.
-    """
+    """Positive set of (x, y) coordinates."""
+
     x: int
     y: int
 
@@ -54,40 +55,41 @@ class Coordinate():
 
 
 class Direction(IntEnum):
-    """
-    Enum to simplify direction argument.
-    """
+    """Enum to simplify direction argument."""
+
     HORIZONTAL = 0
     VERTICAL = 1
 
 
 class Resolution(NamedTuple):
-    """ Tuple representing a resolution. """
+    """Tuple representing a resolution."""
 
+    """Width."""
     width: int
-    """ Width. """
 
+    """Height."""
     height: int
-    """ Height. """
 
 
 class ScaleAttempt(NamedTuple):
-    """ Tuple representing a descale attempt. """
+    """Tuple representing a descale attempt."""
 
+    """Descaled frame in native resolution."""
     descaled: vs.VideoNode
-    """ Descaled frame in native resolution. """
 
+    """Descaled frame reupscaled with the same kernel."""
     rescaled: vs.VideoNode
-    """ Descaled frame reupscaled with the same kernel. """
 
+    """The native resolution."""
     resolution: Resolution
-    """ The native resolution. """
 
+    """The subtractive difference between the original and descaled frame."""
     diff: vs.VideoNode
-    """ The subtractive difference between the original and descaled frame. """
 
 
 class SceneChangeMode(IntEnum):
+    """Size type for :py:class:`lvsfunc.render.find_scene_changes`."""
+
     WWXD = 0
     SCXVID = 1
     WWXD_SCXVID_UNION = 2
@@ -95,15 +97,20 @@ class SceneChangeMode(IntEnum):
 
 
 class Position(Coordinate):
+    """Position type for :py:class:`lvsfunc.mask.BoundingBox`."""
+
     pass
 
 
 class Size(Coordinate):
+    """Size type for :py:class:`lvsfunc.mask.BoundingBox`."""
+
     pass
 
 
 class Matrix(IntEnum):
-    """Matrix coefficients (ITU-T H.265 Table E.5)"""
+    """Matrix coefficients (ITU-T H.265 Table E.5)."""
+
     RGB = 0
     GBR = 0
     BT709 = 1
@@ -123,21 +130,29 @@ class Matrix(IntEnum):
 
     @property
     def RESERVED(self) -> NoReturn:
+        """Return PermissionError if called."""
         raise PermissionError
 
 
 class VSFunction(Protocol):
+    """VapourSynth function."""
+
     def __call__(self, clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
+        """Call the VapourSynth function."""
         ...
 
 
 class Shapes(IntEnum):
+    """Convolution coordinates for :py:class:`lvsfunc.mask.mt_xxpand_multi`."""
+
     RECTANGLE = 0
     ELLIPSE = 1
     LOSANGE = 2
 
 
 class RegressClips(NamedTuple):
+    """Regress clip types for :py:class:`lvsfunc.recon.regress`."""
+
     slope: vs.VideoNode
     intercept: vs.VideoNode
     correlation: vs.VideoNode

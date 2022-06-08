@@ -58,6 +58,7 @@ class Comparer(ABC):
                             Only used if `clips` is a dict.
                             Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7)
     """
+
     def __init__(self,
                  clips: Dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
                  /,
@@ -88,9 +89,7 @@ class Comparer(ABC):
         self.format: str | None = formats.pop() if len(formats) == 1 else None
 
     def _marked_clips(self) -> List[vs.VideoNode]:
-        """
-        If a `name` is only space characters, `'   '`, for example, the name will not be overlaid on the clip.
-        """
+        """If a `name` is only space characters, `'   '`, for example, the name will not be overlaid on the clip."""
         if self.names:
             return [clip.text.Text(text=name, alignment=self.label_alignment) if name.strip() else clip
                     for clip, name in zip(self.clips, self.names)]
@@ -104,7 +103,7 @@ class Comparer(ABC):
     @property
     def clip(self) -> vs.VideoNode:
         """
-        Returns the comparison as a single VideoNode for further manipulation or attribute inspection.
+        Return the comparison as a single VideoNode for further manipulation or attribute inspection.
 
         ``comp_clip = Comparer(...).clip`` is the intended use in encoding scripts.
         """
@@ -153,8 +152,9 @@ class Stack(Comparer):
 
 class Interleave(Comparer):
     """
-    From the VapourSynth documentation: `Returns a clip with the frames from all clips interleaved.
-    For example, Interleave(A=clip1, B=clip2) will return A.Frame 0, B.Frame 0, A.Frame 1, B.Frame 1, ...`
+    Returns a clip with the frames from all clips interleaved.
+
+    For example, Interleave(A=clip1, B=clip2) will return A.Frame 0, B.Frame 0, A.Frame 1, B.Frame 1, ...
 
     Acts as a convenience combination function of ``vapoursynth.core.text.Text``
     and ``vapoursynth.core.std.Interleave``.
@@ -276,6 +276,7 @@ class Tile(Comparer):
 class Split(Stack):
     """
     Split an unlimited amount of clips into one VideoNode with the same dimensions as the original clips.
+
     Handles odd-sized resolutions or resolutions that can't be evenly split by the amount of clips specified.
 
     The remaining pixel width/height (``clip.dimension % number_of_clips``)
@@ -352,7 +353,8 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
             force_resample: bool = True, print_frame: bool = True,
             mismatch: bool = False) -> vs.VideoNode:
     """
-    Allows for the same frames from two different clips to be compared by interleaving them into a single clip.
+    Compare the same frames from two different clips by interleaving them into a single clip.
+
     Clips are automatically resampled to 8 bit YUV -> RGB24 to emulate how a monitor shows the frame.
     This can be disabled by setting `force_resample` to ``False``.
 
@@ -414,7 +416,7 @@ def stack_compare(*clips: vs.VideoNode,
                   make_diff: bool = True,
                   height: int | None = None) -> vs.VideoNode:
     """
-    A simple wrapper that allows you to compare two clips by stacking them.
+    Compare two clips by stacking them.
 
     Best to use when trying to match two sources frame-accurately.
     Alias for this function is `lvsfunc.scomp`.
@@ -429,7 +431,6 @@ def stack_compare(*clips: vs.VideoNode,
 
     :return:          Clip with `clips` stacked
     """
-
     if not make_diff:
         warnings.warn("stack_compare has been deprecated in favour of `lvsfunc.comparison.Stack` "
                       "when not using `make_diff`", DeprecationWarning)
@@ -460,6 +461,7 @@ def stack_compare(*clips: vs.VideoNode,
 def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.VideoNode:
     """
     Stacks the planes of a clip.
+
     For 4:2:0 subsampled clips, the two half-sized planes will be stacked in the opposite direction specified
     (vertical by default),
     then stacked with the full-sized plane in the direction specified (horizontal by default).
@@ -503,6 +505,7 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
 def diff_hardsub_mask(a: vs.VideoNode, b: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
     """
     Diff func for :py:func:`lvsfunc.comparison.diff` to use a hardsub mask.
+
     This is kinda slow.
 
     :param a: Clip A
@@ -549,7 +552,8 @@ def diff(*clips: vs.VideoNode,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a, b: core.std.MakeDiff(a, b),
          **namedclips: vs.VideoNode) -> vs.VideoNode | Tuple[vs.VideoNode, List[Tuple[int, int]]]:
     """
-    Creates a standard :py:class:`lvsfunc.comparison.Stack` between frames from two clips that have differences.
+    Create a standard :py:class:`lvsfunc.comparison.Stack` between frames from two clips that have differences.
+
     Useful for making comparisons between TV and BD encodes, as well as clean and hardsubbed sources.
 
     There are two methods used here to find differences:
@@ -689,6 +693,7 @@ def interleave(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode
 def split(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     """
     Small convenience function for splitting clips along the x-axis and then stacking.
+
     Accounts for odd-resolution clips by giving overflow columns to the last clip specified.
     All clips must have the same dimensions (width and height).
 
@@ -737,6 +742,7 @@ def stack_vertical(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.Video
 def tile(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     """
     Small convenience function for tiling clips in a rectangular pattern.
+
     All clips must have the same dimensions (width and height).
     If 3 clips are given, a 2x2 square with one blank slot will be returned.
     If 6 clips are given, a 3x2 rectangle will be returned.
