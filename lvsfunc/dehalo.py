@@ -5,9 +5,9 @@ from functools import partial
 from typing import Any, Dict, List, Sequence
 
 import vapoursynth as vs
+from vskernels import BSpline, Catrom
 from vsutil import depth, fallback, get_depth, get_y
 
-from .kernels import BSpline, Catrom
 from .mask import fine_dehalo_mask
 from .noise import bm3d
 from .util import (check_variable, clamp_values, force_mod, pick_repair,

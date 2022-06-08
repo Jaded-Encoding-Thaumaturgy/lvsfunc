@@ -579,20 +579,6 @@ class LvsfuncTestFun(LvsfuncTests):
         self.assert_runs(clip)
 
 
-# lvsfunc.kernels
-class LvsfuncTestKernels(LvsfuncTests):
-    def test_get_all_kernels(self) -> None:
-        kernels = lvf.kernels.get_all_kernels()
-        # TODO: Assert that every object in array inherits from a Kernel object.
-        self.assertIsInstance(kernels, list, f"Expected to return a list, instead returned {type(kernels)}")
-
-    def test_get_kernel(self) -> None:
-        kernel = lvf.kernels.get_kernel("catrom")
-        self.assertEqual(kernel, lvf.kernels.Catrom)
-
-    # TODO: Generic test that loops over every Kernel class?
-
-
 # lvsfunc.mask
 class LvsfuncTestMask(LvsfuncTests):
     def test_detail_mask(self) -> None:

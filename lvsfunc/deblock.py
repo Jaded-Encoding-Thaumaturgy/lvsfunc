@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, List, Optional, Sequence, SupportsFloat, Tuple, Literal
+from typing import Any, List, Literal, Sequence, SupportsFloat, Tuple
 
 import vapoursynth as vs
+from vskernels import Bicubic, Catrom, Kernel, Point, get_kernel
 from vsutil import Dither, depth, get_depth
 
-from .kernels import Catrom, Kernel, Point, get_kernel
-from .types import Matrix, Range, VSDPIR_STRENGTH_TYPE
+from .types import VSDPIR_STRENGTH_TYPE, Matrix, Range
 from .util import check_variable, get_prop, replace_ranges
 
 core = vs.core
@@ -20,9 +20,9 @@ __all__: List[str] = [
 def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strs: Sequence[float] = [30, 50, 75],
                 thrs: Sequence[Tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
-                matrix: Optional[Matrix | int] = None,
-                cuda: bool = True,
-                write_props: bool = False,
+                matrix: Matrix | int | None = None,
+                kernel: Kernel | str = Bicubic(b=0, c=0.5),
+                cuda: bool = True, write_props: bool = False,
                 **vsdpir_args: Any) -> vs.VideoNode:
     """
     Rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
@@ -57,11 +57,12 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
                             If `None`, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
-    :param cuda:            Use CUDA backend if True, else CPU backend
-    :param write_props:     Will write verbose props
-    :param vsdpir_args:     Additional args to pass to ``vsdpir``
+    :param kernel:          `Kernel` object used for conversions between YUV <-> RGB.
+    :param cuda:            Use CUDA backend if True, else CPU backend.
+    :param write_props:     whether to write verbose props.
+    :param vsdpir_args:     Additional args to pass to ``vsdpir``.
 
-    :return:                Deblocked clip
+    :return:                Deblocked clip with different strengths applied based on the given parameters.
     """
     check_variable(clip, "autodb_dpir")
     assert clip.format
@@ -100,14 +101,22 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
         raise ValueError('autodb_dpir: You must pass an equal amount of values to '
                          f'strenght {len(strs)} and thrs {len(thrs)}!')
 
+    if isinstance(kernel, str):
+        kernel = get_kernel(kernel)()
+
     nthrs = [tuple(x / 255 for x in thr) for thr in thrs]
 
     is_rgb = clip.format.color_family is vs.RGB
 
-    if not matrix and not is_rgb:
-        matrix = get_prop(clip.get_frame(0), "_Matrix", int)
+    if not is_rgb:
+        if matrix is None:
+            matrix = get_prop(clip.get_frame(0), "_Matrix", int)
 
-    rgb = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=matrix) if not is_rgb else clip
+        targ_matrix = vs.MatrixCoefficients(matrix)
+
+        rgb = kernel.resample(clip, format=vs.RGBS, matrix_in=targ_matrix)
+    else:
+        rgb = clip
 
     assert rgb.format
 
@@ -130,7 +139,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
         prop_src=[diffevref, diffnext, diffprev]
     )
 
-    return core.resize.Bicubic(debl, format=clip.format.id, matrix=matrix if not is_rgb else None)
+    return kernel.resample(debl, format=clip.format, matrix=targ_matrix if not is_rgb else None)
 
 
 def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 'deblock',
@@ -220,10 +229,14 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
     else:
         raise TypeError("vsdpir: '`strength` must be a float or a GRAYS clip'")
 
-    if matrix is None:
-        matrix = get_prop(clip.get_frame(0), "_Matrix", int)
+    if not is_rgb:
+        if matrix is None:
+            matrix = get_prop(clip.get_frame(0), "_Matrix", int)
 
-    targ_matrix = Matrix(matrix)
+        targ_matrix = vs.MatrixCoefficients(matrix)
+    else:
+        targ_matrix = vs.MatrixCoefficients(0)
+
     targ_format = clip.format.replace(subsampling_w=0, subsampling_h=0) if i444 else clip.format
 
     if is_rgb or is_gray:
