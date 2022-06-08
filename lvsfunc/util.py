@@ -73,11 +73,13 @@ def quick_resample(clip: vs.VideoNode,
 
 def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
     """
-    Return rgvs.Repair if the clip is 16 bit or lower, else rgsf.Repair.
+    Return ``vapoursynth.core.rgvs.Repair`` if 16 bit or lower, else ``vapoursynth.core.rgsf.Repair``.
 
-    This is done because rgvs doesn't work with float, but rgsf does for whatever reason.
+    This is done because ``RGVS`` doesn't work with float, but ``RGSF`` does for whatever reason.
 
-    Dependencies: rgsf
+    Dependencies:
+
+    * RGSF
 
     :param clip:    Clip to process.
 
@@ -93,9 +95,9 @@ def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 
 def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
     """
-    Return rgvs.RemoveGrain if the clip is 16 bit or lower, else rgsf.RemoveGrain.
+    Return ``vapoursynth.core.rgvs.RemoveGrain`` if 16 bit or lower, else ``vapoursynth.core.rgsf.RemoveGrain``.
 
-    This is done because rgvs doesn't work with float, but rgsf does for whatever reason.
+    This is done because ``RGVS`` doesn't work with float, but ``RGSF`` does for whatever reason.
 
     Dependencies:
 
@@ -135,11 +137,11 @@ def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
 
 
 def normalize_ranges(clip: vs.VideoNode, ranges: Range | List[Range]) -> List[Tuple[int, int]]:
-    r"""
-    Normalize ``Range``\\(s) to a list of inclusive positive integer ranges.
+    """
+    Normalize ``Range`` inputs to a list of inclusive positive integer ranges.
 
     :param clip:    Reference clip used for length.
-    :param ranges:  Single ``Range`` or list of ``Range``\\s.
+    :param ranges:  Single ``Range`` or list of ``Range`` values.
 
     :return:        List of inclusive positive ranges.
     """
@@ -192,9 +194,11 @@ def replace_ranges(clip_a: vs.VideoNode,
         * ``replace_ranges(black, white, [(200, -1)])``: replace 200 until the end with ``white``,
           leaving 1 frame of ``black``
 
-    Alias for this function is `lvsfunc.rfs`.
+    Alias for this function is ``lvsfunc.rfs``.
 
-    Dependencies: VapourSynth-RemapFrames
+    Dependencies:
+
+    * VapourSynth-RemapFrames
 
     :param clip_a:          Original clip.
     :param clip_b:          Replacement clip.
@@ -604,7 +608,7 @@ def colored_clips(amount: int,
                   seed: bytearray | bytes | float | str | None = None,
                   **kwargs: Any
                   ) -> List[vs.VideoNode]:
-    r"""
+    """
     Return a list of BlankClips with unique colors in sequential or random order.
 
     The colors will be evenly spaced by hue in the HSL colorspace.
@@ -615,18 +619,18 @@ def colored_clips(amount: int,
 
     Written by `Dave <mailto:orangechannel@pm.me>`_.
 
-    :param amount:  Number of ``vapoursynth.VideoNode``\\s to return.
-    :param max_hue: Maximum hue (0 < hue <= 360) in degrees to generate colors from (uses the HSL color model).
-                    Setting this higher than ``315`` will result in the clip colors looping back towards red
-                    and is not recommended for visually distinct colors.
-                    If the `amount` of clips is higher than the `max_hue` expect there to be identical
-                    or visually similar colored clips returned (Default: 300).
-    :param rand:    Randomizes order of the returned list (Default: True).
-    :param seed:    Bytes-like object passed to ``random.seed`` which allows for consistent randomized order
-                    of the resulting clips (Default: None).
-    :param kwargs:  Arguments passed to ``vapoursynth.core.std.BlankClip`` (Default: keep=1).
+    :param amount:      How many ``vapoursynth.VideoNode`` to return.
+    :param max_hue:     Maximum hue (0 < hue <= 360) in degrees to generate colors from (uses the HSL color model).
+                        Setting this higher than ``315`` will result in the clip colors looping back towards red
+                        and is not recommended for visually distinct colors.
+                        If the `amount` of clips is higher than the `max_hue` expect there to be identical
+                        or visually similar colored clips returned (Default: 300).
+    :param rand:        Randomizes order of the returned list (Default: True).
+    :param seed:        Bytes-like object passed to ``random.seed`` which allows for consistent randomized order
+                        of the resulting clips (Default: None).
+    :param kwargs:      Arguments passed to ``vapoursynth.core.std.BlankClip`` (Default: keep=1).
 
-    :return:        List of uniquely colored clips in sequential or random order.
+    :return:            List of uniquely colored clips in sequential or random order.
     """
     if amount < 2:
         raise ValueError("colored_clips: `amount` must be at least 2!")
@@ -654,7 +658,9 @@ def allow_variable(width: int | None = None, height: int | None = None,
     """
     Allow a variable-res and/or variable-format clip to be passed to a function.
 
-    This is a function decorator. That means it must be called above a function. For example:
+    Does not work when the function needs to return a different format unless an output format is specified.
+    As such, this decorator must be called as a function when used (e.g. ``@allow_variable()``
+    or ``@allow_variable(format=vs.GRAY16)``).
 
     .. code-block:: py
 
@@ -664,10 +670,6 @@ def allow_variable(width: int | None = None, height: int | None = None,
 
     This can be used on functions that otherwise would not be able to accept it.
     Implemented by FrameEvaling and resizing the clip to each frame.
-
-    Does not work when the function needs to return a different format unless an output format is specified.
-    As such, this decorator must be called as a function when used (e.g. ``@allow_variable()``
-    or ``@allow_variable(format=vs.GRAY16)``).
 
     If the provided clip is variable format, no output format is required to be specified.
 

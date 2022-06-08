@@ -138,7 +138,8 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
     :param chroma:          Whether to process chroma or not.
                             If you pass a GRAY clip yourself, this parameter will be ignored.
     :param seed:            Seed for the random generator. Defaults to 42069.
-    :param matrix:          Enum for the matrix of the Clip to process. See ``types.Matrix`` for more info.
+    :param matrix:          Enum for the matrix of the Clip to process.
+                            See :py:func:`lvsfunc.types.Matrix` for more info.
                             If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
     :param kernel:          `Kernel` object used for conversions between YUV <-> RGB.

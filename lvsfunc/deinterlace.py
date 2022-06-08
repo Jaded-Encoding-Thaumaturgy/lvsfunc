@@ -148,7 +148,9 @@ def tivtc_vfr(clip: vs.VideoNode,
         | and check if the files in there are **0kb**. If they are, **delete them** and run the function again.
         | You may need to first restart your previewer entirely for it to work!
 
-    Dependencies: TIVTC
+    Dependencies:
+
+    * TIVTC
 
     :param clip:                Clip to process.
     :param tfmIn:               File location for TFM's matches analysis.
@@ -273,9 +275,16 @@ def decomb(clip: vs.VideoNode,
     """
     Perform relatively aggressive filtering to get rid of the combing on a interlaced/telecined source.
 
+    .. warning::
+
+        | This function is only recommended for **extreme** cases!
+        | Don't just throw this over every interlaced/telecined source you find!
+
     Decimation can be disabled if the user wishes to decimate the clip themselves.
 
-    Enabling vinverse will result in more aggressive decombing at the cost of potential detail loss.
+    Enabling :py:func:`lvsfunc.deinterlace.vinverse` will result in more aggressive decombing
+    at the cost of potential detail loss.
+
     A reference clip can be passed with `ref`, which will be used by TFM to create the output frames.
 
     Base function written by Midlifecrisis from the WEEB AUTISM server, modified by LightArrowsEXE.
@@ -291,11 +300,12 @@ def decomb(clip: vs.VideoNode,
                             `True` sets it to Top-Field-First. `False` sets it to Bottom-Field-First.
     :param mode:            Sets the matching mode or strategy to use for TFM.
     :param decimate:        Decimate the video after deinterlacing (Default: True).
-    :param vinv:            Use vinverse to get rid of additional combing (Default: False).
+    :param vinv:            Use :py:func:`lvsfunc.deinterlace.vinverse` to get rid of
+                            additional combing (Default: False).
     :param rep:             Repair mode for repairing the decombed clip using the original clip (Default: None).
     :param show_mask:       Return combmask.
     :param tfm_args:        Arguments to pass to TFM.
-    :param vinv_args:       Arguments to pass to vinverse.
+    :param vinv_args:       Arguments to pass to :py:func:`lvsfunc.deinterlace.vinverse`.
     :param qtgmc_args:      Arguments to pass to QTGMC.
 
     :return:                Decombed and optionally decimated clip.
@@ -409,7 +419,7 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
 
     Make sure to run this *after* IVTC/deinterlacing!
 
-    If the value surpases thr * original value, it will not affect any pixels in that frame
+    If the value surpasses thr * original value, it will not affect any pixels in that frame
     to avoid damaging frames it shouldn't need to touch. This helps a lot with orphan fields as well,
     which would otherwise create massive swings in values, sometimes messing up the fade fixing.
 
@@ -473,11 +483,11 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
     """
     Deinterlacing function for interlaced credits (60i/30p) on top of telecined video (24p).
 
-    This is a combination of havsfunc's dec_txt60mc, ivtc_txt30mc, and ivtc_txt60mc functions.
+    This is a combination of the ``dec_txt60mc``, ``ivtc_txt30mc``, and ``ivtc_txt60mc`` functions from ``havsfunc``.
     The credits are interpolated and decimated to match the output clip.
 
     The function assumes you're passing a telecined clip (that's native 24p).
-    If your clip is already field-matched, decimation will automatically be enabled unless set it to False.
+    If your clip is already field-matched, decimation will automatically be enabled unless it's set to False.
     Likewise, if your credits are 30p (as opposed to 60i), you should set `interlaced` to False.
 
     The recommended way to use this filter is to trim out the area with interlaced credits,
@@ -637,7 +647,7 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
     """
     Clean up residual combing after a deinterlacing pass.
 
-    This is Setsugen_no_ao's implementation, adopted into lvsfunc.
+    This is setsugen_no_ao's implementation, adopted into lvsfunc.
 
     :param clip:        Clip to process.
     :param sstr:        Contrasharpening strength.

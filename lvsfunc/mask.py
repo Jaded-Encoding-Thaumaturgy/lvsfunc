@@ -138,13 +138,13 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
     """
     Halo mask to catch basic haloing.
 
-    Inspired by the mask from FineDehalo.
+    Inspired by the mask from ``FineDehalo``.
 
     Most of it was copied from there, but some key adjustments have been made
     to center it specifically around masking.
 
     rx and ry are now combined into rad and expects an integer.
-    Float made sense for FineDehalo since it uses DeHalo_alpha for dehaloing,
+    Float made sense for ``FineDehalo`` since it uses ``DeHalo_alpha`` for dehaloing,
     but the masks themselves use rounded rx/ry values, so there's no reason to bother with floats here.
 
     All thresholds are float and will be scaled to ``clip``'s format.
@@ -157,7 +157,7 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
     :param thma:            Maximum threshold for sharp edges; keep only the sharpest edges.
     :param thlimi:          Minimum limiting threshold; includes more edges than previously, but ignores simple details.
     :param thlima:          Maximum limiting threshold; includes more edges than previously, but ignores simple details.
-    :param edgemask:        Edge mask to use. If None, uses ``clip.std.Prewitt()`` (Default: None).
+    :param edgemask:        Edge mask to use. If None, uses ``vapoursynth.clip.std.Prewitt()`` (Default: None).
 
     :return:                Halo mask.
     """
@@ -198,15 +198,16 @@ def fine_dehalo_mask(clip: vs.VideoNode,
                      thlimi: float = 50, thlima: float = 100,
                      show_mask: bool | int = False) -> vs.VideoNode:
     """
-    Create the mask for fine_dehalo.
+    Create the mask for :py:func:`lvsfunc.dehalo.fine_dehalo`.
 
-    This allows you to use the mask without having to jump through all the other code in fine_dehalo.
+    This allows you to use the mask without having to jump through
+    all the other code in :py:func:`lvsfunc.dehalo.fine_dehalo`.
 
     You can return the mask at different stages during the process with `show_mask`.
 
     The `show_mask` parameter will return the following values depending on the int passed:
 
-    1. Full mask (for backwards and fine_dehalo compatibility).
+    1. Full mask (for backwards and :py:func:`lvsfunc.dehalo.fine_dehalo` compatibility).
     2. Grown mask.
     3. Prewitt mask, the base building block of this mask.
     4. Mask with only the sharpest line edges.
@@ -225,7 +226,7 @@ def fine_dehalo_mask(clip: vs.VideoNode,
     :param thlima:          Maximum limiting threshold. Includes more edges than previously, but ignores simple details.
     :param show_mask:       Return mask clip at various stages in the operation. Valid options are 1–7.
 
-    :return:                Halo mask clip.
+    :return:                Halo mask.
     """
     check_variable(clip, "halo_mask")
 
@@ -282,9 +283,10 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
     """
     Min/max mask with separate luma/chroma radii.
 
-    rad/radc are the luma/chroma equivalent of gradfun3's "mask" parameter.
-    The way gradfun3's mask works is on an 8 bit scale, with rounded dithering of high depth input.
-    As such, when following this filter with a Binarize, use the following conversion steps based on input:
+    ``rad``/``radc`` are the luma/chroma equivalent of the ``gradfun3`` "mask" parameter.
+    The way that mask works is on an 8 bit scale, with rounded dithering of high depth input.
+    As such, when following this filter with a ``vapoursynth.core.std.Binarize``,
+    use the following conversion steps based on input:
 
     -  8 bit = Binarize(2) or Binarize(thr_det)
     - 16 bit = Binarize(384) or Binarize((thr_det - 0.5) * 256)
@@ -338,7 +340,7 @@ class BoundingBox():
     """
     Positional bounding box.
 
-    Basically kagefunc.squaremask, but can be configured and then deferred.
+    Basically ``kagefunc.squaremask``, but can be configured and then deferred.
 
     Uses Position + Size, like provided by GIMP's rectangle selection tool.
 
@@ -477,7 +479,7 @@ def mt_xxpand_multi(clip: vs.VideoNode,
     """
     Mask expanding/inpanding function written by Zastin.
 
-    Performs multiple Minimums/Maximums.
+    Performs ``vapoursynth.core.std.Minimum``/``vapoursynth.core.std.Maximum`` multiple times.
     """
     check_variable(clip, "mt_xxpand_multi")
     assert clip.format

@@ -39,8 +39,8 @@ def vsdpir(clip: vs.VideoNode,
     Converts to RGB -> runs DPIR -> converts back to original format, and with no subsampling if ``i444=True``.
     For more information, see `the original DPIR repository <https://github.com/cszn/DPIR>`_.
 
-    `vsdpir` can also zoned using :py:func:`lvsfunc.util.replace_ranges` syntax,
-    along with strenghts zet at specific ranges. Below is an example:
+    :py:func:`lvsfunc.deblock.vsdpir` can also zoned using :py:func:`lvsfunc.util.replace_ranges` syntax,
+    along with strengths set at specific ranges. For example:
 
     .. code-block:: py
 
@@ -54,11 +54,14 @@ def vsdpir(clip: vs.VideoNode,
 
     * vs-mlrt
 
+    Thank you, setsugen_no_ao!
+
     :param clip:            Clip to process.
     :param strength:        DPIR strength. Sane values lie between 1–20 for ``mode='deblock'``,
                             and 1–3 for ``mode='denoise'``.
     :param mode:            DPIR mode. Valid modes are 'deblock' and 'denoise'.
-    :param matrix:          Enum for the matrix of the Clip to process. See ``types.Matrix`` for more info.
+    :param matrix:          Enum for the matrix of the Clip to process.
+                            See :py:func:`lvsfunc.types.Matrix` for more info.
                             If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
     :param tiles:           Tiling. Higher tiling may take less resources.
@@ -190,7 +193,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 write_props: bool = False,
                 **vsdpir_args: Any) -> vs.VideoNode:
     """
-    Rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
+    Rewrite of fvsfunc.AutoDeblock that uses :py:func:`lvsfunc.deblock.vsdpir` instead of dfttest to deblock.
 
     This function checks for differences between a frame and an edge mask with some processing done on it,
     and for differences between the current frame and the next frame.
@@ -199,7 +202,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     Thresholds and calculations are added to the frameprops to use as a reference when setting the thresholds.
 
-    Thanks Vardë, louis, setsugen_no_ao!
+    Thank you, Vardë, louis, and setsugen_no_ao!
 
     Dependencies:
 
@@ -216,12 +219,13 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     :param thrs:            A list of thresholds, written as [(EdgeValRef, NextFrameDiff, PrevFrameDiff)].
                             You can pass any arbitrary number of values here.
                             The amount of values in strs and thrs need to be equal.
-    :param matrix:          Enum for the matrix of the Clip to process. See ``types.Matrix`` for more info.
+    :param matrix:          Enum for the matrix of the Clip to process.
+                            See :py:func:`lvsfunc.types.Matrix` for more info.
                             If `None`, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
     :param cuda:            Use CUDA backend if True, else CPU backend.
     :param write_props:     Will write verbose props.
-    :param vsdpir_args:     Additional args to pass to ``vsdpir``.
+    :param vsdpir_args:     Additional args to pass to :py:func:`lvsfunc.deblock.vsdpir`.
 
     :return:                Deblocked clip.
     """
@@ -260,7 +264,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     if len(strs) != len(thrs):
         raise ValueError('autodb_dpir: You must pass an equal amount of values to '
-                         f'strenght {len(strs)} and thrs {len(thrs)}!')
+                         f'strength {len(strs)} and thrs {len(thrs)}!')
 
     nthrs = [tuple(x / 255 for x in thr) for thr in thrs]
 

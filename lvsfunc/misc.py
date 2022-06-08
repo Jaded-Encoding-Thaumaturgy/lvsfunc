@@ -40,11 +40,11 @@ def source(file: str, ref: vs.VideoNode | None = None,
     """
     Load video clips for use in VapourSynth automatically.
 
-    Automatically determines if ffms2 or L-SMASH should be used to import a clip, but L-SMASH can be forced.
+    Automatically determines if ``ffms2`` or ``L-SMASH`` should be used to import a clip, but ``L-SMASH`` can be forced.
     It also automatically determines if an image has been imported.
     You can set its fps using 'fpsnum' and 'fpsden', or using a reference clip with 'ref'.
 
-    Alias for this function is `lvsfunc.src`.
+    Alias for this function is ``lvsfunc.src``.
 
     .. warning::
         | WARNING: This function will be rewritten in the future, and functionality may change!
@@ -72,7 +72,7 @@ def source(file: str, ref: vs.VideoNode | None = None,
     if file.startswith('file:///'):
         file = file[8::]
 
-    fname, ext = os.path.splitext(file)
+    _, ext = os.path.splitext(file)
 
     if not ext:
         raise ValueError("source: 'No extension found in filename!'")
@@ -126,9 +126,9 @@ def edgefixer(clip: vs.VideoNode,
 
     This also adds what are in my opinion "more sane" ways of handling the parameters and given values.
 
-    ...If possible, you should be using bbmod instead, though.
+    ...If possible, you should be using ``bbmod`` instead, though.
 
-    Alias for this function is `lvsfunc.ef`.
+    Alias for this function is ``lvsfunc.ef``.
 
     .. warning::
         This function may be rewritten in the future, and functionality may change!
@@ -322,31 +322,35 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     """
     Overlay a logo or sign onto another clip.
 
-    This is a rewrite of fvsfunc.InsertSign.
+    This is a rewrite of ``fvsfunc.InsertSign``.
 
     This wrapper also allows you to set fades to fade a logo in and out.
 
     Dependencies:
 
     * vs-imwri
-
-    Optional Dependencies:
-
-    * kagefunc
+    * kagefunc (optional, ``fade_length``)
 
     :param clip:            Clip to process.
-    :param overlay:         Sign or logo to overlay. Must be the png loaded in through imwri.Read()
-                            or a path string to the image file, and MUST be the same dimensions as the Clip to process.
-    :param frame_ranges:    Frame ranges or starting frame to apply the overlay to. See ``types.Range`` for more info.
+    :param overlay:         Sign or logo to overlay. Must be the png loaded in through ``vapoursynth.core.imwri.Read()``
+                            or a path string to the image file, and MUST be the same dimensions
+                            as the input clip to process.
+    :param frame_ranges:    Frame ranges or starting frame to apply the overlay to.`
+                            See :py:func:`lvsfunc.types.Range` for more info.
+
                             If None, overlays the entire clip.
-                            If a Range is passed, the overlaid clip will only show up inside that range.
+                            If a :py:func:`lvsfunc.types.Range` is passed,
+                            the overlaid clip will only show up inside that range.
                             If only a single integer is given, it will start on that frame and
                             stay until the end of the clip.
-                            Note that this function only accepts a single Range! You can't pass a list of them!
+
+                            Note that this function only accepts a single :py:func:`lvsfunc.types.Range`!
+                            You can't pass a list of them!
     :param fade_length:     Length to fade the clips into each other.
                             The fade will start and end on the frames given in frame_ranges.
                             If set to 0, it won't fade and the sign will simply pop in.
-    :param matrix:          Enum for the matrix of the Clip to process. See ``types.Matrix`` for more info.
+    :param matrix:          Enum for the matrix of the input clip to process.
+                            See :py:func:`lvsfunc.types.Matrix` for more info.
                             If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
 

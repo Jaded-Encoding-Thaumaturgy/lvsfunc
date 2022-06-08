@@ -31,7 +31,7 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
              bm3d_args: Dict[str, Any] = {},
              ) -> vs.VideoNode:
     """
-    Dehaloing function that uses bilateral and BM3D to remove bright haloing around edges.
+    Dehaloing function that uses bilateral and :py:func:`lvsfunc.noise.bm3d` to remove bright haloing around edges.
 
     If a ref clip is passed, that will be masked onto the clip instead of a blurred clip.
 
@@ -201,6 +201,8 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     In essence, they define the window between how weak an effect is for it to be processed,
     and how strong it has to be before it's fully discarded.
 
+    The masking logic is seperate and can be found at :py:func:`lvsfunc.mask.fine_dehalo_mask`.
+
     :param clip:            Clip to process.
     :param ref:             Reference clip. Will replace regular dehaloing.
     :param rx:              Horizontal radius for halo removal. Must be greater than 1. Will be rounded up.
@@ -223,7 +225,7 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     :param planes:          Specifies which planes will be processed.
                             Any unprocessed planes will be simply copied.
 
-    :return:                Dehalo'd clip or halo mask clip.
+    :return:                Dehalo'd clip or halo mask clip (through :py:func:`lvsfunc.mask.fine_dehalo_mask`).
     """
     warnings.warn("fine_dehalo: 'This function is deprecated in favor of `stgfunc.dehalo.fine_dehalo` "
                   "(soon `vsdehalo.fine_dehalo`)! This function will be removed in a future commit.",

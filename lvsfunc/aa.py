@@ -30,7 +30,7 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
     """
     Clamp stronger AAs to weaker AAs.
 
-    Useful for clamping upscaled_sraa or eedi3 to nnedi3 for a strong but precise AA.
+    Useful for clamping :py:func:`lvsfunc.aa.upscaled_sraa` or eedi3 to nnedi3 for a strong but precise AA.
 
     Stolen from Zastin, modified by LightArrowsEXE.
 
@@ -136,7 +136,7 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
     """
     Clamp eedi3 to nnedi3 for the purpose of reducing eedi3 artifacts.
 
-    This should fix every issue created by eedi3. For example, `see this image <https://i.imgur.com/hYVhetS.jpg>`_.
+    This should fix `every issue created by eedi3 <https://i.imgur.com/hYVhetS.jpg>`_.
 
     Original function written by Zastin, modified by LightArrowsEXE.
 
@@ -248,7 +248,7 @@ def upscaled_sraa(clip: vs.VideoNode,
 
     Original function written by Zastin, heavily modified by LightArrowsEXE.
 
-    Alias for this function is `lvsfunc.sraa`.
+    Alias for this function is ``lvsfunc.sraa``.
 
     Dependencies:
 

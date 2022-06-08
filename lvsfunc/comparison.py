@@ -49,13 +49,14 @@ class Comparer(ABC):
     Base class for comparison functions.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If given a dict, the names will be overlaid on the clips using ``VideoNode.text.Text``.
+                            If given a dict, the names will be overlaid on the clips
+                            using ``vapoursynth.core.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
                             The order of the clips in either a dict or a sequence will be kept in the comparison.
     :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
                             Only used if `clips` is a dict.
-                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7).
+                            Determines where to place clip name using ``vapoursynth.core.text.Text`` (Default: 7).
     """
 
     def __init__(self,
@@ -117,14 +118,15 @@ class Stack(Comparer):
     and either ``vapoursynth.core.std.StackHorizontal`` or ``vapoursynth.core.std.StackVertical``.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If given a dict, the names will be overlaid on the clips using ``VideoNode.text.Text``.
+                            If given a dict, the names will be overlaid on the clips
+                            using ``vapoursynth.core.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
                             The order of the clips in either a dict or a sequence will be kept in the comparison.
     :param direction:       Direction of the stack (Default: :py:attr:`lvsfunc.comparison.Direction.HORIZONTAL`).
     :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
                             Only used if `clips` is a dict.
-                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7).
+                            Determines where to place clip name using ``vapoursynth.core.text.Text`` (Default: 7).
     """
 
     def __init__(self,
@@ -158,13 +160,14 @@ class Interleave(Comparer):
     and ``vapoursynth.core.std.Interleave``.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If given a dict, the names will be overlaid on the clips using ``VideoNode.text.Text``.
+                            If given a dict, the names will be overlaid on the clips
+                            using ``vapoursynth.core.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
                             The order of the clips in either a dict or a sequence will be kept in the comparison.
     :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
                             Only used if `clips` is a dict.
-                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7).
+                            Determines where to place clip name using ``vapoursynth.core.text.Text`` (Default: 7).
     """
 
     def __init__(self,
@@ -213,7 +216,8 @@ class Tile(Comparer):
         # the rows will be auto-padded with 0's to be the same length.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If given a dict, the names will be overlaid on the clips using ``VideoNode.text.Text``.
+                            If given a dict, the names will be overlaid on the clips
+                            using ``vapoursynth.core.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
                             The order of the clips in either a dict or a sequence will be kept in the comparison.
@@ -221,7 +225,7 @@ class Tile(Comparer):
                             or blank spaces(`0`) (Default: ``None``).
     :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
                             Only used if `clips` is a dict.
-                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7).
+                            Determines where to place clip name using ``vapoursynth.core.text.Text`` (Default: 7).
     """
 
     def __init__(self,
@@ -280,7 +284,8 @@ class Split(Stack):
     For example, five `104 x 200` clips will result in a `((20 x 200) * 4) + (24 x 200)` horizontal stack of clips.
 
     :param clips:           A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
-                            If given a dict, the names will be overlaid on the clips using ``VideoNode.text.Text``.
+                            If given a dict, the names will be overlaid on the clips
+                            using ``vapoursynth.core.text.Text``.
                             If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                             and the clips will not be labeled.
                             The order of the clips in either a dict or a sequence will be kept in the comparison.
@@ -288,7 +293,7 @@ class Split(Stack):
                             (Default: :py:attr:`lvsfunc.comparison.Direction.HORIZONTAL`).
     :param label_alignment: An integer from 1-9, corresponding to the positions of the keys on a numpad.
                             Only used if `clips` is a dict.
-                            Determines where to place clip name using ``VideoNode.text.Text`` (Default: 7).
+                            Determines where to place clip name using ``vapoursynth.core.text.Text`` (Default: 7).
     """
 
     def __init__(self,
@@ -356,7 +361,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     This is not recommended over setting multiple outputs and checking between those,
     but in the event that is unavailable to you, this function may be useful.
 
-    Alias for this function is `lvsfunc.comp`.
+    Alias for this function is ``lvsfunc.comp``.
 
     :param clip_a:         Clip to compare.
     :param clip_b:         Second clip to compare.
@@ -414,14 +419,15 @@ def stack_compare(*clips: vs.VideoNode,
     Compare two clips by stacking them.
 
     Best to use when trying to match two sources frame-accurately.
-    Alias for this function is `lvsfunc.scomp`.
 
     When not using `make_diff`, `Stack` is heavily recommended instead.
+
+    Alias for this function is ``lvsfunc.scomp``.
 
     :param clips:     Clips to compare.
     :param make_diff: Create and stack a diff (only works if two clips are given) (Default: ``True``).
     :param height:    Height in px to rescale clips to if `make_diff` is ``True``
-                      (MakeDiff clip will be twice this resolution).
+                      (``vapoursynth.core.std.MakeDiff`` clip will be twice this resolution).
                       This function will not scale above the first clip's height (Default: 288).
 
     :return:          Clip with `clips` stacked.
@@ -561,7 +567,7 @@ def diff(*clips: vs.VideoNode,
     Note that this might catch artifacting as differences!
     Make sure you verify every frame with your own eyes!
 
-    Alias for this function is `lvsfunc.diff`.
+    Alias for this function is ``lvsfunc.diff``.
 
     :param clips:               Clips for comparison (order is kept).
     :param namedclips:          Keyword arguments of `name=clip` for all clips in the comparison.
@@ -570,7 +576,7 @@ def diff(*clips: vs.VideoNode,
                                 Higher values will catch more differences.
                                 Value must be lower than 128.
     :param height:              Height in px to downscale clips to if `interleave` is ``False``
-                                (MakeDiff clip will be twice this resolution).
+                                (``vapoursynth.core.std.MakeDiff`` clip will be twice this resolution).
     :param interleave:          Return clip as an interleaved comparison
                                 (using :py:class:`lvsfunc.comparison.Interleave`).
                                 This will not return a diff clip.
@@ -579,7 +585,7 @@ def diff(*clips: vs.VideoNode,
     :param diff_func:           Function for calculating diff in PlaneStatsMin/Max mode.
 
     :return:                    Either an interleaved clip of the differences between the two clips
-                                or a stack of both input clips on top of MakeDiff clip.
+                                or a stack of both input clips on top of ``vapoursynth.core.std.MakeDiff`` clip.
                                 Furthermore, the function will print the ranges of all the diffs found.
     """
     if clips and namedclips:
