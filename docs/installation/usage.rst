@@ -2,7 +2,7 @@ Basic Usage
 -----------
 
 `lvsfunc` is a Python module,
-which means you must import into your script before it can be accessed.
+which means you must import it into your script before it can be accessed.
 You can import it by doing the following:
 
 .. code-block:: py
@@ -23,7 +23,7 @@ so we recommend you give it an alias.
 
 With the module now imported,
 you can call functions in your script by referencing the module
-and writing a function name behind it.
+and writing the function name behind it.
 
 .. code-block:: py
 
@@ -39,11 +39,11 @@ Both of the following calls will call the same function:
 
     import lvsfunc as lvf
 
-    descaled_clip_a = lvf.descale(clip)
-    descaled_clip_b = lvf.scale.descale(clip)
+    descaled_clip_a = lvf.descale(clip)  # global scope
+    descaled_clip_b = lvf.scale.descale(clip)  # local scope
 
 Calling them from the relevant sub-module is considered good practice,
-but for convenience, it may be easier to call the function directly.
+but for convenience, it may be easier to call the function from the global list instead.
 
 You can also import individual functions from sub-modules.
 
@@ -56,5 +56,5 @@ You can also import individual functions from sub-modules.
 This is useful if you only need a single function and don't want to pollute your auto-completion
 with all the other `lvsfunc` functions.
 
-For further information about specific functions, please refer to their individual documentations.
-You can find them by scouring the "functions" pages to the left, or using the search bar.
+For further information about specific functions, please refer to their individual documentation.
+You can find them by scouring the "Sub-Modules" pages to the left, or using the search bar.
