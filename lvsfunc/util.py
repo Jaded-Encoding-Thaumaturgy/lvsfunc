@@ -442,15 +442,15 @@ def get_matrix(frame: vs.VideoNode | vs.VideoFrame, strict: bool = False) -> Mat
     return Matrix.BT2020NC
 
 
-def get_matrix_curve(matrix: int) -> CURVES:
+def get_matrix_curve(matrix: Matrix) -> CURVES:
     """Return the matrix curve based on a given `matrix`."""
     match matrix:
-        case 1: return vs.TransferCharacteristics.TRANSFER_BT709
-        case 5 | 6: return vs.TransferCharacteristics.TRANSFER_BT601
-        case 7: return vs.TransferCharacteristics.TRANSFER_ST240_M
-        case 13: return vs.TransferCharacteristics.TRANSFER_IEC_61966_2_1
-        case 14: return vs.TransferCharacteristics.TRANSFER_BT2020_10
-        case 15: return vs.TransferCharacteristics.TRANSFER_BT2020_12
+        case Matrix.BT709: return vs.TransferCharacteristics.TRANSFER_BT709
+        case Matrix.BT470BG | Matrix.SMPTE170M: return vs.TransferCharacteristics.TRANSFER_BT601
+        case Matrix.SMPTE240M: return vs.TransferCharacteristics.TRANSFER_ST240_M
+        case Matrix.CHROMA_DERIVED_C: return vs.TransferCharacteristics.TRANSFER_IEC_61966_2_1
+        case Matrix.ICTCP: return vs.TransferCharacteristics.TRANSFER_BT2020_10
+        # case 15: return vs.TransferCharacteristics.TRANSFER_BT2020_12
         case _: raise InvalidMatrixError("get_matrix_curve", message="{func}: 'An invalid matrix value was passed!'")
 
 
