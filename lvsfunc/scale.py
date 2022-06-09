@@ -350,12 +350,7 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
     clip = depth(clip, 32)
 
     if gamma:
-        if curve is None:
-            try:
-                curve = get_matrix_curve(get_prop(clip.get_frame(0), "_Matrix", int))
-            except ValueError:
-                curve = get_matrix_curve(get_matrix(clip, return_matrix=False))
-
+        curve = curve or get_matrix_curve(get_matrix(clip))
         clip = gamma2linear(clip, curve, sigmoid=sigmoid, epsilon=epsilon)
 
     l1 = kernel.scale(clip, width, height)
