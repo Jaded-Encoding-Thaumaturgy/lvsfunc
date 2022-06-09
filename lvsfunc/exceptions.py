@@ -5,10 +5,12 @@ from typing import List
 import vapoursynth as vs
 from vskernels import Kernel, get_kernel
 
+from .types import Matrix
+
 __all__: List[str] = [
     'VariableFormatError', 'VariableResolutionError', 'NotEqualFormatsError',
     'InvalidFormatError', 'ClipsAndNamedClipsError', 'InvalidFramerateError',
-    'CompareSameKernelError'
+    'CompareSameKernelError', 'FramePropError', 'MatrixError',
 ]
 
 
@@ -94,3 +96,28 @@ class CompareSameKernelError(ValueError):
         self.kernel: Kernel = kernel
 
         super().__init__(self.message.format(func=self.function, kernel=self.kernel.__class__.__name__))
+
+
+class FramePropError(ValueError):
+    """Raised when there is an error with the frameprops."""
+
+    def __init__(self, function: str, frameprop: str,
+                 message: str = "{func}: 'Error while trying to get frameprop \"{frameprop}\"!'") -> None:
+        self.function: str = function
+        self.frameprop: str = frameprop
+        self.message: str = message
+        super().__init__(self.message.format(func=self.function, frameprop=frameprop))
+
+
+class MatrixError(ValueError):
+    """Raised when there is an error with the matrix."""
+
+    def __init__(self, function: str, matrix: Matrix | int,
+                 message: str = "{func}: 'There was an error with your matrix \"{matrix}\"!'") -> None:
+        if isinstance(matrix, int):
+            matrix = Matrix(matrix)
+
+        self.function: str = function
+        self.matrix: int = matrix
+        self.message: str = message
+        super().__init__(self.message.format(func=self.function, matrix=matrix))
