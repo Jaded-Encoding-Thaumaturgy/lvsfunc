@@ -391,10 +391,10 @@ def get_matrix(frame: vs.VideoNode | vs.VideoFrame, strict: bool = False) -> Mat
     If you want it to be strict and raise an error if no matrix is set, set ``strict=True``.
 
     :param clip:            Clip or Frame to process.
-    :param strict:          Whether to assume the matrix.
-                            If ``True``, checks the `_Matrix` and guesses based on resolution and format.
-                            If ``False``, will get the value from `_Matrix` and error if it's invalid.
-                            Default: True.
+    :param strict:          Whether to be strict about the matrix.
+                            If ``True``, checks just the `_Matrix` prop.
+                            If ``False``, will check the `_Matrix` prop and make a guess if `_Matrix=Matrix.UNKNOWN`.
+                            Default: False.
 
     :return:                Value representing a matrix.
     """
