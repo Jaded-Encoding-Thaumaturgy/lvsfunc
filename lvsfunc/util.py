@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, List, Tuple, Type, cast
 import vapoursynth as vs
 from vsutil import depth, get_depth, get_subsampling, get_w, get_y
 
-from .exceptions import (InvalidFormatError, InvalidMatrixError,
+from .exceptions import (InvalidFormatError, InvalidMatrixError, MatrixError,
                          VariableFormatError, VariableResolutionError)
 from .types import CURVES, Coefs, F, Matrix, Range, T
 
@@ -381,33 +381,65 @@ def check_variable(clip: vs.VideoNode, function: str) -> None:
     check_variable_resolution(clip, function)
 
 
-def get_matrix(clip: vs.VideoNode, return_matrix: bool = False) -> Matrix | int:
+def get_matrix(frame: vs.VideoNode | vs.VideoFrame, strict: bool = False) -> Matrix:
     """
-    Get the matrix of a clip.
+    Get the matrix of a clip or frame.
 
-    :param clip:            Input clip
-    :param return_matrix:   Returns a Matrix instead of an int.
-                            Set to False by default for backwards compatibility.
+    By default this function will first check the `_Matrix` prop for a valid matrix.
+    If the matrix is not set, it will guess based on the resolution.
 
-    :return:                Value representing a matrix
+    If you want it to be strict and raise an error if no matrix is set, set ``strict=True``.
+
+    :param clip:            Clip or Frame to process.
+    :param strict:          Whether to assume the matrix.
+                            If ``True``, checks the `_Matrix` and guesses based on resolution and format.
+                            If ``False``, will get the value from `_Matrix` and error if it's invalid.
+                            Default: True.
+
+    :return:                Value representing a matrix.
     """
-    check_variable_format(clip, "get_matrix")
-    assert clip.format
+    if isinstance(frame, vs.VideoNode):
+        check_variable_format(frame, "get_matrix")
+        assert frame.format
 
-    if not return_matrix:
-        warnings.warn("get_matrix: '`return_matrix=True` will be set to default in a future commit! "
-                      "Make sure you update your functions to work with `Matrix` objects!'")
+        frame = frame.get_frame(0)
 
-    frame = clip.get_frame(0)
+    matrix = get_prop(frame, "_Matrix", int)
+
+    match matrix:
+        case 0: return Matrix.RGB
+        case 1: return Matrix.BT709
+        case 2 if strict: raise MatrixError("get_matrix", matrix, "{func}: 'Matrix is undefined.'")
+        case 3: raise MatrixError("get_matrix", matrix, "{func}: 'Matrix is reserved.'")
+        case 4: return Matrix.FCC
+        case 5: return Matrix.BT470BG
+        case 6: return Matrix.SMPTE170M
+        case 7: return Matrix.SMPTE240M
+        case 8:
+            if core.version_number() < 55:
+                return Matrix.YCGCO
+            else:
+                raise MatrixError("get_matrix", matrix, "{func}: 'VapourSynth no longer supports {matrix}.'")
+        case 9: return Matrix.BT2020NC
+        case 10: return Matrix.BT2020C
+        case 11: return Matrix.SMPTE2085
+        case 12: return Matrix.CHROMA_DERIVED_NC
+        case 13: return Matrix.CHROMA_DERIVED_C
+        case 14: return Matrix.ICTCP
+        case _ if matrix > 14: raise MatrixError("get_matrix", matrix, "{func}: 'This matrix is current unsupported. "
+                                                 "If you believe this to be in error, please leave an issue "
+                                                 "in the lvsfunc GitHub repository.'")
+        case _ if strict: raise MatrixError("get_matrix", matrix, "{func}: 'Some kind of error occured!'")
+
     w, h = frame.width, frame.height
 
     if frame.format.color_family == vs.RGB:
-        return Matrix.RGB if return_matrix else 0
+        return Matrix.RGB
     elif w <= 1024 and h <= 576:
-        return Matrix.BT470BG if return_matrix else 5
+        return Matrix.SMPTE170M
     elif w <= 2048 and h <= 1536:
-        return Matrix.BT709 if return_matrix else 1
-    return Matrix.BT2020NC if return_matrix else 9
+        return Matrix.BT709
+    return Matrix.BT2020NC
 
 
 def get_matrix_curve(matrix: int) -> CURVES:
