@@ -15,7 +15,7 @@ from vsutil import Dither, depth, get_depth, get_w, get_y, scale_value
 
 from .comparison import Stack
 from .exceptions import InvalidFramerateError
-from .render import get_render_progress
+from .render import clip_async_render, get_render_progress
 from .types import Direction
 from .util import (check_variable, check_variable_format, force_mod,
                    get_neutral_value, get_prop, pick_repair)
@@ -31,7 +31,8 @@ __all__: List[str] = [
     'seek_cycle',
     'sivtc', 'SIVTC',
     'tivtc_vfr', 'TIVTC_VFR',
-    'vinverse'
+    'vinverse',
+    'check_patterns',
 ]
 
 main_file = os.path.realpath(sys.argv[0]) if sys.argv[0] else None
@@ -124,6 +125,52 @@ def seek_cycle(clip: vs.VideoNode, write_props: bool = True, scale: int = -1) ->
 
     stack = Stack([horz_pad, clip, horz_pad]).clip
     return Stack([vert_pad, stack, vert_pad, stack_abcde], direction=Direction.VERTICAL).clip
+
+
+def check_patterns(clip: vs.VideoNode, tff: bool | int | None = None) -> int:
+    """
+    Naïve function that iterates over a given clip and tries out every simple 3:2 IVTC pattern.
+
+    This function will return the best pattern value that didn't result in any combing.
+    If all of them resulted in combing, it will raise an error.
+
+    Note that the clip length may seem off because I grab every fourth frame of a clip.
+    This should make processing faster, and it will still find combed frames.
+
+    This function should only be used for rudimentary testing.
+    If I see it in any proper scripts, heads will roll.
+
+    Dependencies:
+
+    * `TDeintMod <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-TDeintMod>`_
+
+    :param clip:    Clip to process.
+    :param tff:     Top-field-first. `False` sets it to Bottom-Field-First.
+                    If None, get the field order from the _FieldBased prop.
+
+    :return:        Integer representing the best pattern.
+    """
+    if get_prop(clip.get_frame(0), '_FieldBased', int) == 0 and tff is None:
+        raise vs.Error("check_patterns: 'You must set `tff` for this clip!'")
+    elif isinstance(tff, (bool, int)):
+        clip = clip.std.SetFieldBased(int(tff) + 1)
+
+    clip = depth(clip, 8)
+
+    pattern = -1
+
+    for n in [int(n) for n in range(0, 4)]:
+        check = _check_pattern(clip, n)
+
+        if check:
+            pattern = n
+            break
+
+    if pattern == -1:
+        raise StopIteration("check_patterns: 'None of the patterns resulted in a clip without combing. "
+                            "Please try performing proper IVTC on the clip.")
+
+    return pattern
 
 
 def tivtc_vfr(clip: vs.VideoNode,
@@ -667,6 +714,29 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
                             f'* 0 < sdiff@ n@ - abs diff@ n@ - abs < sdiff@ diff@ ? n@ - {scale} * n@ + sdiff@ n@ '
                             '- abs diff@ n@ - abs < sdiff@ diff@ ? ? n@ - + merge! x a@ + merge@ < x a@ + x a@ - '
                             'merge@ > x a@ - merge@ ? ?')
+
+
+# Helper functions
+def _check_pattern(clip: vs.VideoNode, pattern: int = 0) -> bool:
+    """check_patterns' rendering behaviour."""
+    clip = sivtc(clip, pattern)
+    clip = core.tdm.IsCombed(clip)
+
+    frames: List[int] = []
+
+    def _cb(n: int, f: vs.VideoFrame) -> None:
+        if get_prop(f, '_Combed', int):
+            frames.append(n)
+
+    # TODO: Tried being clever and just exiting if any combing was found, but async_render had other plans :)
+    clip_async_render(clip[::4], progress=f"Checking pattern {pattern}...", callback=_cb)
+
+    if len(frames) > 0:
+        print(f"check_patterns: 'Combing found with pattern {pattern}!'")
+        return False
+
+    print(f"check_patterns: 'Clean clip found with pattern {pattern}!'")
+    return True
 
 
 # Temporary aliases

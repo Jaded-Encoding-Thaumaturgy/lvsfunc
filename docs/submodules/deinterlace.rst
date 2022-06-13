@@ -5,6 +5,7 @@ Deinterlacing, IVTC, and post-deinterlacing functions and wrappers.
 
 .. autosummary::
 
+    lvsfunc.deinterlace.check_patterns
     lvsfunc.deinterlace.deblend
     lvsfunc.deinterlace.decomb
     lvsfunc.deinterlace.descale_fields
