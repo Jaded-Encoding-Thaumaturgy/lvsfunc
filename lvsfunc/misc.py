@@ -1,17 +1,20 @@
 from __future__ import annotations
 
 import os
+import subprocess as sp
 import warnings
+from collections import deque
 from functools import partial
-from typing import Any, List, Sequence, Tuple
+from typing import Any, List, Sequence, Tuple, cast
 
 import vapoursynth as vs
-from vskernels import Catrom
+import vskernels.types as kernel_type
+from vskernels import Catrom, Kernel
 from vsutil import depth, get_depth, is_image, scale_value
 
 from .exceptions import InvalidMatrixError
 from .mask import BoundingBox
-from .types import Matrix, Position, Range, Size
+from .types import Matrix, Position, Range, Size, VSIdxFunction
 from .util import (check_variable, get_matrix, get_prop, normalize_ranges,
                    replace_ranges)
 
@@ -29,86 +32,102 @@ __all__: List[str] = [
 ]
 
 
-# List of containers that are better off being indexed externally
-annoying_formats = ['.iso', '.ts', '.vob']
-
-
-def source(file: str, ref: vs.VideoNode | None = None,
-           force_lsmas: bool = False,
-           mpls: bool = False, mpls_playlist: int = 0, mpls_angle: int = 0,
-           **index_args: Any) -> vs.VideoNode:
+def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
+           film_thr: float = 99.0, force_lsmas: bool = False,
+           kernel: Kernel = Catrom(), **index_args: Any) -> vs.VideoNode:
     """
-    Load video clips for use in VapourSynth automatically.
+    Index and load video clips for use in VapourSynth automatically.
 
-    Automatically determines if ffms2 or L-SMASH should be used to import a clip, but L-SMASH can be forced.
+    .. note::
+        | For this function to work properly, you NEED to have DGIndex(NV) in your PATH!
+        | DGIndexNV will be faster, but it only works with an NVidia GPU.
+
+    This function will try to index the given video file using DGIndex(NV).
+    If it can't, it will fall back on L-SMASH. L-SMASH can also be forced using ``force_lsmas``.
     It also automatically determines if an image has been imported.
-    You can set its fps using 'fpsnum' and 'fpsden', or using a reference clip with 'ref'.
+
+    This function will automatically check whether your clip is mostly FILM.
+    If FILM is above ``film_thr`` and the order is above 0,
+    it will automatically set ``fieldop=1`` and ``_FieldBased=0``.
+    This can be disabled by passing ``fieldop=0`` to the function yourself.
+
+    You can pass a ref clip to further adjust the clip.
+    This affects the dimensions, framerates, matrix/transfer/primaries,
+    and in the case of an image, the length of the clip.
 
     Alias for this function is `lvsfunc.src`.
 
-    .. warning::
-        | WARNING: This function will be rewritten in the future, and functionality may change!
-        |          No warning is currently printed for this in your terminal to avoid spam.
-
     Dependencies:
 
-    * ffms2
-    * L-SMASH-Works (optional: m2ts sources or when forcing lsmas)
-    * d2vsource (optional: d2v sources)
-    * dgdecodenv (optional: dgi sources)
-    * VapourSynth-ReadMpls (optional: mpls sources)
+    * `L-SMASH-Works <https://github.com/AkarinVS/L-SMASH-Works>`_
+    * `dgdecode <https://www.rationalqm.us/dgmpgdec/dgmpgdec.html>`_
+    * `dgdecodenv <https://www.rationalqm.us/dgdecnv/binaries/>`_
 
-    :param file:              Input file. This MUST have an extension.
-    :param ref:               Use another clip as reference for the clip's format,
-                              resolution, and framerate (Default: None).
-    :param force_lsmas:       Force files to be imported with L-SMASH (Default: False)
-    :param mpls:              Load in a mpls file (Default: False).
-    :param mpls_playlist:     Playlist number, which is the number in mpls file name (Default: 0).
-    :param mpls_angle:        Angle number to select in the mpls playlist (Default: 0).
-    :param kwargs:            Arguments passed to the indexing filter.
+    Thanks RivenSkaye!
 
-    :return:                  Vapoursynth clip representing input file.
+    :param file:                File to index and load in.
+    :param ref:                 Use another clip as reference for the clip's format,
+                                resolution, framerate, and matrix/transfer/primaries (Default: None).
+    :param film_thr:            FILM percentage the dgi must exceed for ``fieldop=1`` to be set automatically.
+                                If set above 100.0, it's silented lowered to 100.0 (Default: 99.0).
+    :param force_lsmas:         Force files to be imported with L-SMASH (Default: False).
+    :param kernel:              Kernel used for the ref clip (Default: Catrom).
+    :param kwargs:              Arguments passed to the indexing filter.
+
+    :return:                    VapourSynth clip representing the input file.
     """
-    if file.startswith('file:///'):
-        file = file[8::]
+    if not isinstance(path, str):
+        raise ValueError(f"source: 'Please input a path, not a {type(path)}!'")
 
-    fname, ext = os.path.splitext(file)
+    path = str(path)
 
-    if not ext:
-        raise ValueError("source: 'No extension found in filename!'")
+    if film_thr >= 100:
+        film_thr = 100.0
 
-    # Error handling for some file types
-    if ext == '.mpls' and mpls is False:
-        raise ValueError("source: 'Set \"mpls = True\" and pass a path to the base Blu-ray directory "
-                         "for this kind of file!'")
-
-    if ext in annoying_formats:
-        raise ValueError("source: 'Use an external indexer like d2vwitch or DGIndexNV for this kind of file!'")
+    if path.startswith('file:///'):
+        path = path[8::]
 
     if force_lsmas:
-        clip = core.lsmas.LWLibavSource(file, **index_args)
-    elif mpls:
-        mpls_in = core.mpls.Read(file, mpls_playlist, mpls_angle)
-        clip = core.std.Splice([core.lsmas.LWLibavSource(mpls_in['clip'][i], **index_args)  # type:ignore[call-overload]
-                                for i in range(mpls_in['count'])])  # type:ignore[call-overload]
-    elif is_image(file):
-        clip = core.imwri.Read(file, **index_args)
+        clip = core.lsmas.LWLibavSource(path, **index_args) \
+            .std.SetFrameProps(lvf_idx='lsmas')
+    elif is_image(path):
+        clip = core.imwri.Read(path, **index_args) \
+            .std.SetFrameProps(lvf_idx='imwri')
     else:
-        match ext:
-            case '.d2v': clip = core.d2v.Source(file, **index_args)
-            case '.dgi': clip = core.dgdecodenv.DGSource(file, **index_args)
-            case '.mp4': clip = core.lsmas.LibavSMASHSource(file, **index_args)
-            case '.m2ts': clip = core.lsmas.LWLibavSource(file, **index_args)
-            case _: clip = core.ffms2.Source(file, **index_args)
+        has_nv = _check_has_nvidia()
+
+        dgidx = 'DGIndexNV' if has_nv else 'DGIndex'
+        dgsrc = core.dgdecodenv.DGSource if has_nv else core.dgdecode.DGSource  # type:ignore[attr-defined]
+
+        if not path.endswith('.dgi'):
+            filename, _ = os.path.splitext(path)
+            dgi_file = f'{filename}.dgi'
+
+            dgi = _generate_dgi(path, dgidx)
+
+            if not dgi:
+                warnings.warn(f"source: 'Unable to index using {dgidx}! Falling back to lsmas...'")
+                clip = core.lsmas.LWLibavSource(path, **index_args).std.SetFrameProps(lvf_idx='lsmas')
+            else:
+                order, film = _tail(dgi_file)
+                clip = _load_dgi(dgi_file, film_thr, dgsrc, order, film, **index_args)
+        else:
+            order, film = _tail(path)
+            clip = _load_dgi(path, film_thr, dgsrc, order, film, **index_args)
 
     if ref:
         check_variable(ref, "source")
         assert ref.format
 
+        ref_frame = ref.get_frame(0)
+
+        clip = kernel.scale(clip, ref.width, ref.height)
+        clip = kernel.resample(clip, format=ref.format, matrix=cast(kernel_type.Matrix, get_matrix(ref)))
+        clip = core.std.SetFrameProps(clip, _Transfer=get_prop(ref_frame, '_Transfer', int),
+                                      _Primaries=get_prop(ref_frame, '_Primaries', int))
         clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
-        clip = core.resize.Bicubic(clip, width=ref.width, height=ref.height,
-                                   format=ref.format.id, matrix=get_matrix(ref))
-        if is_image(file):
+
+        if is_image(path):
             clip = clip * (ref.num_frames - 1)
 
     return clip
@@ -417,6 +436,54 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
             return crossfade(merge[:end], clip[end-fade_length:], fade_length)
     else:
         return replace_ranges(clip, merge, frame_ranges)
+
+
+# Helper functions
+def _check_has_nvidia() -> bool:
+    """Check if the user has an Nvidia GPU."""
+    try:
+        sp.check_output('nvidia-smi')
+        return True
+    except sp.CalledProcessError:
+        return False
+
+
+def _generate_dgi(path: str, idx: str) -> bool:
+    """Generate a dgi file using the given indexer and verify it exists."""
+    filename, _ = os.path.splitext(path)
+    output = f'{filename}.dgi'
+
+    if not os.path.exists(output):
+        try:
+            sp.run([idx, '-i', path, '-o', output, '-h'])
+        except sp.CalledProcessError:
+            return False
+
+    return os.path.exists(output)
+
+
+def _tail(filename: str, n: int = 2) -> Tuple[int, float]:
+    """Return the last n lines of a file."""
+    with open(filename, "r") as f:
+        lines = deque(f, n)
+        return (int(lines.pop().split(" ")[1].replace("\n", "")),
+                float(lines.pop().split(" ")[0].replace("%", "")))
+
+
+def _load_dgi(path: str, film_thr: float, src_filter: VSIdxFunction,
+              order: int, film: float, **index_args: Any) -> vs.VideoNode:
+    """
+    Run the source filter on the given dgi.
+
+    If order > 0 and FILM % > 99%, it will automatically enable `fieldop=1`.
+    """
+    props = dict(dgi_order=order, dgi_film=film, dgi_fieldop=0, lvf_idx='DGIndex(NV)')
+
+    if 'fieldop' not in index_args and (order > 0 and film >= film_thr):
+        index_args['fieldop'] = 1
+        props |= dict(dgi_fieldop=1, _FieldBased=0)
+
+    return src_filter(path, **index_args).std.SetFrameProps(**props)
 
 
 # Aliases
