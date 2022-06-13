@@ -142,6 +142,14 @@ class VSFunction(Protocol):
         ...
 
 
+class VSIdxFunction(Protocol):
+    """VapourSynth function."""
+
+    def __call__(self, path: str, *args: Any, **kwargs: Any) -> vs.VideoNode:
+        """Call the VapourSynth function."""
+        ...
+
+
 class Shapes(IntEnum):
     """Convolution coordinates for :py:class:`lvsfunc.mask.mt_xxpand_multi`."""
 
