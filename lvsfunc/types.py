@@ -143,7 +143,7 @@ class VSFunction(Protocol):
 
 
 class VSIdxFunction(Protocol):
-    """VapourSynth function."""
+    """VapourSynth Indexing/Source function."""
 
     def __call__(self, path: str, *args: Any, **kwargs: Any) -> vs.VideoNode:
         """Call the VapourSynth function."""
