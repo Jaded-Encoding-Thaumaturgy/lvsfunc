@@ -1,42 +1,58 @@
 import enum
 import typing
+from dataclasses import dataclass
+from typing import Literal, SupportsFloat, Tuple
+
 import vapoursynth as vs
 
+
 class Backend:
+    @dataclass(frozen=False)
     class ORT_CPU:
-        num_streams: int
-        verbosity: int
-        fp16: bool
+        num_streams: int = 1
+        verbosity: int = 2
+        fp16: bool = False
+
+    @dataclass(frozen=False)
     class ORT_CUDA:
-        device_id: int
-        cudnn_benchmark: bool
-        num_streams: int
-        verbosity: int
-        fp16: bool
+        device_id: int = 0
+        cudnn_benchmark: bool = True
+        num_streams: int = 1
+        verbosity: int = 2
+        fp16: bool = False
+
+    @dataclass(frozen=False)
     class OV_CPU:
-        fp16: bool
+        fp16: bool = False
+
+    @dataclass(frozen=False)
     class TRT:
-        max_shapes: typing.Optional[typing.Tuple[int, int]]
-        opt_shapes: typing.Optional[typing.Tuple[int, int]]
-        fp16: bool
-        device_id: int
-        workspace: int
-        verbose: bool
-        use_cuda_graph: bool
-        num_streams: int
-        use_cublas: bool
-        static_shape: bool
+        max_shapes: Tuple[int, int] | None = ...
+        opt_shapes: Tuple[int, int] | None = ...
+        fp16: bool = ...
 
-backendT = typing.Union[
-    Backend.OV_CPU,
-    Backend.ORT_CPU,
-    Backend.ORT_CUDA,
-    Backend.TRT
-]
+        device_id: int = ...
+        workspace: int = ...
+        verbose: bool = ...
+        use_cuda_graph: bool = ...
+        num_streams: int = ...
+        use_cublas: bool = ...
+        static_shape: bool = ...
+        tf32: bool = ...
+        log: bool = ...
+
+        _channels: int = ...
+
+
+backendT = Backend.OV_CPU | Backend.ORT_CPU | Backend.ORT_CUDA | Backend.TRT
+
+
+@enum.unique
 class DPIRModel(enum.IntEnum):
-    drunet_gray: int
-    drunet_color: int
-    drunet_deblocking_grayscale: int
-    drunet_deblocking_color: int
+    drunet_gray: int = ...
+    drunet_color: int = ...
+    drunet_deblocking_grayscale: int = ...
+    drunet_deblocking_color: int = ...
 
-def DPIR(clip: vs.VideoNode, strength: typing.Optional[typing.Union[typing.SupportsFloat, vs.VideoNode]], tiles: typing.Optional[typing.Union[int, typing.Tuple[int, int]]] = ..., tilesize: typing.Optional[typing.Union[int, typing.Tuple[int, int]]] = ..., overlap: typing.Optional[typing.Union[int, typing.Tuple[int, int]]] = ..., model: typing.Literal[0, 1, 2, 3] = ..., backend: backendT = ...) -> vs.VideoNode: ...
+
+def DPIR(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None, tiles: int | Tuple[int, int] | None = ..., tilesize: int | Tuple[int, int] | None = ..., overlap: int | Tuple[int, int] | None = ..., model: Literal[0, 1, 2, 3] = ..., backend: backendT = ...) -> vs.VideoNode: ...
