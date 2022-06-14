@@ -34,7 +34,8 @@ __all__: List[str] = [
 
 def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
            film_thr: float = 99.0, force_lsmas: bool = False,
-           kernel: Kernel = Catrom(), **index_args: Any) -> vs.VideoNode:
+           tail_lines: int = 4, kernel: Kernel = Catrom(),
+           **index_args: Any) -> vs.VideoNode:
     """
     Index and load video clips for use in VapourSynth automatically.
 
@@ -72,6 +73,9 @@ def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
                                 If set above 100.0, it's silented lowered to 100.0 (Default: 99.0).
     :param force_lsmas:         Force files to be imported with L-SMASH (Default: False).
     :param kernel:              Kernel used for the ref clip (Default: Catrom).
+    :param tail_lines:          Lines to check on the tail of the dgi file. Increase this value
+                                if FILM and ORDER do exist in your dgi file but it's not finding them.
+                                Set to 2 for a very minor speed-up, as that's usually enough to find them (default: 4).
     :param kwargs:              Arguments passed to the indexing filter.
 
     :return:                    VapourSynth clip representing the input file.
@@ -109,7 +113,7 @@ def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
                 warnings.warn(f"source: 'Unable to index using {dgidx}! Falling back to lsmas...'")
                 clip = core.lsmas.LWLibavSource(path, **index_args).std.SetFrameProps(lvf_idx='lsmas')
             else:
-                order, film = _tail(dgi_file)
+                order, film = _tail(dgi_file, tail_lines)
                 clip = _load_dgi(dgi_file, film_thr, dgsrc, order, film, **index_args)
         else:
             order, film = _tail(path)
@@ -462,10 +466,15 @@ def _generate_dgi(path: str, idx: str) -> bool:
     return os.path.exists(output)
 
 
-def _tail(filename: str, n: int = 2) -> Tuple[int, float]:
+def _tail(filename: str, n: int = 10) -> Tuple[int, float]:
     """Return the last n lines of a file."""
     with open(filename, "r") as f:
         lines = deque(f, n)
+        lines = cast(deque[str], [line for line in lines if 'FILM' in line or 'ORDER' in line])
+
+        if len(lines) == 1:
+            return (int(lines[0].split(' ')[1]), 0.00)
+
         return (int(lines.pop().split(" ")[1].replace("\n", "")),
                 float(lines.pop().split(" ")[0].replace("%", "")))
 
