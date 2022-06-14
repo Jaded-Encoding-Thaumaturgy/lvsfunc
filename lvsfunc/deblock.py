@@ -205,7 +205,21 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
     dpir_args |= dict(tiles=tiles, model=model)
 
     if "backend" not in dpir_args:
-        dpir_args |= dict(backend=(Backend.TRT if cuda == 'trt' else Backend.ORT_CUDA) if cuda else Backend.OV_CPU)
+        # Grab specific settings
+        if 'fp16' in dpir_args:
+            fp16 = dpir_args.pop('fp16')
+        else:
+            fp16 = cuda == 'trt'
+
+        if 'num_streams' in dpir_args:
+            num_streams = dpir_args.pop('num_streams')
+        else:
+            num_streams = 2
+
+        dpir_args |= dict(backend=(  # idgi why is this erroring THE SIGNATURE SAYS THEY'RE USED
+            Backend.TRT(fp16=fp16, num_streams=num_streams) if cuda == 'trt'  #  type:ignore[call-arg]
+            else Backend.ORT_CUDA(fp16=fp16, num_streams=num_streams)) if cuda  #  type:ignore[call-arg]
+            else Backend.OV_CPU(fp16=fp16))  #  type:ignore[call-arg]
 
     def _get_strength_clip(clip: vs.VideoNode, strength: SupportsFloat) -> vs.VideoNode:
         return clip.std.BlankClip(format=vs.GRAYS, color=float(strength))
