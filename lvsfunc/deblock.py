@@ -207,7 +207,7 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
     if "backend" not in dpir_args:
         dpir_args |= dict(backend=(Backend.TRT if cuda == 'trt' else Backend.ORT_CUDA) if cuda else Backend.OV_CPU)
 
-    def _get_strength_clip(strength: SupportsFloat) -> vs.VideoNode:
+    def _get_strength_clip(clip: vs.VideoNode, strength: SupportsFloat) -> vs.VideoNode:
         return clip.std.BlankClip(format=vs.GRAYS, color=float(strength))
 
     if isinstance(strength, vs.VideoNode):
@@ -261,7 +261,7 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
     if isinstance(strength, vs.VideoNode):
         strength_clip = strength
     else:
-        strength_clip = _get_strength_clip(strength)
+        strength_clip = _get_strength_clip(clip_rgb, strength)
 
     no_dpir_zones = []
 
@@ -269,7 +269,8 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
         for ranges, zstr in zones:
             if zstr:
                 strength_clip = replace_ranges(
-                    strength_clip, zstr if isinstance(zstr, vs.VideoNode) else _get_strength_clip(zstr), ranges
+                    strength_clip, zstr if isinstance(zstr, vs.VideoNode)
+                    else _get_strength_clip(clip_rgb, zstr), ranges
                 )
             else:
                 if isinstance(ranges, List):
