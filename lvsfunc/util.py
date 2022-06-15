@@ -232,8 +232,10 @@ def replace_ranges(clip_a: vs.VideoNode,
 
     if use_plugin and hasattr(core, 'remap'):
         try:
-            return core.remap.ReplaceFramesSimple(clip_a, clip_b, mismatch=True,
-                                                  mappings=' '.join(f'[{s} {e}]' for s, e in nranges))
+            return core.remap.ReplaceFramesSimple(
+                clip_a, clip_b, mismatch=True,
+                mappings=' '.join(f'[{s} {e + (exclusive if s != e else 0)}]' for s, e in nranges)
+            )
         except vs.Error as e:
             raise RuntimeError("replace_ranges: 'Some kind of error occured when running the plugin!\n"
                                f"This was the error: \"{str(e)[21:]}\".\n"
