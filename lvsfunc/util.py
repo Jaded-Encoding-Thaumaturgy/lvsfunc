@@ -240,13 +240,14 @@ def replace_ranges(clip_a: vs.VideoNode,
                                "If you don't know how to fix this, consider setting `use_plugin=False`.'")
 
     out = clip_a
+    shift = 1 + exclusive
 
     for start, end in nranges:
-        tmp = clip_b[start:end + exclusive]
+        tmp = clip_b[start:end + shift]
         if start != 0:
             tmp = out[: start] + tmp
         if end < out.num_frames - 1:
-            tmp = tmp + out[end + exclusive:]
+            tmp = tmp + out[end + shift:]
         out = tmp
 
     return out
