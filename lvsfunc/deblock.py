@@ -378,8 +378,6 @@ def vsdpir(
 
     network_path = Path(models_path) / 'dpir' / f'{tuple(DPIRModel.__members__)[model]}.onnx'
 
-    zoned_strength_clip.set_output(2)
-
     run_dpir = inference(
         [clip_rgb, zoned_strength_clip], str(network_path), (overlap_w, overlap_h), (tile_w, tile_h), backend
     )
