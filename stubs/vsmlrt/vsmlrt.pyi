@@ -5,6 +5,7 @@ from typing import Literal, SupportsFloat, Tuple
 
 import vapoursynth as vs
 
+models_path: str
 
 class Backend:
     @dataclass(frozen=False)
@@ -56,3 +57,9 @@ class DPIRModel(enum.IntEnum):
 
 
 def DPIR(clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None, tiles: int | Tuple[int, int] | None = ..., tilesize: int | Tuple[int, int] | None = ..., overlap: int | Tuple[int, int] | None = ..., model: Literal[0, 1, 2, 3] = ..., backend: backendT = ...) -> vs.VideoNode: ...
+
+def calc_tilesize(tiles: typing.Optional[typing.Union[int, typing.Tuple[int, int]]], tilesize: typing.Optional[typing.Union[int, typing.Tuple[int, int]]], width: int, height: int, multiple: int, overlap_w: int, overlap_h: int) -> typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]: ...
+
+def init_backend(backend: backendT, channels: int, trt_max_shapes: typing.Tuple[int, int]) -> backendT: ...
+
+def inference(clips: typing.List[vs.VideoNode], network_path: str, overlap: typing.Tuple[int, int], tilesize: typing.Tuple[int, int], backend: backendT) -> vs.VideoNode: ...
