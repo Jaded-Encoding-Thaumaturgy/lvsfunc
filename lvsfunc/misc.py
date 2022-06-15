@@ -132,7 +132,7 @@ def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
         clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
 
         if is_image(path):
-            clip = clip * (ref.num_frames - 1)
+            clip = clip * ref.num_frames
 
     return clip
 
