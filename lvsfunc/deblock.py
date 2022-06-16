@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Sequence, SupportsFloat, Tuple, cast
+from typing import Any, Dict, List, Literal, Sequence, SupportsFloat, Tuple, cast
 
 import vapoursynth as vs
 from vskernels import Bicubic, Catrom, Kernel, Point, get_kernel
@@ -17,11 +17,6 @@ core = vs.core
 __all__: List[str] = [
     'autodb_dpir', 'dpir', 'vsdpir'
 ]
-
-if TYPE_CHECKING:
-    from vsmlrt import backendT
-else:
-    backendT = Any
 
 
 def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
@@ -205,7 +200,7 @@ def dpir(
     :return:                Deblocked or denoised clip in either the given clip's format or YUV444PS
     """
     try:
-        from vsmlrt import Backend, DPIRModel, calc_tilesize, inference, models_path
+        from vsmlrt import Backend, DPIRModel, backendT, calc_tilesize, inference, models_path
     except ModuleNotFoundError:
         raise ModuleNotFoundError("dpir: 'missing dependency `vsmlrt`!'")
 
