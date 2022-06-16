@@ -9,7 +9,7 @@ from vskernels import Bicubic, Catrom, Kernel, Point, get_kernel
 from vsutil import Dither, depth, get_depth
 
 from .misc import _check_has_nvidia
-from .types import DPIR_STRENGTH_TYPE, Matrix, Range
+from .types import Matrix, Range
 from .util import check_variable, get_prop, replace_ranges
 
 core = vs.core
@@ -150,10 +150,10 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
 
 def dpir(
-    clip: vs.VideoNode, strength: DPIR_STRENGTH_TYPE = 25, mode: str = 'deblock',
+    clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 25, mode: str = 'deblock',
     matrix: Matrix | int | None = None, cuda: bool | Literal['trt'] | None = None, i444: bool = False,
     tiles: int | Tuple[int, int] | None = None, overlap: int | Tuple[int, int] | None = None,
-    zones: List[Tuple[Range | List[Range] | None, DPIR_STRENGTH_TYPE]] | None = None,
+    zones: List[Tuple[Range | List[Range] | None, SupportsFloat | vs.VideoNode | None]] | None = None,
     fp16: bool | None = None, num_streams: int = 2, device_id: int = 0, kernel: Kernel | str = Catrom()
 ) -> vs.VideoNode:
     """
