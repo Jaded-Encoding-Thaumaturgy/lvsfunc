@@ -474,14 +474,14 @@ class LvsfuncTestDeblock(LvsfuncTests):
     MOD8_YUV_CLIP: vs.VideoNode = core.std.BlankClip(format=vs.YUV420P8, width=MOD8_WIDTH, height=MOD8_HEIGHT)
     MOD8_RGB_CLIP: vs.VideoNode = core.std.BlankClip(format=vs.RGB24, width=MOD8_WIDTH, height=MOD8_HEIGHT)
 
-    def test_vsdpir(self) -> None:
-        clip = lvf.deblock.vsdpir(self.MOD8_YUV_CLIP, matrix=lvf.types.Matrix.BT709)
+    def test_dpir(self) -> None:
+        clip = lvf.deblock.dpir(self.MOD8_YUV_CLIP, matrix=lvf.types.Matrix.BT709)
         self.assert_runs(clip)
 
-        clip_rgb = lvf.deblock.vsdpir(self.MOD8_RGB_CLIP)
+        clip_rgb = lvf.deblock.dpir(self.MOD8_RGB_CLIP)
         self.assert_same_format(clip_rgb, self.RGB24_CLIP)
 
-        clip_444 = lvf.deblock.vsdpir(self.YUV420P16_CLIP, i444=True, matrix=lvf.types.Matrix.BT709)
+        clip_444 = lvf.deblock.dpir(self.YUV420P16_CLIP, i444=True, matrix=lvf.types.Matrix.BT709)
         self.assert_same_format(clip_444, self.YUV444P16_CLIP)
 
     def test_autodb_dpir(self) -> None:

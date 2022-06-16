@@ -5,10 +5,10 @@ Deblocking functions and wrappers.
 
 .. autosummary::
 
-    lvsfunc.deblock.vsdpir
+    lvsfunc.deblock.dpir
     lvsfunc.deblock.autodb_dpir
 
-.. autoclass:: lvsfunc.deblock.vsdpir
+.. autoclass:: lvsfunc.deblock.dpir
     :members:
     :undoc-members:
     :show-inheritance:
@@ -17,4 +17,4 @@ Deblocking functions and wrappers.
     :members:
     :undoc-members:
     :show-inheritance:
-    :exclude-members: vsdpir
+    :exclude-members: dpir

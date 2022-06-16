@@ -36,8 +36,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     Thresholds and calculations are added to the frameprops to use as reference when setting the thresholds.
 
-    Keep in mind that vsdpir is not perfect; it may cause weird, black dots to appear sometimes.
-    If that happens, you can perform a denoise on the original clip (maybe even using vsdpir's denoising mode)
+    Keep in mind that dpir is not perfect; it may cause weird, black dots to appear sometimes.
+    If that happens, you can perform a denoise on the original clip (maybe even using dpir's denoising mode)
     and grab the brightest pixels from your two clips. That should return a perfectly fine clip.
 
     Thanks Vardë, louis, setsugen_no_ao!
@@ -62,7 +62,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     :param kernel:          `Kernel` object used for conversions between YUV <-> RGB.
     :param cuda:            Use CUDA backend if True, else CPU backend.
     :param write_props:     whether to write verbose props.
-    :param vsdpir_args:     Additional args to pass to ``vsdpir``.
+    :param vsdpir_args:     Additional args to pass to ``dpir``.
 
     :return:                Deblocked clip with different strengths applied based on the given parameters.
     """
@@ -132,7 +132,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     diffprev = core.std.PlaneStats(rgb, rgb[0] + rgb, prop='YPrev')
 
     db_clips = [
-        vsdpir(rgb, strength=st, mode='deblock', cuda=cuda, **vsdpir_args)
+        dpir(rgb, strength=st, mode='deblock', cuda=cuda, **vsdpir_args)
         .std.SetFrameProp('Adb_DeblockStrength', intval=int(st)) for st in strs
     ]
 
