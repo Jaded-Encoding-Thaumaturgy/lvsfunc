@@ -16,7 +16,7 @@ __all__: List[str] = [
 CreditMask = Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode]
 CustomScaler = Callable[[vs.VideoNode, int, int], vs.VideoNode]
 Range = Union[Optional[int], Tuple[Optional[int], Optional[int]]]
-VSDPIR_STRENGTH_TYPE = Optional[Union[SupportsFloat, vs.VideoNode]]
+DPIR_STRENGTH_TYPE = Optional[Union[SupportsFloat, vs.VideoNode]]
 
 
 VideoProp = Union[

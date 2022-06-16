@@ -9,13 +9,13 @@ from vskernels import Bicubic, Catrom, Kernel, Point, get_kernel
 from vsutil import Dither, depth, get_depth
 
 from .misc import _check_has_nvidia
-from .types import VSDPIR_STRENGTH_TYPE, Matrix, Range
+from .types import DPIR_STRENGTH_TYPE, Matrix, Range
 from .util import check_variable, get_prop, replace_ranges
 
 core = vs.core
 
 __all__: List[str] = [
-    'autodb_dpir', 'vsdpir'
+    'autodb_dpir', 'dpir', 'vsdpir'
 ]
 
 if TYPE_CHECKING:
@@ -149,11 +149,11 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     return kernel.resample(debl, format=clip.format, matrix=targ_matrix if not is_rgb else None)
 
 
-def vsdpir(
-    clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 'deblock',
+def dpir(
+    clip: vs.VideoNode, strength: DPIR_STRENGTH_TYPE = 25, mode: str = 'deblock',
     matrix: Matrix | int | None = None, tiles: int | Tuple[int, int] | None = None,
     cuda: bool | Literal['trt'] | None = None, i444: bool = False, kernel: Kernel | str = Catrom(),
-    zones: List[Tuple[Range | List[Range] | None, VSDPIR_STRENGTH_TYPE]] | None = None,
+    zones: List[Tuple[Range | List[Range] | None, DPIR_STRENGTH_TYPE]] | None = None,
     tilesize: int | Tuple[int, int] | None = None, overlap: int | Tuple[int, int] | None = None,
     fp16: bool | None = None, num_streams: int = 2, backend: backendT | None = None, device_id: int = 0
 ) -> vs.VideoNode:
@@ -192,12 +192,11 @@ def vsdpir(
     :return:                Deblocked or denoised clip in either the given clip's format or YUV444PS
     """
     try:
-        from vsmlrt import (Backend, DPIRModel, calc_tilesize, inference,
-                            models_path)
+        from vsmlrt import Backend, DPIRModel, calc_tilesize, inference, models_path
     except ModuleNotFoundError:
-        raise ModuleNotFoundError("vsdpir: 'missing dependency `vsmlrt`!'")
+        raise ModuleNotFoundError("dpir: 'missing dependency `vsmlrt`!'")
 
-    check_variable(clip, "vsdpir")
+    check_variable(clip, "dpir")
     assert clip.format
 
     if isinstance(kernel, str):
@@ -211,7 +210,7 @@ def vsdpir(
     match mode.lower():
         case 'deblock': model = DPIRModel.drunet_deblocking_grayscale if is_gray else DPIRModel.drunet_deblocking_color
         case 'denoise': model = DPIRModel.drunet_color if not is_gray else DPIRModel.drunet_gray
-        case _: raise TypeError(f"vsdpir: '\"{mode}\" is not a valid mode!'")
+        case _: raise TypeError(f"dpir: '\"{mode}\" is not a valid mode!'")
 
     def _get_strength_clip(clip: vs.VideoNode, strength: SupportsFloat) -> vs.VideoNode:
         return clip.std.BlankClip(format=vs.GRAYS, color=float(strength) / 255, keep=True)
@@ -220,22 +219,22 @@ def vsdpir(
         assert (fmt := strength.format)
 
         if fmt.color_family != vs.GRAY:
-            raise ValueError("vsdpir: '`strength` must be a GRAY clip!'")
+            raise ValueError("dpir: '`strength` must be a GRAY clip!'")
 
         if fmt.id == vs.GRAY8:
             strength = strength.std.Expr('x 255 /', vs.GRAYS)
         elif fmt.id != vs.GRAYS:
-            raise ValueError("vsdpir: '`strength` must be GRAY8 or GRAYS!'")
+            raise ValueError("dpir: '`strength` must be GRAY8 or GRAYS!'")
 
         if strength.width != clip.width or strength.height != clip.height:
             strength = kernel.scale(strength, clip.width, clip.height)
 
         if strength.num_frames != clip.num_frames:
-            raise ValueError("vsdpir: '`strength` must be of the same length as \"clip\"'")
+            raise ValueError("dpir: '`strength` must be of the same length as \"clip\"'")
     elif isinstance(strength, SupportsFloat):
         strength = float(strength)
     else:
-        raise TypeError("vsdpir: '`strength` must be a float or a GRAYS clip'")
+        raise TypeError("dpir: '`strength` must be a float or a GRAYS clip'")
 
     if not is_rgb:
         if matrix is None:
@@ -394,3 +393,7 @@ def vsdpir(
         return depth(run_dpir, bit_depth)
 
     return kernel.resample(run_dpir, targ_format, targ_matrix)
+
+
+# deprecated name
+vsdpir = dpir
