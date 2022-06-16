@@ -154,8 +154,7 @@ def dpir(
     matrix: Matrix | int | None = None, cuda: bool | Literal['trt'] | None = None, i444: bool = False,
     tiles: int | Tuple[int, int] | None = None, overlap: int | Tuple[int, int] | None = None,
     zones: List[Tuple[Range | List[Range] | None, DPIR_STRENGTH_TYPE]] | None = None,
-    fp16: bool | None = None, num_streams: int = 2, backend: backendT | None = None, device_id: int = 0,
-    kernel: Kernel | str = Catrom()
+    fp16: bool | None = None, num_streams: int = 2, device_id: int = 0, kernel: Kernel | str = Catrom()
 ) -> vs.VideoNode:
     """
     DPIR, or Plug-and-Play Image Restoration with Deep Denoiser Prior, is a denoise and deblocking neural network.
@@ -352,36 +351,35 @@ def dpir(
     else:
         zoned_strength_clip = strength_clip
 
-    if backend is None:
-        if None in {cuda, fp16}:
-            try:
-                info = cast(Dict[str, int], core.trt.DeviceProperties(device_id))
+    if None in {cuda, fp16}:
+        try:
+            info = cast(Dict[str, int], core.trt.DeviceProperties(device_id))
 
-                fp16_available = info['major'] >= 7
-                trt_available = True
-            except BaseException:
-                fp16_available = False
-                trt_available = False
+            fp16_available = info['major'] >= 7
+            trt_available = True
+        except BaseException:
+            fp16_available = False
+            trt_available = False
 
-        if cuda is None:
-            cuda = 'trt' if trt_available else _check_has_nvidia()
+    if cuda is None:
+        cuda = 'trt' if trt_available else _check_has_nvidia()
 
-        if fp16 is None:
-            fp16 = fp16_available
+    if fp16 is None:
+        fp16 = fp16_available
 
-        if cuda == 'trt':
-            channels = 2 << (not is_gray)
+    backend: backendT
 
-            backend = Backend.TRT(
-                (tile_w, tile_h), fp16=fp16, num_streams=num_streams, device_id=device_id, verbose=False
-            )
-        elif cuda:
-            backend = Backend.ORT_CUDA(fp16=fp16, num_streams=num_streams, device_id=device_id, verbosity=False)
-        else:
-            backend = Backend.OV_CPU(fp16=fp16)
+    if cuda == 'trt':
+        channels = 2 << (not is_gray)
 
-    if backend.__class__ is Backend.TRT:
-        backend._channels = channels  # type: ignore
+        backend = Backend.TRT(
+            (tile_w, tile_h), fp16=fp16, num_streams=num_streams, device_id=device_id, verbose=False
+        )
+        backend._channels = channels
+    elif cuda:
+        backend = Backend.ORT_CUDA(fp16=fp16, num_streams=num_streams, device_id=device_id, verbosity=False)
+    else:
+        backend = Backend.OV_CPU(fp16=fp16)
 
     network_path = Path(models_path) / 'dpir' / f'{tuple(DPIRModel.__members__)[model]}.onnx'
 
