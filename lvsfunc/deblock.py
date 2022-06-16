@@ -1,19 +1,21 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, List, Literal, Sequence, SupportsFloat, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Literal, Sequence, SupportsFloat, Tuple, cast
 
 import vapoursynth as vs
 from vskernels import Bicubic, Catrom, Kernel, Point, get_kernel
 from vsutil import Dither, depth, get_depth
 
-from .types import VSDPIR_STRENGTH_TYPE, Matrix, Range
+from .misc import _check_has_nvidia
+from .types import Matrix, Range
 from .util import check_variable, get_prop, replace_ranges
 
 core = vs.core
 
 __all__: List[str] = [
-    'autodb_dpir', 'vsdpir'
+    'autodb_dpir', 'dpir', 'vsdpir'
 ]
 
 
@@ -34,8 +36,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     Thresholds and calculations are added to the frameprops to use as reference when setting the thresholds.
 
-    Keep in mind that vsdpir is not perfect; it may cause weird, black dots to appear sometimes.
-    If that happens, you can perform a denoise on the original clip (maybe even using vsdpir's denoising mode)
+    Keep in mind that dpir is not perfect; it may cause weird, black dots to appear sometimes.
+    If that happens, you can perform a denoise on the original clip (maybe even using dpir's denoising mode)
     and grab the brightest pixels from your two clips. That should return a perfectly fine clip.
 
     Thanks Vardë, louis, setsugen_no_ao!
@@ -60,7 +62,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     :param kernel:          `Kernel` object used for conversions between YUV <-> RGB.
     :param cuda:            Use CUDA backend if True, else CPU backend.
     :param write_props:     whether to write verbose props.
-    :param vsdpir_args:     Additional args to pass to ``vsdpir``.
+    :param vsdpir_args:     Additional args to pass to ``dpir``.
 
     :return:                Deblocked clip with different strengths applied based on the given parameters.
     """
@@ -130,7 +132,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     diffprev = core.std.PlaneStats(rgb, rgb[0] + rgb, prop='YPrev')
 
     db_clips = [
-        vsdpir(rgb, strength=st, mode='deblock', cuda=cuda, **vsdpir_args)
+        dpir(rgb, strength=st, mode='deblock', cuda=cuda, **vsdpir_args)
         .std.SetFrameProp('Adb_DeblockStrength', intval=int(st)) for st in strs
     ]
 
@@ -142,11 +144,13 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     return kernel.resample(debl, format=clip.format, matrix=targ_matrix if not is_rgb else None)
 
 
-def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 'deblock',
-           matrix: Matrix | int | None = None, tiles: int | Tuple[int] | None = None,
-           cuda: bool | Literal['trt'] = True, i444: bool = False, kernel: Kernel | str = Catrom(),
-           zones: List[Tuple[Range | List[Range] | None, VSDPIR_STRENGTH_TYPE]] | None = None,
-           **dpir_args: Any) -> vs.VideoNode:
+def dpir(
+    clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 10, mode: str = 'deblock',
+    matrix: Matrix | int | None = None, cuda: bool | Literal['trt'] | None = None, i444: bool = False,
+    tiles: int | Tuple[int, int] | None = None, overlap: int | Tuple[int, int] | None = 8,
+    zones: List[Tuple[Range | List[Range] | None, SupportsFloat | vs.VideoNode | None]] | None = None,
+    fp16: bool | None = None, num_streams: int = 1, device_id: int = 0, kernel: Kernel | str = Catrom()
+) -> vs.VideoNode:
     """
     DPIR, or Plug-and-Play Image Restoration with Deep Denoiser Prior, is a denoise and deblocking neural network.
 
@@ -164,29 +168,44 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
     * vs-mlrt
 
     :param clip:            Input clip
-    :param strength:        DPIR strength. Sane values lie between 1–20 for ``mode='deblock'``,
-                            and 1–3 for ``mode='denoise'``
+    :param strength:        DPIR strength.
+                            Sane values lie between 1–20 for ``mode='deblock'``, and 1–3 for ``mode='denoise'``
+                            Other than a float, it can also be a clip, either GRAY8 (0-255), or GRAYS (0-+inf)
+                            for example clip.std.BlankClip(format=vs.GRAYS, color=15.0 / 255) for solid strength
+                            across the frame, but you can combine various strengths with masks,
+                            for example having a higher strength in flat parts or where ringing occurs,
+                            but lower in textured/detailed parts.
     :param mode:            DPIR mode. Valid modes are 'deblock' and 'denoise'.
     :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
                             If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
-    :param cuda:            Use CUDA backend if True, else CPU backend
+    :param cuda:            Used to select backend; use CUDA if True, CUDA TensorRT if 'trt' else CPU OpenVINO if False.
+                            If None it will detect your system's capabilities and select the fastest backend.
     :param i444:            Forces the returned clip to be YUV444PS instead of the input clip's format
+    :param tiles:           Can either be an int, specifying the number of tiles the image will be split into
+                            for processing, or a tuple for manually specifying the width/height of the singular tiles.
+    :param overlap:         Number of pixels in each direction for padding the tiles.
+                            Useful for, when using tiled processing, you're having clear boundaries between tiles.
+                            To disable, set `None` or `0`. Default: 8px.
     :param zones:           A mapping to zone the DPIR strength so you don't have to call it multiple times.
                             The key should be a `float` / ``VideoNode`` (a normalised mask, for example)
-                            or `None` to pass the input clip.
+                            or `None` to passthrough the input clip.
                             The values should be a range that will be passed to ``replace_ranges``
-    :param dpir_args:       Additional args to pass to vs-mlrt.
-                            Note: strength, tiles, and model cannot be overridden!
+    :param fp16:            Represent the clip with 16f tensors instead of 32f for a speedup, but it's useless,
+                            and may even harm performances, when enabled with a device that doesn't support it.
+    :param num_streams:     Number of concurrent CUDA streams to use. Increase if GPU isn't getting saturated.
+    :param device_id:       Specifies the GPU device id to use.
+    :param kernel:          vskernel.Kernel object used to scale to/from RGB.
+                            This can also be the str name of the kernel (default: Catrom)
 
     :return:                Deblocked or denoised clip in either the given clip's format or YUV444PS
     """
     try:
-        from vsmlrt import DPIR, Backend, DPIRModel
+        from vsmlrt import Backend, DPIRModel, backendT, calc_tilesize, inference, models_path
     except ModuleNotFoundError:
-        raise ModuleNotFoundError("vsdpir: 'missing dependency `vsmlrt`!'")
+        raise ModuleNotFoundError("dpir: 'missing dependency `vsmlrt`!'")
 
-    check_variable(clip, "vsdpir")
+    check_variable(clip, "dpir")
     assert clip.format
 
     if isinstance(kernel, str):
@@ -200,48 +219,31 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
     match mode.lower():
         case 'deblock': model = DPIRModel.drunet_deblocking_grayscale if is_gray else DPIRModel.drunet_deblocking_color
         case 'denoise': model = DPIRModel.drunet_color if not is_gray else DPIRModel.drunet_gray
-        case _: raise TypeError(f"vsdpir: '\"{mode}\" is not a valid mode!'")
-
-    dpir_args |= dict(tiles=tiles, model=model)
-
-    if "backend" not in dpir_args:
-        # Grab specific settings
-        if 'fp16' in dpir_args:
-            fp16 = dpir_args.pop('fp16')
-        else:
-            fp16 = cuda == 'trt'
-
-        if 'num_streams' in dpir_args:
-            num_streams = dpir_args.pop('num_streams')
-        else:
-            num_streams = 2
-
-        dpir_args |= dict(backend=(
-            Backend.TRT(fp16=fp16, num_streams=num_streams) if cuda == 'trt'
-            else Backend.ORT_CUDA(fp16=fp16, num_streams=num_streams)) if cuda
-            else Backend.OV_CPU(fp16=fp16))
+        case _: raise TypeError(f"dpir: '\"{mode}\" is not a valid mode!'")
 
     def _get_strength_clip(clip: vs.VideoNode, strength: SupportsFloat) -> vs.VideoNode:
-        return clip.std.BlankClip(format=vs.GRAYS, color=float(strength))
+        return clip.std.BlankClip(format=vs.GRAYS, color=float(strength) / 255, keep=True)
 
     if isinstance(strength, vs.VideoNode):
-        assert strength.format
+        assert (fmt := strength.format)
 
-        if strength.format.color_family != vs.GRAY:
-            raise ValueError("vsdpir: '`strength` must be a GRAY clip!'")
+        if fmt.color_family != vs.GRAY:
+            raise ValueError("dpir: '`strength` must be a GRAY clip!'")
 
-        if strength.format.id != vs.GRAYS:
-            strength = strength.std.Expr("x", vs.GRAYS)
+        if fmt.id == vs.GRAY8:
+            strength = strength.std.Expr('x 255 /', vs.GRAYS)
+        elif fmt.id != vs.GRAYS:
+            raise ValueError("dpir: '`strength` must be GRAY8 or GRAYS!'")
 
         if strength.width != clip.width or strength.height != clip.height:
             strength = kernel.scale(strength, clip.width, clip.height)
 
         if strength.num_frames != clip.num_frames:
-            raise ValueError("vsdpir: '`strength` must be of the same length as \"clip\"'")
+            raise ValueError("dpir: '`strength` must be of the same length as \"clip\"'")
     elif isinstance(strength, SupportsFloat):
         strength = float(strength)
     else:
-        raise TypeError("vsdpir: '`strength` must be a float or a GRAYS clip'")
+        raise TypeError("dpir: '`strength` must be a float or a GRAYS clip'")
 
     if not is_rgb:
         if matrix is None:
@@ -258,41 +260,142 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
     else:
         clip_rgb = kernel.resample(clip_32, vs.RGBS, matrix_in=targ_matrix).std.Limiter()
 
-    mod_w, mod_h = clip_rgb.width % 8, clip_rgb.height % 8
+    if overlap is None:
+        overlap_w = overlap_h = 0
+    elif isinstance(overlap, int):
+        overlap_w = overlap_h = overlap
+    else:
+        overlap_w, overlap_h = overlap
 
-    if to_pad := any([mod_w, mod_h]):
-        d_width, d_height = clip.width + mod_w, clip.height + mod_h
+    multiple = 8
+
+    mod_w, mod_h = clip_rgb.width % multiple, clip_rgb.height % multiple
+
+    if to_pad := any({mod_w, mod_h}):
+        d_width, d_height = clip_rgb.width + mod_w, clip_rgb.height + mod_h
 
         clip_rgb = Point(src_width=d_width, src_height=d_height).scale(
             clip_rgb, d_width, d_height, (-mod_h, -mod_w)
         )
 
-        if isinstance(strength, vs.VideoNode) and to_pad:
+        if isinstance(strength, vs.VideoNode):
             strength = Point(src_width=d_width, src_height=d_height).scale(
                 strength, d_width, d_height, (-mod_h, -mod_w)
             )
+
+    if isinstance(tiles, tuple):
+        tilesize = tiles
+        tiles = None
+    else:
+        tilesize = None
+
+    (tile_w, tile_h), (overlap_w, overlap_h) = calc_tilesize(
+        multiple=multiple,
+        tiles=tiles, tilesize=tilesize,
+        width=clip_rgb.width, height=clip_rgb.height,
+        overlap_w=overlap_w, overlap_h=overlap_h
+    )
 
     if isinstance(strength, vs.VideoNode):
         strength_clip = strength
     else:
         strength_clip = _get_strength_clip(clip_rgb, strength)
 
-    no_dpir_zones = []
+    no_dpir_zones = list[Range]()
 
     if zones:
+        cache_strength_clips = dict[float, vs.VideoNode]()
+
+        dpir_zones = dict[int | Tuple[int | None, int | None], vs.VideoNode]()
+
         for ranges, zstr in zones:
-            if zstr:
-                strength_clip = replace_ranges(
-                    strength_clip, zstr if isinstance(zstr, vs.VideoNode)
-                    else _get_strength_clip(clip_rgb, zstr), ranges
-                )
-            else:
+            if not zstr:
                 if isinstance(ranges, List):
                     no_dpir_zones.extend(ranges)
                 else:
                     no_dpir_zones.append(ranges)
 
-    run_dpir = DPIR(clip_rgb, strength_clip, **dpir_args)
+                continue
+
+            if isinstance(zstr, vs.VideoNode):
+                rstr_clip = zstr
+            else:
+                zstr = float(zstr)
+
+                if zstr not in cache_strength_clips:
+                    cache_strength_clips[zstr] = _get_strength_clip(clip_rgb, zstr)
+
+                rstr_clip = cache_strength_clips[zstr]
+
+            lranges = ranges if isinstance(ranges, List) else [ranges]
+
+            for rrange in lranges:
+                if rrange:
+                    dpir_zones[rrange] = rstr_clip
+
+        if len(dpir_zones) <= 2:
+            for rrange, sclip in dpir_zones.items():
+                zoned_strength_clip = replace_ranges(strength_clip, sclip, rrange)
+        else:
+            dpir_ranges_zones = {
+                range(*(
+                    (r, r + 1) if isinstance(r, int) else (r[0] or 0, r[1] + 1 if r[1] else clip.num_frames)
+                )): sclip for r, sclip in dpir_zones.items()
+            }
+
+            dpir_ranges_zones = {k: dpir_ranges_zones[k] for k in sorted(dpir_ranges_zones, key=lambda x: x.start)}
+            dpir_ranges_keys = list(dpir_ranges_zones.keys())
+
+            def _select_sclip(n: int) -> vs.VideoNode:
+                nonlocal dpir_ranges_zones, dpir_ranges_keys
+
+                for i, ranges in enumerate(dpir_ranges_keys):
+                    if n in ranges:
+                        if i > 0:
+                            dpir_ranges_keys = dpir_ranges_keys[i:] + dpir_ranges_keys[:i]
+                        return dpir_ranges_zones[ranges]
+
+                return strength_clip
+
+            zoned_strength_clip = strength_clip.std.FrameEval(_select_sclip)
+    else:
+        zoned_strength_clip = strength_clip
+
+    if None in {cuda, fp16}:
+        try:
+            info = cast(Dict[str, int], core.trt.DeviceProperties(device_id))
+
+            fp16_available = info['major'] >= 7
+            trt_available = True
+        except BaseException:
+            fp16_available = False
+            trt_available = False
+
+    if cuda is None:
+        cuda = 'trt' if trt_available else _check_has_nvidia()
+
+    if fp16 is None:
+        fp16 = fp16_available
+
+    backend: backendT
+
+    if cuda == 'trt':
+        channels = 2 << (not is_gray)
+
+        backend = Backend.TRT(
+            (tile_w, tile_h), fp16=fp16, num_streams=num_streams, device_id=device_id, verbose=False
+        )
+        backend._channels = channels
+    elif cuda:
+        backend = Backend.ORT_CUDA(fp16=fp16, num_streams=num_streams, device_id=device_id, verbosity=False)
+    else:
+        backend = Backend.OV_CPU(fp16=fp16)
+
+    network_path = Path(models_path) / 'dpir' / f'{tuple(DPIRModel.__members__)[model]}.onnx'
+
+    run_dpir = inference(
+        [clip_rgb, zoned_strength_clip], str(network_path), (overlap_w, overlap_h), (tile_w, tile_h), backend
+    )
 
     if no_dpir_zones:
         run_dpir = replace_ranges(run_dpir, clip_rgb, no_dpir_zones)
@@ -304,3 +407,7 @@ def vsdpir(clip: vs.VideoNode, strength: VSDPIR_STRENGTH_TYPE = 25, mode: str = 
         return depth(run_dpir, bit_depth)
 
     return kernel.resample(run_dpir, targ_format, targ_matrix)
+
+
+# deprecated name
+vsdpir = dpir
