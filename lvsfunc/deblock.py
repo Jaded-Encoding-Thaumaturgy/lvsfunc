@@ -173,20 +173,34 @@ def dpir(
     * vs-mlrt
 
     :param clip:            Input clip
-    :param strength:        DPIR strength. Sane values lie between 1–20 for ``mode='deblock'``,
-                            and 1–3 for ``mode='denoise'``
+    :param strength:        DPIR strength.
+                            Sane values lie between 1–20 for ``mode='deblock'``, and 1–3 for ``mode='denoise'``
+                            Other than a float, it can also be a clip, either GRAY8 (0-255), or GRAYS (0-+inf)
+                            for example clip.std.BlankClip(format=vs.GRAYS, color=15.0 / 255) for solid strength
+                            across the frame, but you can combine various strengths with masks,
+                            for example having a higher strength in flat parts or where ringing occurs,
+                            but lower in textured/detailed parts.
     :param mode:            DPIR mode. Valid modes are 'deblock' and 'denoise'.
     :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
                             If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
-    :param cuda:            Use CUDA backend if True, else CPU backend
+    :param cuda:            Used to select backend; use CUDA if True, CUDA TensorRT if 'trt' else CPU OpenVINO if False.
+                            If None it will detect your system's capabilities and select the fastest backend.
     :param i444:            Forces the returned clip to be YUV444PS instead of the input clip's format
+    :param tiles:           Can either be an int, specifying the number of tiles the image will be split into
+                            for processing, or a tuple for manually specifying the width/height of the singular tiles.
+    :param overlap:         Number of pixels in each direction for padding the tiles.
+                            Useful for, when using tiled processing, you're having clear boundaries between tiles.
     :param zones:           A mapping to zone the DPIR strength so you don't have to call it multiple times.
                             The key should be a `float` / ``VideoNode`` (a normalised mask, for example)
-                            or `None` to pass the input clip.
+                            or `None` to passthrough the input clip.
                             The values should be a range that will be passed to ``replace_ranges``
-    :param dpir_args:       Additional args to pass to vs-mlrt.
-                            Note: strength, tiles, and model cannot be overridden!
+    :param fp16:            Represent the clip with 16f tensors instead of 32f for a speedup, but it's useless,
+                            and may even harm performances, when enabled with a device that doesn't support it.
+    :param num_streams:     Number of concurrent CUDA streams to use. Increase if GPU isn't getting saturated.
+    :param device_id:       Specifies the GPU device id to use.
+    :param kernel:          vskernel.Kernel object used to scale to/from RGB.
+                            This can also be the str name of the kernel (default: Catrom)
 
     :return:                Deblocked or denoised clip in either the given clip's format or YUV444PS
     """
