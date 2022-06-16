@@ -151,11 +151,11 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
 def dpir(
     clip: vs.VideoNode, strength: DPIR_STRENGTH_TYPE = 25, mode: str = 'deblock',
-    matrix: Matrix | int | None = None, tiles: int | Tuple[int, int] | None = None,
-    cuda: bool | Literal['trt'] | None = None, i444: bool = False, kernel: Kernel | str = Catrom(),
+    matrix: Matrix | int | None = None, cuda: bool | Literal['trt'] | None = None, i444: bool = False,
+    tiles: int | Tuple[int, int] | None = None, overlap: int | Tuple[int, int] | None = None,
     zones: List[Tuple[Range | List[Range] | None, DPIR_STRENGTH_TYPE]] | None = None,
-    tilesize: int | Tuple[int, int] | None = None, overlap: int | Tuple[int, int] | None = None,
-    fp16: bool | None = None, num_streams: int = 2, backend: backendT | None = None, device_id: int = 0
+    fp16: bool | None = None, num_streams: int = 2, backend: backendT | None = None, device_id: int = 0,
+    kernel: Kernel | str = Catrom()
 ) -> vs.VideoNode:
     """
     DPIR, or Plug-and-Play Image Restoration with Deep Denoiser Prior, is a denoise and deblocking neural network.
@@ -273,6 +273,12 @@ def dpir(
             strength = Point(src_width=d_width, src_height=d_height).scale(
                 strength, d_width, d_height, (-mod_h, -mod_w)
             )
+
+    if isinstance(tiles, tuple):
+        tilesize = tiles
+        tiles = None
+    else:
+        tilesize = None
 
     (tile_w, tile_h), (overlap_w, overlap_h) = calc_tilesize(
         multiple=multiple,
