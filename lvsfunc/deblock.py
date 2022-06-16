@@ -147,7 +147,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 def dpir(
     clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 10, mode: str = 'deblock',
     matrix: Matrix | int | None = None, cuda: bool | Literal['trt'] | None = None, i444: bool = False,
-    tiles: int | Tuple[int, int] | None = None, overlap: int | Tuple[int, int] | None = None,
+    tiles: int | Tuple[int, int] | None = None, overlap: int | Tuple[int, int] | None = 8,
     zones: List[Tuple[Range | List[Range] | None, SupportsFloat | vs.VideoNode | None]] | None = None,
     fp16: bool | None = None, num_streams: int = 1, device_id: int = 0, kernel: Kernel | str = Catrom()
 ) -> vs.VideoNode:
@@ -186,6 +186,7 @@ def dpir(
                             for processing, or a tuple for manually specifying the width/height of the singular tiles.
     :param overlap:         Number of pixels in each direction for padding the tiles.
                             Useful for, when using tiled processing, you're having clear boundaries between tiles.
+                            To disable, set `None` or `0`. Default: 8px.
     :param zones:           A mapping to zone the DPIR strength so you don't have to call it multiple times.
                             The key should be a `float` / ``VideoNode`` (a normalised mask, for example)
                             or `None` to passthrough the input clip.
