@@ -149,7 +149,7 @@ def dpir(
     matrix: Matrix | int | None = None, cuda: bool | Literal['trt'] | None = None, i444: bool = False,
     tiles: int | Tuple[int, int] | None = None, overlap: int | Tuple[int, int] | None = None,
     zones: List[Tuple[Range | List[Range] | None, SupportsFloat | vs.VideoNode | None]] | None = None,
-    fp16: bool | None = None, num_streams: int = 2, device_id: int = 0, kernel: Kernel | str = Catrom()
+    fp16: bool | None = None, num_streams: int = 1, device_id: int = 0, kernel: Kernel | str = Catrom()
 ) -> vs.VideoNode:
     """
     DPIR, or Plug-and-Play Image Restoration with Deep Denoiser Prior, is a denoise and deblocking neural network.
