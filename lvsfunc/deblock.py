@@ -145,7 +145,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
 
 def dpir(
-    clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 25, mode: str = 'deblock',
+    clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 10, mode: str = 'deblock',
     matrix: Matrix | int | None = None, cuda: bool | Literal['trt'] | None = None, i444: bool = False,
     tiles: int | Tuple[int, int] | None = None, overlap: int | Tuple[int, int] | None = None,
     zones: List[Tuple[Range | List[Range] | None, SupportsFloat | vs.VideoNode | None]] | None = None,
