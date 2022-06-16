@@ -370,11 +370,13 @@ def vsdpir(
             backend = Backend.TRT(
                 (tile_w, tile_h), fp16=fp16, num_streams=num_streams, device_id=device_id, verbose=False
             )
-            backend._channels = channels
         elif cuda:
             backend = Backend.ORT_CUDA(fp16=fp16, num_streams=num_streams, device_id=device_id, verbosity=False)
         else:
             backend = Backend.OV_CPU(fp16=fp16)
+
+    if backend.__class__ is Backend.TRT:
+        backend._channels = channels  # type: ignore
 
     network_path = Path(models_path) / 'dpir' / f'{tuple(DPIRModel.__members__)[model]}.onnx'
 
