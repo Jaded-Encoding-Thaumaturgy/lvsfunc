@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from enum import IntEnum
 from typing import (Any, Callable, List, Literal, NamedTuple, NoReturn,
-                    Optional, Protocol, Sequence, SupportsFloat, Tuple,
-                    TypeVar, Union)
+                    Optional, Protocol, Sequence, Tuple, TypeVar, Union)
 
 import vapoursynth as vs
 
