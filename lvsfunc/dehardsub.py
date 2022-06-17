@@ -314,7 +314,7 @@ def hardsub_mask(hrdsb: vs.VideoNode, ref: vs.VideoNode, thresh: float = 0.06,
     assert hrdsb.format
 
     hsmf = core.std.Expr([hrdsb, ref], 'x y - abs') \
-        .resize.Point(format=hrdsb.format.replace(subsampling_w=0, subsampling_h=0).id)
+        .resize.Bicubic(format=hrdsb.format.replace(subsampling_w=0, subsampling_h=0).id)
     hsmf = core.std.Expr(split(hsmf), "x y z max max")
     hsmf = hsmf.std.Binarize(scale_thresh(thresh, hsmf))
     hsmf = iterate(hsmf, core.std.Minimum, minimum)
