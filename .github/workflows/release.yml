@@ -1,11 +1,11 @@
 name: release
 
+name: Create release
+
 on:
-  release:
-  workflow_run:
-    workflows: ["lint", "docs"]
-    types:
-      - completed
+  push:
+    tags:
+    - "v*.*.*"
 
 jobs:
   deploy:
