@@ -17,12 +17,12 @@ from .comparison import Stack
 from .exceptions import InvalidFramerateError
 from .render import clip_async_render, get_render_progress
 from .types import Direction
-from .util import (check_variable, check_variable_format, force_mod,
-                   get_neutral_value, get_prop, pick_repair)
+from .util import check_variable, check_variable_format, force_mod, get_neutral_value, get_prop, pick_repair
 
 core = vs.core
 
 __all__: List[str] = [
+    'check_patterns',
     'deblend',
     'decomb',
     'descale_fields',
@@ -32,7 +32,6 @@ __all__: List[str] = [
     'sivtc', 'SIVTC',
     'tivtc_vfr', 'TIVTC_VFR',
     'vinverse',
-    'check_patterns',
 ]
 
 main_file = os.path.realpath(sys.argv[0]) if sys.argv[0] else None
@@ -48,12 +47,12 @@ def sivtc(clip: vs.VideoNode, pattern: int = 0,
     This is essentially a stripped-down JIVTC offering JUST the basic fieldmatching and decimation part.
     As such, you may need to combine multiple instances if patterns change throughout the clip.
 
-    :param clip:        Input clip
-    :param pattern:     First frame of any clean-combed-combed-clean-clean sequence
-    :param tff:         Top-Field-First
-    :param decimate:    Drop a frame every 5 frames to get down to 24000/1001
+    :param clip:        Clip to process.
+    :param pattern:     First frame of any clean-combed-combed-clean-clean sequence.
+    :param tff:         Top-Field-First.
+    :param decimate:    Drop a frame every 5 frames to get down to 24000/1001.
 
-    :return:            IVTC'd clip
+    :return:            IVTC'd clip.
     """
     pattern = pattern % 5
 
@@ -68,22 +67,24 @@ def seek_cycle(clip: vs.VideoNode, write_props: bool = True, scale: int = -1) ->
     Purely visual tool to view telecining cycles.
 
     This is purely a visual tool!
-    This function has no matching parameters, just use wobbly instead if you need that.
+    This function has no matching parameters.
+    Just use `Wobbly <https://github.com/dubhater/Wobbly>`_ instead if you need that.
 
-    Displays the current frame, two previous and two future frames,
-    as well as whether they are combed or not.
+    Displays the current frame, two previous and future frames,
+    and whether they are combed or not.
 
-    P indicates a progressive frame, C a combed frame.
+    ``P`` indicates a progressive frame,
+    and ``C`` a combed frame.
 
     Dependencies:
 
-    * VapourSynth-TDeintMod
+    * `VapourSynth-TDeintMod <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-TDeintMod>`_
 
-    :param clip:            Input clip
+    :param clip:            Clip to process.
     :param write_props:     Write props on frames. Disabling this will also speed up the function.
     :param scale:           Integer scaling of all clips. Must be to the power of 2.
 
-    :return:                Viewing UI for standard telecining cycles
+    :return:                Viewing UI for standard telecining cycles.
     """
     if (scale & (scale-1) != 0) and scale != 0 and scale != -1:
         raise ValueError("seek_cycle: 'scale must be a value that is the power of 2!'")
@@ -142,7 +143,7 @@ def check_patterns(clip: vs.VideoNode, tff: bool | int | None = None) -> int:
 
     Dependencies:
 
-    * `TDeintMod <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-TDeintMod>`_
+    * `VapourSynth-TDeintMod <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-TDeintMod>`_
 
     :param clip:    Clip to process.
     :param tff:     Top-field-first. `False` sets it to Bottom-Field-First.
@@ -189,14 +190,16 @@ def tivtc_vfr(clip: vs.VideoNode,
     | and is basically an improved rewrite on the concept.
 
     .. warning::
-        | When calculating the matches and metrics for the first time, your previewer may error!
-        | To fix this, refresh your previewer! If it still doesn't work, open the ``.ivtc`` directory
-        | and check if the files in there are **0kb**. If they are, **delete them** and run the function again.
-        | You may need to first restart your previewer entirely for it to work!
+        | When calculating the matches and metrics for the first time, your previewer may error out!
+        | To fix this, simply refresh your previewer. If it still doesn't work, open the ``.ivtc`` directory
+        | and check if the files are **0kb**. If they are, **delete them** and run the function again.
+        | You may need to restart your previewer entirely for it to work!
 
-    Dependencies: TIVTC
+    Dependencies:
 
-    :param clip:                Input clip.
+    * `TIVTC <https://github.com/dubhater/vapoursynth-tivtc>`_
+
+    :param clip:                Clip to process.
     :param tfmIn:               File location for TFM's matches analysis.
                                 By default it will be written to ``.ivtc/{yourScriptName}_matches.txt``.
     :param tdecIn:              File location for TDecimate's metrics analysis.
@@ -208,7 +211,7 @@ def tivtc_vfr(clip: vs.VideoNode,
     :param tfm_args:            Additional arguments to pass to TFM.
     :param tdecimate_args:      Additional arguments to pass to TDecimate.
 
-    :return:                    IVTC'd VFR clip with external timecode/matches/metrics txt files
+    :return:                    IVTC'd VFR clip with external timecode/matches/metrics txt files.
     """
     if int(decimate) not in (-1, 0, 1):
         raise TypeError("TIVTC_VFR: 'Invalid `decimate` argument. Must be True/False, their integer values, or -1!'")
@@ -267,6 +270,9 @@ def deblend(clip: vs.VideoNode, start: int = 0,
     """
     Deblending function for blended AABBA patterns.
 
+    .. warning:
+        This function will be updated in a future version!
+
     Assuming there's a constant pattern of frames (labeled A, B, C, CD, and DA in this function),
     blending can be fixed by calculating the D frame by getting halves of CD and DA, and using that
     to fix up CD. DA is then dropped because it's a duplicated frame.
@@ -279,14 +285,14 @@ def deblend(clip: vs.VideoNode, start: int = 0,
 
     Dependencies:
 
-    * RGSF (optional: 32 bit clip)
+    * `RGSF <https://github.com/IFeelBloated/RGSF>`_ (optional: 32 bit clip)
 
-    :param clip:        Input clip
-    :param start:       First frame of the pattern (Default: 0)
-    :param rep:         Repair mode for the deblended frames, no repair if None (Default: None)
-    :param decimate:    Decimate the video after deblending (Default: True)
+    :param clip:        Clip to process.
+    :param start:       First frame of the pattern (Default: 0).
+    :param rep:         Repair mode for the deblended frames, no repair if None (Default: None).
+    :param decimate:    Decimate the video after deblending (Default: True).
 
-    :return:            Deblended clip
+    :return:            Deblended clip.
     """
     blends_a = range(start + 2, clip.num_frames - 1, 5)
     blends_b = range(start + 3, clip.num_frames - 1, 5)
@@ -299,7 +305,7 @@ def deblend(clip: vs.VideoNode, start: int = 0,
         else:
             if n in blends_a:
                 c, cd, da, a = clip[n - 1], clip[n], clip[n + 1], clip[n + 2]
-                debl = core.std.Expr([c, cd, da, a], expr_cd)
+                debl = core.akarin.Expr([c, cd, da, a], expr_cd)
                 return pick_repair(clip)(debl, c, rep) if rep else debl
             return clip
 
@@ -319,6 +325,9 @@ def decomb(clip: vs.VideoNode,
     """
     Perform relatively aggressive filtering to get rid of the combing on a interlaced/telecined source.
 
+    .. warning:
+        This function will be removed in a future version!
+
     Decimation can be disabled if the user wishes to decimate the clip themselves.
 
     Enabling vinverse will result in more aggressive decombing at the cost of potential detail loss.
@@ -328,22 +337,22 @@ def decomb(clip: vs.VideoNode,
 
     Dependencies:
 
-    * combmask
-    * havsfunc
-    * RGSF (optional: 32 bit clip)
+    * `combmask <https://drive.google.com/file/d/15E0Ua27AndT-0zSHHCC1iL5SZO09Ntbv/view?usp=sharing>`_
+    * `havsfunc <https://github.com/HomeOfVapourSynthEvolution/havsfunc>`_
+    * `RGSF <https://github.com/IFeelBloated/RGSF>`_ (optional: 32 bit clip)
 
-    :param clip:          Input clip
-    :param tff:           Top-Field-First
-    :param mode:          Sets the matching mode or strategy to use for TFM
-    :param decimate:      Decimate the video after deinterlacing (Default: True)
-    :param vinv:          Use vinverse to get rid of additional combing (Default: False)
-    :param rep:           Repair mode for repairing the decombed clip using the original clip (Default: None)
-    :param show_mask:     Return combmask
-    :param tfm_args:      Arguments to pass to TFM
-    :param vinv_args:     Arguments to pass to vinverse
-    :param qtgmc_args:    Arguments to pass to QTGMC
+    :param clip:         Clip to process.
+    :param tff:           Top-Field-First.
+    :param mode:          Sets the matching mode or strategy to use for TFM.
+    :param decimate:      Decimate the video after deinterlacing (Default: True).
+    :param vinv:          Use vinverse to get rid of additional combing (Default: False).
+    :param rep:           Repair mode for repairing the decombed clip using the original clip (Default: None).
+    :param show_mask:     Return combmask.
+    :param tfm_args:      Arguments to pass to TFM.
+    :param vinv_args:     Arguments to pass to vinverse.
+    :param qtgmc_args:    Arguments to pass to QTGMC.
 
-    :return:              Decombed and optionally decimated clip
+    :return:              Decombed and optionally decimated clip.
     """
     try:
         from havsfunc import QTGMC
@@ -390,22 +399,21 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
 
     This function also sets a frameprop with the kernel that was used.
 
-    The kernel is set using an lvsfunc.Kernel object.
-    You can call these by doing for example ``kernel=vskernels.Bilinear()``.
-    You can also set specific values manually. For example: ``kernel=vskernels.Bicubic(b=0, c=1)``.
-    For more information, check the documentation on Kernels.
+    The kernel is set using an py:class:`vskernels.Kernel` object.
+    For more information, check the `vskernels documentation <https://vskernels.encode.moe/en/latest/>`_.
 
     ``src_top`` allows you to to shift the clip prior to descaling.
     This may be useful, as sometimes clips are shifted before or after the original upscaling.
 
-    :param clip:        Input clip
-    :param tff:         Top-field-first. `False` sets it to Bottom-Field-First
-    :param width:       Native width. Will be automatically determined if set to `None`
-    :param height:      Native height. Will be divided by two internally
-    :param kernel:      lvsfunc.Kernel object. This can also be a string (default: Catrom)
-    :param src_top:     Shifts the clip vertically during the descaling
+    :param clip:        Clip to process.
+    :param tff:         Top-field-first. `False` sets it to Bottom-Field-First.
+    :param width:       Native width. Will be automatically determined if set to `None`.
+    :param height:      Native height. Will be divided by two internally.
+    :param kernel:      py:class:`vskernels.Kernel` object used for the descaling.
+                        This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
+    :param src_top:     Shifts the clip vertically during the descaling.
 
-    :return:            Descaled GRAY clip
+    :return:            Descaled GRAY clip.
     """
     height_field = int(height/2)
     width = width or get_w(height, clip.width/clip.height)
@@ -426,14 +434,17 @@ def bob(clip: vs.VideoNode, tff: bool | None = None) -> vs.VideoNode:
     """
     Very simple bobbing function.
 
+    .. warning:
+        This function is deprecated in favor of :py:func:`vapoursynth.core.resize.Bob`!
+
     Shouldn't be used for regular filtering,
     but as a very cheap bobber for other functions.
 
-    :param clip:    Input clip
+    :param clip:     Clip to process.
     :param tff:     Top-field-first. `False` sets it to Bottom-Field-First.
                     If None, get the field order from the _FieldBased prop.
 
-    :return:        Bobbed clip
+    :return:        Bobbed clip.
     """
     if get_prop(clip.get_frame(0), '_FieldBased', int) == 0 and tff is None:
         raise vs.Error("bob: 'You must set `tff` for this clip!'")
@@ -464,14 +475,14 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
     Taken from this gist and modified by LightArrowsEXE.
     <https://gist.github.com/blackpilling/bf22846bfaa870a57ad77925c3524eb1>
 
-    :param clip:        Input clip
+    :param clip:        Clip to process.
     :param tff:         Top-field-first. `False` sets it to Bottom-Field-First.
                         If None, get the field order from the _FieldBased prop.
     :param thr:         Threshold for when a field should be adjusted.
                         Default is 2.2, which appears to be a safe value that doesn't
                         cause it to do weird stuff with orphan fields.
 
-    :return:            Clip with only fades fixed
+    :return:            Clip with only fades fixed.
 
     """
     def _ftf(n: int, f: List[vs.VideoFrame]) -> vs.VideoNode:
@@ -480,8 +491,8 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
 
         if avg[0] != avg[1]:
             mean = sum(avg) / 2
-            fixed = (sep[0].std.Expr(f"x {mean} {avg[0]} / dup {thr} <= swap 1 ? *"),
-                     sep[1].std.Expr(f"x {mean} {avg[1]} / *"))
+            fixed = (sep[0].akarin.Expr(f"x {mean} {avg[0]} / dup {thr} <= swap 1 ? *"),
+                     sep[1].akarin.Expr(f"x {mean} {avg[1]} / *"))
         else:
             fixed = sep  # type: ignore
 
@@ -528,7 +539,7 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
     apply this function, and `vsutil.insert_clip` the clip back into a properly IVTC'd clip.
     Alternatively, use `muvsfunc.VFRSplice` to splice the clip back in if you're dealing with a VFR clip.
 
-    :param clip:            Input clip. Framerate must be 30000/1001.
+    :param clip:            Clip to process. Framerate must be 30000/1001.
     :param frame_ref:       First frame in the pattern. Expected pattern is ABBCD,
                             except for when ``dec`` is enabled, in which case it's AABCD.
     :param tff:             Top-field-first. `False` sets it to Bottom-Field-First.
@@ -682,14 +693,14 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
 
     This is Setsugen_no_ao's implementation, adopted into lvsfunc.
 
-    :param clip:    Input clip.
-    :param sstr:    Contrasharpening strength. Increase this if you find
-                    the decombing blurs the image a bit too much.
-    :param amount:  Maximum difference allowed between the original pixels and adjusted pixels.
-                    Scaled to input clip's depth. Set to 255 to effectively disable this.
-    :param scale:   Scale amount for vertical sharp * vertical blur.
+    :param clip:        Clip to process.
+    :param sstr:        Contrasharpening strength. Increase this if you find
+                        the decombing blurs the image a bit too much.
+    :param amount:      Maximum difference allowed between the original pixels and adjusted pixels.
+                        Scaled to input clip's depth. Set to 255 to effectively disable this.
+    :param scale:       Scale amount for vertical sharp * vertical blur.
 
-    :return:        Clip with residual combing largely removed
+    :return:            Clip with residual combing largely removed.
     """
     check_variable_format(clip, "vinverse")
     assert clip.format
@@ -716,9 +727,9 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
                             'merge@ > x a@ - merge@ ? ?')
 
 
-# Helper functions
+# helpers
 def _check_pattern(clip: vs.VideoNode, pattern: int = 0) -> bool:
-    """check_patterns' rendering behaviour."""
+    """:py:func:`lvsfunc.deinterlace.check_patterns` rendering behaviour."""
     clip = sivtc(clip, pattern)
     clip = core.tdm.IsCombed(clip)
 

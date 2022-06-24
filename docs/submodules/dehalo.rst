@@ -1,6 +1,10 @@
 lvsfunc.dehalo
 -------------------
 
+.. warning::
+
+    This sub-module will soon be deprecated in favor of **vs-dehalo**!
+
 Dehaloing functions and wrappers.
 
 .. autosummary::

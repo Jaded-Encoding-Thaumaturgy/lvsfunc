@@ -4,13 +4,11 @@ from math import ceil
 from typing import Any, Callable, Dict, List
 
 import vapoursynth as vs
-from vskernels import Bicubic, Catrom, Point
-from vsutil import (depth, fallback, get_depth, get_w, get_y, join, plane,
-                    scale_value)
+from vskernels import Bicubic, Box, Catrom, Point
+from vsutil import depth, fallback, get_depth, get_w, get_y, join, plane, scale_value
 
 from .scale import ssim_downsample
-from .util import (check_variable, check_variable_format, pick_repair,
-                   scale_thresh)
+from .util import check_variable, check_variable_format, pick_repair, scale_thresh
 
 core = vs.core
 
@@ -30,16 +28,17 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
     """
     Clamp stronger AAs to weaker AAs.
 
-    Useful for clamping upscaled_sraa or eedi3 to nnedi3 for a strong but precise AA.
+    Useful for clamping :py:func:`lvsfunc.aa.upscaled_sraa` or :py:func:`lvsfunc.aa.eedi3`
+    to :py:func:`lvsfunc.aa.nnedi3` for a strong but more precise AA.
 
-    Stolen from Zastin.
+    Original function written by Zastin, modified by LightArrowsEXE.
 
-    :param src:      Non-AA'd source clip.
-    :param weak:     Weakly-AA'd clip (eg: nnedi3)
-    :param strong:   Strongly-AA'd clip (eg: eedi3)
-    :param strength: Clamping strength (Default: 1)
+    :param src:         Non-AA'd source clip.
+    :param weak:        Weakly-AA'd clip (eg: :py:func:`lvsfunc.aa.nnedi3`).
+    :param strong:      Strongly-AA'd clip (eg: :py:func:`lvsfunc.aa.eedi3`).
+    :param strength:    Clamping strength (Default: 1).
 
-    :return:         Clip with clamped anti-aliasing.
+    :return:            Clip with clamped anti-aliasing.
     """
     check_variable_format(src, "clamp_aa")
     check_variable_format(weak, "clamp_aa")
@@ -64,10 +63,10 @@ def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode]) -> vs
 
     Example for nnedi3cl: taa(clip, nnedi3(opencl=True))
 
-    :param clip:   Input clip.
-    :param aafun:  Antialiasing function
+    :param clip:        Clip to process.
+    :param aafun:       Antialiasing function.
 
-    :return:       Antialiased clip
+    :return:            Antialiased clip.
     """
     check_variable(clip, "taa")
     assert clip.format
@@ -89,13 +88,13 @@ def nnedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs
 
     Dependencies:
 
-    * vapoursynth-nnedi3
-    * vapoursynth-NNEDI3CL (Optional: opencl)
+    * `VapourSynth-nnedi3 <https://github.com/dubhater/VapourSynth-nnedi3>`_
+    * `VapourSynth-NNEDI3CL <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-NNEDI3CL>`_
 
-    :param opencl:   Use OpenCL (Default: False)
-    :param override: nnedi3 parameter overrides
+    :param opencl:          Use OpenCL (Default: False).
+    :param override:        nnedi3 parameter overrides.
 
-    :return:         Configured nnedi3 function
+    :return:                Configured nnedi3 function.
     """
     nnedi3_args: Dict[str, Any] = dict(field=0, dh=True, nsize=3, nns=3, qual=1)
     nnedi3_args.update(override)
@@ -113,12 +112,12 @@ def eedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs.
 
     Dependencies:
 
-    * vapoursynth-EEDI3
+    * `VapourSynth-EEDI3 <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-EEDI3>`_
 
-    :param opencl:   Use OpenCL (Default: False)
-    :param override: eedi3 parameter overrides
+    :param opencl:          Use OpenCL (Default: False).
+    :param override:        eedi3 parameter overrides.
 
-    :return:         Configured eedi3 function
+    :return:                Configured eedi3 function.
     """
     eedi3_args: Dict[str, Any] = dict(field=0, dh=True, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20)
     eedi3_args.update(override)
@@ -136,18 +135,18 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
     """
     Clamp eedi3 to nnedi3 for the purpose of reducing eedi3 artifacts.
 
-    This should fix every issue created by eedi3. For example, `see this image <https://i.imgur.com/hYVhetS.jpg>`_.
+    This should fix `every issue created by eedi3 <https://i.imgur.com/hYVhetS.jpg>`_.
 
     Original function written by Zastin, modified by LightArrowsEXE.
 
-    :param clip:                Input clip
-    :param strength:            Set threshold strength for over/underflow value for clamping eedi3's result
+    :param clip:                Clip to process.
+    :param strength:            Set threshold strength for over/underflow value for clamping eedi3's result.
                                 to nnedi3 +/- strength * 256 scaled to 8 bit (Default: 1)
-    :param mask:                Clip to use for custom mask (Default: None)
-    :param mthr:                Binarize threshold for the mask, scaled to float (Default: 0.25)
-    :param opencl:              OpenCL acceleration (Default: False)
+    :param mask:                Clip to use for custom mask (Default: None).
+    :param mthr:                Binarize threshold for the mask, scaled to float (Default: 0.25).
+    :param opencl:              OpenCL acceleration (Default: False).
 
-    :return:                    Antialiased clip
+    :return:                    Antialiased clip.
     """
     check_variable(clip, "nneedi3_clamp")
     assert clip.format
@@ -167,22 +166,22 @@ def transpose_aa(clip: vs.VideoNode,
     Tranpose and aa a clip multiple times using nnedi3/eedi3.
 
     This results in overall stronger anti-aliasing.
-    Useful for shows like Yuru Camp with bad lineart problems.
+    Useful for shows like Yuru Camp with bad line-art problems.
 
     Original function written by Zastin, modified by LightArrowsEXE.
 
     Dependencies:
 
-    * RGSF (optional: 32 bit clip)
-    * vapoursynth-EEDI3
-    * vapoursynth-nnedi3
-    * znedi3
+    * `RGSF <https://github.com/IFeelBloated/RGSF>`_ (optional: 32 bit clip)
+    * `VapourSynth-EEDI3 <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-EEDI3>`_
+    * `VapourSynth-nnedi3 <https://github.com/dubhater/VapourSynth-nnedi3>`_
+    * `znedi3 <https://github.com/sekrit-twc/znedi3>`_
 
-    :param clip:      Input clip
-    :param eedi3:     Use eedi3 for the interpolation (Default: False)
-    :param rep:       Repair mode. Pass it 0 to not repair (Default: 13)
+    :param clip:      Clip to process.
+    :param eedi3:     Use eedi3 for the interpolation (Default: False).
+    :param rep:       Repair mode. Pass it 0 to not repair (Default: 13).
 
-    :return:          Antialiased clip
+    :return:          Antialiased clip.
     """
     check_variable(clip, "transpose_aa")
     assert clip.format
@@ -239,32 +238,32 @@ def upscaled_sraa(clip: vs.VideoNode,
                   = Bicubic(b=0, c=1/2).scale,
                   aafun: Callable[[vs.VideoNode], vs.VideoNode] = _eedi3_singlerate) -> vs.VideoNode:
     """
-    Supersampled single-rate AA for heavy aliasing and broken lineart.
+    Super-sampled single-rate AA for heavy aliasing and broken line-art.
 
-    It works by supersampling the clip, performing AA, and then downscaling again.
-    Downscaling can be disabled by setting `downscaler` to `None`, returning the supersampled luma clip.
+    It works by super-sampling the clip, performing AA, and then downscaling again.
+    Downscaling can be disabled by setting `downscaler` to `None`, returning the super-sampled luma clip.
     The dimensions of the downscaled clip can also be adjusted by setting `height` or `width`.
     Setting either `height` or `width` will also scale the chroma accordingly.
 
     Original function written by Zastin, heavily modified by LightArrowsEXE.
 
-    Alias for this function is `lvsfunc.sraa`.
+    Alias for this function is ``lvsfunc.sraa``.
 
     Dependencies:
 
-    * vapoursynth-eedi3 (default aafun)
-    * vapoursynth-nnedi3 (default supersampler and aafun)
+    * `VapourSynth-EEDI3 <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-EEDI3>`_ (default aafun)
+    * `VapourSynth-nnedi3 <https://github.com/dubhater/VapourSynth-nnedi3>`_ (default super-sampler and aafun)
 
-    :param clip:            Input clip
-    :param rfactor:         Image enlargement factor. 1.3..2 makes it comparable in strength to vsTAAmbk
+    :param clip:            Clip to process.
+    :param rfactor:         Image enlargement factor. 1.3..2 makes it comparable in strength to vsTAAmbk.
                             It is not recommended to go below 1.3 (Default: 1.5)
-    :param width:           Target resolution width. If None, determined from `height`
-    :param height:          Target resolution height (Default: ``clip.height``)
-    :param supersampler:    Supersampler used for upscaling before AA (Default: nnedi3 supersampler)
-    :param downscaler:      Downscaler to use after supersampling (Default: Bicubic(b=0, c=1/2)
-    :param aafun:           Function used to antialias after supersampling (Default: eedi3 with nnedi3 sclip)
+    :param width:           Target resolution width. If None, determined from `height`.
+    :param height:          Target resolution height (Default: ``clip.height``).
+    :param supersampler:    Super-sampler used for upscaling before AA (Default: nnedi3 super-sampler).
+    :param downscaler:      Downscaler to use after super-sampling (Default: Bicubic(b=0, c=1/2).
+    :param aafun:           Function used to antialias after super-sampling (Default: eedi3 with nnedi3 sclip).
 
-    :return:                Antialiased clip
+    :return:                Antialiased clip.
     """
     check_variable(clip, "upscaled_sraa")
     assert clip.format
@@ -310,20 +309,20 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
 
     Dependencies:
 
-    * vapoursynth-eedi3
-    * vs-placebo
+    * `VapourSynth-EEDI3 <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-EEDI3>`_
+    * `vs-placebo <https://github.com/Lypheo/vs-placebo>`_
 
-    :param clip:            Input clip
-    :param shader_file:     Path to FSRCNNX shader file
-    :param rfactor:         Image enlargement factor
-    :param tff:             Top-Field-First if true, Bottom-Field-First if false
+    :param clip:            Clip to process.
+    :param shader_file:     Path to FSRCNNX shader file.
+    :param rfactor:         Image enlargement factor.
+    :param tff:             Top-Field-First if true, Bottom-Field-First if false.
     :param mask_thr:        Threshold for the edge mask binarisation.
                             Scaled internally to match bitdepth of clip.
-    :param show_mask:       Output mask
-    :param eedi3_args:      Additional args to pass to eedi3
-    :param lmask:           Line mask clip to use for eedi3
+    :param show_mask:       Output mask.
+    :param eedi3_args:      Additional args to pass to eedi3.
+    :param lmask:           Line mask clip to use for eedi3.
 
-    :return:                AA'd clip or mask clip
+    :return:                AA'd clip or mask clip.
     """
     def _eedi3s(clip: vs.VideoNode, mclip: vs.VideoNode | None = None,
                 **eedi3_kwargs: Any) -> vs.VideoNode:
@@ -349,7 +348,8 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
 
         if (ow > iw and ow/iw != ow//iw) or (oh > ih and oh/ih != oh//ih):
             mclip = Point().scale(mclip, iw * ceil(ow / iw), ih * ceil(oh / ih))
-        return core.fmtc.resample(mclip, ow, oh, kernel='box', fulls=1, fulld=1)
+
+        return Box(fulls=1, fulld=1).scale(mclip, ow, oh)
 
     check_variable(clip, "based_aa")
     assert clip.format

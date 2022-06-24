@@ -34,13 +34,13 @@ def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) 
 
     Original function by shane, modified by Ichunjo and LightArrowsEXE.
 
-    Aliases for this function are `lvsfunc.demangle` and `lvsfunc.crecon`.
+    Aliases for this function are ``lvsfunc.demangle`` and ``lvsfunc.crecon``.
 
-    :param clip:    Input clip
-    :param radius:  Boxblur radius
-    :param i444:    Return a 4:4:4 clip
+    :param clip:     Clip to process.
+    :param radius:  Boxblur radius.
+    :param i444:    Return a 4:4:4 clip.
 
-    :return:        Clip with demangled chroma in either 4:2:0 or 4:4:4
+    :return:        Clip with demangled chroma in either 4:2:0 or 4:4:4.
     """
     check_variable(clip, "chroma_reconstruct")
     assert clip.format
@@ -81,7 +81,7 @@ def regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1e
     if radius <= 0:
         raise ValueError("Regress: 'radius must be greater than zero!'")
 
-    Expr = core.std.Expr
+    Expr = core.akarin.Expr
     E = partial(vs.core.std.BoxBlur, hradius=radius, vradius=radius)
 
     def mul(*c: vs.VideoNode) -> vs.VideoNode:
@@ -122,10 +122,10 @@ def reconstruct_multi(c: vs.VideoNode, r: RegressClips, radius: int = 2) -> vs.V
     """
     check_variable(c, "reconstruct_multi")
 
-    weights = core.std.Expr(r.correlation, 'x 0.5 - 0.5 / 0 max')
-    slope_pm = core.std.Expr((r.slope, weights), 'x y *')
+    weights = core.akarin.Expr(r.correlation, 'x 0.5 - 0.5 / 0 max')
+    slope_pm = core.akarin.Expr((r.slope, weights), 'x y *')
     slope_pm_sum = _mean(slope_pm, radius)
-    recons = core.std.Expr((c, slope_pm_sum), 'x y *')
+    recons = core.akarin.Expr((c, slope_pm_sum), 'x y *')
     return recons
 
 

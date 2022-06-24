@@ -83,7 +83,7 @@ v0.4.1
 * Fix docs building
 * Remove decorators in favour of a simple function. This makes the docs build again, and will be a bit easier to maintain myself.
 * Add some missing functions to the docs
-* Set all the outputs per submodule (`__all__`). This means that if you were relying on lvsfunc to import your vsutil functions, stop it. Just import vsutil.
+* Set all the outputs per sub-module (`__all__`). This means that if you were relying on lvsfunc to import your vsutil functions, stop it. Just import vsutil.
 * Docstring updates
 * Changed some ALLCAPS function names to camel case. These will remain for the time being, but be deprecated before 0.5.0.
 
@@ -198,7 +198,7 @@ v0.3.11
     - As the name implies, this is a based anti-aliaser. Thank you, based Zastin. This relies on FSRCNNX being very sharp, and as such it very much acts like the main “AA” here.
 * `clamp_values`
     - Forcibly clamps the given value x to a max and/or min value.
-* `fun` submodule for dumb stuff
+* `fun` sub-module for dumb stuff
     - These additions will be excluded from future changelogs.
 * `BicubicDidee`
     - Kernel inspired by a Didée post. See: https://forum.doom9.org/showthread.php?p=1748922#post1748922.
@@ -361,7 +361,7 @@ v0.3.6
     - Fix bug where `strength` would not be used properly
 
 * `bidehalo`:
-    - Import dehalo submodule in `__init__` (oops)
+    - Import dehalo sub-module in `__init__` (oops)
     - Add `sigmaS_final` and `sigmaR_final` parameters. By default `sigmaS_final` will be 1/3rd of `sigmaS`, and `sigmaR_final` will be the same as `sigmaR`. For more information, consult the docstrings
 
 ------------------

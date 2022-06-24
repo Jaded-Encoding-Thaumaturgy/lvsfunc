@@ -15,8 +15,7 @@ __all__: List[str] = [
 T = TypeVar("T")
 
 try:
-    from rich.progress import (BarColumn, Progress, ProgressColumn, Task,
-                               TextColumn, TimeRemainingColumn)
+    from rich.progress import BarColumn, Progress, ProgressColumn, Task, TextColumn, TimeRemainingColumn
     from rich.text import Text
 
     class FPSColumn(ProgressColumn):

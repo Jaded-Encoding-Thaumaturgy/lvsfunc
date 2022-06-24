@@ -29,9 +29,9 @@ def minecraftify(clip: vs.VideoNode, div: float = 64.0, mod: int | None = None) 
 
     Idea from Meme-Maji's Kobayashi memery (love you vardë).
 
-    :param clip:    Input clip
-    :param div:     How much to divide the clip's resolution with
-    :param mod:     Force the downscaled clip to be MOD# compliant
+    :param clip:     Clip to process.
+    :param div:     How much to divide the clip's resolution with.
+    :param mod:     Force the downscaled clip to be MOD# compliant.
 
     :return:        A Minecraft.
     """
