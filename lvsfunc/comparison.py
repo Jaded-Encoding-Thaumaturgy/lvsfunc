@@ -221,8 +221,8 @@ class Tile(Comparer):
                                 If given a simple sequence of clips, the `label_alignment` parameter will have no effect
                                 and the clips will not be labeled.
                                 The order of the clips in either a dict or a sequence will be kept in the comparison.
-    :param arrangement:         2-dimension array (list of lists) of 0s and 1s representing a list of rows of clips(`1`).
-                                or blank spaces(`0`) (Default: ``None``)
+    :param arrangement:         2-dimension array (list of lists) of 0s and 1s
+                                representing a list of rows of clips(`1`) or blank spaces(`0`) (Default: ``None``)
     :param label_alignment:     An integer from 1-9, corresponding to the positions of the keys on a numpad.
                                 Only used if `clips` is a dict.
                                 Determines where to place clip name using :py:func:`vapoursynth.core.text.Text`

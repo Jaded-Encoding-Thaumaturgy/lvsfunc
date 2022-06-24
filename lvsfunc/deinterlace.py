@@ -15,8 +15,7 @@ from vsutil import Dither, depth, get_depth, get_w, get_y, scale_value
 
 from .comparison import Stack
 from .exceptions import InvalidFramerateError
-from .helpers import _check_pattern
-from .render import get_render_progress
+from .render import clip_async_render, get_render_progress
 from .types import Direction
 from .util import check_variable, check_variable_format, force_mod, get_neutral_value, get_prop, pick_repair
 
@@ -726,6 +725,29 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
                             f'* 0 < sdiff@ n@ - abs diff@ n@ - abs < sdiff@ diff@ ? n@ - {scale} * n@ + sdiff@ n@ '
                             '- abs diff@ n@ - abs < sdiff@ diff@ ? ? n@ - + merge! x a@ + merge@ < x a@ + x a@ - '
                             'merge@ > x a@ - merge@ ? ?')
+
+
+# helpers
+def _check_pattern(clip: vs.VideoNode, pattern: int = 0) -> bool:
+    """:py:func:`lvsfunc.deinterlace.check_patterns` rendering behaviour."""
+    clip = sivtc(clip, pattern)
+    clip = core.tdm.IsCombed(clip)
+
+    frames: List[int] = []
+
+    def _cb(n: int, f: vs.VideoFrame) -> None:
+        if get_prop(f, '_Combed', int):
+            frames.append(n)
+
+    # TODO: Tried being clever and just exiting if any combing was found, but async_render had other plans :)
+    clip_async_render(clip[::4], progress=f"Checking pattern {pattern}...", callback=_cb)
+
+    if len(frames) > 0:
+        print(f"check_patterns: 'Combing found with pattern {pattern}!'")
+        return False
+
+    print(f"check_patterns: 'Clean clip found with pattern {pattern}!'")
+    return True
 
 
 # Temporary aliases

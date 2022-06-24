@@ -9,10 +9,7 @@ from typing import Any, List, Tuple, cast
 import vapoursynth as vs
 from vsutil import is_image
 
-from .deinterlace import sivtc
-from .render import clip_async_render
 from .types import IndexExists, VSIdxFunction
-from .util import get_prop
 
 core = vs.core
 
@@ -96,25 +93,3 @@ def _load_dgi(path: str, film_thr: float, src_filter: VSIdxFunction,
         props |= dict(dgi_fieldop=1, _FieldBased=0)
 
     return src_filter(path, **index_args).std.SetFrameProps(**props)
-
-
-def _check_pattern(clip: vs.VideoNode, pattern: int = 0) -> bool:
-    """:py:func:`lvsfunc.deinterlace.check_patterns` rendering behaviour."""
-    clip = sivtc(clip, pattern)
-    clip = core.tdm.IsCombed(clip)
-
-    frames: List[int] = []
-
-    def _cb(n: int, f: vs.VideoFrame) -> None:
-        if get_prop(f, '_Combed', int):
-            frames.append(n)
-
-    # TODO: Tried being clever and just exiting if any combing was found, but async_render had other plans :)
-    clip_async_render(clip[::4], progress=f"Checking pattern {pattern}...", callback=_cb)
-
-    if len(frames) > 0:
-        print(f"check_patterns: 'Combing found with pattern {pattern}!'")
-        return False
-
-    print(f"check_patterns: 'Clean clip found with pattern {pattern}!'")
-    return True
