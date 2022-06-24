@@ -11,8 +11,7 @@ from vsutil import depth, get_depth, get_y, iterate, join, split
 
 from . import util
 from .types import Position, Range, Shapes, Size
-from .util import (check_variable, check_variable_resolution, pick_removegrain,
-                   replace_ranges, scale_peak, scale_thresh)
+from .util import check_variable, check_variable_resolution, pick_removegrain, replace_ranges, scale_peak, scale_thresh
 
 core = vs.core
 
@@ -39,12 +38,12 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
 
     Dependencies:
 
-    * VapourSynth-Bilateral (optional: sigma)
-    * RGSF (optional: 32 bit clip)
+    * `VapourSynth-Bilateral <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-Bilateral>`_ (optional: sigma)
+    * `RGSF <https://github.com/IFeelBloated/RGSF>`_ (optional: 32 bit clip)
 
-    :param clip:        Input clip
-    :param sigma:       Sigma for Bilateral for pre-blurring (Default: False)
-    :param rad:         The luma equivalent of gradfun3's "mask" parameter
+    :param clip:        Clip to process.
+    :param sigma:       Sigma for Bilateral for pre-blurring (Default: False).
+    :param rad:         The luma equivalent of gradfun3's "mask" parameter.
     :param brz_a:       Binarizing thresh for the detail mask.
                         Scaled to clip's depth if between 0 and 1 (inclusive),
                         else assumed to be in native range. (Default: 0.025)
@@ -52,7 +51,7 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
                         Scaled to clip's depth if between 0 and 1 (inclusive),
                         else assumed to be in native range. (Default: 0.045)
 
-    :return:            Detail mask
+    :return:            Detail mask.
     """
     check_variable_resolution(clip, "detail_mask")
 
@@ -68,7 +67,7 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
     mask_b = core.std.Prewitt(get_y(blur))
     mask_b = core.std.Binarize(mask_b, brz_b)
 
-    mask = core.std.Expr([mask_a, mask_b], 'x y max')
+    mask = core.akarin.Expr([mask_a, mask_b], 'x y max')
     mask = util.pick_removegrain(mask)(mask, 22)
     return util.pick_removegrain(mask)(mask, 11).std.Limiter()
 
@@ -84,7 +83,7 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
 
     This mask will catch a whole lot of stuff, including noise and grain.
 
-    :param clip:            Input clip
+    :param clip:            Clip to process.
     :param sigma:           Sigma for the detail mask.
                             Higher means more detail and noise will be caught.
     :param detail_brz:      Binarizing for the detail mask.
@@ -96,10 +95,10 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
     :param blur_func:       Blurring function used for the detail detection.
                             Must accept the following parameters: ``clip``, ``ref_clip``, ``sigma``.
                             Uses `bilateral.Bilateral` by default.
-    :param edgemask_func:   Edgemasking function used for the edge detection
-    :param rg_mode:         Removegrain mode performed on the final output
+    :param edgemask_func:   Edgemasking function used for the edge detection.
+    :param rg_mode:         Removegrain mode performed on the final output.
 
-    :return:                Detail mask
+    :return:                Detail mask.
     """
     check_variable(clip, "detail_mask_neo")
     assert clip.format
@@ -114,7 +113,7 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
     blur_pf = core.bilateral.Gaussian(clip_y, sigma=sigma / 4 * 3)
 
     blur_pref = blur_func(clip_y, blur_pf, sigma)
-    blur_pref_diff = core.std.Expr([blur_pref, clip_y], "x y -").std.Deflate()
+    blur_pref_diff = core.akarin.Expr([blur_pref, clip_y], "x y -").std.Deflate()
     blur_pref = iterate(blur_pref_diff, core.std.Inflate, 4)
 
     prew_mask = edgemask_func(clip_y).std.Deflate().std.Inflate()
@@ -124,7 +123,7 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
     if lines_brz > 0:
         prew_mask = prew_mask.std.Binarize(lines_brz)
 
-    merged = core.std.Expr([blur_pref, prew_mask], "x y +")
+    merged = core.akarin.Expr([blur_pref, prew_mask], "x y +")
     rm_grain = pick_removegrain(merged)(merged, rg_mode)
 
     return depth(rm_grain, clip.format.bits_per_sample).std.Limiter()
@@ -150,14 +149,14 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
     All thresholds are float and will be scaled to ``clip``'s format.
     If thresholds are greater than 1, they will be asummed to be in 8-bit and scaled accordingly.
 
-    :param clip:            Input clip.
+    :param clip:            Clip to process.
     :param rad:             Radius for the mask.
     :param brz:             Binarizing for shrinking mask (Default: 0.35).
     :param thmi:            Minimum threshold for sharp edges; keep only the sharpest edges.
     :param thma:            Maximum threshold for sharp edges; keep only the sharpest edges.
     :param thlimi:          Minimum limiting threshold; includes more edges than previously, but ignores simple details.
     :param thlima:          Maximum limiting threshold; includes more edges than previously, but ignores simple details.
-    :param edgemask:        Edgemask to use. If None, uses ``clip.std.Prewitt()`` (Default: None)..
+    :param edgemask:        Edgemask to use. If None, uses :py:func:`vapoursynth.core.std.Prewitt` (Default: None).
 
     :return:                Halo mask.
     """
@@ -172,24 +171,24 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
     edgemask = edgemask or get_y(clip).std.Prewitt()
 
     # Preserve just the strongest edges
-    strong = core.std.Expr(edgemask, expr=f"x {thmi} - {thlima-thlimi} / {smax} *")
+    strong = core.akarin.Expr(edgemask, expr=f"x {thmi} - {thlima-thlimi} / {smax} *")
     # Expand to pick up additional halos
     expand = iterate(strong, core.std.Maximum, rad)
 
     # Having too many intersecting lines will oversmooth the mask. We get rid of those here.
-    light = core.std.Expr(edgemask, expr=f"x {thlimi} - {thma-thmi} / {smax} *")
+    light = core.akarin.Expr(edgemask, expr=f"x {thlimi} - {thma-thmi} / {smax} *")
     shrink = iterate(light, core.std.Maximum, rad)
     shrink = core.std.Binarize(shrink, scale_thresh(brz, clip))
     shrink = iterate(shrink, core.std.Minimum, rad)
     shrink = iterate(shrink, partial(core.std.Convolution, matrix=matrix), 2)
 
     # Making sure the lines are actually excluded
-    excl = core.std.Expr([strong, shrink], expr="x y max")
+    excl = core.akarin.Expr([strong, shrink], expr="x y max")
     # Subtract and boosting to make sure we get the max pixel values for dehaloing
-    mask = core.std.Expr([expand, excl], expr="x y - 2 *")
+    mask = core.akarin.Expr([expand, excl], expr="x y - 2 *")
     # Additional blurring to amplify the mask
     mask = core.std.Convolution(mask, matrix)
-    return core.std.Expr(mask, expr="x 2 *").std.Limiter()
+    return core.akarin.Expr(mask, expr="x 2 *").std.Limiter()
 
 
 def fine_dehalo_mask(clip: vs.VideoNode,
@@ -206,7 +205,7 @@ def fine_dehalo_mask(clip: vs.VideoNode,
 
     * 1 = Full mask (for backwards and fine_dehalo compatibility)
 
-    :param clip:            Input clip
+    :param clip:            Clip to process.
     :param rx:              Horizontal radius for halo removal. Must be greater than 1. Will be rounded up.
     :param ry:              Vertical radius for halo removal. Must be greater than 1.  Will be rounded up.
     :param thmi:            Minimum threshold for sharp edges. Keep only the sharpest edges (line edges).
@@ -217,7 +216,7 @@ def fine_dehalo_mask(clip: vs.VideoNode,
     :param thlima:          Maximum limiting threshold. Includes more edges than previously, but ignores simple details.
     :param show_mask:       Return mask clip at various stages in the operation. Valid options are 1–7.
 
-    :return:                Halo mask clip
+    :return:                Halo mask clip.
     """
     check_variable(clip, "halo_mask")
 
@@ -284,11 +283,11 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
 
     When radii are equal to 1, this filter becomes identical to mt_edge("min/max", 0, 255, 0, 255).
 
-    :param clip:    Input clip
-    :param rad:     Depth in pixels of the detail/edge masking
-    :param radc:    Chroma equivalent to ``rad``
+    :param clip:     Clip to process.
+    :param rad:     Depth in pixels of the detail/edge masking.
+    :param radc:    Chroma equivalent to ``rad``.
 
-    :return:        Range mask
+    :return:        Range mask.
     """
     check_variable(clip, "range_mask")
 
@@ -300,13 +299,13 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
     if clip.format.color_family == vs.GRAY:
         ma = _minmax(clip, rad, True)
         mi = _minmax(clip, rad, False)
-        mask = core.std.Expr([ma, mi], 'x y -')
+        mask = core.akarin.Expr([ma, mi], 'x y -')
     else:
         planes = split(clip)
         for i, rad_ in enumerate([rad, radc, radc]):
             ma = _minmax(planes[i], rad_, True)
             mi = _minmax(planes[i], rad_, False)
-            planes[i] = core.std.Expr([ma, mi], 'x y -')
+            planes[i] = core.akarin.Expr([ma, mi], 'x y -')
         mask = join(planes)
 
     return mask.std.Limiter()
@@ -335,9 +334,9 @@ class BoundingBox():
     Uses Position + Size, like provided by GIMP's rectangle selection tool.
 
     :param pos:  Offset of top-left corner of the bounding box from the top-left corner of the frame.
-                 Supports either a :py:class:`lvsfunc.types.Position` or a tuple that will be converted.
+                 Supports either a :py:attr:`lvsfunc.types.Position` or a tuple that will be converted.
     :param size: Offset of the bottom-right corner of the bounding box from the top-left corner of the bounding box.
-                 Supports either a :py:class:`lvsfunc.types.Size` or a tuple that will be converted.
+                 Supports either a :py:attr:`lvsfunc.types.Size` or a tuple that will be converted.
     """
 
     pos: Position
@@ -379,13 +378,13 @@ class DeferredMask(ABC):
     Provides an interface to use different preconfigured masking functions.
     Provides support for ranges, reference frames, and bounding.
 
-    :param range:    A single range or list of ranges to replace,
+    :param range:    A single range or list of ranges to replace,.
                      compatible with :py:class:`lvsfunc.misc.replace_ranges`
     :param bound:    A :py:class:`lvsfunc.mask.BoundingBox` or a tuple that will be converted.
                      (Default: ``None``, no bounding)
-    :param blur:     Blur the bounding mask (Default: False)
-    :param refframe: A single frame number to use to generate the mask
-                     or a list of frame numbers with the same length as ``range``
+    :param blur:     Blur the bounding mask (Default: False).
+    :param refframe: A single frame number to use to generate the mask.
+                     or a list of frame numbers with the same length as :py:func:`lvsfunc.types.Range`
     """
 
     ranges: List[Range]
@@ -421,10 +420,10 @@ class DeferredMask(ABC):
         """
         Get the bounded mask.
 
-        :param clip:  Source
-        :param ref:   Reference clip
+        :param clip:  Source.
+        :param ref:   Reference clip.
 
-        :return:      Bounded mask
+        :return:      Bounded mask.
         """
         check_variable(clip, "get_mask")
         check_variable(ref, "get_mask")
@@ -448,7 +447,7 @@ class DeferredMask(ABC):
                     rf = ref.num_frames - 1 + rf
                 mask = depth(self._mask(clip[rf], ref[rf]), clip.format.bits_per_sample,
                              range=CRange.FULL, range_in=CRange.FULL)
-                hm = replace_ranges(hm, core.std.Expr([hm, mask*len(hm)], expr="x y max"), range)
+                hm = replace_ranges(hm, core.akarin.Expr([hm, mask*len(hm)], expr="x y max"), range)
 
         hm = hm.std.Limiter()
 

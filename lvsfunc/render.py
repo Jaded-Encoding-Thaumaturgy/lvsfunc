@@ -7,8 +7,7 @@ from typing import BinaryIO, Callable, Dict, List, TextIO
 
 import vapoursynth as vs
 
-from .progress import (BarColumn, FPSColumn, Progress, TextColumn,
-                       TimeRemainingColumn)
+from .progress import BarColumn, FPSColumn, Progress, TextColumn, TimeRemainingColumn
 from .types import SceneChangeMode
 from .util import get_prop
 
@@ -52,9 +51,9 @@ def finish_frame(outfile: BinaryIO | None, timecodes: TextIO | None, ctx: Render
     """
     Output a frame.
 
-    :param outfile:   Output IO handle for Y4MPEG
-    :param timecodes: Output IO handle for timecodesv2
-    :param ctx:       Rendering context
+    :param outfile:   Output IO handle for Y4MPEG.
+    :param timecodes: Output IO handle for timecodesv2.
+    :param ctx:       Rendering context.
     """
     if timecodes:
         timecodes.write(f"{round(ctx.timecodes[ctx.frames_rendered]*1000):d}\n")
@@ -83,11 +82,11 @@ def clip_async_render(clip: vs.VideoNode,
 
     :param clip:      Clip to render.
     :param outfile:   Y4MPEG render output BinaryIO handle. If None, no Y4M output is performed.
-                      Use ``sys.stdout.buffer`` for stdout. (Default: None)
+                      Use :py:func:`sys.stdout.buffer` for stdout. (Default: None)
     :param timecodes: Timecode v2 file TextIO handle. If None, timecodes will not be written.
     :param progress:  String to use for render progress display.
                       If empty or ``None``, no progress display.
-    :param callback:  Single or list of callbacks to be performed. The callbacks are called
+    :param callback:  Single or list of callbacks to be performed. The callbacks are called.
                       when each sequential frame is output, not when each frame is done.
                       Must have signature ``Callable[[int, vs.VideoNode], None]``
                       See :py:func:`lvsfunc.comparison.diff` for a use case (Default: None).
@@ -216,11 +215,11 @@ def find_scene_changes(clip: vs.VideoNode, mode: SceneChangeMode = SceneChangeMo
 
     Dependencies:
 
-    * vapoursynth-wwxd
-    * vapoursynth-scxvid (Optional: scxvid mode)
+    * `vapoursynth-wwxd <https://github.com/dubhater/vapoursynth-wwxd>`_
+    * `vapoursynth-scxvid <https://github.com/dubhater/vapoursynth-scxvid>`_ (Optional: scxvid mode)
 
     :param clip:   Clip to search for scene changes. Will be rendered in its entirety.
-    :param mode:   Scene change detection mode:
+    :param mode:   Scene change detection mode:.
 
                    * WWXD: Use wwxd
                    * SCXVID: Use scxvid

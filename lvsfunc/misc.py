@@ -53,24 +53,25 @@ def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
     This affects the dimensions, framerates, matrix/transfer/primaries,
     and in the case of an image, the length of the clip.
 
-    Alias for this function is `lvsfunc.src`.
+    Alias for this function is ``lvsfunc.src``.
 
     Dependencies:
 
-    * `L-SMASH-Works <https://github.com/AkarinVS/L-SMASH-Works>`_
     * `dgdecode <https://www.rationalqm.us/dgmpgdec/dgmpgdec.html>`_
     * `dgdecodenv <https://www.rationalqm.us/dgdecnv/binaries/>`_
+    * `L-SMASH-Works <https://github.com/AkarinVS/L-SMASH-Works>`_
+    * `vs-imwri <https://github.com/vapoursynth/vs-imwri>`_
 
     Thanks RivenSkaye!
 
     :param file:                File to index and load in.
-    :param ref:                 Use another clip as reference for the clip's format,
+    :param ref:                 Use another clip as reference for the clip's format,.
                                 resolution, framerate, and matrix/transfer/primaries (Default: None).
     :param film_thr:            FILM percentage the dgi must exceed for ``fieldop=1`` to be set automatically.
                                 If set above 100.0, it's silently lowered to 100.0 (Default: 99.0).
     :param force_lsmas:         Force files to be imported with L-SMASH (Default: False).
     :param kernel:              Kernel used for converting the clip to the ref clip (Default: Catrom).
-    :param tail_lines:          Lines to check on the tail of the dgi file. Increase this value
+    :param tail_lines:          Lines to check on the tail of the dgi file. Increase this value.
                                 if FILM and ORDER do exist in your dgi file but it's not finding them.
                                 Set to 2 for a very minor speed-up, as that's usually enough to find them (Default: 4).
     :param kwargs:              Optional arguments passed to the indexing filter.
@@ -131,24 +132,24 @@ def edgefixer(clip: vs.VideoNode,
 
     ...If possible, you should be using bbmod instead, though.
 
-    Alias for this function is `lvsfunc.ef`.
+    Alias for this function is ``lvsfunc.ef``.
 
     .. warning::
         This function may be rewritten in the future, and functionality may change!
 
     Dependencies:
 
-    * VS-ContinuityFixer
+    * `vs-ContinuityFixer <https://github.com/MonoS/VS-ContinuityFixer>`_
 
-    :param clip:        Input clip
-    :param left:        Number of pixels to fix on the left (Default: None)
-    :param right:       Number of pixels to fix on the right (Default: None)
-    :param top:         Number of pixels to fix on the top (Default: None)
-    :param bottom:      Number of pixels to fix on the bottom (Default: None)
-    :param radius:      Radius for edgefixing (Default: None)
-    :param full_range:  Does not run the expression over the clip to fix over/undershoot (Default: False)
+    :param clip:        Clip to process.
+    :param left:        Number of pixels to fix on the left (Default: None).
+    :param right:       Number of pixels to fix on the right (Default: None).
+    :param top:         Number of pixels to fix on the top (Default: None).
+    :param bottom:      Number of pixels to fix on the bottom (Default: None).
+    :param radius:      Radius for edgefixing (Default: None).
+    :param full_range:  Does not run the expression over the clip to fix over/undershoot (Default: False).
 
-    :return:            Clip with fixed edges
+    :return:            Clip with fixed edges.
     """
     warnings.warn("edgefixer: This function's functionality will change in a future version, "
                   "and will likely be renamed. Please make sure to update your older scripts once it does.",
@@ -185,10 +186,10 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
     If you pass 2, the 2nd one will be copied over to the 3rd.
     Don't pass more than three.
 
-    :param clip:    Input clip
-    :param values:  Value added to every pixel, scales accordingly to your clip's depth (Default: 16)
+    :param clip:     Clip to process.
+    :param values:  Value added to every pixel, scales accordingly to your clip's depth (Default: 16).
 
-    :return:        Clip with pixel values added
+    :return:        Clip with pixel values added.
     """
     val: Tuple[float, float, float]
 
@@ -209,7 +210,7 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
     cdepth = get_depth(clip)
     cv: List[float] = [scale_value(v, 8, cdepth) for v in val] if cdepth != 8 else list(val)
 
-    return core.std.Expr(clip, expr=[f'x {cv[0]} +', f'x {cv[1]} +', f'x {cv[2]} +'])
+    return core.akarin.Expr(clip, expr=[f'x {cv[0]} +', f'x {cv[1]} +', f'x {cv[2]} +'])
 
 
 def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
@@ -222,12 +223,12 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
     There is one caveat, however: You can get scenes where every other frame is filtered
     rather than the entire scene. Please do take care to avoid that if possible.
 
-    :param clip:              Input clip
-    :param filtered:          Filtered clip
-    :param threshold:         Threshold for frame averages to be filtered (Default: 0.25)
-    :param threshold_range:   Threshold for a range of frame averages to be filtered (Default: None)
+    :param clip:              Clip to process.
+    :param filtered:          Filtered clip.
+    :param threshold:         Threshold for frame averages to be filtered (Default: 0.25).
+    :param threshold_range:   Threshold for a range of frame averages to be filtered (Default: None).
 
-    :return:                  Conditionally filtered clip
+    :return:                  Conditionally filtered clip.
     """
     def _diff(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
               filtered: vs.VideoNode, threshold: float,
@@ -258,14 +259,14 @@ def wipe_row(clip: vs.VideoNode,
 
     You can also give it a different clip to replace a row with.
 
-    :param clip:           Input clip
-    :param secondary:      Clip to replace wiped rows with (Default: None)
-    :param width:          Width of row (Default: 1)
-    :param height:         Height of row (Default: 1)
-    :param offset_x:       X-offset of row (Default: 0)
-    :param offset_y:       Y-offset of row (Default: 0)
+    :param clip:            Clip to process.
+    :param secondary:      Clip to replace wiped rows with (Default: None).
+    :param width:          Width of row (Default: 1).
+    :param height:         Height of row (Default: 1).
+    :param offset_x:       X-offset of row (Default: 0).
+    :param offset_y:       Y-offset of row (Default: 0).
 
-    :return:               Clip with given rows or columns wiped
+    :return:               Clip with given rows or columns wiped.
     """
     check_variable(clip, "wipe_row")
 
@@ -293,7 +294,7 @@ def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
     This function is not recommended for normal use,
     but may be useful as prefiltering for detail- or edgemasks.
 
-    :param clip:                Input clip.
+    :param clip:                Clip to process.
     :param strength:            Amount to multiply blurred clip with original clip by.
                                 Negative values will blur the clip instead.
     :param sigma:               Sigma for the gaussian blur.
@@ -301,7 +302,7 @@ def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
     :param prefilter_sigma:     Strength for the pre-denoising.
     :param show_mask:           Show halo mask.
 
-    :return:                    Unsharpened clip
+    :return:                    Unsharpened clip.
     """
     check_variable(clip, "unsharpen")
     assert clip.format
@@ -315,7 +316,7 @@ def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
         expr = [str(expr), "", ""]  # mypy wtf?
 
     blurred_clip = core.bilateral.Gaussian(den, sigma=sigma)
-    unsharp = core.std.Expr([den, blurred_clip], expr)
+    unsharp = core.akarin.Expr([den, blurred_clip], expr)
     return core.std.MergeDiff(unsharp, diff)
 
 
@@ -331,16 +332,13 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
 
     Dependencies:
 
-    * vs-imwri
+    * `vs-imwri <https://github.com/vapoursynth/vs-imwri>`_
+    * `kagefunc <https://github.com/Irrational-Encoding-Wizardry/kagefunc>`_ (optional: ``fade_length``)
 
-    Optional Dependencies:
-
-    * kagefunc
-
-    :param clip:            Input clip.
-    :param overlay:         Sign or logo to overlay. Must be the png loaded in through imwri.Read()
-                            or a path string to the image file, and MUST be the same dimensions as the input clip.
-    :param frame_ranges:    Frame ranges or starting frame to apply the overlay to. See ``types.Range`` for more info.
+    :param clip:            Clip to process.
+    :param overlay:         Sign or logo to overlay. Must be the png loaded in through imwri.Read().
+                            or a path string to the image file, and MUST be the same dimensions as the Clip to process.
+    :param frame_ranges:    Frame ranges or starting frame to apply the overlay to. See :py:func:`lvsfunc.types.Range` for more info.
                             If None, overlays the entire clip.
                             If a Range is passed, the overlaid clip will only show up inside that range.
                             If only a single integer is given, it will start on that frame and
@@ -349,11 +347,11 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     :param fade_length:     Length to fade the clips into each other.
                             The fade will start and end on the frames given in frame_ranges.
                             If set to 0, it won't fade and the sign will simply pop in.
-    :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
+    :param matrix:          Enum for the matrix of the Clip to process. See :py:attr:`lvsfunc.types.Matrix` for more info.
                             If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
 
-    :return:                Clip with a logo or sign overlaid on top for the given frame ranges,
+    :return:                Clip with a logo or sign overlaid on top for the given frame ranges,.
                             either with or without a fade.
     """
     if fade_length > 0:

@@ -27,22 +27,22 @@ def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
 
     Dependencies:
 
-    * VapourSynth-BM3D
+    * `VapourSynth-BM3D <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-BM3D>`_
 
-    :param clip:            Input clip
-    :param sigma:           Denoising strength for both basic and final estimations
-    :param radius:          Temporal radius for both basic and final estimations
-    :param ref:             Reference clip for the final estimation
-    :param pre:             Prefiltered clip for the basic estimation
+    :param clip:            Clip to process.
+    :param sigma:           Denoising strength for both basic and final estimations.
+    :param radius:          Temporal radius for both basic and final estimations.
+    :param ref:             Reference clip for the final estimation.
+    :param pre:             Prefiltered clip for the basic estimation.
     :param refine:          Iteration of the final clip.
                             0 = basic estimation only
                             1 = basic + final estimation
                             n = basic + n final estimations
-    :param matrix_s:        Color matrix of the input clip
-    :param basic_args:      Args to pass to the basic estimation
-    :param final_args:      Args to pass to the final estimation
+    :param matrix_s:        Color matrix of the Clip to process.
+    :param basic_args:      Args to pass to the basic estimation.
+    :param final_args:      Args to pass to the final estimation.
 
-    :return:                Denoised clip
+    :return:                Denoised clip.
     """
     check_variable(clip, "bm3d")
     assert clip.format
@@ -119,7 +119,7 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
     Please check the `chickendream GitHub page <https://github.com/EleonoreMizo/chickendream>`_
     for a full list of parameters and additional information.
 
-    :param clip:            Input clip.
+    :param clip:            Clip to process.
     :param sigma:           Radius of the gaussian kernel for the vision filter.
                             The larger the radius, the smoother the picture. Smallest values are more prone to aliasing.
                             0 is a special value indicating that a single-pixel rectangular filter should be used
@@ -137,7 +137,7 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
     :param chroma:          Whether to process chroma or not.
                             If you pass a GRAY clip yourself, this parameter will be ignored.
     :param seed:            Seed for the random generator. Defaults to 42069.
-    :param matrix:          Enum for the matrix of the input clip. See ``types.Matrix`` for more info.
+    :param matrix:          Enum for the matrix of the Clip to process. See :py:attr:`lvsfunc.types.Matrix` for more info.
                             If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
     :param kernel:          `Kernel` object used for conversions between YUV <-> RGB.

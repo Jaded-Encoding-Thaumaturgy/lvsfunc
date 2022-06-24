@@ -40,7 +40,7 @@ def _get_dgidx() -> Tuple[str, VSIdxFunction]:
 def _check_index_exists(path: os.PathLike[str] | str) -> IndexExists:
     """Check whether a lwi or dgi exists. Returns an IndexExists Enum."""
     match path:
-        case path.endswith('.dgi'): return IndexExists.PATH_IS_DGI
+        case bool(path.endswith('.dgi')): return IndexExists.PATH_IS_DGI
         case _:
             if is_image(path):
                 return IndexExists.PATH_IS_DGI
