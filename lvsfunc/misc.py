@@ -86,9 +86,6 @@ def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
     if path.startswith('file:///'):
         path = path[8::]
 
-    if force_lsmas:
-        clip = core.lsmas.LWLibavSource(path, **index_args).std.SetFrameProps(lvf_idx='lsmas')
-
     dgidx, dgsrc = _get_dgidx()
 
     match IndexExists.LWI_EXISTS if force_lsmas else _check_index_exists(path):
