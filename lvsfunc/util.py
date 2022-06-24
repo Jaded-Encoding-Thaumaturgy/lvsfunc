@@ -7,10 +7,12 @@ from functools import partial, wraps
 from typing import Any, Callable, Dict, List, Tuple, Type, cast
 
 import vapoursynth as vs
+import vskernels.types as kernel_type
+from vskernels import Catrom, Kernel, get_kernel
 from vsutil import depth, get_depth, get_subsampling, get_w, get_y
 
-from .exceptions import (InvalidFormatError, InvalidMatrixError, MatrixError,
-                         VariableFormatError, VariableResolutionError)
+from .exceptions import (InvalidFormatError, InvalidMatrixError, MatrixError, VariableFormatError,
+                         VariableResolutionError)
 from .types import CURVES, Coefs, F, Matrix, Range, T
 
 core = vs.core
@@ -682,6 +684,48 @@ def allow_variable(width: int | None = None, height: int | None = None,
         return cast(F, inner2)
 
     return inner
+
+
+def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
+               dimensions: bool = True, vformat: bool = True,
+               matrices: bool = True, length: bool = False,
+               kernel: Kernel | str = Catrom()) -> vs.VideoNode:
+    """
+    Try matchng the given clip's format with the reference clip's.
+
+    :param clip:        Clip to process.
+    :param ref:         Reference clip.
+    :param dimensions:  Match video dimensions (Default: True).
+    :param vformat:     Match video formats (Default: True).
+    :param matrices:    Match matrix/transfer/primaries (Default: True).
+    :param length:      Match clip length (Default: False).
+    :param kernel:      Kernel used for resampling the clip (Default: Catrom).
+
+    :return:            Clip that matches the ref clip in format.
+    """
+    check_variable(clip, "match_clip")
+    check_variable(ref, "match_clip")
+    assert clip.format
+    assert ref.format
+
+    if isinstance(kernel, str):
+        kernel = get_kernel(kernel)()
+
+    clip = clip * ref.num_frames if length else clip
+    clip = kernel.scale(clip, ref.width, ref.height) if dimensions else clip
+
+    if vformat:
+        clip = kernel.resample(clip, format=ref.format, matrix=cast(kernel_type.Matrix, get_matrix(ref)))
+
+    if matrices:
+        ref_frame = ref.get_frame(0)
+
+        clip = clip.std.SetFrameProps(
+            _Matrix=get_prop(ref_frame, '_Matrix', int),
+            _Transfer=get_prop(ref_frame, '_Transfer', int),
+            _Primaries=get_prop(ref_frame, '_Primaries', int))
+
+    return clip.std.AssumeFPS(fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
 
 
 # Aliases

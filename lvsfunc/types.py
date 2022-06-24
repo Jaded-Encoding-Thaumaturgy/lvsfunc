@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from enum import IntEnum
+from enum import IntEnum, auto
 from typing import (Any, Callable, List, Literal, NamedTuple, NoReturn,
                     Optional, Protocol, Sequence, Tuple, TypeVar, Union)
 
@@ -172,3 +172,13 @@ CURVES = Literal[
     vs.TransferCharacteristics.TRANSFER_BT2020_10,
     vs.TransferCharacteristics.TRANSFER_BT2020_12,
 ]
+
+
+class IndexExists(IntEnum):
+    """Check if certain files exist for :py:class:`lvsfunc.misc.source`."""
+
+    PATH_IS_DGI = auto()
+    PATH_IS_IMG = auto()
+    LWI_EXISTS = auto()
+    DGI_EXISTS = auto()
+    NONE = auto()
