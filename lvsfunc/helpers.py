@@ -44,7 +44,7 @@ def _check_index_exists(path: os.PathLike[str] | str) -> IndexExists:
     if path.endswith('.dgi'):
         return IndexExists.PATH_IS_DGI
     elif is_image(path):
-        return IndexExists.PATH_IS_DGI
+        return IndexExists.PATH_IS_IMG
     elif Path(f"{path}.dgi").exists():
         return IndexExists.DGI_EXISTS
     elif Path(f"{path}.lwi").exists():
