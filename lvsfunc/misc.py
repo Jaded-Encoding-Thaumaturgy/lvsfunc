@@ -338,7 +338,8 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     :param clip:            Clip to process.
     :param overlay:         Sign or logo to overlay. Must be the png loaded in through imwri.Read().
                             or a path string to the image file, and MUST be the same dimensions as the Clip to process.
-    :param frame_ranges:    Frame ranges or starting frame to apply the overlay to. See :py:func:`lvsfunc.types.Range` for more info.
+    :param frame_ranges:    Frame ranges or starting frame to apply the overlay to.
+                            See :py:func:`lvsfunc.types.Range` for more info.
                             If None, overlays the entire clip.
                             If a Range is passed, the overlaid clip will only show up inside that range.
                             If only a single integer is given, it will start on that frame and
@@ -347,7 +348,8 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     :param fade_length:     Length to fade the clips into each other.
                             The fade will start and end on the frames given in frame_ranges.
                             If set to 0, it won't fade and the sign will simply pop in.
-    :param matrix:          Enum for the matrix of the Clip to process. See :py:attr:`lvsfunc.types.Matrix` for more info.
+    :param matrix:          Enum for the matrix of the Clip to process.
+                            See :py:attr:`lvsfunc.types.Matrix` for more info.
                             If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
 

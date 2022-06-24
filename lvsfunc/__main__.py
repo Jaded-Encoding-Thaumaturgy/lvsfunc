@@ -7,7 +7,10 @@ import pkg_resources
 
 
 class InstallationException(Exception):
+    """Throw when some kind of exception occurs during installation."""
+
     ...
+
 
 pkg = 'lvsfunc'
 
@@ -36,6 +39,7 @@ pypi_deps: List[str] = [
 
 
 def prompt_user() -> bool:
+    """Prompt user to install/update dependencies."""
     prompt = input(f"Install/update {pkg} dependencies? [y/n]: ").lower().strip()
 
     match prompt:
@@ -44,6 +48,7 @@ def prompt_user() -> bool:
 
 
 def main() -> None:
+    """Prompt user to install/update dependencies."""
     if not prompt_user():
         exit()
 

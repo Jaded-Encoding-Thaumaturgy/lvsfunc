@@ -177,7 +177,8 @@ def dpir(
                             for example having a higher strength in flat parts or where ringing occurs,
                             but lower in textured/detailed parts.
     :param mode:            DPIR mode. Valid modes are 'deblock' and 'denoise'.
-    :param matrix:          Enum for the matrix of the Clip to process. See :py:attr:`lvsfunc.types.Matrix` for more info.
+    :param matrix:          Enum for the matrix of the Clip to process.
+                            See :py:attr:`lvsfunc.types.Matrix` for more info.
                             If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
     :param cuda:            Used to select backend; use CUDA if True, CUDA TensorRT if 'trt' else CPU OpenVINO if False.
