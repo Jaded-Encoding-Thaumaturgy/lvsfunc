@@ -58,8 +58,8 @@ def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
     Dependencies:
 
     * `L-SMASH-Works <https://github.com/AkarinVS/L-SMASH-Works>`_
-    * `dgdecode <https://www.rationalqm.us/dgmpgdec/dgmpgdec.html>`_ or
-    `dgdecodenv <https://www.rationalqm.us/dgdecnv/binaries/>`_
+    * `dgdecode <https://www.rationalqm.us/dgmpgdec/dgmpgdec.html>`_
+    * `dgdecodenv <https://www.rationalqm.us/dgdecnv/binaries/>`_
 
     Thanks RivenSkaye!
 
