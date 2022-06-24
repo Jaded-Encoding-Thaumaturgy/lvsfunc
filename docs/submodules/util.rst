@@ -19,6 +19,7 @@ Some of these may also be useful for regular scripting or other modules.
     lvsfunc.util.get_neutral_value
     lvsfunc.util.get_prop
     lvsfunc.util.load_bookmarks
+    lvsfunc.util.match_clip
     lvsfunc.util.normalize_ranges
     lvsfunc.util.padder
     lvsfunc.util.pick_removegrain

@@ -8,7 +8,7 @@ import vapoursynth as vs
 from vskernels import Bicubic, Catrom, Kernel, Point, get_kernel
 from vsutil import Dither, depth, get_depth
 
-from .misc import _check_has_nvidia
+from .helpers import _check_has_nvidia
 from .types import Matrix, Range
 from .util import check_variable, get_prop, replace_ranges
 

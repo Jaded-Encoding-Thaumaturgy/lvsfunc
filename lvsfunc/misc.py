@@ -1,22 +1,19 @@
 from __future__ import annotations
 
 import os
-import subprocess as sp
 import warnings
-from collections import deque
 from functools import partial
-from typing import Any, List, Sequence, Tuple, cast
+from typing import Any, List, Sequence, Tuple
 
 import vapoursynth as vs
-import vskernels.types as kernel_type
 from vskernels import Catrom, Kernel
 from vsutil import depth, get_depth, is_image, scale_value
 
 from .exceptions import InvalidMatrixError
+from .helpers import _check_index_exists, _generate_dgi, _get_dgidx, _load_dgi, _tail
 from .mask import BoundingBox
-from .types import Matrix, Position, Range, Size, VSIdxFunction
-from .util import (check_variable, get_matrix, get_prop, normalize_ranges,
-                   replace_ranges)
+from .types import IndexExists, Matrix, Position, Range, Size
+from .util import check_variable, get_prop, match_clip, normalize_ranges, replace_ranges
 
 core = vs.core
 
@@ -34,7 +31,7 @@ __all__: List[str] = [
 
 def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
            film_thr: float = 99.0, force_lsmas: bool = False,
-           tail_lines: int = 4, kernel: Kernel = Catrom(),
+           tail_lines: int = 4, kernel: Kernel | str = Catrom(),
            **index_args: Any) -> vs.VideoNode:
     """
     Index and load video clips for use in VapourSynth automatically.
@@ -70,40 +67,39 @@ def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
     :param ref:                 Use another clip as reference for the clip's format,
                                 resolution, framerate, and matrix/transfer/primaries (Default: None).
     :param film_thr:            FILM percentage the dgi must exceed for ``fieldop=1`` to be set automatically.
-                                If set above 100.0, it's silented lowered to 100.0 (Default: 99.0).
+                                If set above 100.0, it's silently lowered to 100.0 (Default: 99.0).
     :param force_lsmas:         Force files to be imported with L-SMASH (Default: False).
-    :param kernel:              Kernel used for the ref clip (Default: Catrom).
+    :param kernel:              Kernel used for converting the clip to the ref clip (Default: Catrom).
     :param tail_lines:          Lines to check on the tail of the dgi file. Increase this value
                                 if FILM and ORDER do exist in your dgi file but it's not finding them.
-                                Set to 2 for a very minor speed-up, as that's usually enough to find them (default: 4).
-    :param kwargs:              Arguments passed to the indexing filter.
+                                Set to 2 for a very minor speed-up, as that's usually enough to find them (Default: 4).
+    :param kwargs:              Optional arguments passed to the indexing filter.
 
     :return:                    VapourSynth clip representing the input file.
     """
-    if not isinstance(path, str):
-        raise ValueError(f"source: 'Please input a path, not a {type(path)}!'")
+    if not isinstance(path, (os.PathLike, str)):
+        raise ValueError(f"source: 'Please input a path, not a {type(path).__class__.__name__}!'")
 
     path = str(path)
-
-    if film_thr >= 100:
-        film_thr = 100.0
+    film_thr = 100.0 if film_thr >= 100 else film_thr
 
     if path.startswith('file:///'):
         path = path[8::]
 
-    if force_lsmas:
-        clip = core.lsmas.LWLibavSource(path, **index_args) \
-            .std.SetFrameProps(lvf_idx='lsmas')
-    elif is_image(path):
-        clip = core.imwri.Read(path, **index_args) \
-            .std.SetFrameProps(lvf_idx='imwri')
-    else:
-        has_nv = _check_has_nvidia()
+    dgidx, dgsrc = _get_dgidx()
 
-        dgidx = 'DGIndexNV' if has_nv else 'DGIndex'
-        dgsrc = core.dgdecodenv.DGSource if has_nv else core.dgdecode.DGSource  # type:ignore[attr-defined]
-
-        if not path.endswith('.dgi'):
+    match IndexExists.LWI_EXISTS if force_lsmas else _check_index_exists(path):
+        case IndexExists.PATH_IS_DGI:
+            order, film = _tail(path, tail_lines)
+            clip = _load_dgi(path, film_thr, dgsrc, order, film, **index_args)
+        case IndexExists.PATH_IS_IMG:
+            clip = core.imwri.Read(path, **index_args).std.SetFrameProps(lvf_idx='imwri')
+        case IndexExists.LWI_EXISTS:
+            clip = core.lsmas.LWLibavSource(path, **index_args).std.SetFrameProps(lvf_idx='lsmas')
+        case IndexExists.DGI_EXISTS:
+            order, film = _tail(f"{path}.dgi", tail_lines)
+            clip = _load_dgi(f"{path}.dgi", film_thr, dgsrc, order, film, **index_args)
+        case _:
             filename, _ = os.path.splitext(path)
             dgi_file = f'{filename}.dgi'
 
@@ -115,25 +111,9 @@ def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
             else:
                 order, film = _tail(dgi_file, tail_lines)
                 clip = _load_dgi(dgi_file, film_thr, dgsrc, order, film, **index_args)
-        else:
-            order, film = _tail(path)
-            clip = _load_dgi(path, film_thr, dgsrc, order, film, **index_args)
 
     if ref:
-        check_variable(ref, "source")
-        assert ref.format
-
-        ref_frame = ref.get_frame(0)
-
-        clip = kernel.scale(clip, ref.width, ref.height)
-        clip = kernel.resample(clip, format=ref.format, matrix=cast(kernel_type.Matrix, get_matrix(ref)))
-        clip = core.std.SetFrameProps(clip, _Transfer=get_prop(ref_frame, '_Transfer', int),
-                                      _Primaries=get_prop(ref_frame, '_Primaries', int))
-        clip = core.std.AssumeFPS(clip, fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
-
-        if is_image(path):
-            clip = clip * ref.num_frames
-
+        return match_clip(clip, ref, length=is_image(path), kernel=kernel)
     return clip
 
 
@@ -440,59 +420,6 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
             return crossfade(merge[:end], clip[end-fade_length:], fade_length)
     else:
         return replace_ranges(clip, merge, frame_ranges)
-
-
-# Helper functions
-def _check_has_nvidia() -> bool:
-    """Check if the user has an Nvidia GPU."""
-    try:
-        sp.check_output('nvidia-smi')
-        return True
-    except sp.CalledProcessError:
-        return False
-
-
-def _generate_dgi(path: str, idx: str) -> bool:
-    """Generate a dgi file using the given indexer and verify it exists."""
-    filename, _ = os.path.splitext(path)
-    output = f'{filename}.dgi'
-
-    if not os.path.exists(output):
-        try:
-            sp.run([idx, '-i', path, '-o', output, '-h'])
-        except sp.CalledProcessError:
-            return False
-
-    return os.path.exists(output)
-
-
-def _tail(filename: str, n: int = 10) -> Tuple[int, float]:
-    """Return the last n lines of a file."""
-    with open(filename, "r") as f:
-        lines = deque(f, n)
-        lines = cast(deque[str], [line for line in lines if 'FILM' in line or 'ORDER' in line])
-
-        if len(lines) == 1:
-            return (int(lines[0].split(' ')[1]), 0.00)
-
-        return (int(lines.pop().split(" ")[1].replace("\n", "")),
-                float(lines.pop().split(" ")[0].replace("%", "")))
-
-
-def _load_dgi(path: str, film_thr: float, src_filter: VSIdxFunction,
-              order: int, film: float, **index_args: Any) -> vs.VideoNode:
-    """
-    Run the source filter on the given dgi.
-
-    If order > 0 and FILM % > 99%, it will automatically enable `fieldop=1`.
-    """
-    props = dict(dgi_order=order, dgi_film=film, dgi_fieldop=0, lvf_idx='DGIndex(NV)')
-
-    if 'fieldop' not in index_args and (order > 0 and film >= film_thr):
-        index_args['fieldop'] = 1
-        props |= dict(dgi_fieldop=1, _FieldBased=0)
-
-    return src_filter(path, **index_args).std.SetFrameProps(**props)
 
 
 # Aliases
