@@ -49,12 +49,15 @@ def quick_resample(clip: vs.VideoNode,
     """
     Quickly resample to 32/16/8 bit and back to the original depth in a one-liner.
 
+    .. warning:
+        This function will be either reworked or removed in a future version!
+
     Useful for filters that only work in 16 bit or lower when you're working in float.
 
     :param clip:        Clip to process.
-    :param function:  Filter to run after resampling (accepts and returns clip).
+    :param function:    Filter to run after resampling (accepts and returns clip).
 
-    :return:          Filtered clip in original depth.
+    :return:            Filtered clip in original depth.
     """
     check_variable_format(clip, "quick_resample")
     assert clip.format
@@ -77,15 +80,18 @@ def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
     """
     Return rgvs.Repair if the clip is 16 bit or lower, else rgsf.Repair.
 
+    .. warning:
+        This function will be removed in a future version!
+
     This is done because rgvs doesn't work with float, but rgsf does for whatever reason.
 
     Dependencies:
 
     * `RGSF <https://github.com/IFeelBloated/RGSF>`_
 
-    :param clip:  Clip to process.
+    :param clip:    Clip to process.
 
-    :return:     Appropriate repair function for input clip's depth.
+    :return:        Appropriate repair function for input clip's depth.
     """
     check_variable_format(clip, "pick_repair")
     assert clip.format
@@ -99,15 +105,18 @@ def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
     """
     Return rgvs.RemoveGrain if the clip is 16 bit or lower, else rgsf.RemoveGrain.
 
+    .. warning:
+        This function will be removed in a future version!
+
     This is done because rgvs doesn't work with float, but rgsf does for whatever reason.
 
     Dependencies:
 
     * `RGSF <https://github.com/IFeelBloated/RGSF>`_
 
-    :param clip:  Clip to process.
+    :param clip:    Clip to process.
 
-    :return:     Appropriate RemoveGrain function for input clip's depth.
+    :return:        Appropriate RemoveGrain function for input clip's depth.
     """
     check_variable_format(clip, "pick_removegrain")
     assert clip.format
@@ -142,10 +151,10 @@ def normalize_ranges(clip: vs.VideoNode, ranges: Range | List[Range]) -> List[Tu
     r"""
     Normalize :py:func:`lvsfunc.types.Range`\(s) to a list of inclusive positive integer ranges.
 
-    :param clip:   Reference clip used for length.
-    :param ranges: Single :py:func:`lvsfunc.types.Range` or list of :py:func:`lvsfunc.types.Range`\s.
+    :param clip:        Reference clip used for length.
+    :param ranges:      Single :py:func:`lvsfunc.types.Range` or list of :py:func:`lvsfunc.types.Range`.
 
-    :return:       List of inclusive positive ranges.
+    :return:            List of inclusive positive ranges.
     """
     ranges = ranges if isinstance(ranges, list) else [ranges]
 
@@ -265,12 +274,12 @@ def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -
     """
     Scale binarization thresholds from float to int.
 
-    :param thresh: Threshold [0, 1]. If greater than 1, assumed to be in native clip range.
-    :param clip:   Clip to scale to.
-    :param assume: Assume input is this depth when given input >1. If ``None``, assume ``clip``'s format.
-                   (Default: None)
+    :param thresh:  Threshold [0, 1]. If greater than 1, assumed to be in native clip range.
+    :param clip:    Clip to scale to.
+    :param assume:  | Assume input is this depth when given input >1.
+                    | If ``None``, assume ``clip``'s format (Default: None).
 
-    :return:       Threshold scaled to [0, 2^clip.depth - 1] (if vs.INTEGER).
+    :return:        Threshold scaled to [0, 2^clip.depth - 1] (if vs.INTEGER).
     """
     check_variable_format(clip, "scale_thresh")
     assert clip.format
@@ -707,7 +716,8 @@ def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
     :param vformat:     Match video formats (Default: True).
     :param matrices:    Match matrix/transfer/primaries (Default: True).
     :param length:      Match clip length (Default: False).
-    :param kernel:      Kernel used for resampling the clip (Default: Catrom).
+    :param kernel:      py:class:`vskernels.Kernel` object used for the format conversion.
+                        This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
 
     :return:            Clip that matches the ref clip in format.
     """

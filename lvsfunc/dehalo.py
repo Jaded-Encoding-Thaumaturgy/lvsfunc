@@ -50,6 +50,10 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
 
     :return:                    Dehalo'd clip.
     """
+    warnings.warn("bidehalo: 'This function is deprecated in favor of `vsdehalo.bidehalo`! "
+                  "This function will be removed in a future commit.",
+                  DeprecationWarning)
+
     bm3ddh_args: Dict[str, Any] = dict(sigma=8, radius=1, pre=clip, planes=planes)
     bm3ddh_args.update(bm3d_args)
 
@@ -72,7 +76,6 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     return core.std.Expr([clip, bidh], "x y min")
 
 
-# TO-DO: Add `ref` param that actually works...
 def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
                rx: float = 2.0, ry: float = 2.0,
                brightstr: float = 1.0, darkstr: float = 0.0,
@@ -210,8 +213,10 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
                             To see the effects of this setting take a look at the strong mask (show_mask=4).
     :param thma:            Maximum threshold for sharp edges. Keep only the sharpest edges (line edges).
                             To see the effects of this setting take a look at the strong mask (show_mask=4).
-    :param thlimi:          Minimum limiting threshold. Includes more edges than previously, but ignores simple details.
-    :param thlima:          Maximum limiting threshold. Includes more edges than previously, but ignores simple details.
+    :param thlimi:          Minimum limiting threshold. Includes more edges than previously,
+                            but ignores simple details.
+    :param thlima:          Maximum limiting threshold. Includes more edges than previously,
+                            but ignores simple details.
     :param lowsens:         Lower sensitivity range. The lower this is, the more it will process.
                             Must be between 0 and 100.
     :param highsens:        Upper sensitivity range. The higher this is, the more it will process.
@@ -224,8 +229,8 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
 
     :return:                Dehalo'd clip or halo mask clip.
     """
-    warnings.warn("fine_dehalo: 'This function is deprecated in favor of `stgfunc.dehalo.fine_dehalo` "
-                  "(soon `vsdehalo.fine_dehalo`)! This function will be removed in a future commit.",
+    warnings.warn("fine_dehalo: 'This function is deprecated in favor of `vsdehalo.fine_dehalo`! "
+                  "This function will be removed in a future commit.",
                   DeprecationWarning)
     try:
         from havsfunc import DeHalo_alpha

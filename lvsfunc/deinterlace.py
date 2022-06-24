@@ -15,13 +15,15 @@ from vsutil import Dither, depth, get_depth, get_w, get_y, scale_value
 
 from .comparison import Stack
 from .exceptions import InvalidFramerateError
-from .render import clip_async_render, get_render_progress
+from .helpers import _check_pattern
+from .render import get_render_progress
 from .types import Direction
 from .util import check_variable, check_variable_format, force_mod, get_neutral_value, get_prop, pick_repair
 
 core = vs.core
 
 __all__: List[str] = [
+    'check_patterns',
     'deblend',
     'decomb',
     'descale_fields',
@@ -31,7 +33,6 @@ __all__: List[str] = [
     'sivtc', 'SIVTC',
     'tivtc_vfr', 'TIVTC_VFR',
     'vinverse',
-    'check_patterns',
 ]
 
 main_file = os.path.realpath(sys.argv[0]) if sys.argv[0] else None
@@ -67,12 +68,14 @@ def seek_cycle(clip: vs.VideoNode, write_props: bool = True, scale: int = -1) ->
     Purely visual tool to view telecining cycles.
 
     This is purely a visual tool!
-    This function has no matching parameters, just use wobbly instead if you need that.
+    This function has no matching parameters.
+    Just use `Wobbly <https://github.com/dubhater/Wobbly>`_ instead if you need that.
 
-    Displays the current frame, two previous and two future frames,
-    as well as whether they are combed or not.
+    Displays the current frame, two previous and future frames,
+    and whether they are combed or not.
 
-    P indicates a progressive frame, C a combed frame.
+    ``P`` indicates a progressive frame,
+    and ``C`` a combed frame.
 
     Dependencies:
 
@@ -188,10 +191,10 @@ def tivtc_vfr(clip: vs.VideoNode,
     | and is basically an improved rewrite on the concept.
 
     .. warning::
-        | When calculating the matches and metrics for the first time, your previewer may error!
-        | To fix this, refresh your previewer! If it still doesn't work, open the ``.ivtc`` directory
-        | and check if the files in there are **0kb**. If they are, **delete them** and run the function again.
-        | You may need to first restart your previewer entirely for it to work!
+        | When calculating the matches and metrics for the first time, your previewer may error out!
+        | To fix this, simply refresh your previewer. If it still doesn't work, open the ``.ivtc`` directory
+        | and check if the files are **0kb**. If they are, **delete them** and run the function again.
+        | You may need to restart your previewer entirely for it to work!
 
     Dependencies:
 
@@ -268,6 +271,9 @@ def deblend(clip: vs.VideoNode, start: int = 0,
     """
     Deblending function for blended AABBA patterns.
 
+    .. warning:
+        This function will be updated in a future version!
+
     Assuming there's a constant pattern of frames (labeled A, B, C, CD, and DA in this function),
     blending can be fixed by calculating the D frame by getting halves of CD and DA, and using that
     to fix up CD. DA is then dropped because it's a duplicated frame.
@@ -319,6 +325,9 @@ def decomb(clip: vs.VideoNode,
            qtgmc_args: Dict[str, Any] = {}) -> vs.VideoNode:
     """
     Perform relatively aggressive filtering to get rid of the combing on a interlaced/telecined source.
+
+    .. warning:
+        This function will be removed in a future version!
 
     Decimation can be disabled if the user wishes to decimate the clip themselves.
 
@@ -391,10 +400,8 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
 
     This function also sets a frameprop with the kernel that was used.
 
-    The kernel is set using an lvsfunc.Kernel object.
-    You can call these by doing for example ``kernel=vskernels.Bilinear()``.
-    You can also set specific values manually. For example: ``kernel=vskernels.Bicubic(b=0, c=1)``.
-    For more information, check the documentation on Kernels.
+    The kernel is set using an py:class:`vskernels.Kernel` object.
+    For more information, check the `vskernels documentation <https://vskernels.encode.moe/en/latest/>`_.
 
     ``src_top`` allows you to to shift the clip prior to descaling.
     This may be useful, as sometimes clips are shifted before or after the original upscaling.
@@ -403,7 +410,8 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
     :param tff:         Top-field-first. `False` sets it to Bottom-Field-First.
     :param width:       Native width. Will be automatically determined if set to `None`.
     :param height:      Native height. Will be divided by two internally.
-    :param kernel:      lvsfunc.Kernel object. This can also be a string (Default: Catrom).
+    :param kernel:      py:class:`vskernels.Kernel` object used for the descaling.
+                        This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
     :param src_top:     Shifts the clip vertically during the descaling.
 
     :return:            Descaled GRAY clip.
@@ -426,6 +434,9 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
 def bob(clip: vs.VideoNode, tff: bool | None = None) -> vs.VideoNode:
     """
     Very simple bobbing function.
+
+    .. warning:
+        This function is deprecated in favor of :py:func:`vapoursynth.core.resize.Bob`!
 
     Shouldn't be used for regular filtering,
     but as a very cheap bobber for other functions.
@@ -529,8 +540,8 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
     apply this function, and `vsutil.insert_clip` the clip back into a properly IVTC'd clip.
     Alternatively, use `muvsfunc.VFRSplice` to splice the clip back in if you're dealing with a VFR clip.
 
-    :param clip:            Clip to process.. Framerate must be 30000/1001.
-    :param frame_ref:       First frame in the pattern. Expected pattern is ABBCD,.
+    :param clip:            Clip to process. Framerate must be 30000/1001.
+    :param frame_ref:       First frame in the pattern. Expected pattern is ABBCD,
                             except for when ``dec`` is enabled, in which case it's AABCD.
     :param tff:             Top-field-first. `False` sets it to Bottom-Field-First.
     :param interlaced:      60i credits. Set to false for 30p credits.
@@ -683,14 +694,14 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
 
     This is Setsugen_no_ao's implementation, adopted into lvsfunc.
 
-    :param clip:     Clip to process.
-    :param sstr:    Contrasharpening strength. Increase this if you find.
-                    the decombing blurs the image a bit too much.
-    :param amount:  Maximum difference allowed between the original pixels and adjusted pixels.
-                    Scaled to input clip's depth. Set to 255 to effectively disable this.
-    :param scale:   Scale amount for vertical sharp * vertical blur.
+    :param clip:        Clip to process.
+    :param sstr:        Contrasharpening strength. Increase this if you find
+                        the decombing blurs the image a bit too much.
+    :param amount:      Maximum difference allowed between the original pixels and adjusted pixels.
+                        Scaled to input clip's depth. Set to 255 to effectively disable this.
+    :param scale:       Scale amount for vertical sharp * vertical blur.
 
-    :return:        Clip with residual combing largely removed.
+    :return:            Clip with residual combing largely removed.
     """
     check_variable_format(clip, "vinverse")
     assert clip.format
@@ -715,29 +726,6 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
                             f'* 0 < sdiff@ n@ - abs diff@ n@ - abs < sdiff@ diff@ ? n@ - {scale} * n@ + sdiff@ n@ '
                             '- abs diff@ n@ - abs < sdiff@ diff@ ? ? n@ - + merge! x a@ + merge@ < x a@ + x a@ - '
                             'merge@ > x a@ - merge@ ? ?')
-
-
-# Helper functions
-def _check_pattern(clip: vs.VideoNode, pattern: int = 0) -> bool:
-    """check_patterns' rendering behaviour."""
-    clip = sivtc(clip, pattern)
-    clip = core.tdm.IsCombed(clip)
-
-    frames: List[int] = []
-
-    def _cb(n: int, f: vs.VideoFrame) -> None:
-        if get_prop(f, '_Combed', int):
-            frames.append(n)
-
-    # TODO: Tried being clever and just exiting if any combing was found, but async_render had other plans :)
-    clip_async_render(clip[::4], progress=f"Checking pattern {pattern}...", callback=_cb)
-
-    if len(frames) > 0:
-        print(f"check_patterns: 'Combing found with pattern {pattern}!'")
-        return False
-
-    print(f"check_patterns: 'Clean clip found with pattern {pattern}!'")
-    return True
 
 
 # Temporary aliases

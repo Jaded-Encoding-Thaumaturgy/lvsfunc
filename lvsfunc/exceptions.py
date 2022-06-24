@@ -8,9 +8,9 @@ from vskernels import Kernel, get_kernel
 from .types import Matrix
 
 __all__: List[str] = [
-    'VariableFormatError', 'VariableResolutionError', 'NotEqualFormatsError',
-    'InvalidFormatError', 'ClipsAndNamedClipsError', 'InvalidFramerateError',
     'CompareSameKernelError', 'FramePropError', 'MatrixError',
+    'InvalidFormatError', 'ClipsAndNamedClipsError', 'InvalidFramerateError',
+    'VariableFormatError', 'VariableResolutionError', 'NotEqualFormatsError',
 ]
 
 

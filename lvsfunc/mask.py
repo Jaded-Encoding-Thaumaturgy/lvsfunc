@@ -283,11 +283,11 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
 
     When radii are equal to 1, this filter becomes identical to mt_edge("min/max", 0, 255, 0, 255).
 
-    :param clip:     Clip to process.
-    :param rad:     Depth in pixels of the detail/edge masking.
-    :param radc:    Chroma equivalent to ``rad``.
+    :param clip:        Clip to process.
+    :param rad:         Depth in pixels of the detail/edge masking.
+    :param radc:        Chroma equivalent to ``rad``.
 
-    :return:        Range mask.
+    :return:            Range mask.
     """
     check_variable(clip, "range_mask")
 
@@ -333,10 +333,10 @@ class BoundingBox():
 
     Uses Position + Size, like provided by GIMP's rectangle selection tool.
 
-    :param pos:  Offset of top-left corner of the bounding box from the top-left corner of the frame.
-                 Supports either a :py:attr:`lvsfunc.types.Position` or a tuple that will be converted.
-    :param size: Offset of the bottom-right corner of the bounding box from the top-left corner of the bounding box.
-                 Supports either a :py:attr:`lvsfunc.types.Size` or a tuple that will be converted.
+    :param pos:     Offset of top-left corner of the bounding box from the top-left corner of the frame.
+                    Supports either a :py:attr:`lvsfunc.types.Position` or a tuple that will be converted.
+    :param size:    Offset of the bottom-right corner of the bounding box from the top-left corner of the bounding box.
+                    Supports either a :py:attr:`lvsfunc.types.Size` or a tuple that will be converted.
     """
 
     pos: Position
@@ -350,9 +350,9 @@ class BoundingBox():
         """
         Get a mask representing the bounding box.
 
-        :param ref: Reference clip for format, resolution, and length.
+        :param ref:     Reference clip for format, resolution, and length.
 
-        :return:    Square mask representing the bounding box.
+        :return:        Square mask representing the bounding box.
         """
         check_variable(ref, "get_mask")
         assert ref.format
@@ -378,13 +378,13 @@ class DeferredMask(ABC):
     Provides an interface to use different preconfigured masking functions.
     Provides support for ranges, reference frames, and bounding.
 
-    :param range:    A single range or list of ranges to replace,.
-                     compatible with :py:class:`lvsfunc.misc.replace_ranges`
-    :param bound:    A :py:class:`lvsfunc.mask.BoundingBox` or a tuple that will be converted.
-                     (Default: ``None``, no bounding)
-    :param blur:     Blur the bounding mask (Default: False).
-    :param refframe: A single frame number to use to generate the mask.
-                     or a list of frame numbers with the same length as :py:func:`lvsfunc.types.Range`
+    :param range:       A single range or list of ranges to replace,
+                        compatible with :py:class:`lvsfunc.misc.replace_ranges`
+    :param bound:       A :py:class:`lvsfunc.mask.BoundingBox` or a tuple that will be converted
+                        (Default: ``None``, no bounding).
+    :param blur:        Blur the bounding mask (Default: False).
+    :param refframe:    A single frame number to use to generate the mask
+                        or a list of frame numbers with the same length as :py:func:`lvsfunc.types.Range`
     """
 
     ranges: List[Range]

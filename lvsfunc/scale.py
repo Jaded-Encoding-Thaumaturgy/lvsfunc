@@ -90,14 +90,14 @@ def reupscale(clip: vs.VideoNode,
 
     * `znedi3 <https://github.com/sekrit-twc/znedi3>`_
 
-    :param clip:         Clip to process.
-    :param width:        Upscale width. If None, determine from `height` assuming 16:9 aspect ratio (Default: None).
-    :param height:       Upscale height (Default: 1080).
-    :param kernel:       Kernel used to downscale the doubled clip (see :py:class:`vskernels.Kernel`,.
-                         Default: kernels.Bicubic(b=0, c=1/2))
-    :param kwargs:       Arguments passed to znedi3 (Default: nsize=4, nns=4, qual=2, pscrn=2).
+    :param clip:        Clip to process.
+    :param width:       Upscale width. If None, determine from `height` assuming 16:9 aspect ratio (Default: None).
+    :param height:      Upscale height (Default: 1080).
+    :param kernel:      py:class:`vskernels.Kernel` object used for downscaling the super-sampled clip.
+                        This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
+    :param kwargs:      Arguments passed to znedi3 (Default: nsize=4, nns=4, qual=2, pscrn=2).
 
-    :return:             Reupscaled clip.
+    :return:            Reupscaled clip.
     """
     width = width or get_w(height)
 
@@ -170,30 +170,32 @@ def descale(clip: vs.VideoNode,
     * `VapourSynth-descale <https://github.com/Irrational-Encoding-Wizardry/VapourSynth-descale>`_
     * `znedi3 <https://github.com/sekrit-twc/znedi3>`_
 
-    :param clip:                    Clip to descale.
-    :param upscaler:                Callable function with signature upscaler(clip, width, height).
-                                    -> vs.VideoNode to be used for reupscaling.
-                                    Must be capable of handling variable res clips
-                                    for multiple heights and conditional scaling.
-                                    If a single height is given and upscaler is None,
-                                    a constant resolution GRAY clip will be returned instead.
-                                    Note that if upscaler is None, no upscaling will be performed
-                                    and neither detail masking nor proper fractional descaling can be performed.
-                                    (Default: :py:func:`lvsfunc.scale.reupscale`)
-    :param width:                   Width(s) to descale to (if None, auto-calculated).
-    :param height:                  Height(s) to descale to. List indicates multiple resolutions,.
-                                    the function will determine the best. (Default: 720)
-    :param kernel:                  Kernel used to descale the clip. This can also be a string.
-                                    (see :py:class:`vskernels.Kernel`, (Default: kernels.Bicubic(b=0, c=1/2))
-    :param threshold:               Error threshold for conditional descaling (Default: 0.0, always descale).
-    :param mask:                    Function or mask clip used to mask detail. If ``None``, no masking.
-                                    Function must accept a clip and a reupscaled clip and return a mask.
-                                    (Default: :py:func:`lvsfunc.scale.descale_detail_mask`)
-    :param src_left:                Horizontal shifting for fractional resolutions (Default: 0.0).
-    :param src_top:                 Vertical shifting for fractional resolutions (Default: 0.0).
-    :param show_mask:               Return detail mask.
+    :param clip:        Clip to descale.
+    :param upscaler:    Callable function with signature upscaler(clip, width, height).
+                        -> vs.VideoNode to be used for reupscaling.
+                        Must be capable of handling variable res clips
+                        for multiple heights and conditional scaling.
 
-    :return:                        Descaled and re-upscaled clip with float bitdepth.
+                        If a single height is given and upscaler is None,
+                        a constant resolution GRAY clip will be returned instead.
+
+                        Note that if upscaler is None, no upscaling will be performed
+                        and neither detail masking nor proper fractional descaling can be performed.
+                        (Default: :py:func:`lvsfunc.scale.reupscale`)
+    :param width:       Width(s) to descale to (if None, auto-calculated).
+    :param height:      Height(s) to descale to. List indicates multiple resolutions,.
+                        the function will determine the best. (Default: 720)
+    :param kernel:      py:class:`vskernels.Kernel` object used for the descaling.
+                        This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
+    :param threshold:   Error threshold for conditional descaling (Default: 0.0, always descale).
+    :param mask:        Function or mask clip used to mask detail. If ``None``, no masking.
+                        Function must accept a clip and a reupscaled clip and return a mask.
+                        (Default: :py:func:`lvsfunc.scale.descale_detail_mask`)
+    :param src_left:    Horizontal shifting for fractional resolutions (Default: 0.0).
+    :param src_top:     Vertical shifting for fractional resolutions (Default: 0.0).
+    :param show_mask:   Return detail mask.
+
+    :return:            Descaled and re-upscaled clip with float bitdepth.
     """
     check_variable(clip, "descale")
     assert clip.format
@@ -320,7 +322,7 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
                         Can be forced with for example `curve=vs.TransferCharacteristics.TRANSFER_BT709`.
     :param gamma:       Perform a gamma conversion prior to scaling and after scaling.
                         This function MUST be set to `True` for `sigmoid` and `epsilon` to function.
-    :param sigmoid:     When True, applies a sigmoidal curve after the power-like curve.
+    :param sigmoid:     When True, applies a sigmoidal curve after the power-like curve
                         (or before when converting from linear to gamma-corrected).
                         This helps reduce the dark halo artefacts found around sharp edges
                         caused by resizing in linear luminance.
@@ -428,7 +430,9 @@ def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: in
     :param clip:        Clip to process.
     :param width:       Width to descale to (if None, auto-calculated).
     :param height:      Descale height.
-    :param kernel:      Kernel to compare BicubicSharp to. This can also be a string (Default: Spline36 if None).
+    :param kernel:      py:class:`vskernels.Kernel` object to compare py:class:`vskernels.BicubicSharp` to.
+                        This can also be the string name of the kernel
+                        (Default: py:class:`vskernels.Spline36` if ``kernel=None``).
     :param thr:         Threshold for which kernel to pick.
 
     :return:            Descaled clip.
@@ -481,7 +485,9 @@ def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: in
     :param clip:        Clip to process.
     :param width:       Width to upscale to (if None, auto-calculated).
     :param height:      Upscale height.
-    :param kernel:      Kernel to compare BicubicSharp to (Default: Spline36 if None).
+    :param kernel:      py:class:`vskernels.Kernel` object to compare py:class:`vskernels.BicubicSharp` to.
+                        This can also be the string name of the kernel
+                        (Default: py:class:`vskernels.Spline36` if ``kernel=None``).
 
     :return:            Reupscaled clip.
     """
@@ -532,10 +538,11 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
     :param clip:            Clip to process.
     :param width:           Upscale width. If None, determine from `height` (Default: None).
     :param height:          Upscale height (Default: 720).
-    :param kernel:          Kernel used to descale the clip. This can also be a string.
-                            (see :py:class:`vskernels.Kernel`, Default: kernels.Bicubic(b=0, c=1/2) (Catrom)).
-    :param downscaler:      Kernel or custom scaler used to downscale the clip. This can also be a string.
-                            (see :py:class:`vskernels.Kernel`, Default: ``ssim_downsample``).
+    :param kernel:          py:class:`vskernels.Kernel` object used for the descaling.
+                            This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
+    :param downscaler:      Kernel or custom scaler used to downscale the clip.
+                            This can also be the string name of the kernel
+                            (Default: py:class:`lvsfunc.scale.ssim_downsample`).
     :param credit_mask:     Function or mask clip used to mask detail. If ``None``, no masking.
                             Function must accept a clip and a reupscaled clip and return a mask.
                             (Default: :py:func:`lvsfunc.scale.descale_detail_mask`).
@@ -566,6 +573,7 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
 
     if isinstance(kernel, str):
         kernel = get_kernel(kernel)()
+
     if isinstance(downscaler, str):
         downscaler = get_kernel(downscaler)()
 

@@ -60,7 +60,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                             See :py:attr:`lvsfunc.types.Matrix` for more info.
                             If `None`, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
-    :param kernel:          `Kernel` object used for conversions between YUV <-> RGB.
+    :param kernel:          py:class:`vskernels.Kernel` object used for conversions between YUV <-> RGB.
+                            This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
     :param cuda:            Use CUDA backend if True, else CPU backend.
     :param write_props:     whether to write verbose props.
     :param vsdpir_args:     Additional args to pass to :py:func:`lvsfunc.deblock.vsdpir`.
@@ -170,21 +171,22 @@ def dpir(
 
     :param clip:            Clip to process.
     :param strength:        DPIR strength.
-                            Sane values lie between 1–20 for ``mode='deblock'``, and 1–3 for ``mode='denoise'``
-                            Other than a float, it can also be a clip, either GRAY8 (0-255), or GRAYS (0-+inf)
-                            for example clip.std.BlankClip(format=vs.GRAYS, color=15.0 / 255) for solid strength
-                            across the frame, but you can combine various strengths with masks,
-                            for example having a higher strength in flat parts or where ringing occurs,
-                            but lower in textured/detailed parts.
+                            Sane values lie between 1–10 for ``mode='deblock'``, and 1–3 for ``mode='denoise'``
+                            Other than a float, you can also pass a clip, either GRAY8 (0-255), or GRAYS (0-+inf).
+                            For example, you can pass a :py:func:`clip.std.BlankClip(format=vs.GRAYS, color=15.0 / 255)`
+                            for a solid strength across the frame, or you can combine various strengths with masks.
+                            This means you can pass higher strenghts to areas around edges with heavy ringing,
+                            and lower in textured/detailed parts, for example.
     :param mode:            DPIR mode. Valid modes are 'deblock' and 'denoise'.
     :param matrix:          Enum for the matrix of the Clip to process.
                             See :py:attr:`lvsfunc.types.Matrix` for more info.
                             If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
-    :param cuda:            Used to select backend; use CUDA if True, CUDA TensorRT if 'trt' else CPU OpenVINO if False.
-                            If None it will detect your system's capabilities and select the fastest backend.
+    :param cuda:            Used to select backend.
+                            Use CUDA if True, CUDA TensorRT if 'trt', else CPU OpenVINO if False.
+                            If ``None``, it will detect your system's capabilities and select the fastest backend.
     :param i444:            Forces the returned clip to be YUV444PS instead of the input clip's format.
-    :param tiles:           Can either be an int, specifying the number of tiles the image will be split into.
+    :param tiles:           Can either be an int, specifying the number of tiles the image will be split into
                             for processing, or a tuple for manually specifying the width/height of the singular tiles.
     :param overlap:         Number of pixels in each direction for padding the tiles.
                             Useful for, when using tiled processing, you're having clear boundaries between tiles.
@@ -193,12 +195,12 @@ def dpir(
                             The key should be a `float` / ``VideoNode`` (a normalised mask, for example)
                             or `None` to passthrough the Clip to process.
                             The values should be a range that will be passed to ``replace_ranges``
-    :param fp16:            Represent the clip with 16f tensors instead of 32f for a speedup, but it's useless,.
-                            and may even harm performances, when enabled with a device that doesn't support it.
+    :param fp16:            Represent the clip with 16f tensors instead of 32f for a speedup, but it's useless—
+                            and may even harm performance—when enabled with a device that doesn't support it.
     :param num_streams:     Number of concurrent CUDA streams to use. Increase if GPU isn't getting saturated.
     :param device_id:       Specifies the GPU device id to use.
-    :param kernel:          vskernel.Kernel object used to scale to/from RGB.
-                            This can also be the str name of the kernel (Default: Catrom)
+    :param kernel:          py:class:`vskernels.Kernel` object used to scale to and from RGB.
+                            This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
 
     :return:                Deblocked or denoised clip in either the given clip's format or YUV444PS.
     """
