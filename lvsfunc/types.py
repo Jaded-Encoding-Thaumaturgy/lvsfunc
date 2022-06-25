@@ -8,7 +8,8 @@ import vapoursynth as vs
 
 __all__: List[str] = [
     'Coefs', 'Coordinate', 'CreditMask', 'CURVES', 'CustomScaler', 'Direction', 'F', 'Matrix', 'Position', 'Range',
-    'RegressClips', 'Resolution', 'ScaleAttempt', 'SceneChangeMode', 'Size', 'T', 'VideoProp', 'VSFunction'
+    'RegressClips', 'Resolution', 'ScaleAttempt', 'SceneChangeMode', 'Size', 'T', 'VideoProp', 'VSFunction',
+    '_VideoNode'
 ]
 
 
@@ -190,3 +191,9 @@ class IndexExists(IntEnum):
     LWI_EXISTS = auto()
     DGI_EXISTS = auto()
     NONE = auto()
+
+
+class _VideoNode(vs.VideoNode):
+    """Use for asserting a VideoFormat exists."""
+
+    format: vs.VideoFormat
