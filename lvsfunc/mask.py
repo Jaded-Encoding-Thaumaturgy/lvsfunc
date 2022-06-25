@@ -3,15 +3,17 @@ from __future__ import annotations
 import math
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Sequence, Tuple
 
 import vapoursynth as vs
+from vsrgtools import removegrain
+from vsrgtools.util import normalise_planes
 from vsutil import Range as CRange
 from vsutil import depth, get_depth, get_y, iterate, join, split
 
 from . import util
 from .types import Position, Range, Shapes, Size
-from .util import check_variable, check_variable_resolution, pick_removegrain, replace_ranges, scale_peak, scale_thresh
+from .util import check_variable, check_variable_resolution, replace_ranges, scale_peak, scale_thresh
 
 core = vs.core
 
@@ -68,8 +70,8 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
     mask_b = core.std.Binarize(mask_b, brz_b)
 
     mask = core.akarin.Expr([mask_a, mask_b], 'x y max')
-    mask = util.pick_removegrain(mask)(mask, 22)
-    return util.pick_removegrain(mask)(mask, 11).std.Limiter()
+    mask = removegrain(mask, 22)
+    return removegrain(mask, 11).std.Limiter()
 
 
 def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
@@ -77,7 +79,7 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
                     blur_func: Callable[[vs.VideoNode, vs.VideoNode, float],
                                         vs.VideoNode] | None = None,
                     edgemask_func: Callable[[vs.VideoNode], vs.VideoNode] = core.std.Prewitt,
-                    rg_mode: int = 17) -> vs.VideoNode:
+                    rg_mode: int | Sequence[int] = 17) -> vs.VideoNode:
     """
     Detail mask aimed at preserving as much detail as possible.
 
@@ -124,7 +126,7 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
         prew_mask = prew_mask.std.Binarize(lines_brz)
 
     merged = core.akarin.Expr([blur_pref, prew_mask], "x y +")
-    rm_grain = pick_removegrain(merged)(merged, rg_mode)
+    rm_grain = removegrain(merged, rg_mode)
 
     return depth(rm_grain, clip.format.bits_per_sample).std.Limiter()
 
@@ -472,6 +474,8 @@ def mt_xxpand_multi(clip: vs.VideoNode,
     """
     check_variable(clip, "mt_xxpand_multi")
     assert clip.format
+
+    planes = normalise_planes(clip, planes)
 
     params: Dict[str, Any] = dict(planes=planes)
     params |= m_params

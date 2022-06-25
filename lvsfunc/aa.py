@@ -6,9 +6,10 @@ from typing import Any, Callable, Dict, List
 import vapoursynth as vs
 from vskernels import Bicubic, Box, Catrom, Point
 from vsutil import depth, fallback, get_depth, get_w, get_y, join, plane, scale_value
+from vsrgtools import repair
 
 from .scale import ssim_downsample
-from .util import check_variable, check_variable_format, pick_repair, scale_thresh
+from .util import check_variable, check_variable_format, scale_thresh
 
 core = vs.core
 
@@ -204,9 +205,10 @@ def transpose_aa(clip: vs.VideoNode,
 
     aaclip = _taa(clip_y)
     aaclip = _csharp(aaclip, clip_y)
-    aaclip = pick_repair(clip_y)(aaclip, clip_y, rep)
+    aaclip = repair(aaclip, clip_y, rep)
 
-    return aaclip if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
+    return aaclip if clip.format.color_family is vs.GRAY \
+        else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
 
 
 def _nnedi3_supersample(clip: vs.VideoNode, width: int, height: int, opencl: bool = False) -> vs.VideoNode:
