@@ -356,7 +356,12 @@ def check_variable_resolution(clip: vs.VideoNode, function: str) -> None:
 
 
 def check_variable(clip: vs.VideoNode, function: str) -> None:
-    """Check for variable format and a variable resolution and return an error if found."""
+    """
+    Check for variable format and a variable resolution and return an error if found.
+
+    :raises VariableFormatError:        The clip is of a variable format.
+    :raises VariableResolutionError:    The clip has a variable resolution.
+    """
     check_variable_format(clip, function)
     check_variable_resolution(clip, function)
 
