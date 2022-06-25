@@ -35,7 +35,7 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     Dehaloing function that uses bilateral and BM3D to remove bright haloing around edges.
 
     .. warning::
-        | This function has been deprecated! It will removed in a future commit.
+        | This function has been deprecated! It will be removed in a future commit.
 
     If a ref clip is passed, that will be masked onto the clip instead of a blurred clip.
 
