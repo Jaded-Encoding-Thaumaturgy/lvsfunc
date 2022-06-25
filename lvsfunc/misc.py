@@ -160,7 +160,7 @@ def edgefixer(clip: vs.VideoNode,
                   "and will likely be renamed. Please make sure to update your scripts once it does.",
                   FutureWarning)
 
-    check_variable(clip, "edgefixer")
+    assert check_variable(clip, "edgefixer")
 
     if left is None:
         left = 0
@@ -201,7 +201,7 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
     """
     val: Tuple[float, float, float]
 
-    check_variable(clip, "shift_tint")
+    assert check_variable(clip, "shift_tint")
 
     if isinstance(values, int):
         val = (values, values, values)
@@ -278,7 +278,7 @@ def wipe_row(clip: vs.VideoNode,
 
     :return:                Clip with given rows or columns wiped.
     """
-    check_variable(clip, "wipe_row")
+    assert check_variable(clip, "wipe_row")
 
     ref = ref or core.std.BlankClip(clip)
 
@@ -314,8 +314,7 @@ def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
 
     :return:                    Unsharpened clip.
     """
-    check_variable(clip, "unsharpen")
-    assert clip.format
+    assert check_variable(clip, "unsharpen")
 
     den = clip.dfttest.DFTTest(sigma=prefilter_sigma) if prefilter else clip
     diff = core.std.MakeDiff(clip, den)
@@ -380,8 +379,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
         except ModuleNotFoundError:
             raise ModuleNotFoundError("overlay_sign: 'missing dependency `kagefunc`!'")
 
-    check_variable(clip, "overlay_sign")
-    assert clip.format
+    assert check_variable(clip, "overlay_sign")
 
     ov_type = type(overlay)
     clip_fam = clip.format.color_family
@@ -408,9 +406,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     if matrix == 2:
         raise InvalidMatrixError("overlay_sign")
 
-    assert overlay.format
-
-    if overlay.format.color_family is not clip_fam:
+    if overlay.format.color_family is not clip_fam:  # type:ignore[union-attr]
         if clip_fam is vs.RGB:
             overlay = Catrom().resample(overlay, clip.format.id, matrix_in=matrix)  # type:ignore[arg-type]
         else:

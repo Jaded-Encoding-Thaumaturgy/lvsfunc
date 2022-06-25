@@ -409,11 +409,8 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     if force_resample:
         clip_a, clip_b = _resample(clip_a), _resample(clip_b)
     elif mismatch is False:
-        check_variable_format(clip_a, "compare")
-        check_variable_format(clip_b, "compare")
-
-        assert clip_a.format
-        assert clip_b.format
+        assert check_variable_format(clip_a, "compare")
+        assert check_variable_format(clip_b, "compare")
 
         if clip_a.format.id != clip_b.format.id:
             raise NotEqualFormatsError("compare")
@@ -490,8 +487,7 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
     :raises TypeError:              Clip is of an unexpected color family.
     :raises TypeError:              Clip returns an unexpected subsampling.
     """
-    check_variable(clip, "stack_planes")
-    assert clip.format
+    assert check_variable(clip, "stack_planes")
 
     if clip.format.num_planes != 3:
         raise InvalidFormatError("stack_planes", "{func}: Input clip must be of a YUV or RGB planar format!")
@@ -530,8 +526,8 @@ def diff_hardsub_mask(a: vs.VideoNode, b: vs.VideoNode, **kwargs: Any) -> vs.Vid
 
     :return:    Diff masked with :py:func:`lvsfunc.dehardsub.hardsub_mask`.
     """
-    check_variable(a, "diff_hardsub_mask")
-    check_variable(b, "diff_hardsub_mask")
+    assert check_variable(a, "diff_hardsub_mask")
+    assert check_variable(b, "diff_hardsub_mask")
 
     return core.std.MaskedMerge(core.std.MakeDiff(a, a), core.std.MakeDiff(a, b), hardsub_mask(a, b, **kwargs))
 
@@ -650,8 +646,7 @@ def diff(*clips: vs.VideoNode,
         diff = core.std.MakeDiff(a, b)
     else:
         diff = diff_func(a, b).std.PlaneStats()
-        assert diff.format is not None
-        t = float if diff.format.sample_type == vs.FLOAT else int
+        t = float if diff.format.sample_type == vs.FLOAT else int  # type:ignore[union-attr]
 
         def _cb(n: int, f: vs.VideoFrame) -> None:
             if get_prop(f, 'PlaneStatsMin', t) <= thr or get_prop(f, 'PlaneStatsMax', t) >= 255 - thr > thr:

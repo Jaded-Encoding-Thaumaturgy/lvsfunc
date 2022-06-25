@@ -562,7 +562,7 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
     except ModuleNotFoundError:
         raise ModuleNotFoundError("pulldown_credits: missing dependency `havsfunc`!")
 
-    check_variable(clip, "pulldown_credits")
+    assert check_variable(clip, "pulldown_credits")
 
     if clip.fps != Fraction(30000, 1001):
         raise ValueError("pulldown_credits: 'Your clip must have a framerate of 30000/1001!'")
@@ -707,8 +707,7 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
 
     :raises ValueError: ``amount`` is set above 255.
     """
-    check_variable_format(clip, "vinverse")
-    assert clip.format
+    assert check_variable_format(clip, "vinverse")
 
     if amount > 255:
         raise ValueError("vinverse: '`amount` may not be set higher than 255!'")

@@ -62,8 +62,7 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     bm3ddh_args: Dict[str, Any] = dict(sigma=8, radius=1, pre=clip, planes=planes)
     bm3ddh_args.update(bm3d_args)
 
-    check_variable(clip, "bidehalo")
-    assert clip.format
+    assert check_variable(clip, "bidehalo")
 
     sigmaS_final = fallback(sigmaS_final, sigmaS / 3)
     sigmaR_final = fallback(sigmaR_final, sigmaR)
@@ -124,8 +123,7 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     :raises ValueError:     ``darkstr`` is not between 0.0–1.0.
     :raises ValueError:     ``lowsens`` or ``highsens`` is not between 0–100.
     """
-    check_variable(clip, "masked_dha")
-    assert clip.format
+    assert check_variable(clip, "masked_dha")
 
     # Original silently changed values around, which I hate. Throwing errors instead.
     if not all(x >= 1 for x in (rfactor, rx, ry)):
@@ -248,12 +246,10 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     except ModuleNotFoundError:
         raise ModuleNotFoundError("fine_dehalo: missing dependency `havsfunc`!'")
 
-    check_variable(clip, "fine_dehalo")
-    assert clip.format
+    assert check_variable(clip, "fine_dehalo")
 
     if ref:
-        check_variable(ref, "fine_dehalo")
-        assert ref.format
+        assert check_variable(ref, "fine_dehalo")
 
     planes = normalise_planes(clip, planes)
 

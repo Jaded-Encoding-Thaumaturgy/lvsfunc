@@ -102,8 +102,7 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
 
     :return:                Detail mask.
     """
-    check_variable(clip, "detail_mask_neo")
-    assert clip.format
+    assert check_variable(clip, "detail_mask_neo")
 
     if not blur_func:
         blur_func = core.bilateral.Bilateral
@@ -162,7 +161,7 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
 
     :return:                Halo mask.
     """
-    check_variable(clip, "halo_mask")
+    assert check_variable(clip, "halo_mask")
 
     smax = scale_thresh(1.0, clip)
 
@@ -223,7 +222,7 @@ def fine_dehalo_mask(clip: vs.VideoNode,
     :raises ValueError:     ``rx`` or ``ry`` are smaller than 1.0.
     :raises ValueError:     Invalid value for ``show_mask`` is passed.
     """
-    check_variable(clip, "halo_mask")
+    assert check_variable(clip, "halo_mask")
 
     clip_y = get_y(clip)
 
@@ -294,14 +293,12 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
 
     :return:            Range mask.
     """
-    check_variable(clip, "range_mask")
+    assert check_variable(clip, "range_mask")
 
     if radc == 0:
         clip = get_y(clip)
 
-    assert clip.format
-
-    if clip.format.color_family == vs.GRAY:
+    if clip.format.color_family == vs.GRAY:  # type:ignore[union-attr]
         ma = _minmax(clip, rad, True)
         mi = _minmax(clip, rad, False)
         mask = core.akarin.Expr([ma, mi], 'x y -')
@@ -318,8 +315,7 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
 
 # Helper functions
 def _minmax(clip: vs.VideoNode, iterations: int, maximum: bool) -> vs.VideoNode:
-    check_variable(clip, "_minmax")
-    assert clip.format
+    assert check_variable(clip, "_minmax")
 
     func = core.std.Maximum if maximum else core.std.Minimum
 
@@ -361,8 +357,7 @@ class BoundingBox():
 
         :raises ValueError:     Bound exceeds clip size.
         """
-        check_variable(ref, "get_mask")
-        assert ref.format
+        assert check_variable(ref, "get_mask")
 
         if self.pos.x + self.size.x > ref.width or self.pos.y + self.size.y > ref.height:
             raise ValueError("BoundingBox: Bounds exceed clip size!")
@@ -434,10 +429,8 @@ class DeferredMask(ABC):
 
         :return:      Bounded mask.
         """
-        check_variable(clip, "get_mask")
-        check_variable(ref, "get_mask")
-        assert clip.format
-        assert ref.format
+        assert check_variable(clip, "get_mask")
+        assert check_variable(ref, "get_mask")
 
         if self.bound:
             bm = self.bound.get_mask(ref)
@@ -479,8 +472,7 @@ def mt_xxpand_multi(clip: vs.VideoNode,
 
     Performs multiple Minimums/Maximums.
     """
-    check_variable(clip, "mt_xxpand_multi")
-    assert clip.format
+    assert check_variable(clip, "mt_xxpand_multi")
 
     planes = normalise_planes(clip, planes)
 
@@ -499,15 +491,16 @@ def mt_xxpand_multi(clip: vs.VideoNode,
     end = int(min(sw, sh)) + start
 
     for x in range(start, end):
-        clips += [m__imum(clips[-1], coordinates=coordinates[x % 3], **params)]
+        clips += [m__imum(clips[-1], coordinates=coordinates[x % 3], **params)]  # type:ignore[list-item]
 
     for x in range(end, int(end + sw - sh)):
-        clips += [m__imum(clips[-1], coordinates=[0, 0, 0, 1, 1, 0, 0, 0], **params)]
+        clips += [m__imum(clips[-1], coordinates=[0, 0, 0, 1, 1, 0, 0, 0], **params)]  # type:ignore[list-item]
 
     for x in range(end, int(end + sh - sw)):
-        clips += [m__imum(clips[-1], coordinates=[0, 1, 0, 0, 0, 0, 1, 0], **params).std.Limiter()]
+        clips += [m__imum(clips[-1], coordinates=[0, 1, 0, 0, 0, 0, 1, 0], **params)  # type:ignore[list-item]
+                  .std.Limiter()]
 
-    return clips
+    return clips  # type:ignore[return-value]
 
 
 maxm = partial(mt_xxpand_multi, m__imum=core.std.Maximum)
