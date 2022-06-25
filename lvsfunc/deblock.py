@@ -41,7 +41,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     and grab the brightest pixels from your two clips. That should return a perfectly fine clip.
 
     Thanks `Vardë <https://github.com/Ichunjo>`_, `louis <https://github.com/tomato39>_`,
-    `setsugen_no_ao <https://github.com/Setsugennoao>`_!
+    `Setsugen no ao <https://github.com/Setsugennoao>`_!
 
     Dependencies:
 
@@ -169,9 +169,10 @@ def dpir(
     Converts to RGB -> runs DPIR -> converts back to original format, and with no subsampling if ``i444=True``.
     For more information, see `the original DPIR repository <https://github.com/cszn/DPIR>`_.
 
-    Thanks `setsugen_no_ao <https://github.com/Setsugennoao>`_!
+    Thanks `Setsugen no ao <https://github.com/Setsugennoao>`_!
 
-    Alias for this function is ``lvsfunc.vsdpir``.
+    | Alias for this function is ``lvsfunc.vsdpir``.
+    | Note that this will be deprecated in the future!
 
     Dependencies:
 

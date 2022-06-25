@@ -28,7 +28,6 @@ __all__: List[str] = [
     'get_coefs',
     'get_matrix_curve',
     'get_matrix',
-    'get_neutral_value',
     'get_prop',
     'load_bookmarks',
     'normalize_ranges',
@@ -194,6 +193,11 @@ def replace_ranges(clip_a: vs.VideoNode,
     if isinstance(ranges, str):  # type:ignore[unreachable]
         raise ValueError("replace_ranges: 'This function does not take strings! Please use a list of tuples or ints!")
 
+    if clip_a.num_frames != clip_b.num_frames:
+        warnings.warn("replace_ranges: "
+                      f"'The number of frames ({clip_a.num_frames} vs. {clip_b.num_frames}) do not match! "
+                      "The function will still work, but you may run into unintended errors with the output clip!'")
+
     nranges = normalize_ranges(clip_b, ranges)
 
     if use_plugin and hasattr(core, 'remap'):
@@ -201,11 +205,6 @@ def replace_ranges(clip_a: vs.VideoNode,
             clip_a, clip_b, mismatch=True,
             mappings=' '.join(f'[{s} {e + (exclusive if s != e else 0)}]' for s, e in nranges)
         )
-
-    if clip_a.num_frames != clip_b.num_frames:
-        warnings.warn("replace_ranges: "
-                      f"'The number of frames ({clip_a.num_frames} vs. {clip_b.num_frames}) do not match! "
-                      "The function will still work, but you may run into unintended errors with the output clip!'")
 
     out = clip_a
     shift = 1 + exclusive
@@ -258,26 +257,6 @@ def force_mod(x: float, mod: int = 4) -> int:
     Minimum returned value will always be mod².
     """
     return mod ** 2 if x < mod ** 2 else int(x / mod + 0.5) * mod
-
-
-def get_neutral_value(clip: vs.VideoNode, chroma: bool = False) -> float:
-    """
-    Return the neutral value for the combination of the plane type and bit depth/type of the clip as float.
-
-    Taken from vsutil. This isn't in any new versions yet, so mypy complains.
-    Will remove once vsutil does another version bump.
-
-    :param clip:        Clip to process.
-    :param chroma:      Whether to get luma or chroma plane value.
-
-    :return:            Neutral value.
-    """
-    check_variable_format(clip, "get_neutral_value")
-    assert clip.format
-
-    is_float = clip.format.sample_type == vs.FLOAT
-
-    return (0. if chroma else 0.5) if is_float else float(1 << (get_depth(clip) - 1))
 
 
 def padder(clip: vs.VideoNode,
@@ -597,7 +576,7 @@ def colored_clips(amount: int,
 
     Will always return a pure red clip in the list as this is the RGB equivalent of the lowest HSL hue possible (0).
 
-    Written by `Dave <mailto:orangechannel@pm.me>`_.
+    Written by `Dave <https://github.com/OrangeChannel>`_.
 
     :param amount:          Number of VideoNodes to return.
     :param max_hue:         Maximum hue (0 < hue <= 360) in degrees to generate colors from (uses the HSL color model).

@@ -12,13 +12,13 @@ from typing import Any, Dict, List, Sequence
 import vapoursynth as vs
 from vskernels import Bicubic, BicubicDidee, Catrom, Kernel, get_kernel
 from vsrgtools import repair
-from vsutil import Dither, depth, get_depth, get_w, get_y, scale_value
+from vsutil import Dither, depth, get_depth, get_neutral_value, get_w, get_y, scale_value
 
 from .comparison import Stack
 from .exceptions import InvalidFramerateError, TopFieldFirstError
 from .render import clip_async_render, get_render_progress
 from .types import Direction
-from .util import check_variable, check_variable_format, force_mod, get_neutral_value, get_prop
+from .util import check_variable, check_variable_format, force_mod, get_prop
 
 core = vs.core
 
@@ -694,7 +694,7 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
     """
     Clean up residual combing after a deinterlacing pass.
 
-    This is Setsugen_no_ao's implementation, adopted into lvsfunc.
+    This is Setsugen no ao's implementation, adopted into lvsfunc.
 
     :param clip:        Clip to process.
     :param sstr:        Contrasharpening strength. Increase this if you find

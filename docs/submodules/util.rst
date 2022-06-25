@@ -15,7 +15,6 @@ Some of these may also be useful for regular scripting or other modules.
     lvsfunc.util.get_coefs
     lvsfunc.util.get_matrix
     lvsfunc.util.get_matrix_curve
-    lvsfunc.util.get_neutral_value
     lvsfunc.util.get_prop
     lvsfunc.util.load_bookmarks
     lvsfunc.util.match_clip
