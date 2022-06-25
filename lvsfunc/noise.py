@@ -47,8 +47,7 @@ def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
     :raises ValueError:     Invalid number of sigma parameters were passed.
     :raises ValueError:     Invalid number of radii parameters were passed.
     """
-    check_variable(clip, "bm3d")
-    assert clip.format
+    assert check_variable(clip, "bm3d")
 
     is_gray = clip.format.color_family == vs.GRAY
 
@@ -151,8 +150,7 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
 
     :return:                Grained clip in the given clip's format.
     """
-    check_variable(clip, "chickendream")
-    assert clip.format
+    assert check_variable(clip, "chickendream")
 
     chkdr_args |= dict(sigma=sigma, rad=rad, seed=seed, res=res)
 

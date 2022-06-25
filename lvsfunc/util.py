@@ -59,8 +59,7 @@ def quick_resample(clip: vs.VideoNode,
     warnings.warn("quick_resample: 'This function will be either reworked or removed in a future version!'",
                   FutureWarning)
 
-    check_variable_format(clip, "quick_resample")
-    assert clip.format
+    assert check_variable_format(clip, "quick_resample")
 
     try:  # Excepts all generic because >plugin/script writers being consistent >_>
         dither = depth(clip, 32)
@@ -234,8 +233,7 @@ def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -
 
     :raises ValueError:     Thresholds are negative.
     """
-    check_variable_format(clip, "scale_thresh")
-    assert clip.format
+    assert check_variable_format(clip, "scale_thresh")
 
     if thresh < 0:
         raise ValueError("scale_thresh: 'Thresholds must be positive!'")
@@ -282,7 +280,7 @@ def padder(clip: vs.VideoNode,
 
     :raises ValueError: A non-even resolution is passed on a YUV420 clip.
     """
-    check_variable(clip, "padder")
+    assert check_variable(clip, "padder")
 
     width = clip.width+left+right
     height = clip.height+top+bottom
@@ -336,7 +334,7 @@ def check_variable_resolution(clip: vs.VideoNode, function: str) -> None:
         raise VariableResolutionError(function)
 
 
-def check_variable(clip: vs.VideoNode, function: str) -> None:
+def check_variable(clip: vs.VideoNode, function: str) -> TypeGuard[_VideoNode]:
     """
     Check for variable format and a variable resolution and return an error if found.
 
@@ -345,6 +343,7 @@ def check_variable(clip: vs.VideoNode, function: str) -> None:
     """
     check_variable_format(clip, function)
     check_variable_resolution(clip, function)
+    return True
 
 
 def get_matrix(frame: vs.VideoNode | vs.VideoFrame, strict: bool = False) -> Matrix:
@@ -371,8 +370,7 @@ def get_matrix(frame: vs.VideoNode | vs.VideoFrame, strict: bool = False) -> Mat
     :raise MatrixError:     Some kind of unknown error occured.
     """
     if isinstance(frame, vs.VideoNode):
-        check_variable_format(frame, "get_matrix")
-        assert frame.format
+        assert check_variable_format(frame, "get_matrix")
 
         frame = frame.get_frame(0)
 
@@ -683,10 +681,8 @@ def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
 
     :return:            Clip that matches the ref clip in format.
     """
-    check_variable(clip, "match_clip")
-    check_variable(ref, "match_clip")
-    assert clip.format
-    assert ref.format
+    assert check_variable(clip, "match_clip")
+    assert check_variable(ref, "match_clip")
 
     if isinstance(kernel, str):
         kernel = get_kernel(kernel)()

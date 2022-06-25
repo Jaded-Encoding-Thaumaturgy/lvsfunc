@@ -274,9 +274,8 @@ def get_all_masks(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[HardsubMas
 
     :return:      Clip of all hardsub masks.
     """
-    check_variable(hrdsb, "get_all_masks")
-    check_variable(ref, "get_all_masks")
-    assert ref.format
+    assert check_variable(hrdsb, "get_all_masks")
+    assert check_variable(ref, "get_all_masks")
 
     mask = core.std.BlankClip(ref, format=ref.format.replace(color_family=vs.GRAY, subsampling_w=0, subsampling_h=0).id)
     for sign in signs:
@@ -315,9 +314,8 @@ def hardsub_mask(hrdsb: vs.VideoNode, ref: vs.VideoNode, thresh: float = 0.06,
 
     :return:        Hardsub mask.
     """
-    check_variable(hrdsb, "hardsub_mask")
-    check_variable(ref, "hardsub_mask")
-    assert hrdsb.format
+    assert check_variable(hrdsb, "hardsub_mask")
+    assert check_variable(ref, "hardsub_mask")
 
     hsmf = core.akarin.Expr([hrdsb, ref], 'x y - abs') \
         .resize.Point(format=hrdsb.format.replace(subsampling_w=0, subsampling_h=0).id)

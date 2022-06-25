@@ -201,8 +201,7 @@ def descale(clip: vs.VideoNode,
     :raises ValueError:     Asymmetric number of heights and widths are specified.
     :raises RuntimeError:   Variable clip gets returned.
     """
-    check_variable(clip, "descale")
-    assert clip.format
+    assert check_variable(clip, "descale")
 
     if isinstance(kernel, str):
         kernel = get_kernel(kernel)()
@@ -225,7 +224,6 @@ def descale(clip: vs.VideoNode,
     resolutions = [Resolution(*r) for r in zip(width, height)]
 
     clip = depth(clip, 32)
-    assert clip.format is not None  # clip was modified by depth, but that won't make it variable
     clip_y = get_y(clip) \
         .std.SetFrameProp('descaleResolution', intval=clip.height)
 
@@ -270,7 +268,7 @@ def descale(clip: vs.VideoNode,
         clip_y = clip_y.resize.Point(format=upscaled.format.id)
         rescaled = kernel.scale(descaled, clip.width, clip.height,
                                 (src_left, src_top))
-        rescaled = rescaled.resize.Point(format=clip.format.id)
+        rescaled = rescaled.resize.Point(format=clip.format.id)  # type:ignore[union-attr]
 
         dmask = mask if isinstance(mask, vs.VideoNode) else mask(clip_y, rescaled)
 
@@ -285,7 +283,7 @@ def descale(clip: vs.VideoNode,
 
     upscaled = depth(upscaled, get_depth(clip))
 
-    if clip.format.num_planes == 1 or upscaler is None:
+    if clip.format.num_planes == 1 or upscaler is None:  # type:ignore[union-attr]
         return upscaled
     return join([upscaled, plane(clip, 1), plane(clip, 2)])
 
@@ -338,7 +336,7 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
 
     :return:            Downsampled clip.
     """
-    check_variable(clip, "ssim_downsample")
+    assert check_variable(clip, "ssim_downsample")
 
     if isinstance(kernel, str):
         kernel = get_kernel(kernel)()
@@ -383,8 +381,7 @@ def gamma2linear(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  epsilon: float = 1e-6) -> vs.VideoNode:
     """Convert gamma to linear."""
-    check_variable_format(clip, "gamma2linear")
-    assert clip.format
+    assert check_variable_format(clip, "gamma2linear")
 
     if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
         raise ValueError("gamma2linear: 'Your clip must be 32bit float!'")
@@ -406,8 +403,7 @@ def linear2gamma(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  ) -> vs.VideoNode:
     """Convert linear to gamma."""
-    check_variable_format(clip, "linear2gamma")
-    assert clip.format
+    assert check_variable_format(clip, "linear2gamma")
 
     if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
         raise ValueError("linear2gamma: 'Your clip must be 32bit float!'")
@@ -572,8 +568,7 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
 
     :raises ValueError:     ``mask_thr`` is not between 0.0–1.0.
     """
-    check_variable(clip, "mixed_rescale")
-    assert clip.format
+    assert check_variable(clip, "mixed_rescale")
 
     if not 0 <= mask_thr <= 1:
         raise ValueError(f"mixed_rescale: '`mask_thr` must be between 0.0 and 1.0! Not {mask_thr}!'")

@@ -41,13 +41,9 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
 
     :return:            Clip with clamped anti-aliasing.
     """
-    check_variable_format(src, "clamp_aa")
-    check_variable_format(weak, "clamp_aa")
-    check_variable_format(strong, "clamp_aa")
-
-    assert src.format
-    assert weak.format
-    assert strong.format
+    assert check_variable_format(src, "clamp_aa")
+    assert check_variable_format(weak, "clamp_aa")
+    assert check_variable_format(strong, "clamp_aa")
 
     thr = strength * (1 << (src.format.bits_per_sample - 8)) if src.format.sample_type == vs.INTEGER \
         else strength/219
@@ -69,8 +65,7 @@ def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode]) -> vs
 
     :return:            Antialiased clip.
     """
-    check_variable(clip, "taa")
-    assert clip.format
+    assert check_variable(clip, "taa")
 
     y = get_y(clip)
 
@@ -149,8 +144,7 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
 
     :return:                    Antialiased clip.
     """
-    check_variable(clip, "nneedi3_clamp")
-    assert clip.format
+    assert check_variable(clip, "nneedi3_clamp")
 
     y = get_y(clip)
     mask = mask or y.std.Prewitt().std.Binarize(scale_thresh(mthr, y)).std.Maximum().std.Convolution([1]*9)
@@ -184,8 +178,7 @@ def transpose_aa(clip: vs.VideoNode,
 
     :return:          Antialiased clip.
     """
-    check_variable(clip, "transpose_aa")
-    assert clip.format
+    assert check_variable(clip, "transpose_aa")
 
     clip_y = get_y(clip)
 
@@ -212,7 +205,7 @@ def transpose_aa(clip: vs.VideoNode,
 
 
 def _nnedi3_supersample(clip: vs.VideoNode, width: int, height: int, opencl: bool = False) -> vs.VideoNode:
-    check_variable(clip, "_nnedi3_supersample")
+    assert check_variable(clip, "_nnedi3_supersample")
 
     nnargs: Dict[str, Any] = dict(field=0, dh=True, nsize=0, nns=4, qual=2)
     _nnedi3 = nnedi3(opencl=opencl, **nnargs)
@@ -224,7 +217,7 @@ def _nnedi3_supersample(clip: vs.VideoNode, width: int, height: int, opencl: boo
 
 
 def _eedi3_singlerate(clip: vs.VideoNode) -> vs.VideoNode:
-    check_variable(clip, "_eedi3_singlerate")
+    assert check_variable(clip, "_eedi3_singlerate")
 
     eeargs: Dict[str, Any] = dict(field=0, dh=False, alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
     nnargs: Dict[str, Any] = dict(field=0, dh=False, nsize=0, nns=4, qual=2)
@@ -269,8 +262,7 @@ def upscaled_sraa(clip: vs.VideoNode,
 
     :raises ValueError:     ``rfactor`` is not above 1.
     """
-    check_variable(clip, "upscaled_sraa")
-    assert clip.format
+    assert check_variable(clip, "upscaled_sraa")
 
     luma = get_y(clip)
 
@@ -357,8 +349,7 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
 
         return Box(fulls=1, fulld=1).scale(mclip, ow, oh)
 
-    check_variable(clip, "based_aa")
-    assert clip.format
+    assert check_variable(clip, "based_aa")
 
     aaw = (round(clip.width * rfactor) + 1) & ~1
     aah = (round(clip.height * rfactor) + 1) & ~1

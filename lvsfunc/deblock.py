@@ -72,8 +72,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     :raises ValueError:     Unequal number of ``strength``\s and ``thr``\s passed.
     """
-    check_variable(clip, "autodb_dpir")
-    assert clip.format
+    assert check_variable(clip, "autodb_dpir")
 
     def _eval_db(n: int, f: Sequence[vs.VideoFrame],
                  clip: vs.VideoNode, db_clips: Sequence[vs.VideoNode],
@@ -126,9 +125,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     else:
         rgb = clip
 
-    assert rgb.format
-
-    maxvalue = (1 << rgb.format.bits_per_sample) - 1
+    maxvalue = (1 << rgb.format.bits_per_sample) - 1  # type:ignore[union-attr]
     evref = core.std.Prewitt(rgb)
     evref = core.akarin.Expr(evref, f"x {edgevalue} >= {maxvalue} x ?")
     evref_rm = evref.std.Median().std.Convolution(matrix=[1, 2, 1, 2, 4, 2, 1, 2, 1])
@@ -233,8 +230,7 @@ def dpir(
     except ModuleNotFoundError:
         raise ModuleNotFoundError("dpir: 'missing dependency `vsmlrt`!'")
 
-    check_variable(clip, "dpir")
-    assert clip.format
+    assert check_variable(clip, "dpir")
 
     if isinstance(kernel, str):
         kernel = get_kernel(kernel)()
