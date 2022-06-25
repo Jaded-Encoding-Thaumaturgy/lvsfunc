@@ -434,7 +434,6 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
 
 def stack_compare(*clips: vs.VideoNode,
-                  make_diff: bool = True,
                   height: int | None = None) -> vs.VideoNode:
     """
     Compare two clips by stacking them.
@@ -442,11 +441,9 @@ def stack_compare(*clips: vs.VideoNode,
     Best to use when trying to match two sources frame-accurately.
     Alias for this function is ``lvsfunc.scomp``.
 
-    When not using `make_diff`, `Stack` is heavily recommended instead.
 
     :param clips:           Clips to compare.
-    :param make_diff:       Create and stack a diff (only works if two clips are given) (Default: ``True``).
-    :param height:          Height in px to rescale clips to if `make_diff` is ``True``.
+    :param height:          Height in px to rescale clips to.
                             (MakeDiff clip will be twice this resolution).
                             This function will not scale above the first clip's height (Default: 288).
 
@@ -454,13 +451,8 @@ def stack_compare(*clips: vs.VideoNode,
 
     :raises ValueError:     More or less than 2 clips are given.
     """
-    if not make_diff:
-        warnings.warn("stack_compare has been deprecated in favour of `lvsfunc.comparison.Stack` "
-                      "when not using `make_diff`", DeprecationWarning)
-        return core.std.StackHorizontal(clips)
-
     if len(clips) != 2:
-        raise ValueError("stack_compare: `make_diff` only works for exactly 2 clips")
+        raise ValueError(f"stack_compare: You must pass at least two clips, not {len(clips)}.")
 
     clipa, clipb = clips
 
