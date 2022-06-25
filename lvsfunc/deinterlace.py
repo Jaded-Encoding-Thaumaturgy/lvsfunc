@@ -451,32 +451,6 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
     return weave_y.std.SetFieldBased(0)[::2]
 
 
-def bob(clip: vs.VideoNode, tff: bool | None = None) -> vs.VideoNode:
-    """
-    Very simple bobbing function.
-
-    .. warning:
-        This function is deprecated in favor of :py:func:`vapoursynth.core.resize.Bob`!
-
-    Shouldn't be used for regular filtering,
-    but as a very cheap bobber for other functions.
-
-    :param clip:                    Clip to process.
-    :param tff:                     Top-field-first. `False` sets it to Bottom-Field-First.
-                                    If None, get the field order from the _FieldBased prop.
-
-    :return:                        Bobbed clip.
-
-    :raises TopFieldFirstError:     No automatic ``tff`` can be determined.
-    """
-    if get_prop(clip.get_frame(0), '_FieldBased', int) == 0 and tff is None:
-        raise TopFieldFirstError("bob")
-    elif isinstance(tff, (bool, int)):
-        clip = clip.std.SetFieldBased(int(tff) + 1)
-
-    return Catrom().scale(clip.std.SeparateFields(), clip.width, clip.height)
-
-
 def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
                         thr: float = 2.2) -> vs.VideoNode:
     """
