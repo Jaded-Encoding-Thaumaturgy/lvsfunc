@@ -8,7 +8,7 @@ from typing import Any, Callable, Dict, List, Tuple, Type, cast
 
 import vapoursynth as vs
 import vskernels.types as kernel_type
-from vskernels import Catrom, Kernel, get_kernel
+from vskernels import Bicubic, Kernel, get_kernel
 from vsutil import depth, get_depth, get_subsampling, get_w, get_y
 
 from .exceptions import (InvalidFormatError, InvalidMatrixError, MatrixError, VariableFormatError,
@@ -102,7 +102,8 @@ def normalize_ranges(clip: vs.VideoNode, ranges: Range | List[Range]) -> List[Tu
     Normalize :py:func:`lvsfunc.types.Range`\(s) to a list of inclusive positive integer ranges.
 
     :param clip:        Reference clip used for length.
-    :param ranges:      Single :py:func:`lvsfunc.types.Range` or list of :py:func:`lvsfunc.types.Range`.
+    :param ranges:      Single :py:class:`lvsfunc.types.Range`,
+                        or a list of :py:class:`lvsfunc.types.Range`\(s).
 
     :return:            List of inclusive positive ranges.
     """
@@ -646,7 +647,7 @@ def allow_variable(width: int | None = None, height: int | None = None,
 def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
                dimensions: bool = True, vformat: bool = True,
                matrices: bool = True, length: bool = False,
-               kernel: Kernel | str = Catrom()) -> vs.VideoNode:
+               kernel: Kernel | str = Bicubic(b=0, c=1/2)) -> vs.VideoNode:
     """
     Try matchng the given clip's format with the reference clip's.
 
@@ -657,7 +658,8 @@ def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
     :param matrices:    Match matrix/transfer/primaries (Default: True).
     :param length:      Match clip length (Default: False).
     :param kernel:      py:class:`vskernels.Kernel` object used for the format conversion.
-                        This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
+                        This can also be the string name of the kernel
+                        (Default: py:class:`vskernels.Bicubic(b=0, c=0.5)`).
 
     :return:            Clip that matches the ref clip in format.
     """

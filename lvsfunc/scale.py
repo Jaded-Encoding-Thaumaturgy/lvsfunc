@@ -94,7 +94,8 @@ def reupscale(clip: vs.VideoNode,
     :param width:       Upscale width. If None, determine from `height` assuming 16:9 aspect ratio (Default: None).
     :param height:      Upscale height (Default: 1080).
     :param kernel:      py:class:`vskernels.Kernel` object used for downscaling the super-sampled clip.
-                        This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
+                        This can also be the string name of the kernel
+                        (Default: py:class:`vskernels.Bicubic(b=0, c=0.5)`).
     :param kwargs:      Arguments passed to znedi3 (Default: nsize=4, nns=4, qual=2, pscrn=2).
 
     :return:            Reupscaled clip.
@@ -288,7 +289,7 @@ def descale(clip: vs.VideoNode,
 
 def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 720,
                     smooth: float | VSFunction = ((3 ** 2 - 1) / 12) ** 0.5,
-                    kernel: Kernel | str = Catrom(), gamma: bool = False,
+                    kernel: Kernel | str = Bicubic(b=0, c=1/2), gamma: bool = False,
                     curve: CURVES | None = None,
                     sigmoid: bool = False, epsilon: float = 1e-6) -> vs.VideoNode:
     """
@@ -318,6 +319,9 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
                         i.e. the standard deviation of gaussian blur.
                         If you pass a function, it acts as a general smoother.
                         Default uses a gaussian blur.
+    :param kernel:      py:class:`vskernels.Kernel` object used for certain scaling operations.
+                        This can also be the string name of the kernel
+                        (Default: py:class:`vskernels.Bicubic(0, 0.5)`).
     :param curve:       Gamma mapping. Will auto-determine based on the input props or resolution.
                         Can be forced with for example `curve=vs.TransferCharacteristics.TRANSFER_BT709`.
     :param gamma:       Perform a gamma conversion prior to scaling and after scaling.
@@ -530,7 +534,7 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
     but you still want to force it. Not recommended to use it on everything, however.
 
     A string can be passed instead of a Kernel object if you want to use that.
-    This gives you access to every kernel object in :py:func:`vskernels`.
+    This gives you access to every kernel object in :py:module:`vskernels`.
     For more information on what every kernel does, please refer to their documentation.
 
     This is still a work in progress at the time of writing. Please use with care.
@@ -539,10 +543,11 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
     :param width:           Upscale width. If None, determine from `height` (Default: None).
     :param height:          Upscale height (Default: 720).
     :param kernel:          py:class:`vskernels.Kernel` object used for the descaling.
-                            This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
+                            This can also be the string name of the kernel
+                            (Default: py:class:`vskernels.Bicubic(b=0, c=0.5)`).
     :param downscaler:      Kernel or custom scaler used to downscale the clip.
                             This can also be the string name of the kernel
-                            (Default: py:class:`lvsfunc.scale.ssim_downsample`).
+                            (Default: py:func:`lvsfunc.scale.ssim_downsample`).
     :param credit_mask:     Function or mask clip used to mask detail. If ``None``, no masking.
                             Function must accept a clip and a reupscaled clip and return a mask.
                             (Default: :py:func:`lvsfunc.scale.descale_detail_mask`).

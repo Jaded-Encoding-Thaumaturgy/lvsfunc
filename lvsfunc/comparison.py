@@ -546,7 +546,7 @@ def diff(*clips: vs.VideoNode,
 
 
 def diff(*clips: vs.VideoNode,
-         thr: float = 72,
+         thr: float = 96,
          height: int = 288,
          interleave: bool = False,
          return_ranges: bool = False,

@@ -6,7 +6,7 @@ from functools import partial
 from typing import Any, List, Sequence, Tuple
 
 import vapoursynth as vs
-from vskernels import Catrom, Kernel
+from vskernels import Bicubic, Catrom, Kernel
 from vsutil import depth, get_depth, is_image, scale_value
 
 from .exceptions import InvalidMatrixError
@@ -31,7 +31,7 @@ __all__: List[str] = [
 
 def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
            film_thr: float = 99.0, force_lsmas: bool = False,
-           tail_lines: int = 4, kernel: Kernel | str = Catrom(),
+           tail_lines: int = 4, kernel: Kernel | str = Bicubic(b=0, c=1/2),
            **index_args: Any) -> vs.VideoNode:
     """
     Index and load video clips for use in VapourSynth automatically.
@@ -71,7 +71,8 @@ def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
                             If set above 100.0, it's silently lowered to 100.0 (Default: 99.0).
     :param force_lsmas:     Force files to be imported with L-SMASH (Default: False).
     :param kernel:          py:class:`vskernels.Kernel` object used for converting the `clip` to match `ref`.
-                            This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
+                            This can also be the string name of the kernel
+                            (Default: py:class:`vskernels.Bicubic(b=0, c=0.5)`).
     :param tail_lines:      Lines to check on the tail of the dgi file.
                             Increase this value if FILM and ORDER do exist in your dgi file
                             but it's having trouble finding them.
@@ -339,10 +340,10 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
 
     :param clip:            Clip to process.
     :param overlay:         Sign or logo to overlay. Must be the png loaded in
-                            through :py:func:`core.vapoursnth.imwri.Read()` or a path string to the image file,
+                            through :py:func:`core.vapoursnth.imwri.Read` or a path string to the image file,
                             and **MUST** be the same dimensions as the ``clip`` to process.
     :param frame_ranges:    Frame ranges or starting frame to apply the overlay to.
-                            See :py:func:`lvsfunc.types.Range` for more info.
+                            See :py:attr:`lvsfunc.types.Range` for more info.
                             If None, overlays the entire clip.
                             If a Range is passed, the overlaid clip will only show up inside that range.
                             If only a single integer is given, it will start on that frame and
