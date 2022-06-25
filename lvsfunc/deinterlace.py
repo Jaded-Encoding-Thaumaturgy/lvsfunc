@@ -66,9 +66,9 @@ def seek_cycle(clip: vs.VideoNode, write_props: bool = True, scale: int = -1) ->
     """
     Purely visual tool to view telecining cycles.
 
-    This is purely a visual tool!
-    This function has no matching parameters.
-    Just use `Wobbly <https://github.com/dubhater/Wobbly>`_ instead if you need that.
+    .. warning::
+        | This is purely a visual tool and has no matching parameters!
+        | Just use `Wobbly <https://github.com/dubhater/Wobbly>`_ instead if you need that.
 
     Displays the current frame, two previous and future frames,
     and whether they are combed or not.
@@ -232,6 +232,11 @@ def tivtc_vfr(clip: vs.VideoNode,
             p.parent.mkdir(parents=True)
 
     if not (tfm_f.exists() and tdec_f.exists()):
+        warnings.warn("tivtc_vfr: 'When calculating the matches and metrics for the first time, "
+                      "your previewer may error out! To fix this, simply refresh your previewer. "
+                      "If it still doesn't work, open the ``.ivtc`` directory and check if the files are 0kb. "
+                      "If they are, delete them and run the function again.'")
+
         tfm_analysis: Dict[str, Any] = {**tfm_args, 'output': str(tfm_f)}
         tdec_analysis: Dict[str, Any] = {'mode': 4, **tdecimate_args, 'output': str(tdec_f)}
 
@@ -271,7 +276,7 @@ def deblend(clip: vs.VideoNode, start: int = 0,
     Deblending function for blended AABBA patterns.
 
     .. warning:
-        This function will be updated in a future version!
+        This function's base functionality and settings will be updated in a future version!
 
     Assuming there's a constant pattern of frames (labeled A, B, C, CD, and DA in this function),
     blending can be fixed by calculating the D frame by getting halves of CD and DA, and using that
@@ -294,6 +299,9 @@ def deblend(clip: vs.VideoNode, start: int = 0,
 
     :return:            Deblended clip.
     """
+    warnings.warn("deblend: 'This function's base functionality and settings "
+                  "will be updated in a future version!'", DeprecationWarning)
+
     blends_a = range(start + 2, clip.num_frames - 1, 5)
     blends_b = range(start + 3, clip.num_frames - 1, 5)
     expr_cd = ["z a 2 / - y x 2 / - +"]
@@ -358,6 +366,8 @@ def decomb(clip: vs.VideoNode,
         from havsfunc import QTGMC
     except ModuleNotFoundError:
         raise ModuleNotFoundError("decomb: missing dependency `havsfunc`!")
+
+    warnings.warn("decomb: 'This function will be removed in a future version!'", FutureWarning)
 
     VFM_TFF = int(tff)
 
@@ -578,7 +588,7 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
 
         if dec:
             warnings.warn("pulldown_credits: 'Fieldmatched clip passed to function! "
-                          "dec is set to True. If you want to disable this, set `dec=False`!'")
+                          "dec is set to `True`. If you want to disable this, set `dec=False`!'")
 
     # motion vector and other values
     field_ref = frame_ref * 2

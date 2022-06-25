@@ -157,7 +157,7 @@ def edgefixer(clip: vs.VideoNode,
     :return:                Clip with fixed edges.
     """
     warnings.warn("edgefixer: This function's functionality will change in a future version, "
-                  "and will likely be renamed. Please make sure to update your older scripts once it does.",
+                  "and will likely be renamed. Please make sure to update your scripts once it does.",
                   FutureWarning)
 
     check_variable(clip, "edgefixer")

@@ -59,6 +59,9 @@ def quick_resample(clip: vs.VideoNode,
 
     :return:            Filtered clip in original depth.
     """
+    warnings.warn("quick_resample: 'This function will be either reworked or removed in a future version!'",
+                  FutureWarning)
+
     check_variable_format(clip, "quick_resample")
     assert clip.format
 
@@ -93,6 +96,8 @@ def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 
     :return:        Appropriate repair function for input clip's depth.
     """
+    warnings.warn("pick_repair: 'This function will be removed in a future version!'", FutureWarning)
+
     check_variable_format(clip, "pick_repair")
     assert clip.format
 
@@ -118,6 +123,8 @@ def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
 
     :return:        Appropriate RemoveGrain function for input clip's depth.
     """
+    warnings.warn("pick_removegrain: 'This function will be removed in a future version!'", FutureWarning)
+
     check_variable_format(clip, "pick_removegrain")
     assert clip.format
 
@@ -238,23 +245,18 @@ def replace_ranges(clip_a: vs.VideoNode,
     if isinstance(ranges, str):  # type:ignore[unreachable]
         raise ValueError("replace_ranges: 'This function does not take strings! Please use a list of tuples or ints!")
 
+    nranges = normalize_ranges(clip_b, ranges)
+
+    if use_plugin and hasattr(core, 'remap'):
+        return core.remap.ReplaceFramesSimple(
+            clip_a, clip_b, mismatch=True,
+            mappings=' '.join(f'[{s} {e + (exclusive if s != e else 0)}]' for s, e in nranges)
+        )
+
     if clip_a.num_frames != clip_b.num_frames:
         warnings.warn("replace_ranges: "
                       f"'The number of frames ({clip_a.num_frames} vs. {clip_b.num_frames}) do not match! "
                       "The function will still work, but you may run into unintended errors with the output clip!'")
-
-    nranges = normalize_ranges(clip_b, ranges)
-
-    if use_plugin and hasattr(core, 'remap'):
-        try:
-            return core.remap.ReplaceFramesSimple(
-                clip_a, clip_b, mismatch=True,
-                mappings=' '.join(f'[{s} {e + (exclusive if s != e else 0)}]' for s, e in nranges)
-            )
-        except vs.Error as e:
-            raise RuntimeError("replace_ranges: 'Some kind of error occured when running the plugin!\n"
-                               f"This was the error: \"{str(e)[21:]}\".\n"
-                               "If you don't know how to fix this, consider setting `use_plugin=False`.'")
 
     out = clip_a
     shift = 1 + exclusive
