@@ -8,12 +8,13 @@ from typing import Any, Callable, Dict, List, Tuple, Type, cast
 
 import vapoursynth as vs
 import vskernels.types as kernel_type
+from typing_extensions import TypeGuard
 from vskernels import Bicubic, Kernel, get_kernel
-from vsutil import depth, get_depth, get_subsampling, get_w, get_y
+from vsutil import depth, get_subsampling, get_w, get_y
 
 from .exceptions import (InvalidFormatError, InvalidMatrixError, MatrixError, VariableFormatError,
                          VariableResolutionError)
-from .types import CURVES, Coefs, F, Matrix, Range, T
+from .types import CURVES, Coefs, F, Matrix, Range, T, _VideoNode
 
 core = vs.core
 
@@ -314,7 +315,7 @@ def get_coefs(curve: vs.TransferCharacteristics) -> Coefs:
     return gamma_linear_map[curve]
 
 
-def check_variable_format(clip: vs.VideoNode, function: str) -> None:
+def check_variable_format(clip: vs.VideoNode, function: str) -> TypeGuard[_VideoNode]:
     """
     Check for variable format and return an error if found.
 
@@ -322,6 +323,7 @@ def check_variable_format(clip: vs.VideoNode, function: str) -> None:
     """
     if clip.format is None:
         raise VariableFormatError(function)
+    return True
 
 
 def check_variable_resolution(clip: vs.VideoNode, function: str) -> None:
