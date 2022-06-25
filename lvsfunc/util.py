@@ -80,11 +80,14 @@ def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
     """
     Get FrameProp ``prop`` from frame ``frame`` with expected type ``t`` to satisfy the type checker.
 
-    :param frame:   Frame containing props.
-    :param key:     Prop to get.
-    :param t:       Type of prop.
+    :param frame:           Frame containing props.
+    :param key:             Prop to get.
+    :param t:               Type of prop.
 
-    :return:        frame.prop[key].
+    :return:                frame.prop[key].
+
+    :raises KeyError:       ``key`` is not found in props.
+    :raises ValueError:     Returns a prop of the wrong type.
     """
     try:
         prop = frame.props[key]
@@ -182,6 +185,8 @@ def replace_ranges(clip_a: vs.VideoNode,
     :param use_plugin:      Use the ReplaceFramesSimple plugin for the rfs call (Default: True).
 
     :return:                Clip with ranges from clip_a replaced with clip_b.
+
+    :raises ValueError:     A string is passed instead of a list of ranges.
     """
     if ranges is None:
         return clip_a
@@ -220,12 +225,14 @@ def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -
     """
     Scale binarization thresholds from float to int.
 
-    :param thresh:  Threshold [0, 1]. If greater than 1, assumed to be in native clip range.
-    :param clip:    Clip to scale to.
-    :param assume:  | Assume input is this depth when given input >1.
-                    | If ``None``, assume ``clip``'s format (Default: None).
+    :param thresh:          Threshold [0, 1]. If greater than 1, assumed to be in native clip range.
+    :param clip:            Clip to scale to.
+    :param assume:          | Assume input is this depth when given input > 1.
+                            | If ``None``, assume ``clip``'s format (Default: None).
 
-    :return:        Threshold scaled to [0, 2^clip.depth - 1] (if vs.INTEGER).
+    :return:                Threshold scaled to [0, 2^clip.depth - 1] (if vs.INTEGER).
+
+    :raises ValueError:     Thresholds are negative.
     """
     check_variable_format(clip, "scale_thresh")
     assert clip.format
@@ -292,6 +299,8 @@ def padder(clip: vs.VideoNode,
     :param bottom:      Padding added to the bottom side of the clip.
 
     :return:            Padded clip.
+
+    :raises ValueError: A non-even resolution is passed on a YUV420 clip.
     """
     check_variable(clip, "padder")
 
@@ -327,13 +336,21 @@ def get_coefs(curve: vs.TransferCharacteristics) -> Coefs:
 
 
 def check_variable_format(clip: vs.VideoNode, function: str) -> None:
-    """Check for variable format and return an error if found."""
+    """
+    Check for variable format and return an error if found.
+
+    :raises VariableFormatError:    The clip is of a variable format.
+    """
     if clip.format is None:
         raise VariableFormatError(function)
 
 
 def check_variable_resolution(clip: vs.VideoNode, function: str) -> None:
-    """Check for variable width or height and return an error if found."""
+    """
+    Check for variable width or height and return an error if found.
+
+    :raises VariableResolutionError:    The clip has a variable resolution.
+    """
     if 0 in (clip.width, clip.height):
         raise VariableResolutionError(function)
 
@@ -360,6 +377,12 @@ def get_matrix(frame: vs.VideoNode | vs.VideoFrame, strict: bool = False) -> Mat
                             Default: False.
 
     :return:                Value representing a matrix.
+
+    :raise MatrixError:     The matrix was undefined.
+    :raise MatrixError:     The matrix is reserved.
+    :raise MatrixError:     VapourSynth no longer supports the matrix.
+    :raise MatrixError:     The matrix is unsupported.
+    :raise MatrixError:     Some kind of unknown error occured.
     """
     if isinstance(frame, vs.VideoNode):
         check_variable_format(frame, "get_matrix")
@@ -406,7 +429,11 @@ def get_matrix(frame: vs.VideoNode | vs.VideoFrame, strict: bool = False) -> Mat
 
 
 def get_matrix_curve(matrix: Matrix) -> CURVES:
-    """Return the matrix curve based on a given `matrix`."""
+    """
+    Return the matrix curve based on a given ``matrix``.
+
+    :raises InvalidMatrixError:     An invalid ``matrix`` is passed.
+    """
     match matrix:
         case Matrix.BT709: return vs.TransferCharacteristics.TRANSFER_BT709
         case Matrix.BT470BG | Matrix.SMPTE170M: return vs.TransferCharacteristics.TRANSFER_BT601
@@ -485,9 +512,12 @@ def chroma_injector(func: F) -> F:
     This works with variable resolution and may work with variable format,
     however the latter is wholly untested and likely a bad idea in every conceivable use case.
 
-    :param func:        Function to call with injected chroma.
+    :param func:                    Function to call with injected chroma.
 
-    :return:            Decorated function.
+    :return:                        Decorated function.
+
+    :raises InvalidFormatError:     Input clip is not YUV or GRAY.
+    :raises InvalidFormatError:     Output clip is not YUV or GRAY.
     """
     @wraps(func)
     def inner(_chroma: vs.VideoNode, clip: vs.VideoNode, *args: Any,
@@ -532,7 +562,8 @@ def chroma_injector(func: F) -> F:
 
         if result.format is not None:
             if result.format.color_family not in (vs.GRAY, vs.YUV):
-                raise ValueError("chroma_injector: can only decorate function with YUV and/or GRAY format return!")
+                raise InvalidFormatError("chroma_injector",
+                                         "{func}: 'can only decorate function with YUV and/or GRAY format return!'")
 
             if result.format.color_family == vs.GRAY:
                 return result
@@ -563,18 +594,21 @@ def colored_clips(amount: int,
 
     Written by `Dave <mailto:orangechannel@pm.me>`_.
 
-    :param amount:  Number of VideoNodes to return.
-    :param max_hue: Maximum hue (0 < hue <= 360) in degrees to generate colors from (uses the HSL color model).
-                    Setting this higher than ``315`` will result in the clip colors looping back towards red
-                    and is not recommended for visually distinct colors.
-                    If the `amount` of clips is higher than the `max_hue` expect there to be identical
-                    or visually similar colored clips returned (Default: 300)
-    :param rand:    Randomizes order of the returned list (Default: True).
-    :param seed:    Bytes-like object passed to ``random.seed`` which allows for consistent randomized order.
-                    of the resulting clips (Default: None)
-    :param kwargs:  Arguments passed to :py:func:`vapoursynth.core.std.BlankClip` (Default: keep=1).
+    :param amount:          Number of VideoNodes to return.
+    :param max_hue:         Maximum hue (0 < hue <= 360) in degrees to generate colors from (uses the HSL color model).
+                            Setting this higher than ``315`` will result in the clip colors looping back towards red
+                            and is not recommended for visually distinct colors.
+                            If the `amount` of clips is higher than the `max_hue` expect there to be identical
+                            or visually similar colored clips returned (Default: 300)
+    :param rand:            Randomizes order of the returned list (Default: True).
+    :param seed:            Bytes-like object passed to ``random.seed`` which allows for consistent randomized order.
+                            of the resulting clips (Default: None)
+    :param kwargs:          Arguments passed to :py:func:`vapoursynth.core.std.BlankClip` (Default: keep=1).
 
-    :return:        List of uniquely colored clips in sequential or random order.
+    :return:                List of uniquely colored clips in sequential or random order.
+
+    :raises ValueError:     ``amount`` is less than 2.
+    :raises ValueError:     ``max_hue`` is not between 0–360.
     """
     if amount < 2:
         raise ValueError("colored_clips: `amount` must be at least 2!")

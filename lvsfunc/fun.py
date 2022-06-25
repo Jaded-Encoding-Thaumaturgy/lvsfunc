@@ -27,7 +27,7 @@ def minecraftify(clip: vs.VideoNode, div: float = 64.0, mod: int | None = None) 
     """
     Transform your clip into a Minecraft.
 
-    Idea from Meme-Maji's Kobayashi memery (love you vardë).
+    Idea from Meme-Maji's Kobayashi memery (love you Vardë).
 
     :param clip:     Clip to process.
     :param div:     How much to divide the clip's resolution with.

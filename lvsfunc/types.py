@@ -40,7 +40,11 @@ class Coefs(NamedTuple):
 
 
 class Coordinate():
-    """Positive set of (x, y) coordinates."""
+    """
+    Positive set of (x, y) coordinates.
+
+    :raises ValueError:     Negative values get passed.
+    """
 
     x: int
     y: int
@@ -107,7 +111,11 @@ class Size(Coordinate):
 
 
 class Matrix(IntEnum):
-    """Matrix coefficients (ITU-T H.265 Table E.5)."""
+    """
+    Matrix coefficients (ITU-T H.265 Table E.5).
+
+    :raises PermissionError:    ``_RESERVED`` gets called.
+    """
 
     RGB = 0
     GBR = 0

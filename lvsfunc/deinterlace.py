@@ -15,7 +15,7 @@ from vsrgtools import repair
 from vsutil import Dither, depth, get_depth, get_w, get_y, scale_value
 
 from .comparison import Stack
-from .exceptions import InvalidFramerateError
+from .exceptions import InvalidFramerateError, TopFieldFirstError
 from .render import clip_async_render, get_render_progress
 from .types import Direction
 from .util import check_variable, check_variable_format, force_mod, get_neutral_value, get_prop
@@ -86,9 +86,11 @@ def seek_cycle(clip: vs.VideoNode, write_props: bool = True, scale: int = -1) ->
     :param scale:           Integer scaling of all clips. Must be to the power of 2.
 
     :return:                Viewing UI for standard telecining cycles.
+
+    :raises ValueError:     `scale` is a value that is not to the power of 2.
     """
     if (scale & (scale-1) != 0) and scale != 0 and scale != -1:
-        raise ValueError("seek_cycle: 'scale must be a value that is the power of 2!'")
+        raise ValueError("seek_cycle: '`scale` must be a value that is the power of 2!'")
 
     # TODO: 60i checks and flags somehow? false positives gonna be a pain though
     def check_combed(n: int, f: vs.VideoFrame, clip: vs.VideoNode) -> vs.VideoNode:
@@ -146,14 +148,17 @@ def check_patterns(clip: vs.VideoNode, tff: bool | int | None = None) -> int:
 
     * `VapourSynth-TDeintMod <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-TDeintMod>`_
 
-    :param clip:    Clip to process.
-    :param tff:     Top-field-first. `False` sets it to Bottom-Field-First.
-                    If None, get the field order from the _FieldBased prop.
+    :param clip:                    Clip to process.
+    :param tff:                     Top-field-first. `False` sets it to Bottom-Field-First.
+                                    If None, get the field order from the _FieldBased prop.
 
-    :return:        Integer representing the best pattern.
+    :return:                        Integer representing the best pattern.
+
+    :raises TopFieldFirstError:     No automatic ``tff`` can be determined.
+    :raises StopIteration:          No pattern resulted in a clean match.
     """
     if get_prop(clip.get_frame(0), '_FieldBased', int) == 0 and tff is None:
-        raise vs.Error("check_patterns: 'You must set `tff` for this clip!'")
+        raise TopFieldFirstError("check_patterns")
     elif isinstance(tff, (bool, int)):
         clip = clip.std.SetFieldBased(int(tff) + 1)
 
@@ -213,6 +218,8 @@ def tivtc_vfr(clip: vs.VideoNode,
     :param tdecimate_args:      Additional arguments to pass to TDecimate.
 
     :return:                    IVTC'd VFR clip with external timecode/matches/metrics txt files.
+
+    :raises TypeError:          Invalid ``decimate`` argument is passed.
     """
     if int(decimate) not in (-1, 0, 1):
         raise TypeError("TIVTC_VFR: 'Invalid `decimate` argument. Must be True/False, their integer values, or -1!'")
@@ -343,7 +350,7 @@ def decomb(clip: vs.VideoNode,
     Enabling vinverse will result in more aggressive decombing at the cost of potential detail loss.
     A reference clip can be passed with `ref`, which will be used by TFM to create the output frames.
 
-    Base function written by Midlifecrisis from the WEEB AUTISM server, modified by LightArrowsEXE.
+    Original function written by Midlifecrisis, modified by LightArrowsEXE.
 
     Dependencies:
 
@@ -351,18 +358,20 @@ def decomb(clip: vs.VideoNode,
     * `havsfunc <https://github.com/HomeOfVapourSynthEvolution/havsfunc>`_
     * `RGSF <https://github.com/IFeelBloated/RGSF>`_ (optional: 32 bit clip)
 
-    :param clip:         Clip to process.
-    :param tff:           Top-Field-First.
-    :param mode:          Sets the matching mode or strategy to use for TFM.
-    :param decimate:      Decimate the video after deinterlacing (Default: True).
-    :param vinv:          Use vinverse to get rid of additional combing (Default: False).
-    :param rep:           Repair mode for repairing the decombed clip using the original clip (Default: None).
-    :param show_mask:     Return combmask.
-    :param tfm_args:      Arguments to pass to TFM.
-    :param vinv_args:     Arguments to pass to vinverse.
-    :param qtgmc_args:    Arguments to pass to QTGMC.
+    :param clip:                    Clip to process.
+    :param tff:                     Top-Field-First.
+    :param mode:                    Sets the matching mode or strategy to use for TFM.
+    :param decimate:                Decimate the video after deinterlacing (Default: True).
+    :param vinv:                    Use vinverse to get rid of additional combing (Default: False).
+    :param rep:                     Repair mode for repairing the decombed clip using the original clip (Default: None).
+    :param show_mask:               Return combmask.
+    :param tfm_args:                Arguments to pass to TFM.
+    :param vinv_args:               Arguments to pass to vinverse.
+    :param qtgmc_args:              Arguments to pass to QTGMC.
 
-    :return:              Decombed and optionally decimated clip.
+    :return:                        Decombed and optionally decimated clip.
+
+    :raises ModuleNotFoundError:    Dependencies are missing.
     """
     try:
         from havsfunc import QTGMC
@@ -452,14 +461,16 @@ def bob(clip: vs.VideoNode, tff: bool | None = None) -> vs.VideoNode:
     Shouldn't be used for regular filtering,
     but as a very cheap bobber for other functions.
 
-    :param clip:     Clip to process.
-    :param tff:     Top-field-first. `False` sets it to Bottom-Field-First.
-                    If None, get the field order from the _FieldBased prop.
+    :param clip:                    Clip to process.
+    :param tff:                     Top-field-first. `False` sets it to Bottom-Field-First.
+                                    If None, get the field order from the _FieldBased prop.
 
-    :return:        Bobbed clip.
+    :return:                        Bobbed clip.
+
+    :raises TopFieldFirstError:     No automatic ``tff`` can be determined.
     """
     if get_prop(clip.get_frame(0), '_FieldBased', int) == 0 and tff is None:
-        raise vs.Error("bob: 'You must set `tff` for this clip!'")
+        raise TopFieldFirstError("bob")
     elif isinstance(tff, (bool, int)):
         clip = clip.std.SetFieldBased(int(tff) + 1)
 
@@ -487,15 +498,16 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
     Taken from this gist and modified by LightArrowsEXE.
     <https://gist.github.com/blackpilling/bf22846bfaa870a57ad77925c3524eb1>
 
-    :param clip:        Clip to process.
-    :param tff:         Top-field-first. `False` sets it to Bottom-Field-First.
-                        If None, get the field order from the _FieldBased prop.
-    :param thr:         Threshold for when a field should be adjusted.
-                        Default is 2.2, which appears to be a safe value that doesn't
-                        cause it to do weird stuff with orphan fields.
+    :param clip:                    Clip to process.
+    :param tff:                     Top-field-first. `False` sets it to Bottom-Field-First.
+                                    If None, get the field order from the _FieldBased prop.
+    :param thr:                     Threshold for when a field should be adjusted.
+                                    Default is 2.2, which appears to be a safe value that doesn't
+                                    cause it to do weird stuff with orphan fields.
 
-    :return:            Clip with only fades fixed.
+    :return:                        Clip with only fades fixed.
 
+    :raises TopFieldFirstError:     No automatic ``tff`` can be determined.
     """
     def _ftf(n: int, f: List[vs.VideoFrame]) -> vs.VideoNode:
         avg = (get_prop(f[0], 'PlaneStatsAverage', float),
@@ -512,7 +524,7 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
 
     # I want to catch this before it reaches separateFields and give newer users a more useful error
     if get_prop(clip.get_frame(0), '_FieldBased', int) == 0 and tff is None:
-        raise vs.Error("fix_telecined_fades: 'You must set `tff` for this clip!'")
+        raise TopFieldFirstError("fix_telecined_fades")
     elif isinstance(tff, (bool, int)):
         clip = clip.std.SetFieldBased(int(tff) + 1)
 
@@ -551,20 +563,25 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
     apply this function, and `vsutil.insert_clip` the clip back into a properly IVTC'd clip.
     Alternatively, use `muvsfunc.VFRSplice` to splice the clip back in if you're dealing with a VFR clip.
 
-    :param clip:            Clip to process. Framerate must be 30000/1001.
-    :param frame_ref:       First frame in the pattern. Expected pattern is ABBCD,
-                            except for when ``dec`` is enabled, in which case it's AABCD.
-    :param tff:             Top-field-first. `False` sets it to Bottom-Field-First.
-    :param interlaced:      60i credits. Set to false for 30p credits.
-    :param dec:             Decimate input clip as opposed to IVTC.
-                            Automatically enabled if certain fieldmatching props are found.
-                            Can be forcibly disabled by setting it to `False`.
-    :param bob_clip:        Custom bobbed clip. If `None`, uses a QTGMC clip.
-                            Framerate must be 60000/1001.
-    :param qtgmc_args:      Arguments to pass on to QTGMC.
-                            Accepts any parameter except for FPSDivisor and TFF.
+    :param clip:                    Clip to process. Framerate must be 30000/1001.
+    :param frame_ref:               First frame in the pattern. Expected pattern is ABBCD,
+                                    except for when ``dec`` is enabled, in which case it's AABCD.
+    :param tff:                     Top-field-first. `False` sets it to Bottom-Field-First.
+    :param interlaced:              60i credits. Set to false for 30p credits.
+    :param dec:                     Decimate input clip as opposed to IVTC.
+                                    Automatically enabled if certain fieldmatching props are found.
+                                    Can be forcibly disabled by setting it to `False`.
+    :param bob_clip:                Custom bobbed clip. If `None`, uses a QTGMC clip.
+                                    Framerate must be 60000/1001.
+    :param qtgmc_args:              Arguments to pass on to QTGMC.
+                                    Accepts any parameter except for FPSDivisor and TFF.
 
-    :return:                IVTC'd/decimated clip with credits pulled down to 24p.
+    :return:                        IVTC'd/decimated clip with credits pulled down to 24p.
+
+    :raises ModuleNotFoundError:    Dependencies are missing.
+    :raises ValueError:             Clip does not have a framerate of 30000/1001 (29.97).
+    :raises TopFieldFirstError:     No automatic ``tff`` can be determined.
+    :raises InvalidFramerateError:  Bobbed clip does not have a framerate of 60000/1001 (59.94)
     """
     try:
         from havsfunc import QTGMC, DitherLumaRebuild
@@ -577,7 +594,7 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
         raise ValueError("pulldown_credits: 'Your clip must have a framerate of 30000/1001!'")
 
     if get_prop(clip.get_frame(0), '_FieldBased', int) == 0 and tff is None:
-        raise vs.Error("pulldown_credits: 'You must set `tff` for this clip!'")
+        raise TopFieldFirstError("pulldown_credits")
     elif isinstance(tff, (bool, int)):
         clip = clip.std.SetFieldBased(int(tff) + 1)
 
@@ -713,6 +730,8 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
     :param scale:       Scale amount for vertical sharp * vertical blur.
 
     :return:            Clip with residual combing largely removed.
+
+    :raises ValueError: ``amount`` is set above 255.
     """
     check_variable_format(clip, "vinverse")
     assert clip.format

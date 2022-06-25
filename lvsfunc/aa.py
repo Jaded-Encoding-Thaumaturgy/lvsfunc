@@ -32,7 +32,7 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
     Useful for clamping :py:func:`lvsfunc.aa.upscaled_sraa` or :py:func:`lvsfunc.aa.eedi3`
     to :py:func:`lvsfunc.aa.nnedi3` for a strong but more precise AA.
 
-    Original function written by Zastin, modified by LightArrowsEXE.
+    Original function written by `Zastin <https://github.com/kgrabs>`_, modified by LightArrowsEXE.
 
     :param src:         Non-AA'd source clip.
     :param weak:        Weakly-AA'd clip (eg: :py:func:`lvsfunc.aa.nnedi3`).
@@ -138,7 +138,7 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
 
     This should fix `every issue created by eedi3 <https://i.imgur.com/hYVhetS.jpg>`_.
 
-    Original function written by Zastin, modified by LightArrowsEXE.
+    Original function written by `Zastin <https://github.com/kgrabs>`_, modified by LightArrowsEXE.
 
     :param clip:                Clip to process.
     :param strength:            Set threshold strength for over/underflow value for clamping eedi3's result.
@@ -169,7 +169,7 @@ def transpose_aa(clip: vs.VideoNode,
     This results in overall stronger anti-aliasing.
     Useful for shows like Yuru Camp with bad line-art problems.
 
-    Original function written by Zastin, modified by LightArrowsEXE.
+    Original function written by `Zastin <https://github.com/kgrabs>`_, modified by LightArrowsEXE.
 
     Dependencies:
 
@@ -247,7 +247,7 @@ def upscaled_sraa(clip: vs.VideoNode,
     The dimensions of the downscaled clip can also be adjusted by setting `height` or `width`.
     Setting either `height` or `width` will also scale the chroma accordingly.
 
-    Original function written by Zastin, heavily modified by LightArrowsEXE.
+    Original function written by `Zastin <https://github.com/kgrabs>`_, modified by LightArrowsEXE.
 
     Alias for this function is ``lvsfunc.sraa``.
 
@@ -266,6 +266,8 @@ def upscaled_sraa(clip: vs.VideoNode,
     :param aafun:           Function used to antialias after super-sampling (Default: eedi3 with nnedi3 sclip).
 
     :return:                Antialiased clip.
+
+    :raises ValueError:     ``rfactor`` is not above 1.
     """
     check_variable(clip, "upscaled_sraa")
     assert clip.format
@@ -302,12 +304,12 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
              mask_thr: float = 60, show_mask: bool = False,
              lmask: vs.VideoNode | None = None, **eedi3_args: Any) -> vs.VideoNode:
     """
-    Based anti-aliaser written by the based Zastin.
+    Based anti-aliaser written by the based `Zastin <https://github.com/kgrabs>`_.
 
     This function relies on FSRCNNX being very sharp,
     and as such it very much acts like the main "AA" here.
 
-    Original function by Zastin, modified by LightArrowsEXE.
+    Original function written by `Zastin <https://github.com/kgrabs>`_, modified by LightArrowsEXE.
 
     Dependencies:
 
@@ -325,6 +327,8 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
     :param lmask:           Line mask clip to use for eedi3.
 
     :return:                AA'd clip or mask clip.
+
+    :raises ValueError:     ``l_mask`` is passed and '`mask_thr` is higher than 255.
     """
     def _eedi3s(clip: vs.VideoNode, mclip: vs.VideoNode | None = None,
                 **eedi3_kwargs: Any) -> vs.VideoNode:

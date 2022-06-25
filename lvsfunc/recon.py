@@ -77,9 +77,11 @@ def regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1e
     with corresponding neighborhoods in one or more other clips.
 
     For more info see `this Wikipedia article <https://en.wikipedia.org/wiki/Simple_linear_regression>`_.
+
+    :raises ValueError:     ``radius`` is lesser than 0.
     """
     if radius <= 0:
-        raise ValueError("Regress: 'radius must be greater than zero!'")
+        raise ValueError("Regress: 'radius must be greater than 0!'")
 
     Expr = core.akarin.Expr
     E = partial(vs.core.std.BoxBlur, hradius=radius, vradius=radius)

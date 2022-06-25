@@ -55,6 +55,10 @@ class Comparer(ABC):
                                 Only used if `clips` is a dict.
                                 Determines where to place clip name using :py:func:`vapoursynth.core.text.Text`
                                 (Default: 7).
+
+    :raises ValueError:         Less than two clips passed.
+    :raises ValueError:         `label_alignment` is not between 1–9.
+    :raises ValueError:         Unexpected type passed to `clips`.
     """
 
     def __init__(self,
@@ -126,6 +130,9 @@ class Stack(Comparer):
                                 Only used if `clips` is a dict.
                                 Determines where to place clip name using :py:func:`vapoursynth.core.text.Text`
                                 (Default: 7).
+
+    :raises ValueError:         Clips are not the same height for StackHorizontal.
+    :raises ValueError:         Clips are not the same width for StackVertical.
     """
 
     def __init__(self,
@@ -227,6 +234,11 @@ class Tile(Comparer):
                                 Only used if `clips` is a dict.
                                 Determines where to place clip name using :py:func:`vapoursynth.core.text.Text`
                                 (Default: 7).
+
+    :raises ValueError:         Clip heights and widths don't match.
+    :raises ValueError:         Array is one-dimensional and you should be using
+                                :py:class:`lvsfunc.comparison.Stack` instead.
+    :raises ValueError:         Specified arrangement has an invalid number of clips.
     """
 
     def __init__(self,
@@ -296,6 +308,9 @@ class Split(Stack):
                                 Only used if `clips` is a dict.
                                 Determines where to place clip name using :py:func:`vapoursynth.core.text.Text`
                                 (Default: 7).
+
+    :raises ValueError:         Clip heights and widths don't match.
+    :raises ValueError:         Resulting cropped width or height violates subsampling rules.
     """
 
     def __init__(self,
@@ -374,6 +389,10 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     :param mismatch:        Allow for clips with different formats and dimensions to be compared (Default: ``False``).
 
     :return:                Interleaved clip containing specified frames from `clip_a` and `clip_b`.
+
+    :raises ValueError:     More comparisons requested than frames available.
+    :raises NotEqualFormatsError:
+                            Format of given clips don't match.
     """
     def _resample(clip: vs.VideoNode) -> vs.VideoNode:
         # Resampling to 8 bit and RGB to properly display how it appears on your screen
@@ -425,13 +444,15 @@ def stack_compare(*clips: vs.VideoNode,
 
     When not using `make_diff`, `Stack` is heavily recommended instead.
 
-    :param clips:       Clips to compare.
-    :param make_diff:   Create and stack a diff (only works if two clips are given) (Default: ``True``).
-    :param height:      Height in px to rescale clips to if `make_diff` is ``True``.
-                        (MakeDiff clip will be twice this resolution).
-                        This function will not scale above the first clip's height (Default: 288).
+    :param clips:           Clips to compare.
+    :param make_diff:       Create and stack a diff (only works if two clips are given) (Default: ``True``).
+    :param height:          Height in px to rescale clips to if `make_diff` is ``True``.
+                            (MakeDiff clip will be twice this resolution).
+                            This function will not scale above the first clip's height (Default: 288).
 
-    :return:            Clip with `clips` stacked.
+    :return:                Clip with `clips` stacked.
+
+    :raises ValueError:     More or less than 2 clips are given.
     """
     if not make_diff:
         warnings.warn("stack_compare has been deprecated in favour of `lvsfunc.comparison.Stack` "
@@ -468,10 +489,14 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
     (vertical by default),
     then stacked with the full-sized plane in the direction specified (horizontal by default).
 
-    :param clip:            Clip to process. (must be in YUV or RGB planar format).
-    :param stack_vertical:  Stack the planes vertically (Default: ``False``).
+    :param clip:                    Clip to process (must be in YUV or RGB planar format).
+    :param stack_vertical:          Stack the planes vertically (Default: ``False``).
 
-    :return:                Clip with stacked planes.
+    :return:                        Clip with stacked planes.
+
+    :raises InvalidFormatError:     Clip is not YUV or RGB.
+    :raises TypeError:              Clip is of an unexpected color family.
+    :raises TypeError:              Clip returns an unexpected subsampling.
     """
     check_variable(clip, "stack_planes")
     assert clip.format
@@ -492,14 +517,12 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
 
     if get_subsampling(clip) in ('444', None):
         return Stack(planes, direction=direction).clip
-
     elif get_subsampling(clip) == '420':
         subsample_direction: Direction = Direction.HORIZONTAL if stack_vertical else Direction.VERTICAL
         y_plane = planes.pop('Y').text.Text(text='Y')
         subsampled_planes = Stack(planes, direction=subsample_direction).clip
 
         return Stack([y_plane, subsampled_planes], direction=direction).clip
-
     else:
         raise TypeError(f"stack_planes: Unexpected subsampling {get_subsampling(clip)}!")
 
@@ -588,6 +611,14 @@ def diff(*clips: vs.VideoNode,
     :return:                    Either an interleaved clip of the differences between the two clips
                                 or a stack of both input clips on top of MakeDiff clip.
                                 Furthermore, the function will print the ranges of all the diffs found.
+
+    :raises ClipsAndNamedClipsError:
+                                Both positional and named clips are given.
+    :raises ValueError:         More or less than two clips are given.
+    :raises ValueError:         ``thr`` is 128 or higher.
+    :raises VariableFormatError:
+                                One of the clips is of a variable format.
+    :raises StopIteration:      No differences are found.
     """
     if clips and namedclips:
         raise ClipsAndNamedClipsError("diff")
@@ -605,7 +636,7 @@ def diff(*clips: vs.VideoNode,
 
     def _to_ranges(iterable: List[int]) -> Iterable[Tuple[int, int]]:
         iterable = sorted(set(iterable))
-        for key, group in groupby(enumerate(iterable), lambda t: t[1] - t[0]):
+        for _, group in groupby(enumerate(iterable), lambda t: t[1] - t[0]):
             groupl = list(group)
             yield groupl[0][1], groupl[-1][1]
 
@@ -686,6 +717,9 @@ def interleave(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode
                         Clips will be labeled at the top left with their `name`.
 
     :return:            An interleaved clip of all the `clips`/`namedclips` specified.
+
+    :raises ClipsAndNamedClipsError:
+                        Both positional and named clips are given.
     """
     if clips and namedclips:
         raise ClipsAndNamedClipsError("interleave")
@@ -699,12 +733,15 @@ def split(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     Accounts for odd-resolution clips by giving overflow columns to the last clip specified.
     All clips must have the same dimensions (width and height).
 
-    :param clips:      Clips for comparison (order is kept left to right).
-    :param namedclips: Keyword arguments of `name=clip` for all clips in the comparison.
-                       Clips will be labeled at the bottom with their `name`.
+    :param clips:       Clips for comparison (order is kept left to right).
+    :param namedclips:  Keyword arguments of `name=clip` for all clips in the comparison.
+                        Clips will be labeled at the bottom with their `name`.
 
-    :return: A clip with the same dimensions as any one of the input clips.
-             with all `clips`/`namedclips` represented as individual vertical slices.
+    :return:            A clip with the same dimensions as any one of the input clips.
+                        with all `clips`/`namedclips` represented as individual vertical slices.
+
+    :raises ClipsAndNamedClipsError:
+                        Both positional and named clips are given.
     """
     if clips and namedclips:
         raise ClipsAndNamedClipsError("split")
@@ -720,6 +757,9 @@ def stack_horizontal(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.Vid
                         Clips will be labeled at the top left with their `name`.
 
     :return:            A horizontal stack of the `clips`/`namedclips`.
+
+    :raises ClipsAndNamedClipsError:
+                        Both positional and named clips are given.
     """
     if clips and namedclips:
         raise ClipsAndNamedClipsError("stack_horizontal")
@@ -735,6 +775,9 @@ def stack_vertical(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.Video
                         Clips will be labeled at the top left with their `name`.
 
     :return:            A vertical stack of the `clips`/`namedclips`.
+
+    :raises ClipsAndNamedClipsError:
+                        Both positional and named clips are given.
     """
     if clips and namedclips:
         raise ClipsAndNamedClipsError("stack_vertical")
@@ -755,6 +798,9 @@ def tile(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
 
     :return:            A clip with all input `clips`/`namedclips` automatically tiled most optimally
                         into a rectangular arrrangement.
+
+    :raises ClipsAndNamedClipsError:
+                        Both positional and named clips are given.
     """
     if clips and namedclips:
         raise ClipsAndNamedClipsError("tile")

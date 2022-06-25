@@ -8,9 +8,16 @@ from vskernels import Kernel, get_kernel
 from .types import Matrix
 
 __all__: List[str] = [
-    'CompareSameKernelError', 'FramePropError', 'MatrixError',
-    'InvalidFormatError', 'ClipsAndNamedClipsError', 'InvalidFramerateError',
-    'VariableFormatError', 'VariableResolutionError', 'NotEqualFormatsError',
+    'ClipsAndNamedClipsError',
+    'CompareSameKernelError',
+    'FramePropError',
+    'InvalidFormatError',
+    'InvalidFramerateError',
+    'MatrixError',
+    'NotEqualFormatsError',
+    'TopFieldFirstError',
+    'VariableFormatError',
+    'VariableResolutionError',
 ]
 
 
@@ -121,3 +128,13 @@ class MatrixError(ValueError):
         self.matrix: int = matrix
         self.message: str = message
         super().__init__(self.message.format(func=self.function, matrix=matrix))
+
+
+class TopFieldFirstError(ValueError):
+    """Raised when the user must pass a TFF argument."""
+
+    def __init__(self, function: str,
+                 message: str = "{func}: 'You must set `tff` for this clip!'") -> None:
+        self.function: str = function
+        self.message: str = message
+        super().__init__(self.message.format(func=self.function))

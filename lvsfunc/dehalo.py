@@ -119,6 +119,10 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     :param show_mask:       Return mask clip.
 
     :return:                Dehalo'd clip or halo mask clip.
+
+    :raises ValueError:     ``rfactor``, ``rx``, or ``ry`` is less than 1.0.
+    :raises ValueError:     ``darkstr`` is not between 0.0–1.0.
+    :raises ValueError:     ``lowsens`` or ``highsens`` is not between 0–100.
     """
     check_variable(clip, "masked_dha")
     assert clip.format
@@ -128,7 +132,7 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
         raise ValueError("masked_dha: 'rfactor, rx, and ry must all be bigger than 1.0!'")
 
     if not 0 <= darkstr <= 1:
-        raise ValueError("masked_dha: 'darkstr must be between 1.0 and 0.0!'")
+        raise ValueError("masked_dha: 'darkstr must be between 0.0 and 1.0!'")
 
     if not all(0 < sens < 100 for sens in (lowsens, highsens)):
         raise ValueError("masked_dha: 'lowsens and highsens must be between 0 and 100!'")
@@ -208,31 +212,33 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     In essence, they define the window between how weak an effect is for it to be processed,
     and how strong it has to be before it's fully discarded.
 
-    :param clip:            Clip to process.
-    :param ref:             Reference clip. Will replace regular dehaloing.
-    :param rx:              Horizontal radius for halo removal. Must be greater than 1. Will be rounded up.
-    :param ry:              Vertical radius for halo removal. Must be greater than 1. Will be rounded up.
-    :param brightstr:       Strength for bright halo removal.
-    :param darkstr:         Strength for dark halo removal. Must be between 0 and 1.
-    :param thmi:            Minimum threshold for sharp edges. Keep only the sharpest edges (line edges).
-                            To see the effects of this setting take a look at the strong mask (show_mask=4).
-    :param thma:            Maximum threshold for sharp edges. Keep only the sharpest edges (line edges).
-                            To see the effects of this setting take a look at the strong mask (show_mask=4).
-    :param thlimi:          Minimum limiting threshold. Includes more edges than previously,
-                            but ignores simple details.
-    :param thlima:          Maximum limiting threshold. Includes more edges than previously,
-                            but ignores simple details.
-    :param lowsens:         Lower sensitivity range. The lower this is, the more it will process.
-                            Must be between 0 and 100.
-    :param highsens:        Upper sensitivity range. The higher this is, the more it will process.
-                            Must be between 0 and 100.
-    :param rfactor:         Image enlargement factor. Set to >1 to enable some form of aliasing-protection.
-                            Must be greater than 1.
-    :param show_mask:       Return mask clip. Valid options are 1–7.
-    :param planes:          Specifies which planes will be processed.
-                            Any unprocessed planes will be simply copied.
+    :param clip:                    Clip to process.
+    :param ref:                     Reference clip. Will replace regular dehaloing.
+    :param rx:                      Horizontal radius for halo removal. Must be greater than 1. Will be rounded up.
+    :param ry:                      Vertical radius for halo removal. Must be greater than 1. Will be rounded up.
+    :param brightstr:               Strength for bright halo removal.
+    :param darkstr:                 Strength for dark halo removal. Must be between 0 and 1.
+    :param thmi:                    Minimum threshold for sharp edges. Keep only the sharpest edges (line edges).
+                                    To see the effects of this setting take a look at the strong mask (show_mask=4).
+    :param thma:                    Maximum threshold for sharp edges. Keep only the sharpest edges (line edges).
+                                    To see the effects of this setting take a look at the strong mask (show_mask=4).
+    :param thlimi:                  Minimum limiting threshold. Includes more edges than previously,
+                                    but ignores simple details.
+    :param thlima:                  Maximum limiting threshold. Includes more edges than previously,
+                                    but ignores simple details.
+    :param lowsens:                 Lower sensitivity range. The lower this is, the more it will process.
+                                    Must be between 0 and 100.
+    :param highsens:                Upper sensitivity range. The higher this is, the more it will process.
+                                    Must be between 0 and 100.
+    :param rfactor:                 Image enlargement factor. Set to >1 to enable some form of aliasing-protection.
+                                    Must be greater than 1.
+    :param show_mask:               Return mask clip. Valid options are 1–7.
+    :param planes:                  Specifies which planes will be processed.
+                                    Any unprocessed planes will be simply copied.
 
-    :return:                Dehalo'd clip or halo mask clip.
+    :return:                        Dehalo'd clip or halo mask clip.
+
+    :raises ModuleNotFoundError:    Dependencies are missing.
     """
     warnings.warn("fine_dehalo: 'This function is deprecated in favor of `vsdehalo.fine_dehalo`! "
                   "This function will be removed in a future commit.",
