@@ -49,7 +49,7 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     :param sigmaR_final:        Bilateral's range weight sigma.
                                 if `None`, same as `sigmaR`
     :param bilateral_args:      Additional parameters to pass to bilateral.
-    :param bm3d_args:           Additional parameters to pass to :py:class:`lvsfunc.noise.bm3d`.
+    :param bm3d_args:           Additional parameters to pass to :py:func:`lvsfunc.noise.bm3d`.
     :param planes:              Specifies which planes will be processed.
                                 Any unprocessed planes will be simply copied.
 

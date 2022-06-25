@@ -142,7 +142,8 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
                             If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
     :param kernel:          py:class:`vskernels.Kernel` object used for conversions between YUV <-> RGB.
-                            This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
+                            This can also be the string name of the kernel
+                            (Default: py:class:`vskernels.Bicubic(b=0, c=0.5)`).
     :param chkdr_args:      Additional args to pass to chickendream.
 
     :return:                Grained clip in the given clip's format.

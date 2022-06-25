@@ -381,7 +381,7 @@ class DeferredMask(ABC):
     Provides support for ranges, reference frames, and bounding.
 
     :param range:       A single range or list of ranges to replace,
-                        compatible with :py:class:`lvsfunc.misc.replace_ranges`
+                        compatible with :py:func:`lvsfunc.misc.replace_ranges`
     :param bound:       A :py:class:`lvsfunc.mask.BoundingBox` or a tuple that will be converted
                         (Default: ``None``, no bounding).
     :param blur:        Blur the bounding mask (Default: False).

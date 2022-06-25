@@ -86,7 +86,7 @@ class ScaleAttempt(NamedTuple):
 
 
 class SceneChangeMode(IntEnum):
-    """Size type for :py:class:`lvsfunc.render.find_scene_changes`."""
+    """Size type for :py:func:`lvsfunc.render.find_scene_changes`."""
 
     WWXD = 0
     SCXVID = 1
@@ -149,7 +149,7 @@ class VSIdxFunction(Protocol):
 
 
 class Shapes(IntEnum):
-    """Convolution coordinates for :py:class:`lvsfunc.mask.mt_xxpand_multi`."""
+    """Convolution coordinates for :py:func:`lvsfunc.mask.mt_xxpand_multi`."""
 
     RECTANGLE = 0
     ELLIPSE = 1
@@ -157,7 +157,7 @@ class Shapes(IntEnum):
 
 
 class RegressClips(NamedTuple):
-    """Regress clip types for :py:class:`lvsfunc.recon.regress`."""
+    """Regress clip types for :py:func:`lvsfunc.recon.regress`."""
 
     slope: vs.VideoNode
     intercept: vs.VideoNode
@@ -175,7 +175,7 @@ CURVES = Literal[
 
 
 class IndexExists(IntEnum):
-    """Check if certain files exist for :py:class:`lvsfunc.misc.source`."""
+    """Check if certain files exist for :py:func:`lvsfunc.misc.source`."""
 
     PATH_IS_DGI = auto()
     PATH_IS_IMG = auto()

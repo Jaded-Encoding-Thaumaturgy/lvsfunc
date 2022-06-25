@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Literal, Sequence, SupportsFloat, Tuple, cast
 
 import vapoursynth as vs
-from vskernels import Bicubic, Catrom, Kernel, Point, get_kernel
+from vskernels import Bicubic, Kernel, Point, get_kernel
 from vsutil import Dither, depth, get_depth
 
 from .helpers import _check_has_nvidia
@@ -20,7 +20,7 @@ __all__: List[str] = [
 
 
 def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
-                strs: Sequence[float] = [30, 50, 75],
+                strs: Sequence[float] = [10, 50, 75],
                 thrs: Sequence[Tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
                 matrix: Matrix | int | None = None,
                 kernel: Kernel | str = Bicubic(b=0, c=0.5),
@@ -61,7 +61,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                             If `None`, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
     :param kernel:          py:class:`vskernels.Kernel` object used for conversions between YUV <-> RGB.
-                            This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
+                            This can also be the string name of the kernel
+                            (Default: py:class:`vskernels.Bicubic(0, 0.5)`).
     :param cuda:            Use CUDA backend if True, else CPU backend.
     :param write_props:     whether to write verbose props.
     :param vsdpir_args:     Additional args to pass to :py:func:`lvsfunc.deblock.vsdpir`.
@@ -151,7 +152,7 @@ def dpir(
     matrix: Matrix | int | None = None, cuda: bool | Literal['trt'] | None = None, i444: bool = False,
     tiles: int | Tuple[int, int] | None = None, overlap: int | Tuple[int, int] | None = 8,
     zones: List[Tuple[Range | List[Range] | None, SupportsFloat | vs.VideoNode | None]] | None = None,
-    fp16: bool | None = None, num_streams: int = 1, device_id: int = 0, kernel: Kernel | str = Catrom()
+    fp16: bool | None = None, num_streams: int = 1, device_id: int = 0, kernel: Kernel | str = Bicubic(b=0, c=0.5)
 ) -> vs.VideoNode:
     """
     DPIR, or Plug-and-Play Image Restoration with Deep Denoiser Prior, is a denoise and deblocking neural network.
@@ -199,8 +200,9 @@ def dpir(
                             and may even harm performance—when enabled with a device that doesn't support it.
     :param num_streams:     Number of concurrent CUDA streams to use. Increase if GPU isn't getting saturated.
     :param device_id:       Specifies the GPU device id to use.
-    :param kernel:          py:class:`vskernels.Kernel` object used to scale to and from RGB.
-                            This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
+    :param kernel:          py:class:`vskernels.Kernel` object used for conversions between YUV <-> RGB.
+                            This can also be the string name of the kernel
+                            (Default: py:class:`vskernels.Bicubic(0, 0.5)`).
 
     :return:                Deblocked or denoised clip in either the given clip's format or YUV444PS.
     """
