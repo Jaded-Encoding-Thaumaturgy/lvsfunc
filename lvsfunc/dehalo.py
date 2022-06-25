@@ -6,11 +6,13 @@ from typing import Any, Dict, List, Sequence
 
 import vapoursynth as vs
 from vskernels import BSpline, Catrom
+from vsrgtools import repair
+from vsrgtools.util import clamp, normalise_planes
 from vsutil import depth, fallback, get_depth, get_y
 
 from .mask import fine_dehalo_mask
 from .noise import bm3d
-from .util import check_variable, clamp_values, force_mod, pick_repair, scale_peak
+from .util import check_variable, force_mod, scale_peak
 
 core = vs.core
 
@@ -132,8 +134,8 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
         raise ValueError("masked_dha: 'lowsens and highsens must be between 0 and 100!'")
 
     # These are the only two I'm going to keep, as these will still give expected results.
-    maskpull = clamp_values(maskpull, max_val=254, min_val=0)
-    maskpush = clamp_values(maskpush, max_val=255, min_val=maskpull + 1)
+    maskpull = clamp(maskpull, max_val=254, min_val=0)
+    maskpush = clamp(maskpush, max_val=255, min_val=maskpull + 1)
 
     peak_r = 1.0 if get_depth(clip) == 32 else 1 << get_depth(clip)
     peak = 1.0 if get_depth(clip) == 32 else peak_r - 1
@@ -162,7 +164,7 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
         mmg = core.std.MaskedMerge(clip_ss, clip_y, mask_i.std.Limiter())
 
         if rfactor == 1:
-            ssc = pick_repair(clip)(clip_y, mmg, 1)
+            ssc = repair(clip_y, mmg, 1)
         else:
             ss_w, ss_h = force_mod(clip.width * rfactor, 4), force_mod(clip.height * rfactor, 4)
             ssc = Catrom().scale(clip_y, ss_w, ss_h)
@@ -247,10 +249,7 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
         check_variable(ref, "fine_dehalo")
         assert ref.format
 
-    if planes is None:
-        planes = list(range(clip.format.num_planes))
-    elif isinstance(planes, int):
-        planes = [planes]
+    planes = normalise_planes(clip, planes)
 
     # Original silently changed values around, which I hate. Throwing errors instead.
     if not all(x >= 1 for x in (rfactor, rx, ry)):

@@ -22,7 +22,6 @@ __all__: List[str] = [
     'allow_variable',
     'check_variable',
     'chroma_injector',
-    'clamp_values',
     'colored_clips',
     'force_mod',
     'frames_since_bookmark',
@@ -34,8 +33,6 @@ __all__: List[str] = [
     'load_bookmarks',
     'normalize_ranges',
     'padder',
-    'pick_removegrain',
-    'pick_repair',
     'quick_resample',
     'replace_ranges', 'rfs',
     'scale_peak',
@@ -77,60 +74,6 @@ def quick_resample(clip: vs.VideoNode,
             filtered = function(dither)
 
     return depth(filtered, clip.format.bits_per_sample)
-
-
-def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
-    """
-    Return rgvs.Repair if the clip is 16 bit or lower, else rgsf.Repair.
-
-    .. warning:
-        This function will be removed in a future version!
-
-    This is done because rgvs doesn't work with float, but rgsf does for whatever reason.
-
-    Dependencies:
-
-    * `RGSF <https://github.com/IFeelBloated/RGSF>`_
-
-    :param clip:    Clip to process.
-
-    :return:        Appropriate repair function for input clip's depth.
-    """
-    warnings.warn("pick_repair: 'This function will be removed in a future version!'", FutureWarning)
-
-    check_variable_format(clip, "pick_repair")
-    assert clip.format
-
-    is_float = clip.format.sample_type == vs.FLOAT
-
-    return core.rgsf.Repair if is_float else core.rgvs.Repair
-
-
-def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
-    """
-    Return rgvs.RemoveGrain if the clip is 16 bit or lower, else rgsf.RemoveGrain.
-
-    .. warning:
-        This function will be removed in a future version!
-
-    This is done because rgvs doesn't work with float, but rgsf does for whatever reason.
-
-    Dependencies:
-
-    * `RGSF <https://github.com/IFeelBloated/RGSF>`_
-
-    :param clip:    Clip to process.
-
-    :return:        Appropriate RemoveGrain function for input clip's depth.
-    """
-    warnings.warn("pick_removegrain: 'This function will be removed in a future version!'", FutureWarning)
-
-    check_variable_format(clip, "pick_removegrain")
-    assert clip.format
-
-    is_float = clip.format.sample_type == vs.FLOAT
-
-    return core.rgsf.RemoveGrain if is_float else core.rgvs.RemoveGrain
 
 
 def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
@@ -307,11 +250,6 @@ def force_mod(x: float, mod: int = 4) -> int:
     Minimum returned value will always be mod².
     """
     return mod ** 2 if x < mod ** 2 else int(x / mod + 0.5) * mod
-
-
-def clamp_values(x: float, max_val: float, min_val: float) -> float:
-    """Forcibly clamp the given value x to a max and/or min value."""
-    return min_val if x < min_val else max_val if x > max_val else x
 
 
 def get_neutral_value(clip: vs.VideoNode, chroma: bool = False) -> float:

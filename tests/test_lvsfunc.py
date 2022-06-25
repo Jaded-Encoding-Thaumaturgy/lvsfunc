@@ -722,14 +722,6 @@ class LvsfuncTestScale(LvsfuncTests):
 
 # lvsfunc.util
 class LvsfuncTestUtil(LvsfuncTests):
-    def test_pick_repair(self) -> None:
-        repair = lvf.util.pick_repair(self.YUV420P8_CLIP)
-        self.assert_returns_callable(repair)
-
-    def test_pick_removegrain(self) -> None:
-        repair = lvf.util.pick_removegrain(self.YUV420P8_CLIP)
-        self.assert_returns_callable(repair)
-
     def test_get_prop(self) -> None:
         prop = lvf.util.get_prop(self.YUV420P8_CLIP.get_frame(0), '_DurationDen', int)
         self.assertIsInstance(prop, int)
@@ -770,13 +762,6 @@ class LvsfuncTestUtil(LvsfuncTests):
     def test_force_mod(self) -> None:
         value = lvf.util.force_mod(x=150, mod=4)
         self.assertEqual(value, 152)
-
-    def test_clamp_values(self) -> None:
-        value_positive = lvf.util.clamp_values(x=500, max_val=255, min_val=0)
-        value_negative = lvf.util.clamp_values(x=-500, max_val=255, min_val=0)
-
-        self.assertEqual(value_positive, 255)
-        self.assertEqual(value_negative, 0)
 
     def test_get_neutral_value(self) -> None:
         neutral_p16_yuv = lvf.util.get_neutral_value(self.YUV420P8_CLIP, chroma=True)

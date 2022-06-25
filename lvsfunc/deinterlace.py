@@ -7,17 +7,18 @@ import warnings
 from fractions import Fraction
 from functools import partial
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence
 
 import vapoursynth as vs
 from vskernels import Bicubic, BicubicDidee, Catrom, Kernel, get_kernel
+from vsrgtools import repair
 from vsutil import Dither, depth, get_depth, get_w, get_y, scale_value
 
 from .comparison import Stack
 from .exceptions import InvalidFramerateError
 from .render import clip_async_render, get_render_progress
 from .types import Direction
-from .util import check_variable, check_variable_format, force_mod, get_neutral_value, get_prop, pick_repair
+from .util import check_variable, check_variable_format, force_mod, get_neutral_value, get_prop
 
 core = vs.core
 
@@ -314,7 +315,7 @@ def deblend(clip: vs.VideoNode, start: int = 0,
             if n in blends_a:
                 c, cd, da, a = clip[n - 1], clip[n], clip[n + 1], clip[n + 2]
                 debl = core.akarin.Expr([c, cd, da, a], expr_cd)
-                return pick_repair(clip)(debl, c, rep) if rep else debl
+                return repair(debl, c, rep) if rep else debl
             return clip
 
     debl = core.std.FrameEval(clip, partial(deblend, clip=clip, rep=rep))
@@ -325,7 +326,8 @@ def deblend(clip: vs.VideoNode, start: int = 0,
 def decomb(clip: vs.VideoNode,
            tff: bool | int = True, mode: int = 1,
            decimate: bool = True, vinv: bool = False,
-           rep: int | None = None, show_mask: bool = False,
+           rep: int | Sequence[int] = 0,
+           show_mask: bool = False,
            tfm_args: Dict[str, Any] = {},
            tdec_args: Dict[str, Any] = {},
            vinv_args: Dict[str, Any] = {},
@@ -396,7 +398,7 @@ def decomb(clip: vs.VideoNode,
     decombed = core.std.FrameEval(clip, partial(_pp, clip=clip, pp=qtgmc_merged), clip)
 
     decombed = vinverse(decombed, **vinv_args) if vinv else decombed
-    decombed = pick_repair(clip)(decombed, clip, rep) if rep else decombed
+    decombed = repair(decombed, clip, rep)
     return core.tivtc.TDecimate(decombed, **tdec_args) if decimate else decombed
 
 
