@@ -43,6 +43,9 @@ def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
     :param final_args:      Args to pass to the final estimation.
 
     :return:                Denoised clip.
+
+    :raises ValueError:     Invalid number of sigma parameters were passed.
+    :raises ValueError:     Invalid number of radii parameters were passed.
     """
     check_variable(clip, "bm3d")
     assert clip.format

@@ -219,16 +219,19 @@ def fine_dehalo_mask(clip: vs.VideoNode,
     :param show_mask:       Return mask clip at various stages in the operation. Valid options are 1–7.
 
     :return:                Halo mask clip.
+
+    :raises ValueError:     ``rx`` or ``ry`` are smaller than 1.0.
+    :raises ValueError:     Invalid value for ``show_mask`` is passed.
     """
     check_variable(clip, "halo_mask")
 
     clip_y = get_y(clip)
 
     if not all(x >= 1 for x in (rx, ry)):
-        raise ValueError("halo_mask: 'rx and ry must both be bigger than 1.0!'")
+        raise ValueError("halo_mask: '`rx` and `ry` must both be bigger than 1.0!'")
 
     if show_mask is not False and not (0 < int(show_mask) <= 7):
-        raise ValueError("halo_mask: 'Valid values for show_mask are 1–7!'")
+        raise ValueError("halo_mask: 'Valid values for `show_mask` are 1–7!'")
 
     bits = get_depth(clip)
     peak = (1 << bits) - 1
@@ -352,9 +355,11 @@ class BoundingBox():
         """
         Get a mask representing the bounding box.
 
-        :param ref:     Reference clip for format, resolution, and length.
+        :param ref:             Reference clip for format, resolution, and length.
 
-        :return:        Square mask representing the bounding box.
+        :return:                Square mask representing the bounding box.
+
+        :raises ValueError:     Bound exceeds clip size.
         """
         check_variable(ref, "get_mask")
         assert ref.format
@@ -386,7 +391,9 @@ class DeferredMask(ABC):
                         (Default: ``None``, no bounding).
     :param blur:        Blur the bounding mask (Default: False).
     :param refframe:    A single frame number to use to generate the mask
-                        or a list of frame numbers with the same length as :py:func:`lvsfunc.types.Range`
+                        or a list of frame numbers with the same length as :py:func:`lvsfunc.types.Range`.
+
+    :raises ValueError: Reference frame and ranges mismatch.
     """
 
     ranges: List[Range]
@@ -468,7 +475,7 @@ def mt_xxpand_multi(clip: vs.VideoNode,
                     planes: List[int] = [0, 1, 2],
                     **m_params: Any) -> List[vs.VideoNode]:
     """
-    Mask expanding/inpanding function written by Zastin.
+    Mask expanding/inpanding function written by `Zastin <https://github.com/kgrabs>`_.
 
     Performs multiple Minimums/Maximums.
     """
