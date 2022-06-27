@@ -415,7 +415,7 @@ class DeferredMask(ABC):
         elif isinstance(refframes, int):
             self.refframes = [refframes] * len(self.ranges)
         else:
-            self.refframes = [x for x in refframes]  # wtf mypy
+            self.refframes = list(refframes)
 
         if len(self.refframes) > 0 and len(self.refframes) != len(self.ranges):
             raise ValueError("DeferredMask: 'Received reference frame and range list size mismatch!'")
@@ -483,7 +483,7 @@ def mt_xxpand_multi(clip: vs.VideoNode,
 
     match mode:
         case Shapes.ELLIPSE: coordinates = [[1] * 8, [0, 1, 0, 1, 1, 0, 1, 0],
-                                                     [0, 1, 0, 1, 1, 0, 1, 0]]
+                                            [0, 1, 0, 1, 1, 0, 1, 0]]
         case Shapes.LOSANGE: coordinates = [[0, 1, 0, 1, 1, 0, 1, 0]] * 3
         case _: coordinates = [[1] * 8] * 3
 
