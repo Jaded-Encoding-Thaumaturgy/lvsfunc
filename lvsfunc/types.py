@@ -102,13 +102,9 @@ class SceneChangeMode(IntEnum):
 class Position(Coordinate):
     """Position type for :py:class:`lvsfunc.mask.BoundingBox`."""
 
-    pass
-
 
 class Size(Coordinate):
     """Size type for :py:class:`lvsfunc.mask.BoundingBox`."""
-
-    pass
 
 
 class Matrix(IntEnum):

@@ -617,7 +617,7 @@ def diff(*clips: vs.VideoNode,
     if thr >= 128:
         raise ValueError("diff: `thr` must be below 128!")
 
-    if clips and any(c.format is None for c in clips):
+    if clips and any(c.format is None for c in clips):  # noqa
         raise VariableFormatError("diff")
     elif namedclips and any(nc.format is None for nc in namedclips.values()):
         raise VariableFormatError("diff")

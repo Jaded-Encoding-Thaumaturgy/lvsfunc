@@ -2,11 +2,12 @@
 .mypy_cache/
 .vscode/
 .vspreview/
+*.egg-info/*
 *.glsl
 *.pyc
 *.vpy
-*.egg-info/*
 /tests/dependencies/*
 /tests/output/*
 build/
 dist/
+venv/
