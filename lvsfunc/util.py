@@ -140,7 +140,7 @@ def replace_ranges(clip_a: vs.VideoNode,
                    exclusive: bool = False,
                    use_plugin: bool = True) -> vs.VideoNode:
     """
-    Remaps frame indicdes in a clip using ints and tuples rather than a string.
+    Remaps frame indices in a clip using ints and tuples rather than a string.
 
     Frame ranges are inclusive. This behaviour can be changed by setting `exclusive=True`.
 
