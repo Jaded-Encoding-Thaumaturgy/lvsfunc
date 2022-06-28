@@ -487,20 +487,18 @@ def mt_xxpand_multi(clip: vs.VideoNode,
         case Shapes.LOSANGE: coordinates = [[0, 1, 0, 1, 1, 0, 1, 0]] * 3
         case _: coordinates = [[1] * 8] * 3
 
-    clips = [clip]
+    clips: List[vs.VideoNode] = [clip]
     end = int(min(sw, sh)) + start
 
     for x in range(start, end):
-        clips += [m__imum(clips[-1], coordinates=coordinates[x % 3], **params)]  # type:ignore[list-item]
-
+        clips += [m__imum(clips[-1], coordinates=coordinates[x % 3], **params)]
     for x in range(end, int(end + sw - sh)):
-        clips += [m__imum(clips[-1], coordinates=[0, 0, 0, 1, 1, 0, 0, 0], **params)]  # type:ignore[list-item]
-
+        clips += [m__imum(clips[-1], coordinates=[0, 0, 0, 1, 1, 0, 0, 0], **params)]
     for x in range(end, int(end + sh - sw)):
-        clips += [m__imum(clips[-1], coordinates=[0, 1, 0, 0, 0, 0, 1, 0], **params)  # type:ignore[list-item]
+        clips += [m__imum(clips[-1], coordinates=[0, 1, 0, 0, 0, 0, 1, 0], **params)
                   .std.Limiter()]
 
-    return clips  # type:ignore[return-value]
+    return clips
 
 
 maxm = partial(mt_xxpand_multi, m__imum=core.std.Maximum)

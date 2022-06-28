@@ -107,7 +107,7 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
                  rad: float = 0.025, res: int = 1024,
                  chroma: bool = False, seed: int = 42069,
                  matrix: Matrix | int | None = None,
-                 kernel: Kernel | str = Bicubic(b=0, c=0.5), **chkdr_args: Any) -> vs.VideoNode:
+                 kernel: Kernel | str = Bicubic(b=0, c=1/2), **chkdr_args: Any) -> vs.VideoNode:
     """
     Realistic film grain generator.
 
@@ -145,7 +145,7 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
                             in which case it stays as `None`.
     :param kernel:          py:class:`vskernels.Kernel` object used for conversions between YUV <-> RGB.
                             This can also be the string name of the kernel
-                            (Default: py:class:`vskernels.Bicubic(b=0, c=0.5)`).
+                            (Default: py:class:`vskernels.Bicubic(b=0, c=1/2)`).
     :param chkdr_args:      Additional args to pass to chickendream.
 
     :return:                Grained clip in the given clip's format.

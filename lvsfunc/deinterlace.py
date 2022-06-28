@@ -413,7 +413,7 @@ def decomb(clip: vs.VideoNode,
 
 def descale_fields(clip: vs.VideoNode, tff: bool = True,
                    width: int | None = None, height: int = 720,
-                   kernel: Kernel | str = Bicubic(b=0, c=0.5),
+                   kernel: Kernel | str = Bicubic(b=0, c=1/2),
                    src_top: float = 0.0) -> vs.VideoNode:
     """
     Descale interwoven upscaled fields, also known as a cross conversion.
