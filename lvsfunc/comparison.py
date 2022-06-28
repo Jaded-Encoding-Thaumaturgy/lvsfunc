@@ -617,9 +617,9 @@ def diff(*clips: vs.VideoNode,
     if thr >= 128:
         raise ValueError("diff: `thr` must be below 128!")
 
-    if clips and any(c.format is None for c in clips):  # noqa
+    if clips and not all([c.format for c in clips]):  # noqa
         raise VariableFormatError("diff")
-    elif namedclips and any(nc.format is None for nc in namedclips.values()):
+    elif namedclips and not all([nc.format for nc in namedclips.values()]):
         raise VariableFormatError("diff")
 
     def _to_ranges(iterable: List[int]) -> Iterable[Tuple[int, int]]:
