@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from functools import partial
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Sequence, SupportsFloat, Tuple, cast
@@ -433,5 +434,8 @@ def dpir(
     return kernel.resample(run_dpir, targ_format, targ_matrix)
 
 
-# deprecated name
-vsdpir = dpir
+# deprecated aliases
+def vsdpir(clip: vs.VideoNode, **dpir_args: Any) -> vs.VideoNode:
+    """Deprecate alias of :py:func:`lvsfunc.deblock.dpir`."""
+    warnings.warn("vsdpir: This alias has been deprecated in favor of `dpir`!")
+    return dpir(clip, **dpir_args)
