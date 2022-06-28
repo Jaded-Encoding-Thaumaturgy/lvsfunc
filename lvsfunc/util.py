@@ -667,7 +667,7 @@ def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
                matrices: bool = True, length: bool = False,
                kernel: Kernel | str = Bicubic(b=0, c=1/2)) -> vs.VideoNode:
     """
-    Try matchng the given clip's format with the reference clip's.
+    Try matching the given clip's format with the reference clip's.
 
     :param clip:        Clip to process.
     :param ref:         Reference clip.
