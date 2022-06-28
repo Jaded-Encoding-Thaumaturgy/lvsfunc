@@ -677,7 +677,7 @@ def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
     :param length:      Match clip length (Default: False).
     :param kernel:      py:class:`vskernels.Kernel` object used for the format conversion.
                         This can also be the string name of the kernel
-                        (Default: py:class:`vskernels.Bicubic(b=0, c=0.5)`).
+                        (Default: py:class:`vskernels.Bicubic(b=0, c=1/2)`).
 
     :return:            Clip that matches the ref clip in format.
     """

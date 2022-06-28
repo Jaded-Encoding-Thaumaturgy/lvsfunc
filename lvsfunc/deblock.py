@@ -23,7 +23,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strs: Sequence[float] = [10, 50, 75],
                 thrs: Sequence[Tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
                 matrix: Matrix | int | None = None,
-                kernel: Kernel | str = Bicubic(b=0, c=0.5),
+                kernel: Kernel | str = Bicubic(b=0, c=1/2),
                 cuda: bool = True, write_props: bool = False,
                 **vsdpir_args: Any) -> vs.VideoNode:
     r"""
@@ -152,7 +152,7 @@ def dpir(
     matrix: Matrix | int | None = None, cuda: bool | Literal['trt'] | None = None, i444: bool = False,
     tiles: int | Tuple[int, int] | None = None, overlap: int | Tuple[int, int] | None = 8,
     zones: List[Tuple[Range | List[Range] | None, SupportsFloat | vs.VideoNode | None]] | None = None,
-    fp16: bool | None = None, num_streams: int = 1, device_id: int = 0, kernel: Kernel | str = Bicubic(b=0, c=0.5)
+    fp16: bool | None = None, num_streams: int = 1, device_id: int = 0, kernel: Kernel | str = Bicubic(b=0, c=1/2)
 ) -> vs.VideoNode:
     """
     DPIR, or Plug-and-Play Image Restoration with Deep Denoiser Prior, is a denoise and deblocking neural network.

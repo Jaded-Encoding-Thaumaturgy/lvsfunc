@@ -95,7 +95,7 @@ def reupscale(clip: vs.VideoNode,
     :param height:      Upscale height (Default: 1080).
     :param kernel:      py:class:`vskernels.Kernel` object used for downscaling the super-sampled clip.
                         This can also be the string name of the kernel
-                        (Default: py:class:`vskernels.Bicubic(b=0, c=0.5)`).
+                        (Default: py:class:`vskernels.Bicubic(b=0, c=1/2)`).
     :param kwargs:      Arguments passed to znedi3 (Default: nsize=4, nns=4, qual=2, pscrn=2).
 
     :return:            Reupscaled clip.
@@ -549,7 +549,7 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
     :param height:          Upscale height (Default: 720).
     :param kernel:          py:class:`vskernels.Kernel` object used for the descaling.
                             This can also be the string name of the kernel
-                            (Default: py:class:`vskernels.Bicubic(b=0, c=0.5)`).
+                            (Default: py:class:`vskernels.Bicubic(b=0, c=1/2)`).
     :param downscaler:      Kernel or custom scaler used to downscale the clip.
                             This can also be the string name of the kernel
                             (Default: py:func:`lvsfunc.scale.ssim_downsample`).

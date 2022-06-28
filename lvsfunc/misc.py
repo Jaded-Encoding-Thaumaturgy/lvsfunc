@@ -72,7 +72,7 @@ def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
     :param force_lsmas:     Force files to be imported with L-SMASH (Default: False).
     :param kernel:          py:class:`vskernels.Kernel` object used for converting the `clip` to match `ref`.
                             This can also be the string name of the kernel
-                            (Default: py:class:`vskernels.Bicubic(b=0, c=0.5)`).
+                            (Default: py:class:`vskernels.Bicubic(b=0, c=1/2)`).
     :param tail_lines:      Lines to check on the tail of the dgi file.
                             Increase this value if FILM and ORDER do exist in your dgi file
                             but it's having trouble finding them.

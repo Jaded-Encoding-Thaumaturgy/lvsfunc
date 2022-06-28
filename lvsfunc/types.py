@@ -9,7 +9,6 @@ import vapoursynth as vs
 __all__: List[str] = [
     'Coefs', 'Coordinate', 'CreditMask', 'CURVES', 'CustomScaler', 'Direction', 'F', 'Matrix', 'Position', 'Range',
     'RegressClips', 'Resolution', 'ScaleAttempt', 'SceneChangeMode', 'Size', 'T', 'VideoProp', 'VSFunction',
-    '_VideoNode'
 ]
 
 
