@@ -21,9 +21,9 @@ __all__: List[str] = [
 def _check_has_nvidia() -> bool:
     """Check if the user has an Nvidia GPU."""
     try:
-        sp.check_output('nvidia-smi')
+        sp.check_call('nvidia-smi', stderr=sp.DEVNULL, stdout=sp.DEVNULL)
         return True
-    except sp.CalledProcessError:
+    except (sp.CalledProcessError, OSError):
         return False
 
 
@@ -32,7 +32,7 @@ def _get_dgidx() -> Tuple[str, VSIdxFunction]:
     has_nv = _check_has_nvidia()
 
     dgidx = 'DGIndexNV' if has_nv else 'DGIndex'
-    dgsrc = core.dgdecodenv.DGSource if has_nv else core.dgdecode.DGSource  # type:ignore[attr-defined]
+    dgsrc = core.dgdecodenv.DGSource if has_nv else core.dgdecode.MPEG2Source  # type:ignore[attr-defined]
 
     return dgidx, dgsrc
 
@@ -43,10 +43,14 @@ def _check_index_exists(path: os.PathLike[str] | str) -> IndexExists:
 
     if path.endswith('.dgi'):
         return IndexExists.PATH_IS_DGI
+    elif path.endswith('d2v'):
+        return IndexExists.PATH_IS_D2V
     elif is_image(path):
         return IndexExists.PATH_IS_IMG
     elif Path(f"{path}.dgi").exists():
         return IndexExists.DGI_EXISTS
+    elif Path(f"{path}.d2v").exists():
+        return IndexExists.D2V_EXISTS
     elif Path(f"{path}.lwi").exists():
         return IndexExists.LWI_EXISTS
     return IndexExists.NONE
