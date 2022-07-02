@@ -92,7 +92,7 @@ def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
     dgidx, dgsrc = _get_dgidx()
 
     match IndexExists.LWI_EXISTS if force_lsmas else _check_index_exists(path):
-        case IndexExists.PATH_IS_DGI:
+        case IndexExists.PATH_IS_DGI | IndexExists.PATH_IS_D2V:
             order, film = _tail(path, tail_lines)
             clip = _load_dgi(path, film_thr, dgsrc, order, film, **index_args)
         case IndexExists.PATH_IS_IMG:
@@ -102,6 +102,9 @@ def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
         case IndexExists.DGI_EXISTS:
             order, film = _tail(f"{path}.dgi", tail_lines)
             clip = _load_dgi(f"{path}.dgi", film_thr, dgsrc, order, film, **index_args)
+        case IndexExists.D2V_EXISTS:
+            order, film = _tail(f"{path}.d2v", tail_lines)
+            clip = _load_dgi(f"{path}.d2v", film_thr, dgsrc, order, film, **index_args)
         case _:
             filename, _ = os.path.splitext(path)
             dgi_file = f'{filename}.dgi'
