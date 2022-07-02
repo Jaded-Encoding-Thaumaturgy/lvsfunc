@@ -179,6 +179,8 @@ class IndexExists(IntEnum):
 
     PATH_IS_DGI = auto()
     PATH_IS_IMG = auto()
+    PATH_IS_D2V = auto()
     LWI_EXISTS = auto()
     DGI_EXISTS = auto()
+    D2V_EXISTS = auto()
     NONE = auto()
