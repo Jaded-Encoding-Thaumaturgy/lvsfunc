@@ -158,21 +158,14 @@ def clip_async_render(clip: vs.VideoNode,
         if clip.format.color_family == vs.GRAY:
             y4mformat = "mono"
         else:
-            ss = (clip.format.subsampling_w, clip.format.subsampling_h)
-            if ss == (1, 1):
-                y4mformat = "420"
-            elif ss == (1, 0):
-                y4mformat = "422"
-            elif ss == (0, 0):
-                y4mformat = "444"
-            elif ss == (2, 2):
-                y4mformat = "410"
-            elif ss == (2, 0):
-                y4mformat = "411"
-            elif ss == (0, 1):
-                y4mformat = "440"
-            else:
-                raise ValueError("clip_async_render: 'What have you done?'")
+            match (clip.format.subsampling_w, clip.format.subsampling_h):
+                case (1, 1): y4mformat = "420"
+                case (1, 0): y4mformat = "422"
+                case (0, 0): y4mformat = "444"
+                case (2, 2): y4mformat = "410"
+                case (2, 0): y4mformat = "411"
+                case (0, 1): y4mformat = "440"
+                case _: raise ValueError("clip_async_render: 'What have you done?'")
 
         y4mformat = f"{y4mformat}p{clip.format.bits_per_sample}" if clip.format.bits_per_sample > 8 else y4mformat
 
