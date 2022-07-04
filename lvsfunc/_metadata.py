@@ -1,4 +1,4 @@
-"""Light's Vapoursynth Functions"""
+"""Light's Vapoursynth Functions."""
 
 __version__ = '0.4.3'
 
