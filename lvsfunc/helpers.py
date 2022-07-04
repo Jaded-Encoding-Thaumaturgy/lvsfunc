@@ -106,7 +106,7 @@ def _load_dgi(path: str, film_thr: float, src_filter: VSIdxFunction,
 
 
 def _get_matrix_from_res(frame: vs.VideoFrame | vs.VideoNode) -> Matrix:
-    """Return matrix based on the frame dimensions"""
+    """Return matrix based on the frame dimensions."""
     if isinstance(frame, vs.VideoNode):
         frame = frame.get_frame(0)
 
