@@ -4,7 +4,7 @@ lvsfunc.helpers
 Basic helpers used throughout lvsfunc.
 These can be used by users as well.
 
-------------------
+---------------
 
 .. autosummary::
 
@@ -12,6 +12,7 @@ These can be used by users as well.
     lvsfunc.helpers._check_index_exists
     lvsfunc.helpers._generate_dgi
     lvsfunc.helpers._get_dgidx
+    lvsfunc.helpers._get_matrix_from_res
     lvsfunc.helpers._load_dgi
     lvsfunc.helpers._tail
 
@@ -19,3 +20,4 @@ These can be used by users as well.
     :members:
     :undoc-members:
     :show-inheritance:
+    :member-order: bysource
