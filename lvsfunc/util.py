@@ -14,6 +14,7 @@ from vsutil import depth, get_subsampling, get_w, get_y
 
 from .exceptions import (InvalidFormatError, InvalidMatrixError, MatrixError, VariableFormatError,
                          VariableResolutionError)
+from .helpers import _get_matrix_from_res
 from .types import CURVES, Coefs, F, Matrix, Range, T, _VideoNode
 
 core = vs.core
@@ -377,39 +378,17 @@ def get_matrix(frame: vs.VideoNode | vs.VideoFrame, strict: bool = False) -> Mat
     matrix = get_prop(frame, "_Matrix", int)
 
     match matrix:
-        case 0: return Matrix.RGB
-        case 1: return Matrix.BT709
         case 2 if strict: raise MatrixError("get_matrix", matrix, "{func}: 'Matrix is undefined.'")
+        case 2: return _get_matrix_from_res(frame)
         case 3: raise MatrixError("get_matrix", matrix, "{func}: 'Matrix is reserved.'")
-        case 4: return Matrix.FCC
-        case 5: return Matrix.BT470BG
-        case 6: return Matrix.SMPTE170M
-        case 7: return Matrix.SMPTE240M
-        case 8:
-            if core.version_number() < 55:
-                return Matrix.YCGCO
-            else:
-                raise MatrixError("get_matrix", matrix, "{func}: 'VapourSynth no longer supports {matrix}.'")
-        case 9: return Matrix.BT2020NC
-        case 10: return Matrix.BT2020C
-        case 11: return Matrix.SMPTE2085
-        case 12: return Matrix.CHROMA_DERIVED_NC
-        case 13: return Matrix.CHROMA_DERIVED_C
-        case 14: return Matrix.ICTCP
-        case _ if matrix > 14: raise MatrixError("get_matrix", matrix, "{func}: 'This matrix is current unsupported. "
-                                                 "If you believe this to be in error, please leave an issue "
-                                                 "in the lvsfunc GitHub repository.'")
-        case _ if strict: raise MatrixError("get_matrix", matrix, "{func}: 'Some kind of error occured!'")
+        case 8 if core.version_number() >= 55:
+            raise MatrixError("get_matrix", matrix, "{func}: 'VapourSynth no longer supports {matrix}.'")
+        case _ if matrix > 14:
+            raise MatrixError("get_matrix", matrix, "{func}: 'This matrix is current unsupported. "
+                              "If you believe this to be in error, please leave an issue "
+                              "in the lvsfunc GitHub repository.'")
 
-    w, h = frame.width, frame.height
-
-    if frame.format.color_family == vs.RGB:
-        return Matrix.RGB
-    elif w <= 1024 and h <= 576:
-        return Matrix.SMPTE170M
-    elif w <= 2048 and h <= 1536:
-        return Matrix.BT709
-    return Matrix.BT2020NC
+    return Matrix(matrix)
 
 
 def get_matrix_curve(matrix: Matrix) -> CURVES:

@@ -9,12 +9,18 @@ from typing import Any, List, Tuple, cast
 import vapoursynth as vs
 from vsutil import is_image
 
-from .types import IndexExists, VSIdxFunction
+from .types import IndexExists, Matrix, VSIdxFunction
 
 core = vs.core
 
 __all__: List[str] = [
-    '_check_has_nvidia', '_check_index_exists', '_generate_dgi', '_get_dgidx', '_load_dgi', '_tail'
+    '_check_has_nvidia',
+    '_check_index_exists',
+    '_generate_dgi',
+    '_get_dgidx',
+    '_get_matrix_from_res',
+    '_load_dgi',
+    '_tail'
 ]
 
 
@@ -93,3 +99,19 @@ def _load_dgi(path: str, film_thr: float, src_filter: VSIdxFunction,
         props |= dict(dgi_fieldop=1, _FieldBased=0)
 
     return src_filter(path, **index_args).std.SetFrameProps(**props)
+
+
+def _get_matrix_from_res(frame: vs.VideoFrame | vs.VideoNode) -> Matrix:
+    """Return matrix based on the frame dimensions"""
+    if isinstance(frame, vs.VideoNode):
+        frame = frame.get_frame(0)
+
+    w, h = frame.width, frame.height
+
+    if frame.format.color_family == vs.RGB:
+        return Matrix(0)
+    elif w <= 1024 and h <= 576:
+        return Matrix(6)
+    elif w <= 2048 and h <= 1536:
+        return Matrix(1)
+    return Matrix(9)
