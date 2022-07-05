@@ -8,7 +8,7 @@ from itertools import groupby, zip_longest
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Literal, Sequence, Set, Tuple, TypeVar, overload
 
 import vapoursynth as vs
-from vskernels import Catrom
+from vskernels import Catrom, get_matrix
 from vsutil import depth, get_subsampling, get_w
 from vsutil import split as split_planes
 
@@ -16,7 +16,7 @@ from .dehardsub import hardsub_mask
 from .exceptions import ClipsAndNamedClipsError, InvalidFormatError, NotEqualFormatsError, VariableFormatError
 from .render import clip_async_render
 from .types import Direction
-from .util import check_variable, check_variable_format, check_variable_resolution, get_matrix, get_prop
+from .util import check_variable, check_variable_format, check_variable_resolution, get_prop
 
 core = vs.core
 

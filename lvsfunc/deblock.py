@@ -6,11 +6,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Literal, Sequence, SupportsFloat, Tuple, cast
 
 import vapoursynth as vs
-from vskernels import Bicubic, Kernel, Point, get_kernel
+from vskernels import Bicubic, Kernel, Matrix, Point, get_kernel
 from vsutil import Dither, depth, get_depth
 
 from .helpers import _check_has_nvidia
-from .types import Matrix, Range
+from .types import Range
 from .util import check_variable, get_prop, replace_ranges
 
 core = vs.core
