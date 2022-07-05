@@ -184,7 +184,7 @@ def replace_ranges(clip_a: vs.VideoNode,
 
     :raises ValueError:     A string is passed instead of a list of ranges.
     """
-    if ranges is None:
+    if not ranges:
         return clip_a
 
     if isinstance(ranges, str):  # type:ignore[unreachable]
