@@ -7,15 +7,12 @@ from functools import partial, wraps
 from typing import Any, Callable, Dict, List, Tuple, Type, cast
 
 import vapoursynth as vs
-import vskernels.types as kernel_type
 from typing_extensions import TypeGuard
-from vskernels import Bicubic, Kernel, get_kernel
+from vskernels import Bicubic, Kernel, Matrix, get_kernel, get_matrix
 from vsutil import depth, get_subsampling, get_w, get_y
 
-from .exceptions import (InvalidFormatError, InvalidMatrixError, MatrixError, VariableFormatError,
-                         VariableResolutionError)
-from .helpers import _get_matrix_from_res
-from .types import CURVES, Coefs, F, Matrix, Range, T, _VideoNode
+from .exceptions import InvalidFormatError, InvalidMatrixError, VariableFormatError, VariableResolutionError
+from .types import CURVES, Coefs, F, Range, T, _VideoNode
 
 core = vs.core
 
@@ -29,7 +26,6 @@ __all__: List[str] = [
     'frames_since_bookmark',
     'get_coefs',
     'get_matrix_curve',
-    'get_matrix',
     'get_prop',
     'load_bookmarks',
     'normalize_ranges',
@@ -347,50 +343,6 @@ def check_variable(clip: vs.VideoNode, function: str) -> TypeGuard[_VideoNode]:
     return True
 
 
-def get_matrix(frame: vs.VideoNode | vs.VideoFrame, strict: bool = False) -> Matrix:
-    """
-    Get the matrix of a clip or frame.
-
-    By default this function will first check the `_Matrix` prop for a valid matrix.
-    If the matrix is not set, it will guess based on the resolution.
-
-    If you want it to be strict and raise an error if no matrix is set, set ``strict=True``.
-
-    :param clip:            Clip or Frame to process.
-    :param strict:          Whether to be strict about the matrix.
-                            If ``True``, checks just the `_Matrix` prop.
-                            If ``False``, will check the `_Matrix` prop and make a guess if `_Matrix=Matrix.UNKNOWN`.
-                            Default: False.
-
-    :return:                Value representing a matrix.
-
-    :raise MatrixError:     The matrix was undefined.
-    :raise MatrixError:     The matrix is reserved.
-    :raise MatrixError:     VapourSynth no longer supports the matrix.
-    :raise MatrixError:     The matrix is unsupported.
-    :raise MatrixError:     Some kind of unknown error occured.
-    """
-    if isinstance(frame, vs.VideoNode):
-        assert check_variable_format(frame, "get_matrix")
-
-        frame = frame.get_frame(0)
-
-    matrix = get_prop(frame, "_Matrix", int)
-
-    match matrix:
-        case 2 if strict: raise MatrixError("get_matrix", matrix, "{func}: 'Matrix is undefined.'")
-        case 2: return _get_matrix_from_res(frame)
-        case 3: raise MatrixError("get_matrix", matrix, "{func}: 'Matrix is reserved.'")
-        case 8 if core.version_number() >= 55:
-            raise MatrixError("get_matrix", matrix, "{func}: 'VapourSynth no longer supports {matrix}.'")
-        case _ if matrix > 14:
-            raise MatrixError("get_matrix", matrix, "{func}: 'This matrix is current unsupported. "
-                              "If you believe this to be in error, please leave an issue "
-                              "in the lvsfunc GitHub repository.'")
-
-    return Matrix(matrix)
-
-
 def get_matrix_curve(matrix: Matrix) -> CURVES:
     """
     Return the matrix curve based on a given ``matrix``.
@@ -670,7 +622,7 @@ def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
     clip = kernel.scale(clip, ref.width, ref.height) if dimensions else clip
 
     if vformat:
-        clip = kernel.resample(clip, format=ref.format, matrix=cast(kernel_type.Matrix, get_matrix(ref)))
+        clip = kernel.resample(clip, format=ref.format, matrix=get_matrix(ref))
 
     if matrices:
         ref_frame = ref.get_frame(0)

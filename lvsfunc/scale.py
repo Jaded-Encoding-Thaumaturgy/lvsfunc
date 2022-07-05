@@ -5,13 +5,13 @@ from functools import partial
 from typing import Any, Callable, Dict, List, cast
 
 import vapoursynth as vs
-from vskernels import Bicubic, BicubicSharp, Catrom, Kernel, Spline36, get_kernel
+from vskernels import Bicubic, BicubicSharp, Catrom, Kernel, Spline36, get_kernel, get_matrix
 from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
 
 from .exceptions import CompareSameKernelError
 from .types import CURVES, CreditMask, CustomScaler, Resolution, ScaleAttempt, VSFunction
-from .util import (check_variable, check_variable_format, check_variable_resolution, get_coefs, get_matrix,
-                   get_matrix_curve, get_prop, quick_resample, scale_thresh)
+from .util import (check_variable, check_variable_format, check_variable_resolution, get_coefs, get_matrix_curve,
+                   get_prop, quick_resample, scale_thresh)
 
 try:
     from cytoolz import functoolz
