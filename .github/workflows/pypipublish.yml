@@ -1,8 +1,6 @@
 name: Publish releases to PyPI
 on:
   push:
-    branches:
-      - master
     tags:
       - v[0-9]+**
 
@@ -43,4 +41,4 @@ jobs:
           uses: pypa/gh-action-pypi-publish@master
           with:
             user: __token__
-            password: ${{ secrets.PYPI_PASSWORD }}
+            password: ${{ secrets.PYPI_TOKEN }}
