@@ -12,7 +12,6 @@ These can be used by users as well.
     lvsfunc.helpers._check_index_exists
     lvsfunc.helpers._generate_dgi
     lvsfunc.helpers._get_dgidx
-    lvsfunc.helpers._get_matrix_from_res
     lvsfunc.helpers._load_dgi
     lvsfunc.helpers._tail
 
