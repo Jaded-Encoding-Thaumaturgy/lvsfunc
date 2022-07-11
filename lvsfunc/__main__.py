@@ -44,7 +44,7 @@ def prompt_user() -> bool:
 
     match prompt:
         case 'y' | 'yes': return True
-        case 'n' | _: return False
+        case _: return False
 
 
 def main() -> None:
@@ -55,7 +55,7 @@ def main() -> None:
     pkg_version = pkg_resources.get_distribution(pkg).version
     pkg_ghrepo = "https://github.com/Irrational-Encoding-Wizardry/lvsfunc.git"
 
-    update_reqs = [sys.executable, '-m', 'pip', 'install']
+    update_reqs = [sys.executable, '-m', 'pip', 'install', '-U']
     update_reqs.append(f"git+{pkg_ghrepo}@v{pkg_version}")
 
     vsrepo = ['vsrepo', 'install']
