@@ -7,13 +7,12 @@ from functools import partial, wraps
 from typing import Any, Callable, Dict, List, Tuple, Type, cast
 
 import vapoursynth as vs
-import vskernels.types as kernel_type
-from vskernels import Catrom, Kernel, get_kernel
-from vsutil import depth, get_depth, get_subsampling, get_w, get_y
+from typing_extensions import TypeGuard
+from vskernels import Bicubic, Kernel, Matrix, get_kernel, get_matrix
+from vsutil import depth, get_subsampling, get_w, get_y
 
-from .exceptions import (InvalidFormatError, InvalidMatrixError, MatrixError, VariableFormatError,
-                         VariableResolutionError)
-from .types import CURVES, Coefs, F, Matrix, Range, T
+from .exceptions import InvalidFormatError, InvalidMatrixError, VariableFormatError, VariableResolutionError
+from .types import CURVES, Coefs, F, Range, T, _VideoNode
 
 core = vs.core
 
@@ -22,20 +21,15 @@ __all__: List[str] = [
     'allow_variable',
     'check_variable',
     'chroma_injector',
-    'clamp_values',
     'colored_clips',
     'force_mod',
     'frames_since_bookmark',
     'get_coefs',
     'get_matrix_curve',
-    'get_matrix',
-    'get_neutral_value',
     'get_prop',
     'load_bookmarks',
     'normalize_ranges',
     'padder',
-    'pick_removegrain',
-    'pick_repair',
     'quick_resample',
     'replace_ranges', 'rfs',
     'scale_peak',
@@ -59,8 +53,10 @@ def quick_resample(clip: vs.VideoNode,
 
     :return:            Filtered clip in original depth.
     """
-    check_variable_format(clip, "quick_resample")
-    assert clip.format
+    warnings.warn("quick_resample: 'This function will be either reworked or removed in a future version!'",
+                  FutureWarning)
+
+    assert check_variable_format(clip, "quick_resample")
 
     try:  # Excepts all generic because >plugin/script writers being consistent >_>
         dither = depth(clip, 32)
@@ -76,65 +72,18 @@ def quick_resample(clip: vs.VideoNode,
     return depth(filtered, clip.format.bits_per_sample)
 
 
-def pick_repair(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
-    """
-    Return rgvs.Repair if the clip is 16 bit or lower, else rgsf.Repair.
-
-    .. warning:
-        This function will be removed in a future version!
-
-    This is done because rgvs doesn't work with float, but rgsf does for whatever reason.
-
-    Dependencies:
-
-    * `RGSF <https://github.com/IFeelBloated/RGSF>`_
-
-    :param clip:    Clip to process.
-
-    :return:        Appropriate repair function for input clip's depth.
-    """
-    check_variable_format(clip, "pick_repair")
-    assert clip.format
-
-    is_float = clip.format.sample_type == vs.FLOAT
-
-    return core.rgsf.Repair if is_float else core.rgvs.Repair
-
-
-def pick_removegrain(clip: vs.VideoNode) -> Callable[..., vs.VideoNode]:
-    """
-    Return rgvs.RemoveGrain if the clip is 16 bit or lower, else rgsf.RemoveGrain.
-
-    .. warning:
-        This function will be removed in a future version!
-
-    This is done because rgvs doesn't work with float, but rgsf does for whatever reason.
-
-    Dependencies:
-
-    * `RGSF <https://github.com/IFeelBloated/RGSF>`_
-
-    :param clip:    Clip to process.
-
-    :return:        Appropriate RemoveGrain function for input clip's depth.
-    """
-    check_variable_format(clip, "pick_removegrain")
-    assert clip.format
-
-    is_float = clip.format.sample_type == vs.FLOAT
-
-    return core.rgsf.RemoveGrain if is_float else core.rgvs.RemoveGrain
-
-
 def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
     """
     Get FrameProp ``prop`` from frame ``frame`` with expected type ``t`` to satisfy the type checker.
 
-    :param frame:   Frame containing props.
-    :param key:     Prop to get.
-    :param t:       Type of prop.
+    :param frame:           Frame containing props.
+    :param key:             Prop to get.
+    :param t:               Type of prop.
 
-    :return:        frame.prop[key].
+    :return:                frame.prop[key].
+
+    :raises KeyError:       ``key`` is not found in props.
+    :raises ValueError:     Returns a prop of the wrong type.
     """
     try:
         prop = frame.props[key]
@@ -152,7 +101,8 @@ def normalize_ranges(clip: vs.VideoNode, ranges: Range | List[Range]) -> List[Tu
     Normalize :py:func:`lvsfunc.types.Range`\(s) to a list of inclusive positive integer ranges.
 
     :param clip:        Reference clip used for length.
-    :param ranges:      Single :py:func:`lvsfunc.types.Range` or list of :py:func:`lvsfunc.types.Range`.
+    :param ranges:      Single :py:class:`lvsfunc.types.Range`,
+                        or a list of :py:class:`lvsfunc.types.Range`\(s).
 
     :return:            List of inclusive positive ranges.
     """
@@ -187,7 +137,7 @@ def replace_ranges(clip_a: vs.VideoNode,
                    exclusive: bool = False,
                    use_plugin: bool = True) -> vs.VideoNode:
     """
-    Remaps frame indicdes in a clip using ints and tuples rather than a string.
+    Remaps frame indices in a clip using ints and tuples rather than a string.
 
     Frame ranges are inclusive. This behaviour can be changed by setting `exclusive=True`.
 
@@ -231,8 +181,10 @@ def replace_ranges(clip_a: vs.VideoNode,
     :param use_plugin:      Use the ReplaceFramesSimple plugin for the rfs call (Default: True).
 
     :return:                Clip with ranges from clip_a replaced with clip_b.
+
+    :raises ValueError:     A string is passed instead of a list of ranges.
     """
-    if ranges is None:
+    if ranges != 0 and not ranges:
         return clip_a
 
     if isinstance(ranges, str):  # type:ignore[unreachable]
@@ -246,15 +198,10 @@ def replace_ranges(clip_a: vs.VideoNode,
     nranges = normalize_ranges(clip_b, ranges)
 
     if use_plugin and hasattr(core, 'remap'):
-        try:
-            return core.remap.ReplaceFramesSimple(
-                clip_a, clip_b, mismatch=True,
-                mappings=' '.join(f'[{s} {e + (exclusive if s != e else 0)}]' for s, e in nranges)
-            )
-        except vs.Error as e:
-            raise RuntimeError("replace_ranges: 'Some kind of error occured when running the plugin!\n"
-                               f"This was the error: \"{str(e)[21:]}\".\n"
-                               "If you don't know how to fix this, consider setting `use_plugin=False`.'")
+        return core.remap.ReplaceFramesSimple(
+            clip_a, clip_b, mismatch=True,
+            mappings=' '.join(f'[{s} {e + (exclusive if s != e else 0)}]' for s, e in nranges)
+        )
 
     out = clip_a
     shift = 1 + exclusive
@@ -274,15 +221,16 @@ def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -
     """
     Scale binarization thresholds from float to int.
 
-    :param thresh:  Threshold [0, 1]. If greater than 1, assumed to be in native clip range.
-    :param clip:    Clip to scale to.
-    :param assume:  | Assume input is this depth when given input >1.
-                    | If ``None``, assume ``clip``'s format (Default: None).
+    :param thresh:          Threshold [0, 1]. If greater than 1, assumed to be in native clip range.
+    :param clip:            Clip to scale to.
+    :param assume:          | Assume input is this depth when given input > 1.
+                            | If ``None``, assume ``clip``'s format (Default: None).
 
-    :return:        Threshold scaled to [0, 2^clip.depth - 1] (if vs.INTEGER).
+    :return:                Threshold scaled to [0, 2^clip.depth - 1] (if vs.INTEGER).
+
+    :raises ValueError:     Thresholds are negative.
     """
-    check_variable_format(clip, "scale_thresh")
-    assert clip.format
+    assert check_variable_format(clip, "scale_thresh")
 
     if thresh < 0:
         raise ValueError("scale_thresh: 'Thresholds must be positive!'")
@@ -307,31 +255,6 @@ def force_mod(x: float, mod: int = 4) -> int:
     return mod ** 2 if x < mod ** 2 else int(x / mod + 0.5) * mod
 
 
-def clamp_values(x: float, max_val: float, min_val: float) -> float:
-    """Forcibly clamp the given value x to a max and/or min value."""
-    return min_val if x < min_val else max_val if x > max_val else x
-
-
-def get_neutral_value(clip: vs.VideoNode, chroma: bool = False) -> float:
-    """
-    Return the neutral value for the combination of the plane type and bit depth/type of the clip as float.
-
-    Taken from vsutil. This isn't in any new versions yet, so mypy complains.
-    Will remove once vsutil does another version bump.
-
-    :param clip:        Clip to process.
-    :param chroma:      Whether to get luma or chroma plane value.
-
-    :return:            Neutral value.
-    """
-    check_variable_format(clip, "get_neutral_value")
-    assert clip.format
-
-    is_float = clip.format.sample_type == vs.FLOAT
-
-    return (0. if chroma else 0.5) if is_float else float(1 << (get_depth(clip) - 1))
-
-
 def padder(clip: vs.VideoNode,
            left: int = 32, right: int = 32,
            top: int = 32, bottom: int = 32) -> vs.VideoNode:
@@ -351,8 +274,10 @@ def padder(clip: vs.VideoNode,
     :param bottom:      Padding added to the bottom side of the clip.
 
     :return:            Padded clip.
+
+    :raises ValueError: A non-even resolution is passed on a YUV420 clip.
     """
-    check_variable(clip, "padder")
+    assert check_variable(clip, "padder")
 
     width = clip.width+left+right
     height = clip.height+top+bottom
@@ -385,87 +310,45 @@ def get_coefs(curve: vs.TransferCharacteristics) -> Coefs:
     return gamma_linear_map[curve]
 
 
-def check_variable_format(clip: vs.VideoNode, function: str) -> None:
-    """Check for variable format and return an error if found."""
+def check_variable_format(clip: vs.VideoNode, function: str) -> TypeGuard[_VideoNode]:
+    """
+    Check for variable format and return an error if found.
+
+    :raises VariableFormatError:    The clip is of a variable format.
+    """
     if clip.format is None:
         raise VariableFormatError(function)
+    return True
 
 
 def check_variable_resolution(clip: vs.VideoNode, function: str) -> None:
-    """Check for variable width or height and return an error if found."""
+    """
+    Check for variable width or height and return an error if found.
+
+    :raises VariableResolutionError:    The clip has a variable resolution.
+    """
     if 0 in (clip.width, clip.height):
         raise VariableResolutionError(function)
 
 
-def check_variable(clip: vs.VideoNode, function: str) -> None:
-    """Check for variable format and a variable resolution and return an error if found."""
+def check_variable(clip: vs.VideoNode, function: str) -> TypeGuard[_VideoNode]:
+    """
+    Check for variable format and a variable resolution and return an error if found.
+
+    :raises VariableFormatError:        The clip is of a variable format.
+    :raises VariableResolutionError:    The clip has a variable resolution.
+    """
     check_variable_format(clip, function)
     check_variable_resolution(clip, function)
-
-
-def get_matrix(frame: vs.VideoNode | vs.VideoFrame, strict: bool = False) -> Matrix:
-    """
-    Get the matrix of a clip or frame.
-
-    By default this function will first check the `_Matrix` prop for a valid matrix.
-    If the matrix is not set, it will guess based on the resolution.
-
-    If you want it to be strict and raise an error if no matrix is set, set ``strict=True``.
-
-    :param clip:            Clip or Frame to process.
-    :param strict:          Whether to be strict about the matrix.
-                            If ``True``, checks just the `_Matrix` prop.
-                            If ``False``, will check the `_Matrix` prop and make a guess if `_Matrix=Matrix.UNKNOWN`.
-                            Default: False.
-
-    :return:                Value representing a matrix.
-    """
-    if isinstance(frame, vs.VideoNode):
-        check_variable_format(frame, "get_matrix")
-        assert frame.format
-
-        frame = frame.get_frame(0)
-
-    matrix = get_prop(frame, "_Matrix", int)
-
-    match matrix:
-        case 0: return Matrix.RGB
-        case 1: return Matrix.BT709
-        case 2 if strict: raise MatrixError("get_matrix", matrix, "{func}: 'Matrix is undefined.'")
-        case 3: raise MatrixError("get_matrix", matrix, "{func}: 'Matrix is reserved.'")
-        case 4: return Matrix.FCC
-        case 5: return Matrix.BT470BG
-        case 6: return Matrix.SMPTE170M
-        case 7: return Matrix.SMPTE240M
-        case 8:
-            if core.version_number() < 55:
-                return Matrix.YCGCO
-            else:
-                raise MatrixError("get_matrix", matrix, "{func}: 'VapourSynth no longer supports {matrix}.'")
-        case 9: return Matrix.BT2020NC
-        case 10: return Matrix.BT2020C
-        case 11: return Matrix.SMPTE2085
-        case 12: return Matrix.CHROMA_DERIVED_NC
-        case 13: return Matrix.CHROMA_DERIVED_C
-        case 14: return Matrix.ICTCP
-        case _ if matrix > 14: raise MatrixError("get_matrix", matrix, "{func}: 'This matrix is current unsupported. "
-                                                 "If you believe this to be in error, please leave an issue "
-                                                 "in the lvsfunc GitHub repository.'")
-        case _ if strict: raise MatrixError("get_matrix", matrix, "{func}: 'Some kind of error occured!'")
-
-    w, h = frame.width, frame.height
-
-    if frame.format.color_family == vs.RGB:
-        return Matrix.RGB
-    elif w <= 1024 and h <= 576:
-        return Matrix.SMPTE170M
-    elif w <= 2048 and h <= 1536:
-        return Matrix.BT709
-    return Matrix.BT2020NC
+    return True
 
 
 def get_matrix_curve(matrix: Matrix) -> CURVES:
-    """Return the matrix curve based on a given `matrix`."""
+    """
+    Return the matrix curve based on a given ``matrix``.
+
+    :raises InvalidMatrixError:     An invalid ``matrix`` is passed.
+    """
     match matrix:
         case Matrix.BT709: return vs.TransferCharacteristics.TRANSFER_BT709
         case Matrix.BT470BG | Matrix.SMPTE170M: return vs.TransferCharacteristics.TRANSFER_BT601
@@ -544,9 +427,12 @@ def chroma_injector(func: F) -> F:
     This works with variable resolution and may work with variable format,
     however the latter is wholly untested and likely a bad idea in every conceivable use case.
 
-    :param func:        Function to call with injected chroma.
+    :param func:                    Function to call with injected chroma.
 
-    :return:            Decorated function.
+    :return:                        Decorated function.
+
+    :raises InvalidFormatError:     Input clip is not YUV or GRAY.
+    :raises InvalidFormatError:     Output clip is not YUV or GRAY.
     """
     @wraps(func)
     def inner(_chroma: vs.VideoNode, clip: vs.VideoNode, *args: Any,
@@ -591,7 +477,8 @@ def chroma_injector(func: F) -> F:
 
         if result.format is not None:
             if result.format.color_family not in (vs.GRAY, vs.YUV):
-                raise ValueError("chroma_injector: can only decorate function with YUV and/or GRAY format return!")
+                raise InvalidFormatError("chroma_injector",
+                                         "{func}: 'can only decorate function with YUV and/or GRAY format return!'")
 
             if result.format.color_family == vs.GRAY:
                 return result
@@ -620,20 +507,23 @@ def colored_clips(amount: int,
 
     Will always return a pure red clip in the list as this is the RGB equivalent of the lowest HSL hue possible (0).
 
-    Written by `Dave <mailto:orangechannel@pm.me>`_.
+    Written by `Dave <https://github.com/OrangeChannel>`_.
 
-    :param amount:  Number of VideoNodes to return.
-    :param max_hue: Maximum hue (0 < hue <= 360) in degrees to generate colors from (uses the HSL color model).
-                    Setting this higher than ``315`` will result in the clip colors looping back towards red
-                    and is not recommended for visually distinct colors.
-                    If the `amount` of clips is higher than the `max_hue` expect there to be identical
-                    or visually similar colored clips returned (Default: 300)
-    :param rand:    Randomizes order of the returned list (Default: True).
-    :param seed:    Bytes-like object passed to ``random.seed`` which allows for consistent randomized order.
-                    of the resulting clips (Default: None)
-    :param kwargs:  Arguments passed to :py:func:`vapoursynth.core.std.BlankClip` (Default: keep=1).
+    :param amount:          Number of VideoNodes to return.
+    :param max_hue:         Maximum hue (0 < hue <= 360) in degrees to generate colors from (uses the HSL color model).
+                            Setting this higher than ``315`` will result in the clip colors looping back towards red
+                            and is not recommended for visually distinct colors.
+                            If the `amount` of clips is higher than the `max_hue` expect there to be identical
+                            or visually similar colored clips returned (Default: 300)
+    :param rand:            Randomizes order of the returned list (Default: True).
+    :param seed:            Bytes-like object passed to ``random.seed`` which allows for consistent randomized order.
+                            of the resulting clips (Default: None)
+    :param kwargs:          Arguments passed to :py:func:`vapoursynth.core.std.BlankClip` (Default: keep=1).
 
-    :return:        List of uniquely colored clips in sequential or random order.
+    :return:                List of uniquely colored clips in sequential or random order.
+
+    :raises ValueError:     ``amount`` is less than 2.
+    :raises ValueError:     ``max_hue`` is not between 0–360.
     """
     if amount < 2:
         raise ValueError("colored_clips: `amount` must be at least 2!")
@@ -706,9 +596,9 @@ def allow_variable(width: int | None = None, height: int | None = None,
 def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
                dimensions: bool = True, vformat: bool = True,
                matrices: bool = True, length: bool = False,
-               kernel: Kernel | str = Catrom()) -> vs.VideoNode:
+               kernel: Kernel | str = Bicubic(b=0, c=1/2)) -> vs.VideoNode:
     """
-    Try matchng the given clip's format with the reference clip's.
+    Try matching the given clip's format with the reference clip's.
 
     :param clip:        Clip to process.
     :param ref:         Reference clip.
@@ -717,14 +607,13 @@ def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
     :param matrices:    Match matrix/transfer/primaries (Default: True).
     :param length:      Match clip length (Default: False).
     :param kernel:      py:class:`vskernels.Kernel` object used for the format conversion.
-                        This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
+                        This can also be the string name of the kernel
+                        (Default: py:class:`vskernels.Bicubic(b=0, c=1/2)`).
 
     :return:            Clip that matches the ref clip in format.
     """
-    check_variable(clip, "match_clip")
-    check_variable(ref, "match_clip")
-    assert clip.format
-    assert ref.format
+    assert check_variable(clip, "match_clip")
+    assert check_variable(ref, "match_clip")
 
     if isinstance(kernel, str):
         kernel = get_kernel(kernel)()
@@ -733,7 +622,7 @@ def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
     clip = kernel.scale(clip, ref.width, ref.height) if dimensions else clip
 
     if vformat:
-        clip = kernel.resample(clip, format=ref.format, matrix=cast(kernel_type.Matrix, get_matrix(ref)))
+        clip = kernel.resample(clip, format=ref.format, matrix=get_matrix(ref))
 
     if matrices:
         ref_frame = ref.get_frame(0)

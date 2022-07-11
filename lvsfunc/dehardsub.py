@@ -30,14 +30,13 @@ class HardsubMask(DeferredMask, ABC):
 
     Provides extra functions potentially useful for dehardsubbing.
 
-    :param range:    A single range or list of ranges to replace,.
+    :param range:    A single range or list of ranges to replace,
                      compatible with :py:class:`lvsfunc.misc.replace_ranges`
     :param bound:    A :py:class:`lvsfunc.mask.BoundingBox` or a tuple that will be converted.
                      (Default: ``None``, no bounding)
     :param blur:     Blur the bounding mask (Default: True).
     :param refframe: A single frame number to use to generate the mask.
                      or a list of frame numbers with the same length as :py:func:`lvsfunc.types.Range`
-
     """
 
     def get_progressive_dehardsub(self, hrdsb: vs.VideoNode, ref: vs.VideoNode,
@@ -95,8 +94,10 @@ class HardsubSignKgf(HardsubMask):
 
     * `kagefunc <https://github.com/Irrational-Encoding-Wizardry/kagefunc>`_
 
-    :param highpass: Highpass filter for hardsub detection (16-bit, Default: 5000).
-    :param expand:   :py:func:`kgf.hardsubmask_fades` expand parameter (Default: 8).
+    :param highpass:                Highpass filter for hardsub detection (16-bit, Default: 5000).
+    :param expand:                  :py:func:`kgf.hardsubmask_fades` expand parameter (Default: 8).
+
+    :raises ModuleNotFoundError:    Dependencies are missing.
     """
 
     highpass: int
@@ -119,7 +120,7 @@ class HardsubSignKgf(HardsubMask):
 
 class HardsubSign(HardsubMask):
     """
-    Hardsub scenefiltering helper using Zastin's hardsub mask.
+    Hardsub scenefiltering helper using `Zastin <https://github.com/kgrabs>`_'s hardsub mask.
 
     :param thresh:  Binarization threshold, [0, 1] (Default: 0.06).
     :param expand:  std.Maximum iterations (Default: 8).
@@ -152,7 +153,9 @@ class HardsubLine(HardsubMask):
 
     * `kagefunc <https://github.com/Irrational-Encoding-Wizardry/kagefunc>`_
 
-    :param expand: :py:func:`kgf.hardsubmask` expand parameter (Default: clip.width // 200).
+    :param expand:                  :py:func:`kgf.hardsubmask` expand parameter (Default: clip.width // 200).
+
+    :raises ModuleNotFoundError:    Dependencies are missing.
     """
 
     expand: int | None
@@ -178,8 +181,10 @@ class HardsubLineFade(HardsubLine):
     Similar to :py:class:`lvsfunc.dehardsub.HardsubLine` but
     automatically sets the reference frame to the range's midpoint.
 
-    :param refframe: Desired reference point as a percent of the frame range.
-                     0 = first frame, 1 = last frame, 0.5 = midpoint (Default)
+    :param refframe:        Desired reference point as a percent of the frame range.
+                            0 = first frame, 1 = last frame, 0.5 = midpoint (Default)
+
+    :raises ValueError:     `refframe` is not between 0–1.
     """
 
     ref_float: float
@@ -187,7 +192,7 @@ class HardsubLineFade(HardsubLine):
     def __init__(self, ranges: Range | List[Range], *args: Any,
                  refframe: float = 0.5, **kwargs: Any) -> None:
         if refframe < 0 or refframe > 1:
-            raise ValueError("HardsubLineFade: 'refframe must be between 0 and 1!'")
+            raise ValueError("HardsubLineFade: '`refframe` must be between 0 and 1!'")
         ranges = ranges if isinstance(ranges, list) else [ranges]
         self.ref_float = refframe
         super().__init__(ranges, *args, refframes=None, **kwargs)
@@ -201,13 +206,15 @@ class HardsubLineFade(HardsubLine):
 # TODO: find a more idiomatic way to do this
 class HardsubSignFade(HardsubSign):
     """
-    Hardsub scenefiltering helper using Zastin's sign mask.
+    Hardsub scenefiltering helper using `Zastin <https://github.com/kgrabs>`_'s sign mask.
 
     Similar to :py:class:`lvsfunc.dehardsub.HardsubSign` but
     automatically sets the reference frame to the range's midpoint.
 
-    :param refframe: Desired reference point as a percent of the frame range.
-                     0 = first frame, 1 = last frame, 0.5 = midpoint (Default)
+    :param refframe:        Desired reference point as a percent of the frame range.
+                            0 = first frame, 1 = last frame, 0.5 = midpoint (Default)
+
+    :raises ValueError:     `refframe` is not between 0–1.
     """
 
     ref_float: float
@@ -267,9 +274,8 @@ def get_all_masks(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[HardsubMas
 
     :return:      Clip of all hardsub masks.
     """
-    check_variable(hrdsb, "get_all_masks")
-    check_variable(ref, "get_all_masks")
-    assert ref.format
+    assert check_variable(hrdsb, "get_all_masks")
+    assert check_variable(ref, "get_all_masks")
 
     mask = core.std.BlankClip(ref, format=ref.format.replace(color_family=vs.GRAY, subsampling_w=0, subsampling_h=0).id)
     for sign in signs:
@@ -297,7 +303,7 @@ def bounded_dehardsub(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[Hardsu
 def hardsub_mask(hrdsb: vs.VideoNode, ref: vs.VideoNode, thresh: float = 0.06,
                  minimum: int = 1, expand: int = 8, inflate: int = 7) -> vs.VideoNode:
     """
-    Zastin's spatially-aware hardsub mask.
+    `Zastin <https://github.com/kgrabs>`_'s spatially-aware hardsub mask.
 
     :param hrdsb:   Hardsubbed source.
     :param ref:     Reference clip.
@@ -308,9 +314,8 @@ def hardsub_mask(hrdsb: vs.VideoNode, ref: vs.VideoNode, thresh: float = 0.06,
 
     :return:        Hardsub mask.
     """
-    check_variable(hrdsb, "hardsub_mask")
-    check_variable(ref, "hardsub_mask")
-    assert hrdsb.format
+    assert check_variable(hrdsb, "hardsub_mask")
+    assert check_variable(ref, "hardsub_mask")
 
     hsmf = core.akarin.Expr([hrdsb, ref], 'x y - abs') \
         .resize.Point(format=hrdsb.format.replace(subsampling_w=0, subsampling_h=0).id)

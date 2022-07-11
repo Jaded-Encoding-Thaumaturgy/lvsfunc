@@ -3,15 +3,17 @@ from __future__ import annotations
 import math
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Sequence, Tuple
 
 import vapoursynth as vs
+from vsrgtools import removegrain
+from vsrgtools.util import normalise_planes
 from vsutil import Range as CRange
 from vsutil import depth, get_depth, get_y, iterate, join, split
 
 from . import util
 from .types import Position, Range, Shapes, Size
-from .util import check_variable, check_variable_resolution, pick_removegrain, replace_ranges, scale_peak, scale_thresh
+from .util import check_variable, check_variable_resolution, replace_ranges, scale_peak, scale_thresh
 
 core = vs.core
 
@@ -68,8 +70,8 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
     mask_b = core.std.Binarize(mask_b, brz_b)
 
     mask = core.akarin.Expr([mask_a, mask_b], 'x y max')
-    mask = util.pick_removegrain(mask)(mask, 22)
-    return util.pick_removegrain(mask)(mask, 11).std.Limiter()
+    mask = removegrain(mask, 22)
+    return removegrain(mask, 11).std.Limiter()
 
 
 def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
@@ -77,7 +79,7 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
                     blur_func: Callable[[vs.VideoNode, vs.VideoNode, float],
                                         vs.VideoNode] | None = None,
                     edgemask_func: Callable[[vs.VideoNode], vs.VideoNode] = core.std.Prewitt,
-                    rg_mode: int = 17) -> vs.VideoNode:
+                    rg_mode: int | Sequence[int] = 17) -> vs.VideoNode:
     """
     Detail mask aimed at preserving as much detail as possible.
 
@@ -100,8 +102,7 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
 
     :return:                Detail mask.
     """
-    check_variable(clip, "detail_mask_neo")
-    assert clip.format
+    assert check_variable(clip, "detail_mask_neo")
 
     if not blur_func:
         blur_func = core.bilateral.Bilateral
@@ -124,7 +125,7 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
         prew_mask = prew_mask.std.Binarize(lines_brz)
 
     merged = core.akarin.Expr([blur_pref, prew_mask], "x y +")
-    rm_grain = pick_removegrain(merged)(merged, rg_mode)
+    rm_grain = removegrain(merged, rg_mode)
 
     return depth(rm_grain, clip.format.bits_per_sample).std.Limiter()
 
@@ -160,7 +161,7 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
 
     :return:                Halo mask.
     """
-    check_variable(clip, "halo_mask")
+    assert check_variable(clip, "halo_mask")
 
     smax = scale_thresh(1.0, clip)
 
@@ -217,16 +218,19 @@ def fine_dehalo_mask(clip: vs.VideoNode,
     :param show_mask:       Return mask clip at various stages in the operation. Valid options are 1–7.
 
     :return:                Halo mask clip.
+
+    :raises ValueError:     ``rx`` or ``ry`` are smaller than 1.0.
+    :raises ValueError:     Invalid value for ``show_mask`` is passed.
     """
-    check_variable(clip, "halo_mask")
+    assert check_variable(clip, "halo_mask")
 
     clip_y = get_y(clip)
 
     if not all(x >= 1 for x in (rx, ry)):
-        raise ValueError("halo_mask: 'rx and ry must both be bigger than 1.0!'")
+        raise ValueError("halo_mask: '`rx` and `ry` must both be bigger than 1.0!'")
 
     if show_mask is not False and not (0 < int(show_mask) <= 7):
-        raise ValueError("halo_mask: 'Valid values for show_mask are 1–7!'")
+        raise ValueError("halo_mask: 'Valid values for `show_mask` are 1–7!'")
 
     bits = get_depth(clip)
     peak = (1 << bits) - 1
@@ -289,14 +293,12 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
 
     :return:            Range mask.
     """
-    check_variable(clip, "range_mask")
+    assert check_variable(clip, "range_mask")
 
     if radc == 0:
         clip = get_y(clip)
 
-    assert clip.format
-
-    if clip.format.color_family == vs.GRAY:
+    if clip.format.color_family == vs.GRAY:  # type:ignore[union-attr]
         ma = _minmax(clip, rad, True)
         mi = _minmax(clip, rad, False)
         mask = core.akarin.Expr([ma, mi], 'x y -')
@@ -313,8 +315,7 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
 
 # Helper functions
 def _minmax(clip: vs.VideoNode, iterations: int, maximum: bool) -> vs.VideoNode:
-    check_variable(clip, "_minmax")
-    assert clip.format
+    assert check_variable(clip, "_minmax")
 
     func = core.std.Maximum if maximum else core.std.Minimum
 
@@ -350,12 +351,13 @@ class BoundingBox():
         """
         Get a mask representing the bounding box.
 
-        :param ref:     Reference clip for format, resolution, and length.
+        :param ref:             Reference clip for format, resolution, and length.
 
-        :return:        Square mask representing the bounding box.
+        :return:                Square mask representing the bounding box.
+
+        :raises ValueError:     Bound exceeds clip size.
         """
-        check_variable(ref, "get_mask")
-        assert ref.format
+        assert check_variable(ref, "get_mask")
 
         if self.pos.x + self.size.x > ref.width or self.pos.y + self.size.y > ref.height:
             raise ValueError("BoundingBox: Bounds exceed clip size!")
@@ -379,12 +381,14 @@ class DeferredMask(ABC):
     Provides support for ranges, reference frames, and bounding.
 
     :param range:       A single range or list of ranges to replace,
-                        compatible with :py:class:`lvsfunc.misc.replace_ranges`
+                        compatible with :py:func:`lvsfunc.misc.replace_ranges`
     :param bound:       A :py:class:`lvsfunc.mask.BoundingBox` or a tuple that will be converted
                         (Default: ``None``, no bounding).
     :param blur:        Blur the bounding mask (Default: False).
     :param refframe:    A single frame number to use to generate the mask
-                        or a list of frame numbers with the same length as :py:func:`lvsfunc.types.Range`
+                        or a list of frame numbers with the same length as :py:func:`lvsfunc.types.Range`.
+
+    :raises ValueError: Reference frame and ranges mismatch.
     """
 
     ranges: List[Range]
@@ -411,7 +415,7 @@ class DeferredMask(ABC):
         elif isinstance(refframes, int):
             self.refframes = [refframes] * len(self.ranges)
         else:
-            self.refframes = [x for x in refframes]  # wtf mypy
+            self.refframes = list(refframes)
 
         if len(self.refframes) > 0 and len(self.refframes) != len(self.ranges):
             raise ValueError("DeferredMask: 'Received reference frame and range list size mismatch!'")
@@ -425,10 +429,8 @@ class DeferredMask(ABC):
 
         :return:      Bounded mask.
         """
-        check_variable(clip, "get_mask")
-        check_variable(ref, "get_mask")
-        assert clip.format
-        assert ref.format
+        assert check_variable(clip, "get_mask")
+        assert check_variable(ref, "get_mask")
 
         if self.bound:
             bm = self.bound.get_mask(ref)
@@ -466,12 +468,13 @@ def mt_xxpand_multi(clip: vs.VideoNode,
                     planes: List[int] = [0, 1, 2],
                     **m_params: Any) -> List[vs.VideoNode]:
     """
-    Mask expanding/inpanding function written by Zastin.
+    Mask expanding/inpanding function written by `Zastin <https://github.com/kgrabs>`_.
 
     Performs multiple Minimums/Maximums.
     """
-    check_variable(clip, "mt_xxpand_multi")
-    assert clip.format
+    assert check_variable(clip, "mt_xxpand_multi")
+
+    planes = normalise_planes(clip, planes)
 
     params: Dict[str, Any] = dict(planes=planes)
     params |= m_params
@@ -480,21 +483,20 @@ def mt_xxpand_multi(clip: vs.VideoNode,
 
     match mode:
         case Shapes.ELLIPSE: coordinates = [[1] * 8, [0, 1, 0, 1, 1, 0, 1, 0],
-                                                     [0, 1, 0, 1, 1, 0, 1, 0]]
+                                            [0, 1, 0, 1, 1, 0, 1, 0]]
         case Shapes.LOSANGE: coordinates = [[0, 1, 0, 1, 1, 0, 1, 0]] * 3
         case _: coordinates = [[1] * 8] * 3
 
-    clips = [clip]
+    clips: List[vs.VideoNode] = [clip]
     end = int(min(sw, sh)) + start
 
     for x in range(start, end):
         clips += [m__imum(clips[-1], coordinates=coordinates[x % 3], **params)]
-
     for x in range(end, int(end + sw - sh)):
         clips += [m__imum(clips[-1], coordinates=[0, 0, 0, 1, 1, 0, 0, 0], **params)]
-
     for x in range(end, int(end + sh - sw)):
-        clips += [m__imum(clips[-1], coordinates=[0, 1, 0, 0, 0, 0, 1, 0], **params).std.Limiter()]
+        clips += [m__imum(clips[-1], coordinates=[0, 1, 0, 0, 0, 0, 1, 0], **params)
+                  .std.Limiter()]
 
     return clips
 

@@ -30,7 +30,6 @@ except (ImportError, ModuleNotFoundError):
 
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             self.i = 0
-            pass
 
         def _print(self) -> None:
             print(f"{self.description} {self.i:d}/{self.total:d} frames", end="\r")

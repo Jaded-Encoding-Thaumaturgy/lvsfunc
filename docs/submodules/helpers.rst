@@ -4,7 +4,7 @@ lvsfunc.helpers
 Basic helpers used throughout lvsfunc.
 These can be used by users as well.
 
-------------------
+---------------
 
 .. autosummary::
 
@@ -19,3 +19,4 @@ These can be used by users as well.
     :members:
     :undoc-members:
     :show-inheritance:
+    :member-order: bysource

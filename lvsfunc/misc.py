@@ -6,13 +6,13 @@ from functools import partial
 from typing import Any, List, Sequence, Tuple
 
 import vapoursynth as vs
-from vskernels import Catrom, Kernel
+from vskernels import Bicubic, Catrom, Kernel, Matrix
 from vsutil import depth, get_depth, is_image, scale_value
 
 from .exceptions import InvalidMatrixError
 from .helpers import _check_index_exists, _generate_dgi, _get_dgidx, _load_dgi, _tail
 from .mask import BoundingBox
-from .types import IndexExists, Matrix, Position, Range, Size
+from .types import IndexExists, Position, Range, Size
 from .util import check_variable, get_prop, match_clip, normalize_ranges, replace_ranges
 
 core = vs.core
@@ -31,7 +31,7 @@ __all__: List[str] = [
 
 def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
            film_thr: float = 99.0, force_lsmas: bool = False,
-           tail_lines: int = 4, kernel: Kernel | str = Catrom(),
+           tail_lines: int = 4, kernel: Kernel | str = Bicubic(b=0, c=1/2),
            **index_args: Any) -> vs.VideoNode:
     """
     Index and load video clips for use in VapourSynth automatically.
@@ -62,7 +62,7 @@ def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
     * `L-SMASH-Works <https://github.com/AkarinVS/L-SMASH-Works>`_
     * `vs-imwri <https://github.com/vapoursynth/vs-imwri>`_
 
-    Thanks RivenSkaye!
+    Thanks `RivenSkaye <https://github.com/RivenSkaye>`_!
 
     :param file:            File to index and load in.
     :param ref:             Use another clip as reference for the clip's format,
@@ -71,7 +71,8 @@ def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
                             If set above 100.0, it's silently lowered to 100.0 (Default: 99.0).
     :param force_lsmas:     Force files to be imported with L-SMASH (Default: False).
     :param kernel:          py:class:`vskernels.Kernel` object used for converting the `clip` to match `ref`.
-                            This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
+                            This can also be the string name of the kernel
+                            (Default: py:class:`vskernels.Bicubic(b=0, c=1/2)`).
     :param tail_lines:      Lines to check on the tail of the dgi file.
                             Increase this value if FILM and ORDER do exist in your dgi file
                             but it's having trouble finding them.
@@ -79,6 +80,8 @@ def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
     :param kwargs:          Optional arguments passed to the indexing filter.
 
     :return:                VapourSynth clip representing the input file.
+
+    :raises ValueError:     Something other than a path is passed to ``path``.
     """
     if not isinstance(path, (os.PathLike, str)):
         raise ValueError(f"source: 'Please input a path, not a {type(path).__class__.__name__}!'")
@@ -154,10 +157,10 @@ def edgefixer(clip: vs.VideoNode,
     :return:                Clip with fixed edges.
     """
     warnings.warn("edgefixer: This function's functionality will change in a future version, "
-                  "and will likely be renamed. Please make sure to update your older scripts once it does.",
+                  "and will likely be renamed. Please make sure to update your scripts once it does.",
                   FutureWarning)
 
-    check_variable(clip, "edgefixer")
+    assert check_variable(clip, "edgefixer")
 
     if left is None:
         left = 0
@@ -188,14 +191,17 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
     If you pass 2, the 2nd one will be copied over to the 3rd.
     Don't pass more than three.
 
-    :param clip:        Clip to process.
-    :param values:      Value added to every pixel, scales accordingly to your clip's depth (Default: 16).
+    :param clip:            Clip to process.
+    :param values:          Value added to every pixel, scales accordingly to your clip's depth (Default: 16).
 
-    :return:            Clip with pixel values added.
+    :return:                Clip with pixel values added.
+
+    :raises ValueError:     Too many values are supplied.
+    :raises ValueError:     Any value in ``values`` are above 255.
     """
     val: Tuple[float, float, float]
 
-    check_variable(clip, "shift_tint")
+    assert check_variable(clip, "shift_tint")
 
     if isinstance(values, int):
         val = (values, values, values)
@@ -225,12 +231,14 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
     There is one caveat, however: You can get scenes where every other frame is filtered
     rather than the entire scene. Please do take care to avoid that if possible.
 
-    :param clip:              Clip to process.
-    :param filtered:          Filtered clip.
-    :param threshold:         Threshold for frame averages to be filtered (Default: 0.25).
-    :param threshold_range:   Threshold for a range of frame averages to be filtered (Default: None).
+    :param clip:                Clip to process.
+    :param filtered:            Filtered clip.
+    :param threshold:           Threshold for frame averages to be filtered (Default: 0.25).
+    :param threshold_range:     Threshold for a range of frame averages to be filtered (Default: None).
 
-    :return:                  Conditionally filtered clip.
+    :return:                    Conditionally filtered clip.
+
+    :raises ValueError:         ``threshold_range`` is a higher value than ``threshold``.
     """
     def _diff(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
               filtered: vs.VideoNode, threshold: float,
@@ -270,7 +278,7 @@ def wipe_row(clip: vs.VideoNode,
 
     :return:                Clip with given rows or columns wiped.
     """
-    check_variable(clip, "wipe_row")
+    assert check_variable(clip, "wipe_row")
 
     ref = ref or core.std.BlankClip(clip)
 
@@ -306,8 +314,7 @@ def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
 
     :return:                    Unsharpened clip.
     """
-    check_variable(clip, "unsharpen")
-    assert clip.format
+    assert check_variable(clip, "unsharpen")
 
     den = clip.dfttest.DFTTest(sigma=prefilter_sigma) if prefilter else clip
     diff = core.std.MakeDiff(clip, den)
@@ -337,27 +344,34 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     * `vs-imwri <https://github.com/vapoursynth/vs-imwri>`_
     * `kagefunc <https://github.com/Irrational-Encoding-Wizardry/kagefunc>`_ (optional: ``fade_length``)
 
-    :param clip:            Clip to process.
-    :param overlay:         Sign or logo to overlay. Must be the png loaded in
-                            through :py:func:`core.vapoursnth.imwri.Read()` or a path string to the image file,
-                            and **MUST** be the same dimensions as the ``clip`` to process.
-    :param frame_ranges:    Frame ranges or starting frame to apply the overlay to.
-                            See :py:func:`lvsfunc.types.Range` for more info.
-                            If None, overlays the entire clip.
-                            If a Range is passed, the overlaid clip will only show up inside that range.
-                            If only a single integer is given, it will start on that frame and
-                            stay until the end of the clip.
-                            Note that this function only accepts a single Range! You can't pass a list of them!
-    :param fade_length:     Length to fade the clips into each other.
-                            The fade will start and end on the frames given in frame_ranges.
-                            If set to 0, it won't fade and the sign will simply pop in.
-    :param matrix:          Enum for the matrix of the Clip to process.
-                            See :py:attr:`lvsfunc.types.Matrix` for more info.
-                            If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
-                            in which case it stays as `None`.
+    :param clip:                    Clip to process.
+    :param overlay:                 Sign or logo to overlay. Must be the png loaded in
+                                    through :py:func:`core.vapoursnth.imwri.Read` or a path string to the image file,
+                                    and **MUST** be the same dimensions as the ``clip`` to process.
+    :param frame_ranges:            Frame ranges or starting frame to apply the overlay to.
+                                    See :py:attr:`lvsfunc.types.Range` for more info.
+                                    If None, overlays the entire clip.
+                                    If a Range is passed, the overlaid clip will only show up inside that range.
+                                    If only a single integer is given, it will start on that frame and
+                                    stay until the end of the clip.
+                                    Note that this function only accepts a single Range! You can't pass a list of them!
+    :param fade_length:             Length to fade the clips into each other.
+                                    The fade will start and end on the frames given in frame_ranges.
+                                    If set to 0, it won't fade and the sign will simply pop in.
+    :param matrix:                  Enum for the matrix of the Clip to process.
+                                    See :py:attr:`lvsfunc.types.Matrix` for more info.
+                                    If not specified, gets matrix from the "_Matrix" prop of the clip
+                                    unless it's an RGB clip, in which case it stays as `None`.
 
-    :return:                Clip with a logo or sign overlaid on top for the given frame ranges,
-                            either with or without a fade.
+    :return:                        Clip with a logo or sign overlaid on top for the given frame ranges,
+                                    either with or without a fade.
+
+    :raises ModuleNotFoundError:    Dependencies are missing.
+    :raises ValueError:             ``overlay`` is not a VideoNode or a path.
+    :raises ValueError:             The overlay clip is not of the same dimensions as the input clip.
+    :raises InvalidMatrixError:     ``Matrix`` is an invalid value.
+    :raises ValueError:             Overlay does not have an alpha channel.
+    :raises TypeError:              Overlay clip was not loaded in using :py:func:`vapoursynth.core.imwri.Read`.
     """
     if fade_length > 0:
         try:
@@ -365,8 +379,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
         except ModuleNotFoundError:
             raise ModuleNotFoundError("overlay_sign: 'missing dependency `kagefunc`!'")
 
-    check_variable(clip, "overlay_sign")
-    assert clip.format
+    assert check_variable(clip, "overlay_sign")
 
     ov_type = type(overlay)
     clip_fam = clip.format.color_family
@@ -393,9 +406,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     if matrix == 2:
         raise InvalidMatrixError("overlay_sign")
 
-    assert overlay.format
-
-    if overlay.format.color_family is not clip_fam:
+    if overlay.format.color_family is not clip_fam:  # type:ignore[union-attr]
         if clip_fam is vs.RGB:
             overlay = Catrom().resample(overlay, clip.format.id, matrix_in=matrix)  # type:ignore[arg-type]
         else:

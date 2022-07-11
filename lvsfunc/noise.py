@@ -3,10 +3,9 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 import vapoursynth as vs
-from vskernels import Bicubic, Kernel, get_kernel
+from vskernels import Bicubic, Kernel, Matrix, get_kernel
 from vsutil import Dither, Range, depth, get_depth, get_y, iterate, join, plane
 
-from .types import Matrix
 from .util import check_variable, get_prop
 
 core = vs.core
@@ -43,9 +42,11 @@ def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
     :param final_args:      Args to pass to the final estimation.
 
     :return:                Denoised clip.
+
+    :raises ValueError:     Invalid number of sigma parameters were passed.
+    :raises ValueError:     Invalid number of radii parameters were passed.
     """
-    check_variable(clip, "bm3d")
-    assert clip.format
+    assert check_variable(clip, "bm3d")
 
     is_gray = clip.format.color_family == vs.GRAY
 
@@ -105,7 +106,7 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
                  rad: float = 0.025, res: int = 1024,
                  chroma: bool = False, seed: int = 42069,
                  matrix: Matrix | int | None = None,
-                 kernel: Kernel | str = Bicubic(b=0, c=0.5), **chkdr_args: Any) -> vs.VideoNode:
+                 kernel: Kernel | str = Bicubic(b=0, c=1/2), **chkdr_args: Any) -> vs.VideoNode:
     """
     Realistic film grain generator.
 
@@ -142,13 +143,13 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
                             If not specified, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
     :param kernel:          py:class:`vskernels.Kernel` object used for conversions between YUV <-> RGB.
-                            This can also be the string name of the kernel (Default: py:class:`vskernels.Catrom`).
+                            This can also be the string name of the kernel
+                            (Default: py:class:`vskernels.Bicubic(b=0, c=1/2)`).
     :param chkdr_args:      Additional args to pass to chickendream.
 
     :return:                Grained clip in the given clip's format.
     """
-    check_variable(clip, "chickendream")
-    assert clip.format
+    assert check_variable(clip, "chickendream")
 
     chkdr_args |= dict(sigma=sigma, rad=rad, seed=seed, res=res)
 

@@ -14,7 +14,12 @@ from .types import IndexExists, VSIdxFunction
 core = vs.core
 
 __all__: List[str] = [
-    '_check_has_nvidia', '_check_index_exists', '_generate_dgi', '_get_dgidx', '_load_dgi', '_tail'
+    '_check_has_nvidia',
+    '_check_index_exists',
+    '_generate_dgi',
+    '_get_dgidx',
+    '_load_dgi',
+    '_tail'
 ]
 
 

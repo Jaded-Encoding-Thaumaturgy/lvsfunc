@@ -5,12 +5,16 @@ from typing import List
 import vapoursynth as vs
 from vskernels import Kernel, get_kernel
 
-from .types import Matrix
-
 __all__: List[str] = [
-    'CompareSameKernelError', 'FramePropError', 'MatrixError',
-    'InvalidFormatError', 'ClipsAndNamedClipsError', 'InvalidFramerateError',
-    'VariableFormatError', 'VariableResolutionError', 'NotEqualFormatsError',
+    'ClipsAndNamedClipsError',
+    'CompareSameKernelError',
+    'FramePropError',
+    'InvalidFormatError',
+    'InvalidFramerateError',
+    'NotEqualFormatsError',
+    'TopFieldFirstError',
+    'VariableFormatError',
+    'VariableResolutionError',
 ]
 
 
@@ -109,15 +113,11 @@ class FramePropError(ValueError):
         super().__init__(self.message.format(func=self.function, frameprop=frameprop))
 
 
-class MatrixError(ValueError):
-    """Raised when there is an error with the matrix."""
+class TopFieldFirstError(ValueError):
+    """Raised when the user must pass a TFF argument."""
 
-    def __init__(self, function: str, matrix: Matrix | int,
-                 message: str = "{func}: 'There was an error with your matrix \"{matrix}\"!'") -> None:
-        if isinstance(matrix, int):
-            matrix = Matrix(matrix)
-
+    def __init__(self, function: str,
+                 message: str = "{func}: 'You must set `tff` for this clip!'") -> None:
         self.function: str = function
-        self.matrix: int = matrix
         self.message: str = message
-        super().__init__(self.message.format(func=self.function, matrix=matrix))
+        super().__init__(self.message.format(func=self.function))

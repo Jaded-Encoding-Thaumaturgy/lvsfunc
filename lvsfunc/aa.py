@@ -6,9 +6,10 @@ from typing import Any, Callable, Dict, List
 import vapoursynth as vs
 from vskernels import Bicubic, Box, Catrom, Point
 from vsutil import depth, fallback, get_depth, get_w, get_y, join, plane, scale_value
+from vsrgtools import repair
 
 from .scale import ssim_downsample
-from .util import check_variable, check_variable_format, pick_repair, scale_thresh
+from .util import check_variable, check_variable_format, scale_thresh
 
 core = vs.core
 
@@ -31,7 +32,7 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
     Useful for clamping :py:func:`lvsfunc.aa.upscaled_sraa` or :py:func:`lvsfunc.aa.eedi3`
     to :py:func:`lvsfunc.aa.nnedi3` for a strong but more precise AA.
 
-    Original function written by Zastin, modified by LightArrowsEXE.
+    Original function written by `Zastin <https://github.com/kgrabs>`_, modified by LightArrowsEXE.
 
     :param src:         Non-AA'd source clip.
     :param weak:        Weakly-AA'd clip (eg: :py:func:`lvsfunc.aa.nnedi3`).
@@ -40,13 +41,9 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
 
     :return:            Clip with clamped anti-aliasing.
     """
-    check_variable_format(src, "clamp_aa")
-    check_variable_format(weak, "clamp_aa")
-    check_variable_format(strong, "clamp_aa")
-
-    assert src.format
-    assert weak.format
-    assert strong.format
+    assert check_variable_format(src, "clamp_aa")
+    assert check_variable_format(weak, "clamp_aa")
+    assert check_variable_format(strong, "clamp_aa")
 
     thr = strength * (1 << (src.format.bits_per_sample - 8)) if src.format.sample_type == vs.INTEGER \
         else strength/219
@@ -68,8 +65,7 @@ def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode]) -> vs
 
     :return:            Antialiased clip.
     """
-    check_variable(clip, "taa")
-    assert clip.format
+    assert check_variable(clip, "taa")
 
     y = get_y(clip)
 
@@ -137,7 +133,7 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
 
     This should fix `every issue created by eedi3 <https://i.imgur.com/hYVhetS.jpg>`_.
 
-    Original function written by Zastin, modified by LightArrowsEXE.
+    Original function written by `Zastin <https://github.com/kgrabs>`_, modified by LightArrowsEXE.
 
     :param clip:                Clip to process.
     :param strength:            Set threshold strength for over/underflow value for clamping eedi3's result.
@@ -148,8 +144,7 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
 
     :return:                    Antialiased clip.
     """
-    check_variable(clip, "nneedi3_clamp")
-    assert clip.format
+    assert check_variable(clip, "nneedi3_clamp")
 
     y = get_y(clip)
     mask = mask or y.std.Prewitt().std.Binarize(scale_thresh(mthr, y)).std.Maximum().std.Convolution([1]*9)
@@ -168,7 +163,7 @@ def transpose_aa(clip: vs.VideoNode,
     This results in overall stronger anti-aliasing.
     Useful for shows like Yuru Camp with bad line-art problems.
 
-    Original function written by Zastin, modified by LightArrowsEXE.
+    Original function written by `Zastin <https://github.com/kgrabs>`_, modified by LightArrowsEXE.
 
     Dependencies:
 
@@ -183,8 +178,7 @@ def transpose_aa(clip: vs.VideoNode,
 
     :return:          Antialiased clip.
     """
-    check_variable(clip, "transpose_aa")
-    assert clip.format
+    assert check_variable(clip, "transpose_aa")
 
     clip_y = get_y(clip)
 
@@ -204,13 +198,14 @@ def transpose_aa(clip: vs.VideoNode,
 
     aaclip = _taa(clip_y)
     aaclip = _csharp(aaclip, clip_y)
-    aaclip = pick_repair(clip_y)(aaclip, clip_y, rep)
+    aaclip = repair(aaclip, clip_y, rep)
 
-    return aaclip if clip.format.color_family is vs.GRAY else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
+    return aaclip if clip.format.color_family is vs.GRAY \
+        else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
 
 
 def _nnedi3_supersample(clip: vs.VideoNode, width: int, height: int, opencl: bool = False) -> vs.VideoNode:
-    check_variable(clip, "_nnedi3_supersample")
+    assert check_variable(clip, "_nnedi3_supersample")
 
     nnargs: Dict[str, Any] = dict(field=0, dh=True, nsize=0, nns=4, qual=2)
     _nnedi3 = nnedi3(opencl=opencl, **nnargs)
@@ -222,7 +217,7 @@ def _nnedi3_supersample(clip: vs.VideoNode, width: int, height: int, opencl: boo
 
 
 def _eedi3_singlerate(clip: vs.VideoNode) -> vs.VideoNode:
-    check_variable(clip, "_eedi3_singlerate")
+    assert check_variable(clip, "_eedi3_singlerate")
 
     eeargs: Dict[str, Any] = dict(field=0, dh=False, alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
     nnargs: Dict[str, Any] = dict(field=0, dh=False, nsize=0, nns=4, qual=2)
@@ -245,7 +240,7 @@ def upscaled_sraa(clip: vs.VideoNode,
     The dimensions of the downscaled clip can also be adjusted by setting `height` or `width`.
     Setting either `height` or `width` will also scale the chroma accordingly.
 
-    Original function written by Zastin, heavily modified by LightArrowsEXE.
+    Original function written by `Zastin <https://github.com/kgrabs>`_, modified by LightArrowsEXE.
 
     Alias for this function is ``lvsfunc.sraa``.
 
@@ -264,9 +259,10 @@ def upscaled_sraa(clip: vs.VideoNode,
     :param aafun:           Function used to antialias after super-sampling (Default: eedi3 with nnedi3 sclip).
 
     :return:                Antialiased clip.
+
+    :raises ValueError:     ``rfactor`` is not above 1.
     """
-    check_variable(clip, "upscaled_sraa")
-    assert clip.format
+    assert check_variable(clip, "upscaled_sraa")
 
     luma = get_y(clip)
 
@@ -300,12 +296,12 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
              mask_thr: float = 60, show_mask: bool = False,
              lmask: vs.VideoNode | None = None, **eedi3_args: Any) -> vs.VideoNode:
     """
-    Based anti-aliaser written by the based Zastin.
+    Based anti-aliaser written by the based `Zastin <https://github.com/kgrabs>`_.
 
     This function relies on FSRCNNX being very sharp,
     and as such it very much acts like the main "AA" here.
 
-    Original function by Zastin, modified by LightArrowsEXE.
+    Original function written by `Zastin <https://github.com/kgrabs>`_, modified by LightArrowsEXE.
 
     Dependencies:
 
@@ -323,6 +319,8 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
     :param lmask:           Line mask clip to use for eedi3.
 
     :return:                AA'd clip or mask clip.
+
+    :raises ValueError:     ``l_mask`` is passed and '`mask_thr` is higher than 255.
     """
     def _eedi3s(clip: vs.VideoNode, mclip: vs.VideoNode | None = None,
                 **eedi3_kwargs: Any) -> vs.VideoNode:
@@ -351,8 +349,7 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
 
         return Box(fulls=1, fulld=1).scale(mclip, ow, oh)
 
-    check_variable(clip, "based_aa")
-    assert clip.format
+    assert check_variable(clip, "based_aa")
 
     aaw = (round(clip.width * rfactor) + 1) & ~1
     aah = (round(clip.height * rfactor) + 1) & ~1

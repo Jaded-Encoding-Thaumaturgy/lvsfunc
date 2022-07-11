@@ -7,6 +7,7 @@ from typing import BinaryIO, Callable, Dict, List, TextIO
 
 import vapoursynth as vs
 
+from .exceptions import InvalidFormatError
 from .progress import BarColumn, FPSColumn, Progress, TextColumn, TimeRemainingColumn
 from .types import SceneChangeMode
 from .util import get_prop
@@ -80,18 +81,22 @@ def clip_async_render(clip: vs.VideoNode,
     You only really need this when you want to render a clip while operating on each frame in order
     or you want timecodes without using vspipe.
 
-    :param clip:      Clip to render.
-    :param outfile:   Y4MPEG render output BinaryIO handle. If None, no Y4M output is performed.
-                      Use :py:func:`sys.stdout.buffer` for stdout. (Default: None)
-    :param timecodes: Timecode v2 file TextIO handle. If None, timecodes will not be written.
-    :param progress:  String to use for render progress display.
-                      If empty or ``None``, no progress display.
-    :param callback:  Single or list of callbacks to be performed. The callbacks are called.
-                      when each sequential frame is output, not when each frame is done.
-                      Must have signature ``Callable[[int, vs.VideoNode], None]``
-                      See :py:func:`lvsfunc.comparison.diff` for a use case (Default: None).
+    :param clip:                    Clip to render.
+    :param outfile:                 Y4MPEG render output BinaryIO handle. If None, no Y4M output is performed.
+                                    Use :py:func:`sys.stdout.buffer` for stdout. (Default: None)
+    :param timecodes:               Timecode v2 file TextIO handle. If None, timecodes will not be written.
+    :param progress:                String to use for render progress display.
+                                    If empty or ``None``, no progress display.
+    :param callback:                Single or list of callbacks to be performed. The callbacks are called.
+                                    when each sequential frame is output, not when each frame is done.
+                                    Must have signature ``Callable[[int, vs.VideoNode], None]``
+                                    See :py:func:`lvsfunc.comparison.diff` for a use case (Default: None).
 
-    :return:          List of timecodes from rendered clip.
+    :return:                        List of timecodes from rendered clip.
+
+    :raises ValueError:             Variable format clip is passed.
+    :raises InvalidFormatError:     Non-YUV or GRAY clip is passed.
+    :raises ValueError:             "What have you done?"
     """
     cbl = [] if callback is None else callback if isinstance(callback, list) else [callback]
 
@@ -149,25 +154,18 @@ def clip_async_render(clip: vs.VideoNode,
         if clip.format is None:
             raise ValueError("clip_async_render: 'Cannot render a variable format clip to y4m!'")
         if clip.format.color_family not in (vs.YUV, vs.GRAY):
-            raise ValueError("clip_async_render: 'Can only render YUV and GRAY clips to y4m!'")
+            raise InvalidFormatError("clip_async_render", "{func}: Can only render YUV and GRAY clips to y4m!")
         if clip.format.color_family == vs.GRAY:
             y4mformat = "mono"
         else:
-            ss = (clip.format.subsampling_w, clip.format.subsampling_h)
-            if ss == (1, 1):
-                y4mformat = "420"
-            elif ss == (1, 0):
-                y4mformat = "422"
-            elif ss == (0, 0):
-                y4mformat = "444"
-            elif ss == (2, 2):
-                y4mformat = "410"
-            elif ss == (2, 0):
-                y4mformat = "411"
-            elif ss == (0, 1):
-                y4mformat = "440"
-            else:
-                raise ValueError("clip_async_render: 'What have you done?'")
+            match (clip.format.subsampling_w, clip.format.subsampling_h):
+                case (1, 1): y4mformat = "420"
+                case (1, 0): y4mformat = "422"
+                case (0, 0): y4mformat = "444"
+                case (2, 2): y4mformat = "410"
+                case (2, 0): y4mformat = "411"
+                case (0, 1): y4mformat = "440"
+                case _: raise ValueError("clip_async_render: 'What have you done?'")
 
         y4mformat = f"{y4mformat}p{clip.format.bits_per_sample}" if clip.format.bits_per_sample > 8 else y4mformat
 
@@ -218,15 +216,17 @@ def find_scene_changes(clip: vs.VideoNode, mode: SceneChangeMode = SceneChangeMo
     * `vapoursynth-wwxd <https://github.com/dubhater/vapoursynth-wwxd>`_
     * `vapoursynth-scxvid <https://github.com/dubhater/vapoursynth-scxvid>`_ (Optional: scxvid mode)
 
-    :param clip:   Clip to search for scene changes. Will be rendered in its entirety.
-    :param mode:   Scene change detection mode:.
+    :param clip:            Clip to search for scene changes. Will be rendered in its entirety.
+    :param mode:            Scene change detection mode:.
 
-                   * WWXD: Use wwxd
-                   * SCXVID: Use scxvid
-                   * WWXD_SCXVID_UNION: Union of wwxd and sxcvid (must be detected by at least one)
-                   * WWXD_SCXVID_INTERSECTION: Intersection of wwxd and scxvid (must be detected by both)
+                            * WWXD: Use wwxd
+                            * SCXVID: Use scxvid
+                            * WWXD_SCXVID_UNION: Union of wwxd and sxcvid (must be detected by at least one)
+                            * WWXD_SCXVID_INTERSECTION: Intersection of wwxd and scxvid (must be detected by both)
 
-    :return:       List of scene changes.
+    :return:                List of scene changes.
+
+    :raises ValueError:     Invalid ``mode`` gets passed.
     """
     frames = []
     clip = clip.resize.Bilinear(640, 360, format=vs.YUV420P8)
@@ -250,7 +250,7 @@ def find_scene_changes(clip: vs.VideoNode, mode: SceneChangeMode = SceneChangeMo
             case SceneChangeMode.WWXD_SCXVID_INTERSECTION:
                 if get_prop(f, "Scenechange", int) == 1 and get_prop(f, "_SceneChangePrev", int) == 1:
                     frames.append(n)
-            case _: raise TypeError("find_scene_changes: 'Invalid `mode` passed!'")
+            case _: raise ValueError("find_scene_changes: 'Invalid `mode` passed!'")
 
     clip_async_render(clip, progress="Detecting scene changes...", callback=_cb)
 

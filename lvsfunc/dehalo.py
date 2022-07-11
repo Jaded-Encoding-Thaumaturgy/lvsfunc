@@ -6,11 +6,13 @@ from typing import Any, Dict, List, Sequence
 
 import vapoursynth as vs
 from vskernels import BSpline, Catrom
+from vsrgtools import repair
+from vsrgtools.util import clamp, normalise_planes
 from vsutil import depth, fallback, get_depth, get_y
 
 from .mask import fine_dehalo_mask
 from .noise import bm3d
-from .util import check_variable, clamp_values, force_mod, pick_repair, scale_peak
+from .util import check_variable, force_mod, scale_peak
 
 core = vs.core
 
@@ -32,6 +34,9 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     """
     Dehaloing function that uses bilateral and BM3D to remove bright haloing around edges.
 
+    .. warning::
+        | This function has been deprecated! It will be removed in a future commit.
+
     If a ref clip is passed, that will be masked onto the clip instead of a blurred clip.
 
     :param clip:                Source clip.
@@ -44,7 +49,7 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     :param sigmaR_final:        Bilateral's range weight sigma.
                                 if `None`, same as `sigmaR`
     :param bilateral_args:      Additional parameters to pass to bilateral.
-    :param bm3d_args:           Additional parameters to pass to :py:class:`lvsfunc.noise.bm3d`.
+    :param bm3d_args:           Additional parameters to pass to :py:func:`lvsfunc.noise.bm3d`.
     :param planes:              Specifies which planes will be processed.
                                 Any unprocessed planes will be simply copied.
 
@@ -57,8 +62,7 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     bm3ddh_args: Dict[str, Any] = dict(sigma=8, radius=1, pre=clip, planes=planes)
     bm3ddh_args.update(bm3d_args)
 
-    check_variable(clip, "bidehalo")
-    assert clip.format
+    assert check_variable(clip, "bidehalo")
 
     sigmaS_final = fallback(sigmaS_final, sigmaS / 3)
     sigmaR_final = fallback(sigmaR_final, sigmaR)
@@ -114,23 +118,26 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     :param show_mask:       Return mask clip.
 
     :return:                Dehalo'd clip or halo mask clip.
+
+    :raises ValueError:     ``rfactor``, ``rx``, or ``ry`` is less than 1.0.
+    :raises ValueError:     ``darkstr`` is not between 0.0–1.0.
+    :raises ValueError:     ``lowsens`` or ``highsens`` is not between 0–100.
     """
-    check_variable(clip, "masked_dha")
-    assert clip.format
+    assert check_variable(clip, "masked_dha")
 
     # Original silently changed values around, which I hate. Throwing errors instead.
     if not all(x >= 1 for x in (rfactor, rx, ry)):
         raise ValueError("masked_dha: 'rfactor, rx, and ry must all be bigger than 1.0!'")
 
     if not 0 <= darkstr <= 1:
-        raise ValueError("masked_dha: 'darkstr must be between 1.0 and 0.0!'")
+        raise ValueError("masked_dha: 'darkstr must be between 0.0 and 1.0!'")
 
     if not all(0 < sens < 100 for sens in (lowsens, highsens)):
         raise ValueError("masked_dha: 'lowsens and highsens must be between 0 and 100!'")
 
     # These are the only two I'm going to keep, as these will still give expected results.
-    maskpull = clamp_values(maskpull, max_val=254, min_val=0)
-    maskpush = clamp_values(maskpush, max_val=255, min_val=maskpull + 1)
+    maskpull = clamp(maskpull, max_val=254, min_val=0)
+    maskpush = clamp(maskpush, max_val=255, min_val=maskpull + 1)
 
     peak_r = 1.0 if get_depth(clip) == 32 else 1 << get_depth(clip)
     peak = 1.0 if get_depth(clip) == 32 else peak_r - 1
@@ -159,7 +166,7 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
         mmg = core.std.MaskedMerge(clip_ss, clip_y, mask_i.std.Limiter())
 
         if rfactor == 1:
-            ssc = pick_repair(clip)(clip_y, mmg, 1)
+            ssc = repair(clip_y, mmg, 1)
         else:
             ss_w, ss_h = force_mod(clip.width * rfactor, 4), force_mod(clip.height * rfactor, 4)
             ssc = Catrom().scale(clip_y, ss_w, ss_h)
@@ -203,31 +210,33 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     In essence, they define the window between how weak an effect is for it to be processed,
     and how strong it has to be before it's fully discarded.
 
-    :param clip:            Clip to process.
-    :param ref:             Reference clip. Will replace regular dehaloing.
-    :param rx:              Horizontal radius for halo removal. Must be greater than 1. Will be rounded up.
-    :param ry:              Vertical radius for halo removal. Must be greater than 1. Will be rounded up.
-    :param brightstr:       Strength for bright halo removal.
-    :param darkstr:         Strength for dark halo removal. Must be between 0 and 1.
-    :param thmi:            Minimum threshold for sharp edges. Keep only the sharpest edges (line edges).
-                            To see the effects of this setting take a look at the strong mask (show_mask=4).
-    :param thma:            Maximum threshold for sharp edges. Keep only the sharpest edges (line edges).
-                            To see the effects of this setting take a look at the strong mask (show_mask=4).
-    :param thlimi:          Minimum limiting threshold. Includes more edges than previously,
-                            but ignores simple details.
-    :param thlima:          Maximum limiting threshold. Includes more edges than previously,
-                            but ignores simple details.
-    :param lowsens:         Lower sensitivity range. The lower this is, the more it will process.
-                            Must be between 0 and 100.
-    :param highsens:        Upper sensitivity range. The higher this is, the more it will process.
-                            Must be between 0 and 100.
-    :param rfactor:         Image enlargement factor. Set to >1 to enable some form of aliasing-protection.
-                            Must be greater than 1.
-    :param show_mask:       Return mask clip. Valid options are 1–7.
-    :param planes:          Specifies which planes will be processed.
-                            Any unprocessed planes will be simply copied.
+    :param clip:                    Clip to process.
+    :param ref:                     Reference clip. Will replace regular dehaloing.
+    :param rx:                      Horizontal radius for halo removal. Must be greater than 1. Will be rounded up.
+    :param ry:                      Vertical radius for halo removal. Must be greater than 1. Will be rounded up.
+    :param brightstr:               Strength for bright halo removal.
+    :param darkstr:                 Strength for dark halo removal. Must be between 0 and 1.
+    :param thmi:                    Minimum threshold for sharp edges. Keep only the sharpest edges (line edges).
+                                    To see the effects of this setting take a look at the strong mask (show_mask=4).
+    :param thma:                    Maximum threshold for sharp edges. Keep only the sharpest edges (line edges).
+                                    To see the effects of this setting take a look at the strong mask (show_mask=4).
+    :param thlimi:                  Minimum limiting threshold. Includes more edges than previously,
+                                    but ignores simple details.
+    :param thlima:                  Maximum limiting threshold. Includes more edges than previously,
+                                    but ignores simple details.
+    :param lowsens:                 Lower sensitivity range. The lower this is, the more it will process.
+                                    Must be between 0 and 100.
+    :param highsens:                Upper sensitivity range. The higher this is, the more it will process.
+                                    Must be between 0 and 100.
+    :param rfactor:                 Image enlargement factor. Set to >1 to enable some form of aliasing-protection.
+                                    Must be greater than 1.
+    :param show_mask:               Return mask clip. Valid options are 1–7.
+    :param planes:                  Specifies which planes will be processed.
+                                    Any unprocessed planes will be simply copied.
 
-    :return:                Dehalo'd clip or halo mask clip.
+    :return:                        Dehalo'd clip or halo mask clip.
+
+    :raises ModuleNotFoundError:    Dependencies are missing.
     """
     warnings.warn("fine_dehalo: 'This function is deprecated in favor of `vsdehalo.fine_dehalo`! "
                   "This function will be removed in a future commit.",
@@ -237,17 +246,12 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     except ModuleNotFoundError:
         raise ModuleNotFoundError("fine_dehalo: missing dependency `havsfunc`!'")
 
-    check_variable(clip, "fine_dehalo")
-    assert clip.format
+    assert check_variable(clip, "fine_dehalo")
 
     if ref:
-        check_variable(ref, "fine_dehalo")
-        assert ref.format
+        assert check_variable(ref, "fine_dehalo")
 
-    if planes is None:
-        planes = list(range(clip.format.num_planes))
-    elif isinstance(planes, int):
-        planes = [planes]
+    planes = normalise_planes(clip, planes)
 
     # Original silently changed values around, which I hate. Throwing errors instead.
     if not all(x >= 1 for x in (rfactor, rx, ry)):

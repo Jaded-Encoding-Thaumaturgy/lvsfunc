@@ -12,19 +12,25 @@
 #
 import os
 import sys
+from datetime import datetime
+from pathlib import Path
+
 sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
 project = 'lvsfunc'
-copyright = '2022, LightArrowsEXE'
-author = 'LightArrowsEXE'
+
+exec(Path(f'../{project}/_metadata.py').read_text(), meta := dict[str, str]())
+
+copyright = f"{datetime.now().year}, {meta['__author__'].split(' ')[0]}"
+author = meta["__author__"]
 
 # The short X.Y version
-version = '0.4.2'
+version = meta['__version__']
 
 # The full version, including alpha/beta/rc tags
-release = '0.4.2'
+release = meta['__version__']
 
 # -- General configuration ---------------------------------------------------
 
@@ -67,7 +73,7 @@ html_static_path = ['_static']
 
 autosummary_generate = True
 
-autodoc_mock_imports = ["vsutil", "vapoursynth", "vskernels"]
+autodoc_mock_imports = ["vsutil", "vapoursynth", "vskernels", "vsrgtools"]
 
 # -- Extension configuration -------------------------------------------------
 

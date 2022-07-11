@@ -42,8 +42,7 @@ def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) 
 
     :return:        Clip with demangled chroma in either 4:2:0 or 4:4:4.
     """
-    check_variable(clip, "chroma_reconstruct")
-    assert clip.format
+    assert check_variable(clip, "chroma_reconstruct")
 
     def dmgl(clip: vs.VideoNode) -> vs.VideoNode:
         return core.resize.Bicubic(clip, w, h, src_left=0.25)
@@ -77,9 +76,11 @@ def regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1e
     with corresponding neighborhoods in one or more other clips.
 
     For more info see `this Wikipedia article <https://en.wikipedia.org/wiki/Simple_linear_regression>`_.
+
+    :raises ValueError:     ``radius`` is lesser than 0.
     """
     if radius <= 0:
-        raise ValueError("Regress: 'radius must be greater than zero!'")
+        raise ValueError("Regress: 'radius must be greater than 0!'")
 
     Expr = core.akarin.Expr
     E = partial(vs.core.std.BoxBlur, hradius=radius, vradius=radius)
@@ -120,7 +121,7 @@ def reconstruct_multi(c: vs.VideoNode, r: RegressClips, radius: int = 2) -> vs.V
 
     :returns:       Fixed regressed clips.
     """
-    check_variable(c, "reconstruct_multi")
+    assert check_variable(c, "reconstruct_multi")
 
     weights = core.akarin.Expr(r.correlation, 'x 0.5 - 0.5 / 0 max')
     slope_pm = core.akarin.Expr((r.slope, weights), 'x y *')

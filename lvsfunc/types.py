@@ -8,7 +8,7 @@ import vapoursynth as vs
 
 __all__: List[str] = [
     'Coefs', 'Coordinate', 'CreditMask', 'CURVES', 'CustomScaler', 'Direction', 'F', 'Matrix', 'Position', 'Range',
-    'RegressClips', 'Resolution', 'ScaleAttempt', 'SceneChangeMode', 'Size', 'T', 'VideoProp', 'VSFunction'
+    'RegressClips', 'Resolution', 'ScaleAttempt', 'SceneChangeMode', 'Size', 'T', 'VideoProp', 'VSFunction',
 ]
 
 
@@ -40,7 +40,11 @@ class Coefs(NamedTuple):
 
 
 class Coordinate():
-    """Positive set of (x, y) coordinates."""
+    """
+    Positive set of (x, y) coordinates.
+
+    :raises ValueError:     Negative values get passed.
+    """
 
     x: int
     y: int
@@ -86,7 +90,7 @@ class ScaleAttempt(NamedTuple):
 
 
 class SceneChangeMode(IntEnum):
-    """Size type for :py:class:`lvsfunc.render.find_scene_changes`."""
+    """Size type for :py:func:`lvsfunc.render.find_scene_changes`."""
 
     WWXD = 0
     SCXVID = 1
@@ -97,17 +101,17 @@ class SceneChangeMode(IntEnum):
 class Position(Coordinate):
     """Position type for :py:class:`lvsfunc.mask.BoundingBox`."""
 
-    pass
-
 
 class Size(Coordinate):
     """Size type for :py:class:`lvsfunc.mask.BoundingBox`."""
 
-    pass
-
 
 class Matrix(IntEnum):
-    """Matrix coefficients (ITU-T H.265 Table E.5)."""
+    """
+    Matrix coefficients (ITU-T H.265 Table E.5).
+
+    :raises PermissionError:    ``_RESERVED`` gets called.
+    """
 
     RGB = 0
     GBR = 0
@@ -149,7 +153,7 @@ class VSIdxFunction(Protocol):
 
 
 class Shapes(IntEnum):
-    """Convolution coordinates for :py:class:`lvsfunc.mask.mt_xxpand_multi`."""
+    """Convolution coordinates for :py:func:`lvsfunc.mask.mt_xxpand_multi`."""
 
     RECTANGLE = 0
     ELLIPSE = 1
@@ -157,7 +161,7 @@ class Shapes(IntEnum):
 
 
 class RegressClips(NamedTuple):
-    """Regress clip types for :py:class:`lvsfunc.recon.regress`."""
+    """Regress clip types for :py:func:`lvsfunc.recon.regress`."""
 
     slope: vs.VideoNode
     intercept: vs.VideoNode
@@ -175,10 +179,16 @@ CURVES = Literal[
 
 
 class IndexExists(IntEnum):
-    """Check if certain files exist for :py:class:`lvsfunc.misc.source`."""
+    """Check if certain files exist for :py:func:`lvsfunc.misc.source`."""
 
     PATH_IS_DGI = auto()
     PATH_IS_IMG = auto()
     LWI_EXISTS = auto()
     DGI_EXISTS = auto()
     NONE = auto()
+
+
+class _VideoNode(vs.VideoNode):
+    """Use for asserting a VideoFormat exists."""
+
+    format: vs.VideoFormat
