@@ -351,6 +351,7 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
     if width is None:
         width = get_w(height, aspect_ratio=clip.width/clip.height)
 
+    bits = get_depth(clip)
     clip = depth(clip, 32)
 
     if gamma:
@@ -374,7 +375,7 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
     if gamma:
         curve = cast(CURVES, curve)
         return linear2gamma(d, curve, sigmoid=sigmoid)
-    return d
+    return depth(d, bits)
 
 
 def gamma2linear(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
