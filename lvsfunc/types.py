@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from enum import IntEnum, auto
-from typing import (Any, Callable, List, Literal, NamedTuple, NoReturn, Optional, Protocol, Sequence, Tuple, TypeVar,
-                    Union)
+from typing import Any, Callable, List, Literal, NamedTuple, Optional, Protocol, Tuple, TypeVar, Union
 
 import vapoursynth as vs
+from vskernels import Matrix, VideoProp, VSFunction
 
 __all__: List[str] = [
     'Coefs', 'Coordinate', 'CreditMask', 'CURVES', 'CustomScaler', 'Direction', 'F', 'Matrix', 'Position', 'Range',
@@ -16,15 +16,6 @@ CreditMask = Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode]
 CustomScaler = Callable[[vs.VideoNode, int, int], vs.VideoNode]
 Range = Union[Optional[int], Tuple[Optional[int], Optional[int]]]
 
-
-VideoProp = Union[
-    int, Sequence[int],
-    float, Sequence[float],
-    str, Sequence[str],
-    vs.VideoNode, Sequence[vs.VideoNode],
-    vs.VideoFrame, Sequence[vs.VideoFrame],
-    Callable[..., Any], Sequence[Callable[..., Any]]
-]
 
 F = TypeVar("F", bound=Callable[..., vs.VideoNode])
 T = TypeVar("T", bound=VideoProp)
@@ -104,44 +95,6 @@ class Position(Coordinate):
 
 class Size(Coordinate):
     """Size type for :py:class:`lvsfunc.mask.BoundingBox`."""
-
-
-class Matrix(IntEnum):
-    """
-    Matrix coefficients (ITU-T H.265 Table E.5).
-
-    :raises PermissionError:    ``_RESERVED`` gets called.
-    """
-
-    RGB = 0
-    GBR = 0
-    BT709 = 1
-    UNKNOWN = 2
-    _RESERVED = 3
-    FCC = 4
-    BT470BG = 5
-    SMPTE170M = 6
-    SMPTE240M = 7
-    YCGCO = 8
-    BT2020NC = 9
-    BT2020C = 10
-    SMPTE2085 = 11
-    CHROMA_DERIVED_NC = 12
-    CHROMA_DERIVED_C = 13
-    ICTCP = 14
-
-    @property
-    def RESERVED(self) -> NoReturn:
-        """Return PermissionError if called."""
-        raise PermissionError
-
-
-class VSFunction(Protocol):
-    """VapourSynth function."""
-
-    def __call__(self, clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
-        """Call the VapourSynth function."""
-        ...
 
 
 class VSIdxFunction(Protocol):

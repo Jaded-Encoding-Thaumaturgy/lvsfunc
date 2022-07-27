@@ -4,15 +4,15 @@ import colorsys
 import random
 import warnings
 from functools import partial, wraps
-from typing import Any, Callable, Dict, List, Tuple, Type, cast
+from typing import Any, Callable, Dict, List, Tuple, cast
 
 import vapoursynth as vs
 from typing_extensions import TypeGuard
-from vskernels import Bicubic, Kernel, Matrix, get_kernel, get_matrix
+from vskernels import Bicubic, Kernel, Matrix, get_kernel, get_matrix, get_prop
 from vsutil import depth, get_subsampling, get_w, get_y
 
 from .exceptions import InvalidFormatError, InvalidMatrixError, VariableFormatError, VariableResolutionError
-from .types import CURVES, Coefs, F, Range, T, _VideoNode
+from .types import CURVES, Coefs, F, Range, _VideoNode
 
 core = vs.core
 
@@ -70,30 +70,6 @@ def quick_resample(clip: vs.VideoNode,
             filtered = function(dither)
 
     return depth(filtered, clip.format.bits_per_sample)
-
-
-def get_prop(frame: vs.VideoFrame, key: str, t: Type[T]) -> T:
-    """
-    Get FrameProp ``prop`` from frame ``frame`` with expected type ``t`` to satisfy the type checker.
-
-    :param frame:           Frame containing props.
-    :param key:             Prop to get.
-    :param t:               Type of prop.
-
-    :return:                frame.prop[key].
-
-    :raises KeyError:       ``key`` is not found in props.
-    :raises ValueError:     Returns a prop of the wrong type.
-    """
-    try:
-        prop = frame.props[key]
-    except KeyError:
-        raise KeyError(f"get_prop: 'Key {key} not present in props!'")
-
-    if not isinstance(prop, t):
-        raise ValueError(f"get_prop: 'Key {key} did not contain expected type: Expected {t} got {type(prop)}!'")
-
-    return prop
 
 
 def normalize_ranges(clip: vs.VideoNode, ranges: Range | List[Range]) -> List[Tuple[int, int]]:

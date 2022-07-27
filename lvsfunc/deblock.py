@@ -120,7 +120,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
         if matrix is None:
             matrix = get_prop(clip.get_frame(0), "_Matrix", int)
 
-        targ_matrix = vs.MatrixCoefficients(matrix)
+        targ_matrix = Matrix(matrix)
 
         rgb = kernel.resample(clip, format=vs.RGBS, matrix_in=targ_matrix)
     else:
@@ -274,9 +274,9 @@ def dpir(
         if matrix is None:
             matrix = get_prop(clip.get_frame(0), "_Matrix", int)
 
-        targ_matrix = vs.MatrixCoefficients(matrix)
+        targ_matrix = Matrix(matrix)
     else:
-        targ_matrix = vs.MatrixCoefficients(0)
+        targ_matrix = Matrix.RGB
 
     targ_format = clip.format.replace(subsampling_w=0, subsampling_h=0) if i444 else clip.format
 
