@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Sequence
 
 import vapoursynth as vs
-from vskernels import Bicubic, BicubicDidee, Catrom, Kernel, get_kernel
+from vskernels import Bicubic, BicubicDidee, Catrom, Kernel, get_kernel, get_prop
 from vsrgtools import repair
 from vsutil import Dither, depth, get_depth, get_neutral_value, get_w, get_y, scale_value
 
@@ -18,7 +18,7 @@ from .comparison import Stack
 from .exceptions import InvalidFramerateError, TopFieldFirstError
 from .render import clip_async_render, get_render_progress
 from .types import Direction
-from .util import check_variable, check_variable_format, force_mod, get_prop
+from .util import check_variable, check_variable_format, force_mod
 
 core = vs.core
 

@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 import vapoursynth as vs
-from vskernels import Bicubic, Kernel, Matrix, get_kernel
+from vskernels import Bicubic, Kernel, Matrix, get_kernel, get_prop
 from vsutil import Dither, Range, depth, get_depth, get_y, iterate, join, plane
 
-from .util import check_variable, get_prop
+from .util import check_variable
 
 core = vs.core
 
@@ -167,7 +167,7 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
     if matrix is None:
         matrix = get_prop(clip.get_frame(0), "_Matrix", int)
 
-    targ_matrix = vs.MatrixCoefficients(matrix)
+    targ_matrix = Matrix(matrix)
 
     if is_rgb:
         input_clip = clip_32

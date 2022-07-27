@@ -6,14 +6,14 @@ from functools import partial
 from typing import Any, List, Sequence, Tuple
 
 import vapoursynth as vs
-from vskernels import Bicubic, Catrom, Kernel, Matrix
+from vskernels import Bicubic, Catrom, Kernel, Matrix, get_prop
 from vsutil import depth, get_depth, is_image, scale_value
 
 from .exceptions import InvalidMatrixError
 from .helpers import _check_index_exists, _generate_dgi, _get_dgidx, _load_dgi, _tail
 from .mask import BoundingBox
 from .types import IndexExists, Position, Range, Size
-from .util import check_variable, get_prop, match_clip, normalize_ranges, replace_ranges
+from .util import check_variable, match_clip, normalize_ranges, replace_ranges
 
 core = vs.core
 

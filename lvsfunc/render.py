@@ -6,11 +6,11 @@ from threading import Condition
 from typing import BinaryIO, Callable, Dict, List, TextIO
 
 import vapoursynth as vs
+from vskernels import get_prop
 
 from .exceptions import InvalidFormatError
 from .progress import BarColumn, FPSColumn, Progress, TextColumn, TimeRemainingColumn
 from .types import SceneChangeMode
-from .util import get_prop
 
 core = vs.core
 
