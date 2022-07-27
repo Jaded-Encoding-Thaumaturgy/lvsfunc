@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List, Sequence, Tuple
 
 import vapoursynth as vs
 from vsrgtools import removegrain
-from vsrgtools.util import normalise_planes
+from vsexprtools.util import normalise_planes
 from vsutil import Range as CRange
 from vsutil import depth, get_depth, get_y, iterate, join, split
 

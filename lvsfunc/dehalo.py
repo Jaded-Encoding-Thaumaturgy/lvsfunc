@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Sequence
 import vapoursynth as vs
 from vskernels import BSpline, Catrom
 from vsrgtools import repair
-from vsrgtools.util import clamp, normalise_planes
+from vsexprtools.util import clamp, normalise_planes
 from vsutil import depth, fallback, get_depth, get_y
 
 from .mask import fine_dehalo_mask
