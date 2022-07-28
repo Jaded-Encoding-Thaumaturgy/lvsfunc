@@ -364,7 +364,7 @@ class BoundingBox():
 
         mask_fmt: vs.VideoFormat = ref.format.replace(color_family=vs.GRAY, subsampling_w=0, subsampling_h=0)
         white: float = 1 if mask_fmt.sample_type == vs.FLOAT else (1 << ref.format.bits_per_sample) - 1
-        mask: vs.VideoNode = core.std.BlankClip(ref, color=white, length=1, format=mask_fmt.id)
+        mask: vs.VideoNode = ref.std.BlankClip(color=white, format=mask_fmt.id, keep=True)
         mask = mask.std.Crop(self.pos.x, ref.width - (self.pos.x + self.size.x),
                              self.pos.y, ref.height - (self.pos.y + self.size.y))
         mask = mask.std.AddBorders(self.pos.x, ref.width - (self.pos.x + self.size.x),
