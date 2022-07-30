@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from functools import partial
 from math import ceil
 from typing import Any, Callable, Dict, cast
@@ -46,7 +47,7 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
     :return:            Clip with clamped anti-aliasing.
     """
 
-    print(DeprecationWarning('lvsfunc.clamp_aa: deprecated in favor of vsaa.clamp_aa!'))
+    warnings.warn('lvsfunc.clamp_aa: deprecated in favor of vsaa.clamp_aa!', DeprecationWarning)
 
     return vsaa.clamp_aa(src, weak, strong, strength)
 
@@ -63,7 +64,7 @@ def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode] | Sing
     :return:            Antialiased clip.
     """
 
-    print(DeprecationWarning('lvsfunc.taa: deprecated in favor of vsaa.transpose_aa!'))
+    warnings.warn('lvsfunc.taa: deprecated in favor of vsaa.transpose_aa!', DeprecationWarning)
 
     if isinstance(aafun, SingleRater):
         aafunc = aafun
@@ -94,7 +95,7 @@ def nnedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs
     nnedi3_args: Dict[str, Any] = dict(field=0, dh=True, nsize=3, nns=3, qual=1)
     nnedi3_args.update(override)
 
-    print(DeprecationWarning('lvsfunc.nnedi3: deprecated in favor of vsaa.Nnedi3!'))
+    warnings.warn('lvsfunc.nnedi3: deprecated in favor of vsaa.Nnedi3!', DeprecationWarning)
 
     return partial(vsaa.Nnedi3(**nnedi3_args, opencl=opencl)._interpolate, double_y=True)
 
@@ -115,7 +116,7 @@ def eedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs.
     eedi3_args: Dict[str, Any] = dict(field=0, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20)
     eedi3_args.update(override)
 
-    print(DeprecationWarning('lvsfunc.eedi3: deprecated in favor of vsaa.Eedi3!'))
+    warnings.warn('lvsfunc.eedi3: deprecated in favor of vsaa.Eedi3!', DeprecationWarning)
 
     return partial(vsaa.Eedi3(**eedi3_args, opencl=opencl)._interpolate, double_y=True)
 
@@ -140,7 +141,7 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
     :return:                    Antialiased clip.
     """
 
-    print(DeprecationWarning('lvsfunc.nneedi3_clamp: deprecated in favor of vsaa.fine_aa!'))
+    warnings.warn('lvsfunc.nneedi3_clamp: deprecated in favor of vsaa.fine_aa!', DeprecationWarning)
 
     return vsaa.masked_clamp_aa(clip, strength, mthr, mask, opencl=opencl)
 
@@ -168,7 +169,7 @@ def transpose_aa(clip: vs.VideoNode, eedi3: bool = False, rep: int = 13) -> vs.V
     :return:          Antialiased clip.
     """
 
-    print(DeprecationWarning('lvsfunc.transpose_aa: deprecated in favor of vsaa.fine_aa!'))
+    warnings.warn('lvsfunc.transpose_aa: deprecated in favor of vsaa.fine_aa!', DeprecationWarning)
 
     return vsaa.fine_aa(clip, True, vsaa.Eedi3() if eedi3 else vsaa.Nnedi3(), rep)
 
@@ -211,7 +212,7 @@ def upscaled_sraa(clip: vs.VideoNode,
     :raises ValueError:     ``rfactor`` is not above 1.
     """
 
-    print(DeprecationWarning('lvsfunc.upscaled_sraa: deprecated in favor of vsaa.upscaled_sraa!'))
+    warnings.warn('lvsfunc.upscaled_sraa: deprecated in favor of vsaa.upscaled_sraa!', DeprecationWarning)
 
     if isinstance(supersampler, SuperSampler):
         ssfunc = supersampler
