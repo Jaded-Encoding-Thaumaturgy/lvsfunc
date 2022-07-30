@@ -200,7 +200,7 @@ def gamma2linear(clip: vs.VideoNode, curve: Transfer, gcor: float = 1.0,
                  epsilon: float = 1e-6) -> vs.VideoNode:
     """
     Convert gamma to linear.
-    
+
     .. warning::
         | This function has been deprecated! It will removed in a future commit.
 
@@ -216,7 +216,7 @@ def linear2gamma(clip: vs.VideoNode, curve: Transfer, gcor: float = 1.0,
                  ) -> vs.VideoNode:
     """
     Convert linear to gamma.
-    
+
     .. warning::
         | This function has been deprecated! It will removed in a future commit.
 
