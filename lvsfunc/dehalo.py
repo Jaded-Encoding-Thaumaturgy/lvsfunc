@@ -5,22 +5,22 @@ from functools import partial
 from typing import Any, Dict, Sequence
 
 import vapoursynth as vs
-from vsexprtools.util import clamp, normalise_planes
+import vsdehalo
+from vsexprtools import clamp, mod4
 from vskernels import BSpline, Catrom
 from vsrgtools import repair
-from vsutil import depth, fallback, get_depth, get_y
+from vsutil import get_depth, get_y
 
-from .mask import fine_dehalo_mask
-from .noise import bm3d
-from .util import check_variable, force_mod, scale_peak
+from .util import check_variable, scale_peak
 
 core = vs.core
 
 
 __all__ = [
+    'masked_dha',
+    # Deprecated
     'bidehalo',
     'fine_dehalo',
-    'masked_dha',
 ]
 
 
@@ -55,29 +55,13 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
 
     :return:                    Dehalo'd clip.
     """
-    warnings.warn("bidehalo: 'This function is deprecated in favor of `vsdehalo.bidehalo`! "
-                  "This function will be removed in a future commit.",
-                  DeprecationWarning)
 
-    bm3ddh_args: Dict[str, Any] = dict(sigma=8, radius=1, pre=clip, planes=planes)
-    bm3ddh_args.update(bm3d_args)
+    warnings.warn('lvsfunc.bidehalo: deprecated in favor of vsdehalo.bidehalo!', DeprecationWarning)
 
-    assert check_variable(clip, "bidehalo")
-
-    sigmaS_final = fallback(sigmaS_final, sigmaS / 3)
-    sigmaR_final = fallback(sigmaR_final, sigmaR)
-
-    if ref is None:
-        den = depth(bm3d(clip, **bm3ddh_args), 16)
-
-        ref = den.bilateral.Bilateral(sigmaS=sigmaS, sigmaR=sigmaR, planes=planes, **bilateral_args)
-        bidh = den.bilateral.Bilateral(ref=ref, sigmaS=sigmaS_final, sigmaR=sigmaR_final, planes=planes,
-                                       **bilateral_args)
-        bidh = depth(bidh, clip.format.bits_per_sample)
-    else:
-        bidh = depth(ref, clip.format.bits_per_sample)
-
-    return core.std.Expr([clip, bidh], "x y min")
+    return vsdehalo.bidehalo(
+        clip, sigmaS, sigmaR, sigmaS_final, sigmaR_final,
+        planes=planes, bm3d_args=bm3d_args, bilateral_args=bilateral_args
+    )
 
 
 def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
@@ -146,7 +130,7 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
 
     clip_y = get_y(clip)  # Should still work even if GRAY clip
 
-    clip_ds = Catrom().scale(clip_y, force_mod(clip.width/rx, 4), force_mod(clip.height/ry, 4))
+    clip_ds = Catrom().scale(clip_y, mod4(clip.width/rx), mod4(clip.height/ry))
     clip_ss = BSpline().scale(clip_ds, clip.width, clip.height)
 
     chl = core.std.Expr([clip_y.std.Maximum(), clip_y.std.Minimum()], 'x y -')
@@ -168,7 +152,7 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
         if rfactor == 1:
             ssc = repair(clip_y, mmg, 1)
         else:
-            ss_w, ss_h = force_mod(clip.width * rfactor, 4), force_mod(clip.height * rfactor, 4)
+            ss_w, ss_h = mod4(clip.width * rfactor, 4), mod4(clip.height * rfactor)
             ssc = Catrom().scale(clip_y, ss_w, ss_h)
             ssc = core.std.Expr([ssc, Catrom().scale(mmg.std.Maximum(), ss_w, ss_h)], 'x y min')
             ssc = core.std.Expr([ssc, Catrom().scale(mmg.std.Minimum(), ss_w, ss_h)], 'x y max')
@@ -238,40 +222,11 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
 
     :raises ModuleNotFoundError:    Dependencies are missing.
     """
-    warnings.warn("fine_dehalo: 'This function is deprecated in favor of `vsdehalo.fine_dehalo`! "
-                  "This function will be removed in a future commit.",
-                  DeprecationWarning)
-    try:
-        from havsfunc import DeHalo_alpha
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("fine_dehalo: missing dependency `havsfunc`!'")
 
-    assert check_variable(clip, "fine_dehalo")
+    warnings.warn('lvsfunc.fine_dehalo: deprecated in favor of vsdehalo.fine_dehalo!', DeprecationWarning)
 
-    if ref:
-        assert check_variable(ref, "fine_dehalo")
-
-    planes = normalise_planes(clip, planes)
-
-    # Original silently changed values around, which I hate. Throwing errors instead.
-    if not all(x >= 1 for x in (rfactor, rx, ry)):
-        raise ValueError("fine_dehalo: 'rfactor, rx, and ry must all be bigger than 1.0!'")
-
-    if not 0 <= darkstr <= 1:
-        raise ValueError("fine_dehalo: 'darkstr must be between 0.0 and 1.0!'")
-
-    if not all(0 <= sens < 100 for sens in (lowsens, highsens)):
-        raise ValueError("fine_dehalo: 'lowsens and highsens must be between 0 and 100!'")
-
-    if show_mask is not False and not (0 < int(show_mask) <= 7):
-        raise ValueError("fine_dehalo: 'Valid values for show_mask are 0–7!'")
-
-    dehaloed = ref or DeHalo_alpha(clip, rx=rx, ry=ry, darkstr=darkstr, brightstr=brightstr,
-                                   lowsens=lowsens, highsens=highsens, ss=rfactor)
-
-    halo_mask = fine_dehalo_mask(clip, rx, ry, thmi, thma, thlimi, thlima, show_mask)
-
-    if int(show_mask) > 0:
-        return halo_mask
-
-    return core.std.MaskedMerge(clip, dehaloed, halo_mask, planes=planes)
+    return vsdehalo.fine_dehalo(
+        clip, ref, rx, ry, darkstr, brightstr, int(lowsens), int(highsens),
+        thmi, thma, thlimi, thlima, rfactor,
+        planes=planes, show_mask=show_mask
+    )
