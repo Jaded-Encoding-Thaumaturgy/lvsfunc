@@ -9,10 +9,9 @@ import vapoursynth as vs
 import vsaa
 from vsaa import Eedi3SR, Nnedi3SS, SingleRater, SuperSampler
 from vskernels import Bicubic, Box, Catrom, Point
-from vsscale import GenericScaler
+from vsscale import GenericScaler, ssim_downsample
 from vsutil import depth, fallback, get_depth, get_y, join, plane, scale_value
 
-from .scale import ssim_downsample
 from .util import check_variable
 
 core = vs.core
