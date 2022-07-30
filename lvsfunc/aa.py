@@ -1,25 +1,29 @@
 from __future__ import annotations
 
+from functools import partial
 from math import ceil
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, cast
 
 import vapoursynth as vs
+import vsaa
+from vsaa import Eedi3SR, Nnedi3SS, SingleRater, SuperSampler
 from vskernels import Bicubic, Box, Catrom, Point
-from vsrgtools import repair
-from vsutil import depth, fallback, get_depth, get_w, get_y, join, plane, scale_value
+from vsscale import GenericScaler
+from vsutil import depth, fallback, get_depth, get_y, join, plane, scale_value
 
 from .scale import ssim_downsample
-from .util import check_variable, check_variable_format, scale_thresh
+from .util import check_variable
 
 core = vs.core
 
 
 __all__ = [
     'based_aa',
-    'clamp_aa',
-    'nnedi3', 'eedi3',
-    'nneedi3_clamp',
+    # Deprecated
     'taa',
+    'clamp_aa',
+    'nneedi3_clamp',
+    'nnedi3', 'eedi3',
     'transpose_aa',
     'upscaled_sraa', 'sraa',
 ]
@@ -41,20 +45,13 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
 
     :return:            Clip with clamped anti-aliasing.
     """
-    assert check_variable_format(src, "clamp_aa")
-    assert check_variable_format(weak, "clamp_aa")
-    assert check_variable_format(strong, "clamp_aa")
 
-    thr = strength * (1 << (src.format.bits_per_sample - 8)) if src.format.sample_type == vs.INTEGER \
-        else strength/219
-    clamp = core.std.Expr([get_y(src), get_y(weak), get_y(strong)],
-                          expr=f"x y - x z - xor x x y - abs x z - abs < z y {thr} + min y {thr} - max z ? ?"
-                          if thr != 0 else "x y z min max y z max min")
-    return clamp if src.format.color_family == vs.GRAY \
-        else core.std.ShufflePlanes([clamp, src], planes=[0, 1, 2], colorfamily=vs.YUV)
+    print(DeprecationWarning('lvsfunc.clamp_aa: deprecated in favor of vsaa.clamp_aa!'))
+
+    return vsaa.clamp_aa(src, weak, strong, strength)
 
 
-def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode]) -> vs.VideoNode:
+def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode] | SingleRater) -> vs.VideoNode:
     """
     Perform transpose AA.
 
@@ -65,17 +62,19 @@ def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode]) -> vs
 
     :return:            Antialiased clip.
     """
-    assert check_variable(clip, "taa")
 
-    y = get_y(clip)
+    print(DeprecationWarning('lvsfunc.taa: deprecated in favor of vsaa.transpose_aa!'))
 
-    aa = aafun(y.std.Transpose())
-    aa = Catrom().scale(aa, width=clip.height, height=clip.width, shift=(0.5, 0))
-    aa = aafun(aa.std.Transpose())
-    aa = Catrom().scale(aa, width=clip.width, height=clip.height, shift=(0.5, 0))
+    if isinstance(aafun, SingleRater):
+        aafunc = aafun
+    else:
+        class _TempAA(SingleRater):
+            def _interpolate(self, clip: vs.VideoNode, double_y: bool, **kwargs: Any) -> vs.VideoNode:
+                return aafun(clip, **kwargs)  # type: ignore
 
-    return aa if clip.format.color_family == vs.GRAY \
-        else core.std.ShufflePlanes([aa, clip], planes=[0, 1, 2], colorfamily=vs.YUV)
+        aafunc = _TempAA()
+
+    return vsaa.transpose_aa(clip, aafunc)
 
 
 def nnedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs.VideoNode]:
@@ -95,11 +94,9 @@ def nnedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs
     nnedi3_args: Dict[str, Any] = dict(field=0, dh=True, nsize=3, nns=3, qual=1)
     nnedi3_args.update(override)
 
-    def _nnedi3(clip: vs.VideoNode) -> vs.VideoNode:
-        return clip.nnedi3cl.NNEDI3CL(**nnedi3_args) if opencl \
-            else clip.nnedi3.nnedi3(**nnedi3_args)
+    print(DeprecationWarning('lvsfunc.nnedi3: deprecated in favor of vsaa.Nnedi3!'))
 
-    return _nnedi3
+    return partial(vsaa.Nnedi3(**nnedi3_args, opencl=opencl)._interpolate, double_y=True)
 
 
 def eedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs.VideoNode]:
@@ -115,14 +112,12 @@ def eedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs.
 
     :return:                Configured eedi3 function.
     """
-    eedi3_args: Dict[str, Any] = dict(field=0, dh=True, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20)
+    eedi3_args: Dict[str, Any] = dict(field=0, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20)
     eedi3_args.update(override)
 
-    def _eedi3(clip: vs.VideoNode) -> vs.VideoNode:
-        return clip.eedi3m.EEDI3CL(**eedi3_args) if opencl \
-            else clip.eedi3m.EEDI3(**eedi3_args)
+    print(DeprecationWarning('lvsfunc.eedi3: deprecated in favor of vsaa.Eedi3!'))
 
-    return _eedi3
+    return partial(vsaa.Eedi3(**eedi3_args, opencl=opencl)._interpolate, double_y=True)
 
 
 def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
@@ -144,19 +139,13 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
 
     :return:                    Antialiased clip.
     """
-    assert check_variable(clip, "nneedi3_clamp")
 
-    y = get_y(clip)
-    mask = mask or y.std.Prewitt().std.Binarize(scale_thresh(mthr, y)).std.Maximum().std.Convolution([1]*9)
-    merged = core.std.MaskedMerge(y,
-                                  clamp_aa(y, taa(y, nnedi3(opencl=opencl)), taa(y, eedi3(opencl=opencl)), strength),
-                                  mask)
-    return merged if clip.format.color_family == vs.GRAY else core.std.ShufflePlanes([merged, clip], [0, 1, 2], vs.YUV)
+    print(DeprecationWarning('lvsfunc.nneedi3_clamp: deprecated in favor of vsaa.fine_aa!'))
+
+    return vsaa.masked_clamp_aa(clip, strength, mthr, mask, opencl=opencl)
 
 
-def transpose_aa(clip: vs.VideoNode,
-                 eedi3: bool = False,
-                 rep: int = 13) -> vs.VideoNode:
+def transpose_aa(clip: vs.VideoNode, eedi3: bool = False, rep: int = 13) -> vs.VideoNode:
     """
     Tranpose and aa a clip multiple times using nnedi3/eedi3.
 
@@ -178,60 +167,19 @@ def transpose_aa(clip: vs.VideoNode,
 
     :return:          Antialiased clip.
     """
-    assert check_variable(clip, "transpose_aa")
 
-    clip_y = get_y(clip)
+    print(DeprecationWarning('lvsfunc.transpose_aa: deprecated in favor of vsaa.fine_aa!'))
 
-    def _aafun(clip: vs.VideoNode) -> vs.VideoNode:
-        return clip.eedi3m.EEDI3(0, 1, 0, 0.5, 0.2).znedi3.nnedi3(1, 0, 0, 3, 4, 2) if eedi3 \
-            else clip.nnedi3.nnedi3(0, 1, 0, 3, 3, 2).nnedi3.nnedi3(1, 0, 0, 3, 3, 2)
-
-    def _taa(clip: vs.VideoNode) -> vs.VideoNode:
-        aa = _aafun(clip.std.Transpose())
-        aa = Catrom().scale(aa, clip.height, clip.width, shift=(0.5, 0))
-        aa = _aafun(aa.std.Transpose())
-        return Catrom().scale(aa, clip.width, clip.height, shift=(0.5, 0))
-
-    def _csharp(flt: vs.VideoNode, clip: vs.VideoNode) -> vs.VideoNode:
-        blur = core.std.Convolution(flt, [1] * 9)
-        return core.std.Expr([flt, clip, blur], 'x y < x x + z - x max y min x x + z - x min y max ?')
-
-    aaclip = _taa(clip_y)
-    aaclip = _csharp(aaclip, clip_y)
-    aaclip = repair(aaclip, clip_y, rep)
-
-    return aaclip if clip.format.color_family is vs.GRAY \
-        else core.std.ShufflePlanes([aaclip, clip], [0, 1, 2], vs.YUV)
-
-
-def _nnedi3_supersample(clip: vs.VideoNode, width: int, height: int, opencl: bool = False) -> vs.VideoNode:
-    assert check_variable(clip, "_nnedi3_supersample")
-
-    nnargs: Dict[str, Any] = dict(field=0, dh=True, nsize=0, nns=4, qual=2)
-    _nnedi3 = nnedi3(opencl=opencl, **nnargs)
-    up_y = _nnedi3(get_y(clip))
-    up_y = Catrom().scale(up_y, width=up_y.width, height=height, shift=(0.5, 0))
-    up_y = _nnedi3(up_y.std.Transpose())
-    up_y = Catrom().scale(up_y, width=up_y.width, height=width, shift=(0.5, 0))
-    return up_y.std.Transpose()
-
-
-def _eedi3_singlerate(clip: vs.VideoNode) -> vs.VideoNode:
-    assert check_variable(clip, "_eedi3_singlerate")
-
-    eeargs: Dict[str, Any] = dict(field=0, dh=False, alpha=0.2, beta=0.6, gamma=40, nrad=2, mdis=20)
-    nnargs: Dict[str, Any] = dict(field=0, dh=False, nsize=0, nns=4, qual=2)
-    y = get_y(clip)
-    return eedi3(sclip=nnedi3(**nnargs)(y), **eeargs)(y)
+    return vsaa.fine_aa(clip, True, vsaa.Eedi3() if eedi3 else vsaa.Nnedi3(), rep)
 
 
 def upscaled_sraa(clip: vs.VideoNode,
                   rfactor: float = 1.5,
                   width: int | None = None, height: int | None = None,
-                  supersampler: Callable[[vs.VideoNode, int, int], vs.VideoNode] = _nnedi3_supersample,
+                  supersampler: Callable[[vs.VideoNode, int, int], vs.VideoNode] | SuperSampler = Nnedi3SS(),
                   downscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode] | None
                   = Bicubic(b=0, c=1/2).scale,
-                  aafun: Callable[[vs.VideoNode], vs.VideoNode] = _eedi3_singlerate) -> vs.VideoNode:
+                  aafun: Callable[[vs.VideoNode], vs.VideoNode] | SingleRater = Eedi3SR()) -> vs.VideoNode:
     """
     Super-sampled single-rate AA for heavy aliasing and broken line-art.
 
@@ -262,33 +210,28 @@ def upscaled_sraa(clip: vs.VideoNode,
 
     :raises ValueError:     ``rfactor`` is not above 1.
     """
-    assert check_variable(clip, "upscaled_sraa")
 
-    luma = get_y(clip)
+    print(DeprecationWarning('lvsfunc.upscaled_sraa: deprecated in favor of vsaa.upscaled_sraa!'))
 
-    if rfactor < 1:
-        raise ValueError("upscaled_sraa: '\"rfactor\" must be above 1!'")
+    if isinstance(supersampler, SuperSampler):
+        ssfunc = supersampler
+    else:
+        ssfunc = cast(SuperSampler, GenericScaler(supersampler))
 
-    ssw = round(clip.width * rfactor)
-    ssw = (ssw + 1) & ~1
-    ssh = round(clip.height * rfactor)
-    ssh = (ssh + 1) & ~1
+    if isinstance(aafun, SingleRater):
+        aafunc = aafun
+    else:
+        class _TempAA(SingleRater):
+            def _interpolate(self, clip: vs.VideoNode, double_y: bool, **kwargs: Any) -> vs.VideoNode:
+                return aafun(clip, **kwargs)  # type: ignore
 
-    height = height or clip.height
+        aafunc = _TempAA()
 
-    if width is None:
-        width = clip.width if height == clip.height else get_w(height, aspect_ratio=clip.width / clip.height)
+    downfunc = GenericScaler(downscaler) if downscaler else Catrom()
 
-    up_y = supersampler(luma, ssw, ssh)
-
-    aa_y = aafun(aafun(up_y.std.Transpose()).std.Transpose())
-
-    scaled = aa_y if downscaler is None else downscaler(aa_y, width, height)
-
-    if clip.format.num_planes == 1 or downscaler is None or height != clip.height or width != clip.width:
-        return scaled
-
-    return core.std.ShufflePlanes([scaled, clip], planes=[0, 1, 2], colorfamily=vs.YUV)
+    return vsaa.upscaled_sraa(
+        clip, rfactor, width, height, ssfunc, aafunc, vsaa.AADirection.BOTH, downfunc
+    )
 
 
 def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
