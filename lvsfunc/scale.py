@@ -34,94 +34,11 @@ __all__ = [
     'descale_detail_mask',
     'descale',
     'mixed_rescale',
-    'reupscale',
     # Deprecated
     'ssim_downsample',
     'gamma2linear',
     'linear2gamma'
 ]
-
-
-def _transpose_shift(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
-                     kernel: Kernel, caller: str) -> vs.VideoNode:
-    h = f.height
-    w = f.width
-    clip = kernel.scale(clip, w, h*2, (0.5, 0))
-    return core.std.Transpose(clip)
-
-
-def _perform_descale(resolution: Resolution, clip: vs.VideoNode,
-                     kernel: Kernel) -> ScaleAttempt:
-    descaled = kernel.descale(clip, resolution.width, resolution.height) \
-        .std.SetFrameProp('descaleResolution', intval=resolution.height)
-    rescaled = kernel.scale(descaled, clip.width, clip.height)
-    diff = core.akarin.Expr([rescaled, clip], 'x y - abs').std.PlaneStats()
-    return ScaleAttempt(descaled, rescaled, resolution, diff)
-
-
-def _select_descale(n: int, f: vs.VideoFrame | List[vs.VideoFrame],
-                    threshold: float, clip: vs.VideoNode,
-                    clips_by_resolution: Dict[int, ScaleAttempt]
-                    ) -> vs.VideoNode:
-    if type(f) is vs.VideoFrame:
-        f = [f]
-    f = cast(List[vs.VideoFrame], f)
-    best_res = max(f, key=lambda frame:
-                   math.log(clip.height - get_prop(frame, "descaleResolution", int), 2)  # type:ignore[no-any-return]
-                   * round(1 / max(get_prop(frame, "PlaneStatsAverage", float), 1e-12))
-                   ** 0.2)
-
-    best_attempt = clips_by_resolution[get_prop(best_res, "descaleResolution", int)]
-    if threshold == 0:
-        return best_attempt.descaled
-    if get_prop(best_res, "PlaneStatsAverage", float) > threshold:
-        return clip
-    return best_attempt.descaled
-
-
-@functoolz.curry
-def reupscale(clip: vs.VideoNode,
-              width: int | None = None, height: int = 1080,
-              kernel: Kernel | str = Bicubic(b=0, c=1/2),
-              **kwargs: Any) -> vs.VideoNode:
-    """
-    Quick 'n easy wrapper to re-upscale a clip descaled with descale using znedi3.
-
-    Function is curried to allow parameter tuning when passing to :py:func:`lvsfunc.scale.descale`
-
-    Original function written by `Vardë <https://github.com/Ichunjo>`_, modified by LightArrowsEXE.
-
-    Dependencies:
-
-    * `znedi3 <https://github.com/sekrit-twc/znedi3>`_
-
-    :param clip:        Clip to process.
-    :param width:       Upscale width. If None, determine from `height` assuming 16:9 aspect ratio (Default: None).
-    :param height:      Upscale height (Default: 1080).
-    :param kernel:      py:class:`vskernels.Kernel` object used for downscaling the super-sampled clip.
-                        This can also be the string name of the kernel
-                        (Default: py:class:`vskernels.Bicubic(b=0, c=1/2)`).
-    :param kwargs:      Arguments passed to znedi3 (Default: nsize=4, nns=4, qual=2, pscrn=2).
-
-    :return:            Reupscaled clip.
-    """
-    width = width or get_w(height)
-
-    if isinstance(kernel, str):
-        kernel = get_kernel(kernel)()
-
-    # Doubling and downscale to given "h"
-    znargs: Dict[str, Any] = dict(nsize=4, nns=4, qual=2, pscrn=2)
-    znargs |= kwargs
-
-    upsc = quick_resample(clip, partial(core.znedi3.nnedi3, field=0, dh=True, **znargs))
-    upsc = core.std.FrameEval(upsc, partial(_transpose_shift, clip=upsc,
-                                            kernel=kernel,
-                                            caller="reupscale"),
-                              prop_src=upsc)
-    upsc = quick_resample(upsc, partial(core.znedi3.nnedi3, field=0, dh=True, **znargs))
-    return kernel.scale(upsc, width=height, height=width, shift=(0.5, 0)) \
-        .std.Transpose()
 
 
 @functoolz.curry
