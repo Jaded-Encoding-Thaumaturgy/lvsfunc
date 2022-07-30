@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Sequence, cast
 
 import vapoursynth as vs
+from vsexprtools import mod2, mod4
 from vskernels import Bicubic, BicubicDidee, Catrom, Kernel, get_kernel, get_prop
 from vsrgtools import repair
 from vsutil import Dither, depth, get_depth, get_neutral_value, get_w, get_y, scale_value
@@ -18,7 +19,7 @@ from .comparison import Stack
 from .exceptions import InvalidFramerateError, TopFieldFirstError
 from .render import clip_async_render, get_render_progress
 from .types import Direction
-from .util import check_variable, check_variable_format, force_mod
+from .util import check_variable, check_variable_format
 
 core = vs.core
 
@@ -106,7 +107,7 @@ def seek_cycle(clip: vs.VideoNode, write_props: bool = True, scale: int = -1) ->
     clip = Catrom().scale(clip, width, height)
 
     # Downscaling for the cycle clips
-    clip_down = BicubicDidee().scale(clip, force_mod(width/4, 2), force_mod(height/4, 2))
+    clip_down = BicubicDidee().scale(clip, mod2(width/4), mod2(height/4))
     if write_props:
         clip_down = core.std.FrameEval(clip_down, partial(check_combed, clip=clip_down), clip_down).text.FrameNum(2)
     blank_frame = clip_down.std.BlankClip(length=1, color=[0] * 3)
@@ -117,15 +118,15 @@ def seek_cycle(clip: vs.VideoNode, write_props: bool = True, scale: int = -1) ->
 
     # Cycling
     cycle_clips = [pad_a, pad_b, pad_c, pad_d, pad_e]
-    pad_x = [pad_a.std.BlankClip(force_mod(pad_a.width/15))] * 4
+    pad_x = [pad_a.std.BlankClip(mod4(pad_a.width/15))] * 4
     cycle = cycle_clips + pad_x  # no shot this can't be done way cleaner
     cycle[::2], cycle[1::2] = cycle_clips, pad_x
 
     # Final stacking
     stack_abcde = Stack(cycle).clip
 
-    vert_pad = stack_abcde.std.BlankClip(height=force_mod(stack_abcde.height / 5, 2))
-    horz_pad = clip.std.BlankClip(force_mod((stack_abcde.width-clip.width) / 2, 2))
+    vert_pad = stack_abcde.std.BlankClip(height=mod2(stack_abcde.height / 5))
+    horz_pad = clip.std.BlankClip(mod2((stack_abcde.width-clip.width) / 2))
 
     stack = Stack([horz_pad, clip, horz_pad]).clip
     return Stack([vert_pad, stack, vert_pad, stack_abcde], direction=Direction.VERTICAL).clip
