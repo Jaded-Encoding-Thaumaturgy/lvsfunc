@@ -1,33 +1,18 @@
 from __future__ import annotations
 
 from enum import IntEnum, auto
-from typing import Any, Callable, Literal, NamedTuple, Optional, Protocol, Tuple, TypeVar, Union
+from typing import Any, NamedTuple, Optional, Protocol, Tuple, Union
 
 import vapoursynth as vs
-from vskernels import Matrix, VideoProp, VSFunction
+from vskernels import VSFunction
+
+VSFunction
 
 __all__ = [
-    'Coefs', 'Coordinate', 'CreditMask', 'CURVES', 'CustomScaler', 'Direction', 'F', 'Matrix', 'Position', 'Range',
-    'RegressClips', 'Resolution', 'ScaleAttempt', 'SceneChangeMode', 'Size', 'T', 'VideoProp', 'VSFunction',
+    'Coordinate', 'Direction', 'Position', 'Range', 'RegressClips', 'SceneChangeMode', 'Size', '_VideoNode'
 ]
 
-
-CreditMask = Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode]
-CustomScaler = Callable[[vs.VideoNode, int, int], vs.VideoNode]
 Range = Union[Optional[int], Tuple[Optional[int], Optional[int]]]
-
-
-F = TypeVar("F", bound=Callable[..., vs.VideoNode])
-T = TypeVar("T", bound=VideoProp)
-
-
-class Coefs(NamedTuple):
-    """Coefficients for matrix conversions."""
-
-    k0: float
-    phi: float
-    alpha: float
-    gamma: float
 
 
 class Coordinate():
@@ -52,32 +37,6 @@ class Direction(IntEnum):
 
     HORIZONTAL = 0
     VERTICAL = 1
-
-
-class Resolution(NamedTuple):
-    """Tuple representing a resolution."""
-
-    """Width."""
-    width: int
-
-    """Height."""
-    height: int
-
-
-class ScaleAttempt(NamedTuple):
-    """Tuple representing a descale attempt."""
-
-    """Descaled frame in native resolution."""
-    descaled: vs.VideoNode
-
-    """Descaled frame reupscaled with the same kernel."""
-    rescaled: vs.VideoNode
-
-    """The native resolution."""
-    resolution: Resolution
-
-    """The subtractive difference between the original and descaled frame."""
-    diff: vs.VideoNode
 
 
 class SceneChangeMode(IntEnum):
@@ -119,16 +78,6 @@ class RegressClips(NamedTuple):
     slope: vs.VideoNode
     intercept: vs.VideoNode
     correlation: vs.VideoNode
-
-
-CURVES = Literal[
-    vs.TransferCharacteristics.TRANSFER_IEC_61966_2_1,
-    vs.TransferCharacteristics.TRANSFER_BT709,
-    vs.TransferCharacteristics.TRANSFER_BT601,
-    vs.TransferCharacteristics.TRANSFER_ST240_M,
-    vs.TransferCharacteristics.TRANSFER_BT2020_10,
-    vs.TransferCharacteristics.TRANSFER_BT2020_12,
-]
 
 
 class IndexExists(IntEnum):
