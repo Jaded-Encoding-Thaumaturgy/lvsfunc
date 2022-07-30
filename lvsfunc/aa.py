@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from math import ceil
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict
 
 import vapoursynth as vs
 from vskernels import Bicubic, Box, Catrom, Point
@@ -14,7 +14,7 @@ from .util import check_variable, check_variable_format, scale_thresh
 core = vs.core
 
 
-__all__: List[str] = [
+__all__ = [
     'based_aa',
     'clamp_aa',
     'nnedi3', 'eedi3',

@@ -12,7 +12,7 @@ from .util import check_variable
 core = vs.core
 
 
-__all__: List[str] = [
+__all__ = [
     'chroma_reconstruct',
     'reconstruct_multi',
     'regress',

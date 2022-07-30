@@ -7,7 +7,7 @@ import warnings
 from fractions import Fraction
 from functools import partial
 from pathlib import Path
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Sequence, cast
 
 import vapoursynth as vs
 from vskernels import Bicubic, BicubicDidee, Catrom, Kernel, get_kernel, get_prop
@@ -22,7 +22,7 @@ from .util import check_variable, check_variable_format, force_mod
 
 core = vs.core
 
-__all__: List[str] = [
+__all__ = [
     'check_patterns',
     'deblend',
     'decomb',
@@ -492,7 +492,7 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
             fixed = (sep[0].akarin.Expr(f"x {mean} {avg[0]} / dup {thr} <= swap 1 ? *"),
                      sep[1].akarin.Expr(f"x {mean} {avg[1]} / *"))
         else:
-            fixed = sep  # type: ignore
+            fixed = cast(tuple[vs.VideoNode, vs.VideoNode], sep)
 
         return core.std.Interleave(fixed).std.DoubleWeave()[::2]
 

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import warnings
 from functools import partial
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, Sequence
 
 import vapoursynth as vs
+from vsexprtools.util import clamp, normalise_planes
 from vskernels import BSpline, Catrom
 from vsrgtools import repair
-from vsexprtools.util import clamp, normalise_planes
 from vsutil import depth, fallback, get_depth, get_y
 
 from .mask import fine_dehalo_mask
@@ -17,7 +17,7 @@ from .util import check_variable, force_mod, scale_peak
 core = vs.core
 
 
-__all__: List[str] = [
+__all__ = [
     'bidehalo',
     'fine_dehalo',
     'masked_dha',

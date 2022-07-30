@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from enum import IntEnum, auto
-from typing import Any, Callable, List, Literal, NamedTuple, Optional, Protocol, Tuple, TypeVar, Union
+from typing import Any, Callable, Literal, NamedTuple, Optional, Protocol, Tuple, TypeVar, Union
 
 import vapoursynth as vs
 from vskernels import Matrix, VideoProp, VSFunction
 
-__all__: List[str] = [
+__all__ = [
     'Coefs', 'Coordinate', 'CreditMask', 'CURVES', 'CustomScaler', 'Direction', 'F', 'Matrix', 'Position', 'Range',
     'RegressClips', 'Resolution', 'ScaleAttempt', 'SceneChangeMode', 'Size', 'T', 'VideoProp', 'VSFunction',
 ]

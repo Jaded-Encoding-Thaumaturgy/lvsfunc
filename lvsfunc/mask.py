@@ -6,8 +6,8 @@ from functools import partial
 from typing import Any, Callable, Dict, List, Sequence, Tuple
 
 import vapoursynth as vs
-from vsrgtools import removegrain
 from vsexprtools.util import normalise_planes
+from vsrgtools import removegrain
 from vsutil import Range as CRange
 from vsutil import depth, get_depth, get_y, iterate, join, split
 
@@ -18,7 +18,7 @@ from .util import check_variable, check_variable_resolution, replace_ranges, sca
 core = vs.core
 
 
-__all__: List[str] = [
+__all__ = [
     'BoundingBox',
     'DeferredMask',
     'detail_mask_neo',

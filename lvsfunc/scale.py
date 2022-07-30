@@ -26,7 +26,7 @@ except ModuleNotFoundError:
 core = vs.core
 
 
-__all__: List[str] = [
+__all__ = [
     'comparative_descale',
     'comparative_restore',
     'descale_detail_mask',
@@ -446,9 +446,9 @@ def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: in
 
     :raises CompareSameKernelError:     py:class:`vskernels.BicubicSharp` gets passed to ``kernel``.
     """
-    def _compare(n: int, f: vs.VideoFrame, sharp: vs.VideoNode, other: vs.VideoNode) -> vs.VideoNode:
-        sharp_diff = get_prop(f[0], 'PlaneStatsDiff', float)  # type:ignore[arg-type]
-        other_diff = get_prop(f[1], 'PlaneStatsDiff', float)  # type:ignore[arg-type]
+    def _compare(n: int, f: List[vs.VideoFrame], sharp: vs.VideoNode, other: vs.VideoNode) -> vs.VideoNode:
+        sharp_diff = get_prop(f[0], 'PlaneStatsDiff', float)
+        other_diff = get_prop(f[1], 'PlaneStatsDiff', float)
 
         return sharp if other_diff - thr > sharp_diff else other
 

@@ -9,8 +9,6 @@ Don't tell louis this exists though, else I'm a dead man.
 """
 from __future__ import annotations
 
-from typing import List
-
 import vapoursynth as vs
 from vskernels import Point
 
@@ -18,7 +16,7 @@ from .util import check_variable_resolution, force_mod
 
 core = vs.core
 
-__all__: List[str] = [
+__all__ = [
     'minecraftify'
 ]
 

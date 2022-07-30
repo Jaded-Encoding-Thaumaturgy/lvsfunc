@@ -15,7 +15,7 @@ from .util import check_variable, get_prop, replace_ranges
 
 core = vs.core
 
-__all__: List[str] = [
+__all__ = [
     'autodb_dpir', 'dpir', 'vsdpir'
 ]
 

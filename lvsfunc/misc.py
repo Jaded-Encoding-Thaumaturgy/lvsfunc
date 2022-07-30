@@ -18,7 +18,7 @@ from .util import check_variable, match_clip, normalize_ranges, replace_ranges
 core = vs.core
 
 
-__all__: List[str] = [
+__all__ = [
     'edgefixer', 'ef',
     'limit_dark',
     'overlay_sign',
@@ -199,7 +199,7 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
     :raises ValueError:     Too many values are supplied.
     :raises ValueError:     Any value in ``values`` are above 255.
     """
-    val: Tuple[float, float, float]
+    val: Tuple[int, int, int]
 
     assert check_variable(clip, "shift_tint")
 
@@ -216,7 +216,7 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
         raise ValueError("shift_tint: 'Every value in \"values\" must be below 255!'")
 
     cdepth = get_depth(clip)
-    cv: List[float] = [scale_value(v, 8, cdepth) for v in val] if cdepth != 8 else list(val)
+    cv = [scale_value(v, 8, cdepth) for v in val] if cdepth != 8 else list(val)
 
     return core.akarin.Expr(clip, expr=[f'x {cv[0]} +', f'x {cv[1]} +', f'x {cv[2]} +'])
 
@@ -408,9 +408,9 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
 
     if overlay.format.color_family is not clip_fam:  # type:ignore[union-attr]
         if clip_fam is vs.RGB:
-            overlay = Catrom().resample(overlay, clip.format.id, matrix_in=matrix)  # type:ignore[arg-type]
+            overlay = Catrom().resample(overlay, clip.format.id, matrix_in=matrix)
         else:
-            overlay = Catrom().resample(overlay, clip.format.id, matrix)  # type:ignore[arg-type]
+            overlay = Catrom().resample(overlay, clip.format.id, matrix)
 
     try:
         mask = core.std.PropToClip(overlay)

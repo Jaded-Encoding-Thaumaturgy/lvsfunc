@@ -5,7 +5,7 @@ import random
 import warnings
 from abc import ABC, abstractmethod
 from itertools import groupby, zip_longest
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Literal, Sequence, Set, Tuple, TypeVar, overload
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Literal, Sequence, Tuple, TypeVar, overload
 
 import vapoursynth as vs
 from vskernels import Catrom, get_matrix, get_prop
@@ -20,7 +20,7 @@ from .util import check_variable, check_variable_format, check_variable_resoluti
 
 core = vs.core
 
-__all__: List[str] = [
+__all__ = [
     'compare', 'comp',
     'Comparer',
     'diff_hardsub_mask',
@@ -74,21 +74,21 @@ class Comparer(ABC):
         if not isinstance(clips, (dict, Sequence)):
             raise TypeError(f"Comparer: Unexpected type {type(clips)} for `clips` argument!")
 
-        self.clips: List[vs.VideoNode] = list(clips.values()) if isinstance(clips, dict) else list(clips)
-        self.names: List[str] | None = list(clips.keys()) if isinstance(clips, dict) else None
+        self.clips = list(clips.values()) if isinstance(clips, dict) else list(clips)
+        self.names = list(clips.keys()) if isinstance(clips, dict) else None
 
         self.label_alignment = label_alignment
 
         self.num_clips = len(clips)
 
-        widths: Set[int] = {clip.width for clip in self.clips}
-        self.width: int | None = w if (w := widths.pop()) != 0 and len(widths) == 0 else None
+        widths = {clip.width for clip in self.clips}
+        self.width = w if (w := widths.pop()) != 0 and len(widths) == 0 else None
 
-        heights: Set[int] = {clip.height for clip in self.clips}
-        self.height: int | None = h if (h := heights.pop()) != 0 and len(heights) == 0 else None
+        heights = {clip.height for clip in self.clips}
+        self.height = h if (h := heights.pop()) != 0 and len(heights) == 0 else None
 
-        formats: Set[str | None] = {getattr(clip.format, 'name', None) for clip in self.clips}
-        self.format: str | None = formats.pop() if len(formats) == 1 else None
+        formats = {getattr(clip.format, 'name', None) for clip in self.clips}
+        self.format = formats.pop() if len(formats) == 1 else None
 
     def _marked_clips(self) -> List[vs.VideoNode]:
         """If a `name` is only space characters, `'   '`, for example, the name will not be overlaid on the clip."""
@@ -617,7 +617,7 @@ def diff(*clips: vs.VideoNode,
     if thr >= 128:
         raise ValueError("diff: `thr` must be below 128!")
 
-    if clips and not all([c.format for c in clips]):  # noqa
+    if clips and not all([c.format for c in clips]):
         raise VariableFormatError("diff")
     elif namedclips and not all([nc.format for nc in namedclips.values()]):
         raise VariableFormatError("diff")

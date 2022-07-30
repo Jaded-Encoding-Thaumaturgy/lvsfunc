@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from typing import List
-
 import vapoursynth as vs
 from vskernels import Kernel, get_kernel
 
-__all__: List[str] = [
+__all__ = [
     'ClipsAndNamedClipsError',
     'CompareSameKernelError',
     'FramePropError',

@@ -14,12 +14,10 @@ from .types import SceneChangeMode
 
 core = vs.core
 
-# flake8: noqa
-
 RenderCallback = Callable[[int, vs.VideoFrame], None]
 
 
-__all__: List[str] = [
+__all__ = [
     'clip_async_render',
     'find_scene_changes',
     'finish_frame',

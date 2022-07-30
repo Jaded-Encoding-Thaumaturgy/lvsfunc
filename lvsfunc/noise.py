@@ -11,7 +11,7 @@ from .util import check_variable
 core = vs.core
 
 
-__all__: List[str] = [
+__all__ = [
     'bm3d',
     'chickendream'
 ]

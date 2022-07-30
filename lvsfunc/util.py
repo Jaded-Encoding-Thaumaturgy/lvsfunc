@@ -17,7 +17,7 @@ from .types import CURVES, Coefs, F, Range, _VideoNode
 core = vs.core
 
 
-__all__: List[str] = [
+__all__ = [
     'allow_variable',
     'check_variable',
     'chroma_injector',
@@ -508,10 +508,9 @@ def colored_clips(amount: int,
 
     blank_clip_args: Dict[str, Any] = {'keep': 1, **kwargs}
 
-    hues: List[float] = [i * max_hue / (amount - 1) for i in range(amount - 1)]
-    hues.append(max_hue)
+    hues = [i * max_hue / (amount - 1) for i in range(amount - 1)] + [max_hue]
 
-    hls_color_list: List[Tuple[float, float, float]] = [colorsys.hls_to_rgb(h / 360, 0.5, 1) for h in hues]
+    hls_color_list = [colorsys.hls_to_rgb(h / 360, 0.5, 1) for h in hues]
     rgb_color_list = [[int(f * 255) for f in color] for color in hls_color_list]
 
     if rand:
