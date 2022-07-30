@@ -3,9 +3,11 @@ from __future__ import annotations
 import math
 from functools import partial
 from typing import Any, Callable, Dict, List, cast
+import warnings
 
 import vapoursynth as vs
-from vskernels import Bicubic, BicubicSharp, Catrom, Kernel, Spline36, VSFunction, get_kernel, get_matrix, get_prop
+from vskernels import Bicubic, BicubicSharp, Catrom, Kernel, Spline36, Transfer, VSFunction, get_kernel, get_matrix, get_prop
+import vsscale
 from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
 
 from .exceptions import CompareSameKernelError
@@ -31,11 +33,12 @@ __all__ = [
     'comparative_restore',
     'descale_detail_mask',
     'descale',
-    'gamma2linear',
-    'linear2gamma',
     'mixed_rescale',
     'reupscale',
+    # Deprecated
     'ssim_downsample',
+    'gamma2linear',
+    'linear2gamma'
 ]
 
 
@@ -293,7 +296,7 @@ def descale(clip: vs.VideoNode,
 def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 720,
                     smooth: float | VSFunction = ((3 ** 2 - 1) / 12) ** 0.5,
                     kernel: Kernel | str = Bicubic(b=0, c=1/2), gamma: bool = False,
-                    curve: CURVES | None = None,
+                    curve: Transfer | None = None,
                     sigmoid: bool = False, epsilon: float = 1e-6) -> vs.VideoNode:
     """
     SSIM_downsample rewrite taken from a Vardë gist.
@@ -338,92 +341,35 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
 
     :return:            Downsampled clip.
     """
-    assert check_variable(clip, "ssim_downsample")
+
+    warnings.warn('lvsfunc.ssim_downsample: deprecated in favor of vsscale.SSIM!', DeprecationWarning)
 
     if isinstance(kernel, str):
         kernel = get_kernel(kernel)()
 
-    if isinstance(smooth, int):
-        filter_func = partial(core.std.BoxBlur, hradius=smooth, vradius=smooth)
-    elif isinstance(smooth, float):
-        filter_func = partial(core.tcanny.TCanny, sigma=smooth, mode=-1)
-    else:
-        filter_func = smooth  # type: ignore[assignment]
-
-    if width is None:
-        width = get_w(height, aspect_ratio=clip.width/clip.height)
-
-    bits = get_depth(clip)
-    clip = depth(clip, 32)
-
-    if gamma:
-        curve = curve or get_matrix_curve(get_matrix(clip))
-        clip = gamma2linear(clip, curve, sigmoid=sigmoid, epsilon=epsilon)
-
-    l1 = kernel.scale(clip, width, height)
-    l2 = kernel.scale(clip.akarin.Expr('x dup *'), width, height)
-
-    m = filter_func(l1)
-
-    sl_plus_m_square = filter_func(l1.akarin.Expr('x dup *'))
-    sh_plus_m_square = filter_func(l2)
-    m_square = m.akarin.Expr('x dup *')
-    r = core.akarin.Expr([sl_plus_m_square, sh_plus_m_square, m_square], f'x z - {epsilon} < 0 y z - x z - / sqrt ?')
-    t = filter_func(core.akarin.Expr([r, m], 'x y *'))
-    m = filter_func(m)
-    r = filter_func(r)
-    d = core.akarin.Expr([m, r, l1, t], 'x y z * + a -')
-
-    if gamma:
-        curve = cast(CURVES, curve)
-        return linear2gamma(d, curve, sigmoid=sigmoid)
-    return depth(d, bits)
+    return vsscale.ssim_downsample(
+        clip, width, height, smooth, kernel, gamma if curve is None else curve, sigmoid
+    )
 
 
 def gamma2linear(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  epsilon: float = 1e-6) -> vs.VideoNode:
     """Convert gamma to linear."""
-    assert check_variable_format(clip, "gamma2linear")
 
-    if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
-        raise ValueError("gamma2linear: 'Your clip must be 32bit float!'")
+    warnings.warn('lvsfunc.gamma2linear: deprecated in favor of vsscale.gamma2linear!', DeprecationWarning)
 
-    c = get_coefs(curve)
-
-    expr = f'x {c.k0} <= x {c.phi} / x {c.alpha} + 1 {c.alpha} + / {c.gamma} pow ? {gcor} pow'
-    if sigmoid:
-        x0 = f'1 1 {cont} {thr} * exp + /'
-        x1 = f'1 1 {cont} {thr} 1 - * exp + /'
-        expr = f'{thr} 1 {expr} {x1} {x0} - * {x0} + {epsilon} max / 1 - {epsilon} max log {cont} / -'
-
-    expr = f'{expr} 0.0 max 1.0 min'
-
-    return core.akarin.Expr(clip, expr).std.SetFrameProps(_Transfer=8)
+    return vsscale.gamma2linear(clip, curve, gcor, sigmoid, thr, cont, epsilon)
 
 
-def linear2gamma(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
+def linear2gamma(clip: vs.VideoNode, curve: Transfer, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  ) -> vs.VideoNode:
     """Convert linear to gamma."""
-    assert check_variable_format(clip, "linear2gamma")
 
-    if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
-        raise ValueError("linear2gamma: 'Your clip must be 32bit float!'")
+    warnings.warn('lvsfunc.linear2gamma: deprecated in favor of vsscale.linear2gamma!', DeprecationWarning)
 
-    c = get_coefs(curve)
-
-    expr = 'x'
-    if sigmoid:
-        x0 = f'1 1 {cont} {thr} * exp + /'
-        x1 = f'1 1 {cont} {thr} 1 - * exp + /'
-        expr = f'1 1 {cont} {thr} {expr} - * exp + / {x0} - {x1} {x0} - /'
-
-    expr += f' {gcor} pow'
-    expr = f'{expr} {c.k0} {c.phi} / <= {expr} {c.phi} * {expr} 1 {c.gamma} / pow {c.alpha} 1 + * {c.alpha} - ?'
-    expr = f'{expr} 0.0 max 1.0 min'
-
-    return core.akarin.Expr(clip, expr).std.SetFrameProps(_Transfer=curve)
+    return vsscale.linear2gamma(clip, curve, gcor, sigmoid, thr, cont)
 
 
 def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: int = 720,
