@@ -8,11 +8,11 @@ from typing import Any, Callable, Dict, List, Tuple, cast
 
 import vapoursynth as vs
 from typing_extensions import TypeGuard
-from vskernels import Bicubic, Kernel, Matrix, get_kernel, get_matrix, get_prop
+from vskernels import Bicubic, Kernel, get_kernel, get_matrix, get_prop, VNodeCallable
 from vsutil import depth, get_subsampling, get_w, get_y
 
-from .exceptions import InvalidFormatError, InvalidMatrixError, VariableFormatError, VariableResolutionError
-from .types import CURVES, Coefs, F, Range, _VideoNode
+from .exceptions import InvalidFormatError, VariableFormatError, VariableResolutionError
+from .types import Range, _VideoNode
 
 core = vs.core
 
@@ -22,18 +22,14 @@ __all__ = [
     'check_variable',
     'chroma_injector',
     'colored_clips',
-    'force_mod',
     'frames_since_bookmark',
-    'get_coefs',
-    'get_matrix_curve',
-    'get_prop',
     'load_bookmarks',
     'normalize_ranges',
     'padder',
     'quick_resample',
     'replace_ranges', 'rfs',
     'scale_peak',
-    'scale_thresh',
+    'scale_thresh'
 ]
 
 
@@ -222,15 +218,6 @@ def scale_peak(value: float, peak: float) -> float:
     return value * peak / 255
 
 
-def force_mod(x: float, mod: int = 4) -> int:
-    """
-    Force output to fit a specific MOD.
-
-    Minimum returned value will always be mod².
-    """
-    return mod ** 2 if x < mod ** 2 else int(x / mod + 0.5) * mod
-
-
 def padder(clip: vs.VideoNode,
            left: int = 32, right: int = 32,
            top: int = 32, bottom: int = 32) -> vs.VideoNode:
@@ -267,25 +254,6 @@ def padder(clip: vs.VideoNode,
     return core.fb.FillBorders(scaled, left=left, right=right, top=top, bottom=bottom)
 
 
-def get_coefs(curve: vs.TransferCharacteristics) -> Coefs:
-    """Return transfer coefs."""
-    srgb = Coefs(0.04045, 12.92, 0.055, 2.4)
-    bt709 = Coefs(0.08145, 4.5, 0.0993, 2.22222)
-    smpte240m = Coefs(0.0912, 4.0, 0.1115, 2.22222)
-    bt2020 = Coefs(0.08145, 4.5, 0.0993, 2.22222)
-
-    gamma_linear_map = {
-        vs.TransferCharacteristics.TRANSFER_IEC_61966_2_1: srgb,
-        vs.TransferCharacteristics.TRANSFER_BT709: bt709,
-        vs.TransferCharacteristics.TRANSFER_BT601: bt709,
-        vs.TransferCharacteristics.TRANSFER_ST240_M: smpte240m,
-        vs.TransferCharacteristics.TRANSFER_BT2020_10: bt2020,
-        vs.TransferCharacteristics.TRANSFER_BT2020_12: bt2020
-    }
-
-    return gamma_linear_map[curve]
-
-
 def check_variable_format(clip: vs.VideoNode, function: str) -> TypeGuard[_VideoNode]:
     """
     Check for variable format and return an error if found.
@@ -317,22 +285,6 @@ def check_variable(clip: vs.VideoNode, function: str) -> TypeGuard[_VideoNode]:
     check_variable_format(clip, function)
     check_variable_resolution(clip, function)
     return True
-
-
-def get_matrix_curve(matrix: Matrix) -> CURVES:
-    """
-    Return the matrix curve based on a given ``matrix``.
-
-    :raises InvalidMatrixError:     An invalid ``matrix`` is passed.
-    """
-    match matrix:
-        case Matrix.BT709: return vs.TransferCharacteristics.TRANSFER_BT709
-        case Matrix.BT470BG | Matrix.SMPTE170M: return vs.TransferCharacteristics.TRANSFER_BT601
-        case Matrix.SMPTE240M: return vs.TransferCharacteristics.TRANSFER_ST240_M
-        case Matrix.CHROMA_DERIVED_C: return vs.TransferCharacteristics.TRANSFER_IEC_61966_2_1
-        case Matrix.ICTCP: return vs.TransferCharacteristics.TRANSFER_BT2020_10
-        # case 15: return vs.TransferCharacteristics.TRANSFER_BT2020_12
-        case _: raise InvalidMatrixError("get_matrix_curve", message="{func}: 'An invalid matrix value was passed!'")
 
 
 def load_bookmarks(bookmark_path: str) -> List[int]:
@@ -380,7 +332,7 @@ def frames_since_bookmark(clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoN
     return core.std.FrameEval(clip, partial(_frames_since_bookmark, clip=clip, bookmarks=bookmarks))
 
 
-def chroma_injector(func: F) -> F:
+def chroma_injector(func: VNodeCallable) -> VNodeCallable:
     """
     Inject reference chroma.
 
@@ -465,7 +417,7 @@ def chroma_injector(func: F) -> F:
         else:
             return allow_variable()(get_y)(result)
 
-    return cast(F, inner)
+    return cast(VNodeCallable, inner)
 
 
 def colored_clips(amount: int,
@@ -552,7 +504,7 @@ def allow_variable(width: int | None = None, height: int | None = None,
     if height is not None:
         width = width if width else get_w(height)
 
-    def inner(func: F) -> F:
+    def inner(func: VNodeCallable) -> VNodeCallable:
         @wraps(func)
         def inner2(clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
             def frameeval_wrapper(n: int, f: vs.VideoFrame) -> vs.VideoNode:
@@ -563,7 +515,7 @@ def allow_variable(width: int | None = None, height: int | None = None,
             clip_out = clip_out.resize.Point(width, height) if width and height else clip_out
             return core.std.FrameEval(clip_out, frameeval_wrapper, prop_src=[clip])
 
-        return cast(F, inner2)
+        return cast(VNodeCallable, inner2)
 
     return inner
 
