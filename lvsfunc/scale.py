@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import warnings
-from functools import partial
 from typing import Any, Callable, Dict, List
 
 import vapoursynth as vs
 import vsscale
-from vskernels import Bicubic, BicubicSharp, Catrom, Kernel, Spline36, Transfer, VSFunction, get_kernel, get_prop
+from vskernels import Bicubic, BicubicSharp, Catrom, Kernel, Spline36, Transfer, VSFunction, get_kernel
 from vsutil import depth, get_depth, get_w, get_y, iterate
 
-from .exceptions import CompareSameKernelError
-from .util import check_variable, check_variable_resolution, scale_thresh
+from .util import check_variable, scale_thresh
 
 try:
     from cytoolz import functoolz
@@ -24,11 +22,11 @@ core = vs.core
 
 
 __all__ = [
-    'comparative_descale',
-    'comparative_restore',
     'mixed_rescale',
     # Deprecated
     'descale',
+    'comparative_descale',
+    'comparative_restore',
     'descale_detail_mask',
     'ssim_downsample',
     'gamma2linear',
@@ -234,48 +232,20 @@ def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: in
 
     :raises CompareSameKernelError:     py:class:`vskernels.BicubicSharp` gets passed to ``kernel``.
     """
-    def _compare(n: int, f: List[vs.VideoFrame], sharp: vs.VideoNode, other: vs.VideoNode) -> vs.VideoNode:
-        sharp_diff = get_prop(f[0], 'PlaneStatsDiff', float)
-        other_diff = get_prop(f[1], 'PlaneStatsDiff', float)
 
-        return sharp if other_diff - thr > sharp_diff else other
+    warnings.warn(
+        'lvsfunc.comparative_descale: deprecated in favor of vsscale.descale with mode=DescaleMode.KernelDiff!',
+        DeprecationWarning
+    )
 
-    check_variable_resolution(clip, "comparative_descale")
-
-    if isinstance(kernel, str):
-        kernel = get_kernel(kernel)()
-
-    bsharp = BicubicSharp()
-    kernel = kernel or Spline36()
-
-    if isinstance(kernel, Bicubic) and bsharp.b == kernel.b and bsharp.c == kernel.c:
-        raise CompareSameKernelError("comparative_descale", kernel=bsharp)
-
-    if width is None:
-        width = get_w(height, aspect_ratio=clip.width/clip.height)
-
-    clip_y = get_y(clip)
-    # TODO: Add support for multiple scaler combos. Gotta rethink how `thr` will work tho
-    sharp = bsharp.descale(clip_y, width, height)
-    sharp_up = bsharp.scale(sharp, clip.width, clip.height)
-
-    # TODO: Fix so you can also pass additional params to object. Breaks currently (not callable)
-    other = kernel.descale(clip_y, width, height)
-    other_up = kernel.scale(other, clip.width, clip.height)
-
-    # We need a diff between the rescaled clips and the original clip
-    sharp_diff = core.std.PlaneStats(sharp_up, clip_y)
-    other_diff = core.std.PlaneStats(other_up, clip_y)
-
-    # Extra props for future frame evalling in case it might prove useful (credit masking, for example)
-    sharp = sharp.std.SetFrameProp('scaler', data=bsharp.__class__.__name__)
-    other = other.std.SetFrameProp('scaler', data=kernel.__class__.__name__)
-
-    return core.std.FrameEval(sharp, partial(_compare, sharp=sharp, other=other), [sharp_diff, other_diff])
+    return vsscale.descale(
+        clip, width, height, None, [BicubicSharp, kernel or Spline36],
+        mask=False, mode=vsscale.DescaleMode.KernelDiff(thr)
+    )
 
 
 def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: int = 720,
-                        kernel: Kernel | str | None = None) -> vs.VideoNode:
+                        kernel: Kernel | str | None = None, thr: float = 5e-8) -> vs.VideoNode:
     """
     Companion function for comparative_descale to reupscale the clip for descale detail masking.
 
@@ -291,28 +261,16 @@ def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: in
 
     :raises CompareSameKernelError:     py:class:`vskernels.BicubicSharp` gets passed to ``kernel``.
     """
-    check_variable_resolution(clip, "comparative_restore")
 
-    if isinstance(kernel, str):
-        kernel = get_kernel(kernel)()
+    warnings.warn(
+        'lvsfunc.comparative_restore: deprecated in favor of vsscale.descale with mode=DescaleMode.KernelDiff!',
+        DeprecationWarning
+    )
 
-    bsharp = BicubicSharp()
-    kernel = kernel or Spline36()
-
-    if isinstance(kernel, Bicubic) and bsharp.b == kernel.b and bsharp.c == kernel.c:
-        raise CompareSameKernelError("comparative_descale", kernel=bsharp)
-
-    if width is None:
-        width = get_w(height, aspect_ratio=clip.width/clip.height)
-
-    def _compare(n: int, f: vs.VideoFrame, sharp_up: vs.VideoNode, other_up: vs.VideoNode) -> vs.VideoNode:
-        return sharp_up if get_prop(f, 'scaler', bytes) == b'BicubicSharp' else other_up
-
-    # TODO: just read prop and automatically figure out scaler TBH
-    sharp_up = bsharp.scale(clip, width, height)
-    other_up = kernel.scale(clip, width, height)
-
-    return core.std.FrameEval(sharp_up, partial(_compare, sharp_up=sharp_up, other_up=other_up), clip)
+    return vsscale.descale(
+        clip, width, height, False, [BicubicSharp, kernel or Spline36],
+        mask=False, mode=vsscale.DescaleMode.KernelDiff(thr)
+    )
 
 
 def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 720,
