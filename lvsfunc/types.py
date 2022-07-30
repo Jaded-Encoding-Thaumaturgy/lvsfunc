@@ -4,9 +4,6 @@ from enum import IntEnum, auto
 from typing import Any, NamedTuple, Optional, Protocol, Tuple, Union
 
 import vapoursynth as vs
-from vskernels import VSFunction
-
-VSFunction
 
 __all__ = [
     'Coordinate', 'Direction', 'Position', 'Range', 'RegressClips', 'SceneChangeMode', 'Size', '_VideoNode'
