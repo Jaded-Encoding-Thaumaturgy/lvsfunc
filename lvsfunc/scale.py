@@ -141,6 +141,9 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
     """
     SSIM_downsample rewrite taken from a Vardë gist.
 
+    .. warning::
+        | This function has been deprecated! It will removed in a future commit.
+
     Unlike muvsfunc's implementation, this function also works in float and does not use nnedi3_resample.
     Most of the documentation is taken from muvsfunc.
 
@@ -195,7 +198,13 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
 def gamma2linear(clip: vs.VideoNode, curve: Transfer, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  epsilon: float = 1e-6) -> vs.VideoNode:
-    """Convert gamma to linear."""
+    """
+    Convert gamma to linear.
+    
+    .. warning::
+        | This function has been deprecated! It will removed in a future commit.
+
+    """
 
     warnings.warn('lvsfunc.gamma2linear: deprecated in favor of vsscale.gamma2linear!', DeprecationWarning)
 
@@ -205,7 +214,13 @@ def gamma2linear(clip: vs.VideoNode, curve: Transfer, gcor: float = 1.0,
 def linear2gamma(clip: vs.VideoNode, curve: Transfer, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  ) -> vs.VideoNode:
-    """Convert linear to gamma."""
+    """
+    Convert linear to gamma.
+    
+    .. warning::
+        | This function has been deprecated! It will removed in a future commit.
+
+    """
 
     warnings.warn('lvsfunc.linear2gamma: deprecated in favor of vsscale.linear2gamma!', DeprecationWarning)
 
