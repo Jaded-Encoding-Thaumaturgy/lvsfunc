@@ -10,10 +10,7 @@ Some of these may also be useful for regular scripting or other modules.
     lvsfunc.util.check_variable
     lvsfunc.util.chroma_injector
     lvsfunc.util.colored_clips
-    lvsfunc.util.force_mod
     lvsfunc.util.frames_since_bookmark
-    lvsfunc.util.get_coefs
-    lvsfunc.util.get_matrix_curve
     lvsfunc.util.get_prop
     lvsfunc.util.load_bookmarks
     lvsfunc.util.match_clip
