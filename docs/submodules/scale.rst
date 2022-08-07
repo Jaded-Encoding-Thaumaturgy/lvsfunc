@@ -12,7 +12,6 @@ lvsfunc.scale
     lvsfunc.scale.gamma2linear
     lvsfunc.scale.linear2gamma
     lvsfunc.scale.mixed_rescale
-    lvsfunc.scale.reupscale
     lvsfunc.scale.ssim_downsample
 
 .. automodule:: lvsfunc.scale

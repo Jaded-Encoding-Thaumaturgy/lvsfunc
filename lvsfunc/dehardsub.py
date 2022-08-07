@@ -12,7 +12,7 @@ from .util import check_variable, normalize_ranges, replace_ranges, scale_thresh
 
 core = vs.core
 
-__all__: List[str] = [
+__all__ = [
     'bounded_dehardsub',
     'get_all_masks',
     'hardsub_mask',

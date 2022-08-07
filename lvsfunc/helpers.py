@@ -4,7 +4,7 @@ import os
 import subprocess as sp
 from collections import deque
 from pathlib import Path
-from typing import Any, List, Tuple, cast
+from typing import Any, Tuple, cast
 
 import vapoursynth as vs
 from vsutil import is_image
@@ -13,7 +13,7 @@ from .types import IndexExists, VSIdxFunction
 
 core = vs.core
 
-__all__: List[str] = [
+__all__ = [
     '_check_has_nvidia',
     '_check_index_exists',
     '_generate_dgi',

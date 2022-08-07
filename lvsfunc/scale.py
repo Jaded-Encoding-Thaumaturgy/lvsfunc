@@ -1,19 +1,14 @@
 from __future__ import annotations
 
-import math
-from functools import partial
-from typing import Any, Callable, Dict, List, cast
+import warnings
+from typing import Any, Callable, Dict, List
 
 import vapoursynth as vs
-from vskernels import Bicubic, BicubicSharp, Catrom, Kernel, Spline36, VSFunction, get_kernel, get_matrix, get_prop
-from vsutil import depth, get_depth, get_w, get_y, iterate, join, plane
+import vsscale
+from vskernels import Bicubic, BicubicSharp, Catrom, Kernel, Spline36, Transfer, VSFunction, get_kernel
+from vsutil import depth, get_depth, get_w, get_y, iterate
 
-from .exceptions import CompareSameKernelError
-from .types import CURVES, CreditMask, CustomScaler, Resolution, ScaleAttempt
-from .util import (
-    check_variable, check_variable_format, check_variable_resolution, get_coefs, get_matrix_curve, quick_resample,
-    scale_thresh
-)
+from .util import check_variable, scale_thresh
 
 try:
     from cytoolz import functoolz
@@ -26,99 +21,17 @@ except ModuleNotFoundError:
 core = vs.core
 
 
-__all__: List[str] = [
+__all__ = [
+    'mixed_rescale',
+    # Deprecated
+    'descale',
     'comparative_descale',
     'comparative_restore',
     'descale_detail_mask',
-    'descale',
-    'gamma2linear',
-    'linear2gamma',
-    'mixed_rescale',
-    'reupscale',
     'ssim_downsample',
+    'gamma2linear',
+    'linear2gamma'
 ]
-
-
-def _transpose_shift(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
-                     kernel: Kernel, caller: str) -> vs.VideoNode:
-    h = f.height
-    w = f.width
-    clip = kernel.scale(clip, w, h*2, (0.5, 0))
-    return core.std.Transpose(clip)
-
-
-def _perform_descale(resolution: Resolution, clip: vs.VideoNode,
-                     kernel: Kernel) -> ScaleAttempt:
-    descaled = kernel.descale(clip, resolution.width, resolution.height) \
-        .std.SetFrameProp('descaleResolution', intval=resolution.height)
-    rescaled = kernel.scale(descaled, clip.width, clip.height)
-    diff = core.akarin.Expr([rescaled, clip], 'x y - abs').std.PlaneStats()
-    return ScaleAttempt(descaled, rescaled, resolution, diff)
-
-
-def _select_descale(n: int, f: vs.VideoFrame | List[vs.VideoFrame],
-                    threshold: float, clip: vs.VideoNode,
-                    clips_by_resolution: Dict[int, ScaleAttempt]
-                    ) -> vs.VideoNode:
-    if type(f) is vs.VideoFrame:
-        f = [f]
-    f = cast(List[vs.VideoFrame], f)
-    best_res = max(f, key=lambda frame:
-                   math.log(clip.height - get_prop(frame, "descaleResolution", int), 2)  # type:ignore[no-any-return]
-                   * round(1 / max(get_prop(frame, "PlaneStatsAverage", float), 1e-12))
-                   ** 0.2)
-
-    best_attempt = clips_by_resolution[get_prop(best_res, "descaleResolution", int)]
-    if threshold == 0:
-        return best_attempt.descaled
-    if get_prop(best_res, "PlaneStatsAverage", float) > threshold:
-        return clip
-    return best_attempt.descaled
-
-
-@functoolz.curry
-def reupscale(clip: vs.VideoNode,
-              width: int | None = None, height: int = 1080,
-              kernel: Kernel | str = Bicubic(b=0, c=1/2),
-              **kwargs: Any) -> vs.VideoNode:
-    """
-    Quick 'n easy wrapper to re-upscale a clip descaled with descale using znedi3.
-
-    Function is curried to allow parameter tuning when passing to :py:func:`lvsfunc.scale.descale`
-
-    Original function written by `Vardë <https://github.com/Ichunjo>`_, modified by LightArrowsEXE.
-
-    Dependencies:
-
-    * `znedi3 <https://github.com/sekrit-twc/znedi3>`_
-
-    :param clip:        Clip to process.
-    :param width:       Upscale width. If None, determine from `height` assuming 16:9 aspect ratio (Default: None).
-    :param height:      Upscale height (Default: 1080).
-    :param kernel:      py:class:`vskernels.Kernel` object used for downscaling the super-sampled clip.
-                        This can also be the string name of the kernel
-                        (Default: py:class:`vskernels.Bicubic(b=0, c=1/2)`).
-    :param kwargs:      Arguments passed to znedi3 (Default: nsize=4, nns=4, qual=2, pscrn=2).
-
-    :return:            Reupscaled clip.
-    """
-    width = width or get_w(height)
-
-    if isinstance(kernel, str):
-        kernel = get_kernel(kernel)()
-
-    # Doubling and downscale to given "h"
-    znargs: Dict[str, Any] = dict(nsize=4, nns=4, qual=2, pscrn=2)
-    znargs |= kwargs
-
-    upsc = quick_resample(clip, partial(core.znedi3.nnedi3, field=0, dh=True, **znargs))
-    upsc = core.std.FrameEval(upsc, partial(_transpose_shift, clip=upsc,
-                                            kernel=kernel,
-                                            caller="reupscale"),
-                              prop_src=upsc)
-    upsc = quick_resample(upsc, partial(core.znedi3.nnedi3, field=0, dh=True, **znargs))
-    return kernel.scale(upsc, width=height, height=width, shift=(0.5, 0)) \
-        .std.Transpose()
 
 
 @functoolz.curry
@@ -135,23 +48,22 @@ def descale_detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
 
     :return:               Mask of lost detail.
     """
-    check_variable_resolution(clip, "descale_detail_mask")
-    check_variable_resolution(rescaled_clip, "descale_detail_mask")
 
-    mask = core.akarin.Expr([get_y(clip), get_y(rescaled_clip)], 'x y - abs') \
-        .std.Binarize(threshold)
-    mask = iterate(mask, core.std.Maximum, 4)
-    return iterate(mask, core.std.Inflate, 2).std.Limiter()
+    warnings.warn(
+        'lvsfunc.descale_detail_mask: deprecated in favor of vsscale.descale_detail_mask!', DeprecationWarning
+    )
+
+    return vsscale.descale_detail_mask(clip, rescaled_clip, threshold)
 
 
 def descale(clip: vs.VideoNode,
             upscaler:
-            Callable[[vs.VideoNode, int, int], vs.VideoNode] | None = reupscale,
+            Callable[[vs.VideoNode, int, int], vs.VideoNode] | None = None,
             width: int | List[int] | None = None,
             height: int | List[int] = 720,
             kernel: Kernel | str = Bicubic(b=0, c=1/2),
             threshold: float = 0.0,
-            mask: CreditMask | vs.VideoNode | None
+            mask: vsscale.CreditMaskT | vs.VideoNode | None
             = descale_detail_mask, src_left: float = 0.0, src_top: float = 0.0,
             show_mask: bool = False) -> vs.VideoNode:
     """
@@ -203,100 +115,34 @@ def descale(clip: vs.VideoNode,
     :raises ValueError:     Asymmetric number of heights and widths are specified.
     :raises RuntimeError:   Variable clip gets returned.
     """
-    assert check_variable(clip, "descale")
 
-    if isinstance(kernel, str):
-        kernel = get_kernel(kernel)()
+    warnings.warn(
+        'lvsfunc.descale_detail_mask: deprecated in favor of vsscale.descale_detail_mask!', DeprecationWarning
+    )
 
-    if type(height) is int:
-        height = [height]
+    up_func = upscaler and vsscale.GenericScaler(upscaler)
 
-    height = cast(List[int], height)
+    out = vsscale.descale(  # type: ignore
+        clip, width, height, up_func, kernel, (src_top, src_left), mask,
+        vsscale.DescaleMode.PlaneAverage(threshold), show_mask
+    )
 
-    if type(width) is int:
-        width = [width]
-    elif width is None:
-        width = [get_w(h, aspect_ratio=clip.width/clip.height) for h in height]
+    if show_mask:
+        return out[1]  # type: ignore
 
-    width = cast(List[int], width)
-
-    if len(width) != len(height):
-        raise ValueError("descale: Asymmetric number of heights and widths specified!")
-
-    resolutions = [Resolution(*r) for r in zip(width, height)]
-
-    clip = depth(clip, 32)
-    clip_y = get_y(clip) \
-        .std.SetFrameProp('descaleResolution', intval=clip.height)
-
-    variable_res_clip = core.std.Splice([
-        core.std.BlankClip(clip_y, length=len(clip) - 1),
-        core.std.BlankClip(clip_y, length=1, width=clip.width + 1)
-    ], mismatch=True)
-
-    descale_partial = partial(_perform_descale, clip=clip_y, kernel=kernel)
-    clips_by_resolution = {c.resolution.height:
-                           c for c in map(descale_partial, resolutions)}
-
-    props = [c.diff for c in clips_by_resolution.values()]
-    select_partial = partial(_select_descale, threshold=threshold,
-                             clip=clip_y,
-                             clips_by_resolution=clips_by_resolution)
-
-    descaled = core.std.FrameEval(variable_res_clip, select_partial,
-                                  prop_src=props)
-
-    if src_left != 0 or src_top != 0:
-        descaled = core.resize.Bicubic(descaled, src_left=src_left,
-                                       src_top=src_top)
-
-    if upscaler is None:
-        upscaled = descaled
-        if len(height) == 1:
-            upscaled = core.resize.Point(upscaled, width[0], height[0])
-        else:
-            return upscaled
-    else:
-        upscaled = upscaler(descaled, clip.width, clip.height)
-
-    if src_left != 0 or src_top != 0:
-        upscaled = core.resize.Bicubic(descaled, src_left=-src_left,
-                                       src_top=-src_top)
-
-    if upscaled.format is None:
-        raise RuntimeError("descale: 'Upscaler cannot return variable-format clips!'")
-
-    if mask:
-        clip_y = clip_y.resize.Point(format=upscaled.format.id)
-        rescaled = kernel.scale(descaled, clip.width, clip.height,
-                                (src_left, src_top))
-        rescaled = rescaled.resize.Point(format=clip.format.id)  # type:ignore[union-attr]
-
-        dmask = mask if isinstance(mask, vs.VideoNode) else mask(clip_y, rescaled)
-
-        if upscaler is None:
-            dmask = core.resize.Spline36(dmask, upscaled.width, upscaled.height)
-            clip_y = core.resize.Spline36(clip_y, upscaled.width, upscaled.height)
-
-        if show_mask:
-            return dmask
-
-        upscaled = core.std.MaskedMerge(upscaled, clip_y, dmask)
-
-    upscaled = depth(upscaled, get_depth(clip))
-
-    if clip.format.num_planes == 1 or upscaler is None:  # type:ignore[union-attr]
-        return upscaled
-    return join([upscaled, plane(clip, 1), plane(clip, 2)])
+    return out  # type: ignore
 
 
 def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 720,
                     smooth: float | VSFunction = ((3 ** 2 - 1) / 12) ** 0.5,
                     kernel: Kernel | str = Bicubic(b=0, c=1/2), gamma: bool = False,
-                    curve: CURVES | None = None,
+                    curve: Transfer | None = None,
                     sigmoid: bool = False, epsilon: float = 1e-6) -> vs.VideoNode:
     """
     SSIM_downsample rewrite taken from a Vardë gist.
+
+    .. warning::
+        | This function has been deprecated! It will be removed in a future commit.
 
     Unlike muvsfunc's implementation, this function also works in float and does not use nnedi3_resample.
     Most of the documentation is taken from muvsfunc.
@@ -338,92 +184,47 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
 
     :return:            Downsampled clip.
     """
-    assert check_variable(clip, "ssim_downsample")
+
+    warnings.warn('lvsfunc.ssim_downsample: deprecated in favor of vsscale.SSIM!', DeprecationWarning)
 
     if isinstance(kernel, str):
         kernel = get_kernel(kernel)()
 
-    if isinstance(smooth, int):
-        filter_func = partial(core.std.BoxBlur, hradius=smooth, vradius=smooth)
-    elif isinstance(smooth, float):
-        filter_func = partial(core.tcanny.TCanny, sigma=smooth, mode=-1)
-    else:
-        filter_func = smooth  # type: ignore[assignment]
-
-    if width is None:
-        width = get_w(height, aspect_ratio=clip.width/clip.height)
-
-    bits = get_depth(clip)
-    clip = depth(clip, 32)
-
-    if gamma:
-        curve = curve or get_matrix_curve(get_matrix(clip))
-        clip = gamma2linear(clip, curve, sigmoid=sigmoid, epsilon=epsilon)
-
-    l1 = kernel.scale(clip, width, height)
-    l2 = kernel.scale(clip.akarin.Expr('x dup *'), width, height)
-
-    m = filter_func(l1)
-
-    sl_plus_m_square = filter_func(l1.akarin.Expr('x dup *'))
-    sh_plus_m_square = filter_func(l2)
-    m_square = m.akarin.Expr('x dup *')
-    r = core.akarin.Expr([sl_plus_m_square, sh_plus_m_square, m_square], f'x z - {epsilon} < 0 y z - x z - / sqrt ?')
-    t = filter_func(core.akarin.Expr([r, m], 'x y *'))
-    m = filter_func(m)
-    r = filter_func(r)
-    d = core.akarin.Expr([m, r, l1, t], 'x y z * + a -')
-
-    if gamma:
-        curve = cast(CURVES, curve)
-        return linear2gamma(d, curve, sigmoid=sigmoid)
-    return depth(d, bits)
+    return vsscale.ssim_downsample(
+        clip, width, height, smooth, kernel, gamma if curve is None else curve, sigmoid
+    )
 
 
-def gamma2linear(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
+def gamma2linear(clip: vs.VideoNode, curve: Transfer, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  epsilon: float = 1e-6) -> vs.VideoNode:
-    """Convert gamma to linear."""
-    assert check_variable_format(clip, "gamma2linear")
+    """
+    Convert gamma to linear.
 
-    if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
-        raise ValueError("gamma2linear: 'Your clip must be 32bit float!'")
+    .. warning::
+        | This function has been deprecated! It will be removed in a future commit.
 
-    c = get_coefs(curve)
+    """
 
-    expr = f'x {c.k0} <= x {c.phi} / x {c.alpha} + 1 {c.alpha} + / {c.gamma} pow ? {gcor} pow'
-    if sigmoid:
-        x0 = f'1 1 {cont} {thr} * exp + /'
-        x1 = f'1 1 {cont} {thr} 1 - * exp + /'
-        expr = f'{thr} 1 {expr} {x1} {x0} - * {x0} + {epsilon} max / 1 - {epsilon} max log {cont} / -'
+    warnings.warn('lvsfunc.gamma2linear: deprecated in favor of vsscale.gamma2linear!', DeprecationWarning)
 
-    expr = f'{expr} 0.0 max 1.0 min'
-
-    return core.akarin.Expr(clip, expr).std.SetFrameProps(_Transfer=8)
+    return vsscale.gamma2linear(clip, curve, gcor, sigmoid, thr, cont, epsilon)
 
 
-def linear2gamma(clip: vs.VideoNode, curve: CURVES, gcor: float = 1.0,
+def linear2gamma(clip: vs.VideoNode, curve: Transfer, gcor: float = 1.0,
                  sigmoid: bool = False, thr: float = 0.5, cont: float = 6.5,
                  ) -> vs.VideoNode:
-    """Convert linear to gamma."""
-    assert check_variable_format(clip, "linear2gamma")
+    """
+    Convert linear to gamma.
 
-    if get_depth(clip) != 32 and clip.format.sample_type != vs.FLOAT:
-        raise ValueError("linear2gamma: 'Your clip must be 32bit float!'")
+    .. warning::
+        | This function has been deprecated! It will be removed in a future commit.
 
-    c = get_coefs(curve)
+    """
 
-    expr = 'x'
-    if sigmoid:
-        x0 = f'1 1 {cont} {thr} * exp + /'
-        x1 = f'1 1 {cont} {thr} 1 - * exp + /'
-        expr = f'1 1 {cont} {thr} {expr} - * exp + / {x0} - {x1} {x0} - /'
+    warnings.warn('lvsfunc.linear2gamma: deprecated in favor of vsscale.linear2gamma!', DeprecationWarning)
 
-    expr += f' {gcor} pow'
-    expr = f'{expr} {c.k0} {c.phi} / <= {expr} {c.phi} * {expr} 1 {c.gamma} / pow {c.alpha} 1 + * {c.alpha} - ?'
-    expr = f'{expr} 0.0 max 1.0 min'
-
-    return core.akarin.Expr(clip, expr).std.SetFrameProps(_Transfer=curve)
+    return vsscale.linear2gamma(clip, curve, gcor, sigmoid, thr, cont)
 
 
 def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: int = 720,
@@ -446,48 +247,20 @@ def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: in
 
     :raises CompareSameKernelError:     py:class:`vskernels.BicubicSharp` gets passed to ``kernel``.
     """
-    def _compare(n: int, f: vs.VideoFrame, sharp: vs.VideoNode, other: vs.VideoNode) -> vs.VideoNode:
-        sharp_diff = get_prop(f[0], 'PlaneStatsDiff', float)  # type:ignore[arg-type]
-        other_diff = get_prop(f[1], 'PlaneStatsDiff', float)  # type:ignore[arg-type]
 
-        return sharp if other_diff - thr > sharp_diff else other
+    warnings.warn(
+        'lvsfunc.comparative_descale: deprecated in favor of vsscale.descale with mode=DescaleMode.KernelDiff!',
+        DeprecationWarning
+    )
 
-    check_variable_resolution(clip, "comparative_descale")
-
-    if isinstance(kernel, str):
-        kernel = get_kernel(kernel)()
-
-    bsharp = BicubicSharp()
-    kernel = kernel or Spline36()
-
-    if isinstance(kernel, Bicubic) and bsharp.b == kernel.b and bsharp.c == kernel.c:
-        raise CompareSameKernelError("comparative_descale", kernel=bsharp)
-
-    if width is None:
-        width = get_w(height, aspect_ratio=clip.width/clip.height)
-
-    clip_y = get_y(clip)
-    # TODO: Add support for multiple scaler combos. Gotta rethink how `thr` will work tho
-    sharp = bsharp.descale(clip_y, width, height)
-    sharp_up = bsharp.scale(sharp, clip.width, clip.height)
-
-    # TODO: Fix so you can also pass additional params to object. Breaks currently (not callable)
-    other = kernel.descale(clip_y, width, height)
-    other_up = kernel.scale(other, clip.width, clip.height)
-
-    # We need a diff between the rescaled clips and the original clip
-    sharp_diff = core.std.PlaneStats(sharp_up, clip_y)
-    other_diff = core.std.PlaneStats(other_up, clip_y)
-
-    # Extra props for future frame evalling in case it might prove useful (credit masking, for example)
-    sharp = sharp.std.SetFrameProp('scaler', data=bsharp.__class__.__name__)
-    other = other.std.SetFrameProp('scaler', data=kernel.__class__.__name__)
-
-    return core.std.FrameEval(sharp, partial(_compare, sharp=sharp, other=other), [sharp_diff, other_diff])
+    return vsscale.descale(
+        clip, width, height, None, [BicubicSharp, kernel or Spline36],
+        mask=False, mode=vsscale.DescaleMode.KernelDiff(thr)
+    )
 
 
 def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: int = 720,
-                        kernel: Kernel | str | None = None) -> vs.VideoNode:
+                        kernel: Kernel | str | None = None, thr: float = 5e-8) -> vs.VideoNode:
     """
     Companion function for comparative_descale to reupscale the clip for descale detail masking.
 
@@ -503,34 +276,22 @@ def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: in
 
     :raises CompareSameKernelError:     py:class:`vskernels.BicubicSharp` gets passed to ``kernel``.
     """
-    check_variable_resolution(clip, "comparative_restore")
 
-    if isinstance(kernel, str):
-        kernel = get_kernel(kernel)()
+    warnings.warn(
+        'lvsfunc.comparative_restore: deprecated in favor of vsscale.descale with mode=DescaleMode.KernelDiff!',
+        DeprecationWarning
+    )
 
-    bsharp = BicubicSharp()
-    kernel = kernel or Spline36()
-
-    if isinstance(kernel, Bicubic) and bsharp.b == kernel.b and bsharp.c == kernel.c:
-        raise CompareSameKernelError("comparative_descale", kernel=bsharp)
-
-    if width is None:
-        width = get_w(height, aspect_ratio=clip.width/clip.height)
-
-    def _compare(n: int, f: vs.VideoFrame, sharp_up: vs.VideoNode, other_up: vs.VideoNode) -> vs.VideoNode:
-        return sharp_up if get_prop(f, 'scaler', bytes) == b'BicubicSharp' else other_up
-
-    # TODO: just read prop and automatically figure out scaler TBH
-    sharp_up = bsharp.scale(clip, width, height)
-    other_up = kernel.scale(clip, width, height)
-
-    return core.std.FrameEval(sharp_up, partial(_compare, sharp_up=sharp_up, other_up=other_up), clip)
+    return vsscale.descale(
+        clip, width, height, False, [BicubicSharp, kernel or Spline36],
+        mask=False, mode=vsscale.DescaleMode.KernelDiff(thr)
+    )
 
 
 def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 720,
                   kernel: Kernel | str = Bicubic(b=0, c=1/2),
-                  downscaler: CustomScaler | Kernel | str = ssim_downsample,
-                  credit_mask: CreditMask | vs.VideoNode | None = descale_detail_mask, mask_thr: float = 0.05,
+                  downscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode] | Kernel | str = ssim_downsample,
+                  credit_mask: vsscale.CreditMaskT | vs.VideoNode | None = descale_detail_mask, mask_thr: float = 0.05,
                   mix_strength: float = 0.25, show_mask: bool | int = False,
                   nnedi3_args: Dict[str, Any] = {}, eedi3_args: Dict[str, Any] = {}) -> vs.VideoNode:
     """

@@ -1,22 +1,37 @@
 # flake8: noqa
 
-import typing
+from typing import Any, Mapping, Optional, Union
 
 import vapoursynth as vs
 
 
-def SMDegrain(input: vs.VideoNode, tr: typing.Literal[1, 2, 3] = 2, thSAD: int = 300, thSADC: typing.Optional[int] = None, RefineMotion: bool = False,
-              contrasharp: typing.Union[bool, int, None] = None, CClip: typing.Optional[vs.VideoNode] = None, interlaced: bool = False, tff: typing.Optional[bool] = None,
-              plane: int = 4, Globals: int = 0, pel: typing.Optional[typing.Literal[1, 2, 4]] = None, subpixel: typing.Literal[0, 1, 2] = 2, prefilter: typing.Union[int, vs.VideoNode] = -1,
-              mfilter: typing.Optional[vs.VideoNode] = None, blksize: typing.Optional[typing.Literal[4, 8, 16, 32]] = None, overlap: typing.Optional[int] = None, search: int = 4,
-              truemotion: typing.Optional[bool] = None, MVglobal: typing.Optional[bool] = None, dct: int = 0, limit: int = 255, limitc: typing.Optional[int] = None,
-              thSCD1: int = 400, thSCD2: int = 130, chroma: bool = True, hpad: typing.Optional[int] = None, vpad: typing.Optional[int] = None,
-              Str: float = 1.0, Amp: float = 0.0625) -> vs.VideoNode: ...
-
-
-def QTGMC(clip: vs.VideoNode, *args: typing.Any, **kwargs: typing.Any) -> vs.VideoNode: ...
-
-def DitherLumaRebuild(src: vs.VideoNode, s0: float = 2.0, c: float = 0.0625, chroma: bool = True) -> vs.VideoNode: ...
-
-def DeHalo_alpha(clp: vs.VideoNode, rx: float = 2.0, ry: float = 2.0, darkstr: float = 1.0, brightstr: float = 1.0,
-                 lowsens: float = 50.0, highsens: float = 50.0, ss: float = 1.5) -> vs.VideoNode: ...
+def QTGMC(
+    Input: vs.VideoNode, Preset: str = 'Slower',
+    TR0: Optional[int] = None, TR1: Optional[int] = None, TR2: Optional[int] = None,
+    Rep0: Optional[int] = None, Rep1: int = 0, Rep2: Optional[int] = None,
+    EdiMode: Optional[str] = None, RepChroma: bool = True, NNSize: Optional[int] = None,
+    NNeurons: Optional[int] = None, EdiQual: int = 1, EdiMaxD: Optional[int] = None,
+    ChromaEdi: str = '', EdiExt: Optional[vs.VideoNode] = None, Sharpness: Optional[float] = None,
+    SMode: Optional[int] = None, SLMode: Optional[int] = None, SLRad: Optional[int] = None,
+    SOvs: int = 0, SVThin: float = 0.0, Sbb: Optional[int] = None, SrchClipPP: Optional[int] = None,
+    SubPel: Optional[int] = None, SubPelInterp: int = 2, BlockSize: Optional[int] = None,
+    Overlap: Optional[int] = None, Search: Optional[int] = None, SearchParam: Optional[int] = None, 
+    elSearch: Optional[int] = None, ChromaMotion: Optional[bool] = None, TrueMotion: bool = False,
+    Lambda: Optional[int] = None, LSAD: Optional[int] = None, PNew: Optional[int] = None,
+    PLevel: Optional[int] = None, GlobalMotion: bool = True, DCT: int = 0, ThSAD1: int = 640,
+    ThSAD2: int = 256, ThSCD1: int = 180, ThSCD2: int = 98, SourceMatch: int = 0,
+    MatchPreset: Optional[str] = None, MatchEdi: Optional[str] = None, MatchPreset2: Optional[str] = None,
+    MatchEdi2: Optional[str] = None, MatchTR2: int = 1, MatchEnhance: float = 0.5, Lossless: int = 0,
+    NoiseProcess: Optional[int] = None, EZDenoise: Optional[float] = None, EZKeepGrain: Optional[float] = None,
+    NoisePreset: str = 'Fast', Denoiser: Optional[str] = None, FftThreads: int = 1, DenoiseMC: Optional[bool] = None,
+    NoiseTR: Optional[int] = None, Sigma: Optional[float] = None, ChromaNoise: bool = False,
+    ShowNoise: Union[bool, float] = 0.0, GrainRestore: Optional[float] = None, NoiseRestore: Optional[float] = None,
+    NoiseDeint: Optional[str] = None, StabilizeNoise: Optional[bool] = None, InputType: int = 0,
+    ProgSADMask: Optional[float] = None, FPSDivisor: int = 1, ShutterBlur: int = 0, ShutterAngleSrc: float = 180.0,
+    ShutterAngleOut: float = 180.0, SBlurLimit: int = 4, Border: bool = False, Precise: Optional[bool] = None,
+    Tuning: str = 'None', ShowSettings: bool = False, GlobalNames: str = 'QTGMC', PrevGlobals: str = 'Replace',
+    ForceTR: int = 0, Str: float = 2.0, Amp: float = 0.0625, FastMA: bool = False, ESearchP: bool = False,
+    RefineMotion: bool = False, TFF: Optional[bool] = None, nnedi3_args: Mapping[str, Any] = {},
+    eedi3_args: Mapping[str, Any] = {}, opencl: bool = False, device: Optional[int] = None,
+) -> vs.VideoNode:
+    ...

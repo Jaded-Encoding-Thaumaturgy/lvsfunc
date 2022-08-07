@@ -9,16 +9,15 @@ Don't tell louis this exists though, else I'm a dead man.
 """
 from __future__ import annotations
 
-from typing import List
-
 import vapoursynth as vs
+from vsexprtools import mod_x
 from vskernels import Point
 
-from .util import check_variable_resolution, force_mod
+from .util import check_variable_resolution
 
 core = vs.core
 
-__all__: List[str] = [
+__all__ = [
     'minecraftify'
 ]
 
@@ -40,7 +39,7 @@ def minecraftify(clip: vs.VideoNode, div: float = 64.0, mod: int | None = None) 
     ow, oh = round(clip.width/div), round(clip.height/div)
 
     if mod is not None:
-        ow, oh = force_mod(ow, mod), force_mod(oh, mod)
+        ow, oh = mod_x(ow, mod), mod_x(oh, mod)
 
     i444 = core.resize.Bicubic(clip, format=vs.YUV444PS)
     down = Point().scale(i444, ow, oh)
