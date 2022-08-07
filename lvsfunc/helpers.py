@@ -7,7 +7,10 @@ from pathlib import Path
 from typing import Any, Tuple, cast
 
 import vapoursynth as vs
-from vsutil import is_image
+from vsexprtools import PlanesT, normalise_planes
+from vsutil import Dither
+from vsutil import Range as CRange
+from vsutil import depth, get_depth, get_neutral_value, get_peak_value, is_image, join, scale_value, split
 
 from .types import IndexExists, VSIdxFunction
 
@@ -98,3 +101,40 @@ def _load_dgi(path: str, film_thr: float, src_filter: VSIdxFunction,
         props |= dict(dgi_fieldop=1, _FieldBased=0)
 
     return src_filter(path, **index_args).std.SetFrameProps(**props)
+
+
+def _prefilter_to_full_range(pref: vs.VideoNode, range_conversion: float, planes: PlanesT = None) -> vs.VideoNode:
+    """From vsdenoise, will be removed once it has been made public."""
+    planes = normalise_planes(pref, planes)
+    work_clip, *chroma = split(pref) if planes == [0] else (pref, )
+    assert (fmt := work_clip.format) and pref.format
+
+    bits = get_depth(pref)
+    is_gray = fmt.color_family == vs.GRAY
+    is_integer = fmt.sample_type == vs.INTEGER
+
+    # Luma expansion TV->PC (up to 16% more values for motion estimation)
+    if range_conversion >= 1.0:
+        neutral = get_neutral_value(work_clip, True)
+        max_val = get_peak_value(work_clip)
+        min_tv_val = scale_value(16, 8, bits)
+        max_tv_val = scale_value(219, 8, bits)
+
+        c = 0.0625
+
+        k = (range_conversion - 1) * c
+        t = f'x {min_tv_val} - {max_tv_val} / 0 max 1 min' if is_integer else 'x 0 max 1 min'
+
+        pref_full = work_clip.std.Expr([
+            f"{k} {1 + c} {(1 + c) * c} {t} {c} + / - * {t} 1 {k} - * + {f'{max_val} *' if is_integer else ''}",
+            f'x {neutral} - 128 * 112 / {neutral} +'
+        ][:1 + (not is_gray and is_integer)])
+    elif range_conversion > 0.0:
+        pref_full = work_clip.retinex.MSRCP(None, range_conversion, None, False, True)
+    else:
+        pref_full = depth(work_clip, bits, range=CRange.FULL, range_in=CRange.LIMITED, dither_type=Dither.NONE)
+
+    if chroma:
+        return join([pref_full, *chroma], pref.format.color_family)
+
+    return pref_full

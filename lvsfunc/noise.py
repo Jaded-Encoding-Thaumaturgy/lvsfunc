@@ -4,7 +4,6 @@ import warnings
 from typing import Any, Dict, List
 
 import vapoursynth as vs
-import vsdenoise
 from vskernels import Bicubic, Kernel, Matrix, get_kernel, get_prop
 from vsutil import Dither, depth, get_depth, get_y, join, plane
 
@@ -52,6 +51,7 @@ def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
     :raises ValueError:     Invalid number of sigma parameters were passed.
     :raises ValueError:     Invalid number of radii parameters were passed.
     """
+    import vsdenoise
 
     warnings.warn('lvsfunc.bm3d: deprecated in favor of vsdenoise.BM3D!', DeprecationWarning)
 

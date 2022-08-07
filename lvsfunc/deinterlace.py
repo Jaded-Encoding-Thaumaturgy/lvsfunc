@@ -14,10 +14,10 @@ from vsexprtools import mod2, mod4
 from vskernels import Bicubic, BicubicDidee, Catrom, Kernel, get_kernel, get_prop
 from vsrgtools import repair
 from vsutil import Dither, depth, get_depth, get_neutral_value, get_w, get_y, scale_value
-from vsdenoise import prefilter_to_full_range
 
 from .comparison import Stack
 from .exceptions import InvalidFramerateError, TopFieldFirstError
+from .helpers import _prefilter_to_full_range
 from .render import clip_async_render, get_render_progress
 from .types import Direction
 from .util import check_variable, check_variable_format
@@ -634,7 +634,7 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
             else:
                 jitter = bobbed.std.SelectEvery(5, [3 - invpos, 4 - invpos])
 
-        jsup_pre = prefilter_to_full_range(jitter, 1.0).mv.Super(pel=2)
+        jsup_pre = _prefilter_to_full_range(jitter, 1.0).mv.Super(pel=2)
         jsup = jitter.mv.Super(pel=2, levels=1)
         vect_f = jsup_pre.mv.Analyse(blksize=blksize, isb=False, delta=1, overlap=overlap)
         vect_b = jsup_pre.mv.Analyse(blksize=blksize, isb=True, delta=1, overlap=overlap)
@@ -676,13 +676,13 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
             else:
                 c2 = bobbed.std.SelectEvery(10, [offset, 1 + offset, 6 + offset, 5 + offset])
 
-        super1_pre = prefilter_to_full_range(c1, 1.0).mv.Super(pel=2)
+        super1_pre = _prefilter_to_full_range(c1, 1.0).mv.Super(pel=2)
         super1 = c1.mv.Super(pel=2, levels=1)
         vect_f1 = super1_pre.mv.Analyse(blksize=blksize, isb=False, delta=1, overlap=overlap)
         vect_b1 = super1_pre.mv.Analyse(blksize=blksize, isb=True, delta=1, overlap=overlap)
         fix1 = c1.mv.FlowInter(super1, vect_b1, vect_f1, time=50 + direction * 25).std.SelectEvery(4, [0, 2])
 
-        super2_pre = prefilter_to_full_range(c2, 1.0).mv.Super(pel=2)
+        super2_pre = _prefilter_to_full_range(c2, 1.0).mv.Super(pel=2)
         super2 = c2.mv.Super(pel=2, levels=1)
         vect_f2 = super2_pre.mv.Analyse(blksize=blksize, isb=False, delta=1, overlap=overlap)
         vect_b2 = super2_pre.mv.Analyse(blksize=blksize, isb=True, delta=1, overlap=overlap)
