@@ -34,7 +34,7 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
     Clamp stronger AAs to weaker AAs.
 
     .. warning::
-        | This function has been deprecated! It will removed in a future commit.
+        | This function has been deprecated! It will be removed in a future commit.
 
     Useful for clamping :py:func:`lvsfunc.aa.upscaled_sraa` or :py:func:`lvsfunc.aa.eedi3`
     to :py:func:`lvsfunc.aa.nnedi3` for a strong but more precise AA.
@@ -59,7 +59,7 @@ def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode] | Sing
     Perform transpose AA.
 
     .. warning::
-        | This function has been deprecated! It will removed in a future commit.
+        | This function has been deprecated! It will be removed in a future commit.
 
     Example for nnedi3cl: taa(clip, nnedi3(opencl=True))
 
@@ -88,7 +88,7 @@ def nnedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs
     Generate nnedi3 antialiaser.
 
     .. warning::
-        | This function has been deprecated! It will removed in a future commit.
+        | This function has been deprecated! It will be removed in a future commit.
 
     Dependencies:
 
@@ -113,7 +113,7 @@ def eedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs.
     Generate eedi3 antialiaser.
 
     .. warning::
-        | This function has been deprecated! It will removed in a future commit.
+        | This function has been deprecated! It will be removed in a future commit.
 
     Dependencies:
 
@@ -139,7 +139,7 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
     Clamp eedi3 to nnedi3 for the purpose of reducing eedi3 artifacts.
 
     .. warning::
-        | This function has been deprecated! It will removed in a future commit.
+        | This function has been deprecated! It will be removed in a future commit.
 
     This should fix `every issue created by eedi3 <https://i.imgur.com/hYVhetS.jpg>`_.
 
@@ -165,7 +165,7 @@ def transpose_aa(clip: vs.VideoNode, eedi3: bool = False, rep: int = 13) -> vs.V
     Tranpose and aa a clip multiple times using nnedi3/eedi3.
 
     .. warning::
-        | This function has been deprecated! It will removed in a future commit.
+        | This function has been deprecated! It will be removed in a future commit.
 
     This results in overall stronger anti-aliasing.
     Useful for shows like Yuru Camp with bad line-art problems.
@@ -202,7 +202,7 @@ def upscaled_sraa(clip: vs.VideoNode,
     Super-sampled single-rate AA for heavy aliasing and broken line-art.
 
     .. warning::
-        | This function has been deprecated! It will removed in a future commit.
+        | This function has been deprecated! It will be removed in a future commit.
 
     It works by super-sampling the clip, performing AA, and then downscaling again.
     Downscaling can be disabled by setting `downscaler` to `None`, returning the super-sampled luma clip.

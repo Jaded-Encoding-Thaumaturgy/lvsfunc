@@ -142,7 +142,7 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
     SSIM_downsample rewrite taken from a Vardë gist.
 
     .. warning::
-        | This function has been deprecated! It will removed in a future commit.
+        | This function has been deprecated! It will be removed in a future commit.
 
     Unlike muvsfunc's implementation, this function also works in float and does not use nnedi3_resample.
     Most of the documentation is taken from muvsfunc.
@@ -202,7 +202,7 @@ def gamma2linear(clip: vs.VideoNode, curve: Transfer, gcor: float = 1.0,
     Convert gamma to linear.
 
     .. warning::
-        | This function has been deprecated! It will removed in a future commit.
+        | This function has been deprecated! It will be removed in a future commit.
 
     """
 
@@ -218,7 +218,7 @@ def linear2gamma(clip: vs.VideoNode, curve: Transfer, gcor: float = 1.0,
     Convert linear to gamma.
 
     .. warning::
-        | This function has been deprecated! It will removed in a future commit.
+        | This function has been deprecated! It will be removed in a future commit.
 
     """
 

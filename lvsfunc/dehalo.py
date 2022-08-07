@@ -176,7 +176,7 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     Light's rewrite of fine_dehalo.py.
 
     .. warning::
-        | This function has been deprecated! It will removed in a future commit.
+        | This function has been deprecated! It will be removed in a future commit.
 
     This is a slight rewrite of the standalone script that has been floating around
     with support for a ``ref`` clip. Original can be found in havsfunc if requested.

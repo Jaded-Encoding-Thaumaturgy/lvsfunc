@@ -28,7 +28,7 @@ def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
     BM3D denoising filter using the CPU.
 
     .. warning::
-        | This function has been deprecated! It will removed in a future commit.
+        | This function has been deprecated! It will be removed in a future commit.
 
     Dependencies:
 
