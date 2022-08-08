@@ -10,7 +10,6 @@ from vsutil import depth, get_depth, get_w, get_y, iterate
 
 from .util import check_variable, scale_thresh
 
-
 core = vs.core
 
 

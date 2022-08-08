@@ -11,9 +11,8 @@ from vsrgtools import removegrain
 from vsutil import Range as CRange
 from vsutil import depth, get_depth, get_y, iterate, join, split
 
-from . import util
 from .types import Position, Range, Shapes, Size
-from .util import check_variable, check_variable_resolution, replace_ranges, scale_peak, scale_thresh
+from .util import check_variable, check_variable_resolution, quick_resample, replace_ranges, scale_peak, scale_thresh
 
 core = vs.core
 
@@ -60,7 +59,7 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
     brz_a = scale_thresh(brz_a, clip)
     brz_b = scale_thresh(brz_b, clip)
 
-    blur = (util.quick_resample(clip, partial(core.bilateral.Gaussian, sigma=sigma))
+    blur = (quick_resample(clip, partial(core.bilateral.Gaussian, sigma=sigma))
             if sigma else clip)
 
     mask_a = range_mask(get_y(blur), rad=rad)

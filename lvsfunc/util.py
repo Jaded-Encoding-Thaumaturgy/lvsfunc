@@ -8,7 +8,7 @@ from typing import Any, Callable, Dict, List, Tuple, cast
 
 import vapoursynth as vs
 from typing_extensions import TypeGuard
-from vskernels import Bicubic, Kernel, get_kernel, get_matrix, get_prop, VNodeCallable
+from vskernels import Bicubic, Kernel, VNodeCallable, get_kernel, get_matrix, get_prop
 from vsutil import depth, get_subsampling, get_w, get_y
 
 from .exceptions import InvalidFormatError, VariableFormatError, VariableResolutionError
