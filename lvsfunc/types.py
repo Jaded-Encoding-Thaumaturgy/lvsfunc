@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import IntEnum, auto
-from typing import Any, NamedTuple, Optional, Protocol, Tuple, Union
+from typing import Any, NamedTuple, Protocol, Tuple
 
 import vapoursynth as vs
 
@@ -9,7 +9,7 @@ __all__ = [
     'Coordinate', 'Direction', 'Position', 'Range', 'RegressClips', 'SceneChangeMode', 'Size', '_VideoNode'
 ]
 
-Range = Union[Optional[int], Tuple[Optional[int], Optional[int]]]
+Range = int | None | Tuple[int | None, int | None]
 
 
 class Coordinate():

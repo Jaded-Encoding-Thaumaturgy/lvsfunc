@@ -3,7 +3,7 @@ from __future__ import annotations
 from concurrent.futures import Future
 from functools import partial
 from threading import Condition
-from typing import BinaryIO, Callable, Dict, List, TextIO
+from typing import BinaryIO, Callable, TextIO
 
 import vapoursynth as vs
 from vskernels import get_prop
@@ -32,9 +32,9 @@ class RenderContext:
     """
     clip: vs.VideoNode
     queued: int
-    frames: Dict[int, vs.VideoFrame]
+    frames: dict[int, vs.VideoFrame]
     frames_rendered: int
-    timecodes: List[float]
+    timecodes: list[float]
     condition: Condition
 
     def __init__(self, clip: vs.VideoNode, queued: int) -> None:
@@ -70,7 +70,7 @@ def clip_async_render(clip: vs.VideoNode,
                       outfile: BinaryIO | None = None,
                       timecodes: TextIO | None = None,
                       progress: str | None = "Rendering clip...",
-                      callback: RenderCallback | List[RenderCallback] | None = None) -> List[float]:
+                      callback: RenderCallback | list[RenderCallback] | None = None) -> list[float]:
     """
     Render a clip by requesting frames asynchronously using clip.get_frame_async,
     providing for callback with frame number and frame object.
@@ -205,7 +205,7 @@ def get_render_progress() -> Progress:
     )
 
 
-def find_scene_changes(clip: vs.VideoNode, mode: SceneChangeMode = SceneChangeMode.WWXD) -> List[int]:
+def find_scene_changes(clip: vs.VideoNode, mode: SceneChangeMode = SceneChangeMode.WWXD) -> list[int]:
     """
     Generate a list of scene changes (keyframes).
 

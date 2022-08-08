@@ -5,7 +5,7 @@ import random
 import warnings
 from abc import ABC, abstractmethod
 from itertools import groupby, zip_longest
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Literal, Sequence, Tuple, TypeVar, overload
+from typing import Any, Callable, Iterable, Iterator, Literal, Sequence, TypeVar, overload
 
 import vapoursynth as vs
 from vskernels import Catrom, get_matrix, get_prop
@@ -62,7 +62,7 @@ class Comparer(ABC):
     """
 
     def __init__(self,
-                 clips: Dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
+                 clips: dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
                  /,
                  *,
                  label_alignment: int = 7
@@ -90,7 +90,7 @@ class Comparer(ABC):
         formats = {getattr(clip.format, 'name', None) for clip in self.clips}
         self.format = formats.pop() if len(formats) == 1 else None
 
-    def _marked_clips(self) -> List[vs.VideoNode]:
+    def _marked_clips(self) -> list[vs.VideoNode]:
         """If a `name` is only space characters, `'   '`, for example, the name will not be overlaid on the clip."""
         if self.names:
             return [clip.text.Text(text=name, alignment=self.label_alignment) if name.strip() else clip
@@ -136,7 +136,7 @@ class Stack(Comparer):
     """
 
     def __init__(self,
-                 clips: Dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
+                 clips: dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
                  /,
                  *,
                  direction: Direction = Direction.HORIZONTAL,
@@ -178,7 +178,7 @@ class Interleave(Comparer):
     """
 
     def __init__(self,
-                 clips: Dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
+                 clips: dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
                  /,
                  *,
                  label_alignment: int = 7
@@ -242,10 +242,10 @@ class Tile(Comparer):
     """
 
     def __init__(self,
-                 clips: Dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
+                 clips: dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
                  /,
                  *,
-                 arrangement: List[List[int]] | None = None,
+                 arrangement: list[list[int]] | None = None,
                  label_alignment: int = 7
                  ) -> None:
         super().__init__(clips, label_alignment=label_alignment)
@@ -277,8 +277,8 @@ class Tile(Comparer):
                 for row in self.arrangement]
         return core.std.StackVertical(rows)
 
-    def _auto_arrangement(self) -> List[List[int]]:
-        def _grouper(iterable: Iterable[T], n: int, fillvalue: T | None = None) -> Iterator[Tuple[T, ...]]:
+    def _auto_arrangement(self) -> list[list[int]]:
+        def _grouper(iterable: Iterable[T], n: int, fillvalue: T | None = None) -> Iterator[tuple[T, ...]]:
             args = [iter(iterable)] * n
             return zip_longest(*args, fillvalue=fillvalue)
 
@@ -314,7 +314,7 @@ class Split(Stack):
     """
 
     def __init__(self,
-                 clips: Dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
+                 clips: dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
                  /,
                  *,
                  direction: Direction = Direction.HORIZONTAL,
@@ -365,7 +365,7 @@ class Split(Stack):
 
 
 def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
-            frames: List[int] | None = None,
+            frames: list[int] | None = None,
             rand_total: int | None = None,
             force_resample: bool = True, print_frame: bool = True,
             mismatch: bool = False) -> vs.VideoNode:
@@ -495,7 +495,7 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
     yuv_planes = split_planes(clip)
 
     if clip.format.color_family == vs.ColorFamily.YUV:
-        planes: Dict[str, vs.VideoNode] = {'Y': yuv_planes[0], 'U': yuv_planes[1], 'V': yuv_planes[2]}
+        planes: dict[str, vs.VideoNode] = {'Y': yuv_planes[0], 'U': yuv_planes[1], 'V': yuv_planes[2]}
     elif clip.format.color_family == vs.ColorFamily.RGB:
         planes = {'R': yuv_planes[0], 'G': yuv_planes[1], 'B': yuv_planes[2]}
     else:
@@ -538,9 +538,9 @@ def diff(*clips: vs.VideoNode,
          height: int = ...,
          interleave: bool = ...,
          return_ranges: Literal[True] = True,
-         exclusion_ranges: Sequence[int | Tuple[int, int]] | None = ...,
+         exclusion_ranges: Sequence[int | tuple[int, int]] | None = ...,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
-         **namedclips: vs.VideoNode) -> Tuple[vs.VideoNode, List[Tuple[int, int]]]:
+         **namedclips: vs.VideoNode) -> tuple[vs.VideoNode, list[tuple[int, int]]]:
     ...
 
 
@@ -550,7 +550,7 @@ def diff(*clips: vs.VideoNode,
          height: int = ...,
          interleave: bool = ...,
          return_ranges: Literal[False],
-         exclusion_ranges: Sequence[int | Tuple[int, int]] | None = ...,
+         exclusion_ranges: Sequence[int | tuple[int, int]] | None = ...,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
          **namedclips: vs.VideoNode) -> vs.VideoNode:
     ...
@@ -561,9 +561,9 @@ def diff(*clips: vs.VideoNode,
          height: int = 288,
          interleave: bool = False,
          return_ranges: bool = False,
-         exclusion_ranges: Sequence[int | Tuple[int, int]] | None = None,
+         exclusion_ranges: Sequence[int | tuple[int, int]] | None = None,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a, b: core.std.MakeDiff(a, b),
-         **namedclips: vs.VideoNode) -> vs.VideoNode | Tuple[vs.VideoNode, List[Tuple[int, int]]]:
+         **namedclips: vs.VideoNode) -> vs.VideoNode | tuple[vs.VideoNode, list[tuple[int, int]]]:
     """
     Create a standard :py:class:`lvsfunc.comparison.Stack` between frames from two clips that have differences.
 
@@ -622,7 +622,7 @@ def diff(*clips: vs.VideoNode,
     elif namedclips and not all([nc.format for nc in namedclips.values()]):
         raise VariableFormatError("diff")
 
-    def _to_ranges(iterable: List[int]) -> Iterable[Tuple[int, int]]:
+    def _to_ranges(iterable: list[int]) -> Iterable[tuple[int, int]]:
         iterable = sorted(set(iterable))
         for _, group in groupby(enumerate(iterable), lambda t: t[1] - t[0]):
             groupl = list(group)
@@ -660,7 +660,7 @@ def diff(*clips: vs.VideoNode,
     frames.sort()
 
     if exclusion_ranges:
-        r: List[int] = []
+        r: list[int] = []
         for e in exclusion_ranges:
             if isinstance(e, int):
                 e = (e, e)

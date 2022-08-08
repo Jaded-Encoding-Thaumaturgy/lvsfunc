@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Any, Callable, Dict, List, Sequence, Tuple
+from typing import Any, Callable, Sequence
 
 import vapoursynth as vs
 from vsexprtools.util import normalise_planes
@@ -342,7 +342,7 @@ class BoundingBox():
     pos: Position
     size: Size
 
-    def __init__(self, pos: Position | Tuple[int, int], size: Size | Tuple[int, int]):
+    def __init__(self, pos: Position | tuple[int, int], size: Size | tuple[int, int]):
         self.pos = pos if isinstance(pos, Position) else Position(pos[0], pos[1])
         self.size = size if isinstance(size, Size) else Size(size[0], size[1])
 
@@ -390,15 +390,15 @@ class DeferredMask(ABC):
     :raises ValueError: Reference frame and ranges mismatch.
     """
 
-    ranges: List[Range]
+    ranges: list[Range]
     bound: BoundingBox | None
-    refframes: List[int | None]
+    refframes: list[int | None]
     blur: bool
 
-    def __init__(self, ranges: Range | List[Range] | None = None,
-                 bound: BoundingBox | Tuple[Tuple[int, int], Tuple[int, int]] | None = None,
+    def __init__(self, ranges: Range | list[Range] | None = None,
+                 bound: BoundingBox | tuple[tuple[int, int], tuple[int, int]] | None = None,
                  *,
-                 blur: bool = False, refframes: int | List[int] | None = None):
+                 blur: bool = False, refframes: int | list[int] | None = None):
         self.ranges = ranges if isinstance(ranges, list) else [(0, None)] if ranges is None else [ranges]
         self.blur = blur
 
@@ -464,8 +464,8 @@ def mt_xxpand_multi(clip: vs.VideoNode,
                     mode: Shapes | int = Shapes.ELLIPSE,
                     start: int = 0,
                     m__imum: Callable[..., vs.VideoNode] = core.std.Maximum,
-                    planes: List[int] = [0, 1, 2],
-                    **m_params: Any) -> List[vs.VideoNode]:
+                    planes: list[int] = [0, 1, 2],
+                    **m_params: Any) -> list[vs.VideoNode]:
     """
     Mask expanding/inpanding function written by `Zastin <https://github.com/kgrabs>`_.
 
@@ -475,7 +475,7 @@ def mt_xxpand_multi(clip: vs.VideoNode,
 
     planes = normalise_planes(clip, planes)
 
-    params: Dict[str, Any] = dict(planes=planes)
+    params: dict[str, Any] = dict(planes=planes)
     params |= m_params
 
     sh = sh or sw
@@ -486,7 +486,7 @@ def mt_xxpand_multi(clip: vs.VideoNode,
         case Shapes.LOSANGE: coordinates = [[0, 1, 0, 1, 1, 0, 1, 0]] * 3
         case _: coordinates = [[1] * 8] * 3
 
-    clips: List[vs.VideoNode] = [clip]
+    clips: list[vs.VideoNode] = [clip]
     end = int(min(sw, sh)) + start
 
     for x in range(start, end):

@@ -4,7 +4,7 @@ import os
 import subprocess as sp
 from collections import deque
 from pathlib import Path
-from typing import Any, Tuple, cast
+from typing import Any, cast
 
 import vapoursynth as vs
 from vsexprtools import PlanesT, normalise_planes
@@ -35,7 +35,7 @@ def _check_has_nvidia() -> bool:
         return False
 
 
-def _get_dgidx() -> Tuple[str, VSIdxFunction]:
+def _get_dgidx() -> tuple[str, VSIdxFunction]:
     """Return the dgindex idx as a string and the actual source filter."""
     has_nv = _check_has_nvidia()
 
@@ -74,7 +74,7 @@ def _generate_dgi(path: str, idx: str) -> bool:
     return os.path.exists(output)
 
 
-def _tail(filename: str, n: int = 10) -> Tuple[int, float]:
+def _tail(filename: str, n: int = 10) -> tuple[int, float]:
     """Return the last n lines of a file."""
     with open(filename, "r") as f:
         lines = deque(f, n)

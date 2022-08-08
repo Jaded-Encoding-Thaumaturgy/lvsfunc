@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import Any, List, Tuple
+from typing import Any
 
 import vapoursynth as vs
 from vsutil import iterate, split
@@ -40,7 +40,7 @@ class HardsubMask(DeferredMask, ABC):
     """
 
     def get_progressive_dehardsub(self, hrdsb: vs.VideoNode, ref: vs.VideoNode,
-                                  partials: List[vs.VideoNode]) -> Tuple[List[vs.VideoNode], List[vs.VideoNode]]:
+                                  partials: list[vs.VideoNode]) -> tuple[list[vs.VideoNode], list[vs.VideoNode]]:
         """
         Dehardsub using multiple superior hardsubbed sources and one inferior non-subbed source.
 
@@ -66,7 +66,7 @@ class HardsubMask(DeferredMask, ABC):
         return pdhs, dmasks
 
     def apply_dehardsub(self, hrdsb: vs.VideoNode, ref: vs.VideoNode,
-                        partials: List[vs.VideoNode] | None) -> vs.VideoNode:
+                        partials: list[vs.VideoNode] | None) -> vs.VideoNode:
         """
         Apply dehardsubbing to a clip.
 
@@ -189,7 +189,7 @@ class HardsubLineFade(HardsubLine):
 
     ref_float: float
 
-    def __init__(self, ranges: Range | List[Range], *args: Any,
+    def __init__(self, ranges: Range | list[Range], *args: Any,
                  refframe: float = 0.5, **kwargs: Any) -> None:
         if refframe < 0 or refframe > 1:
             raise ValueError("HardsubLineFade: '`refframe` must be between 0 and 1!'")
@@ -219,7 +219,7 @@ class HardsubSignFade(HardsubSign):
 
     ref_float: float
 
-    def __init__(self, ranges: Range | List[Range], *args: Any,
+    def __init__(self, ranges: Range | list[Range], *args: Any,
                  refframe: float = 0.5, **kwargs: Any) -> None:
         if refframe < 0 or refframe > 1:
             raise ValueError("HardsubSignFade: 'refframe must be between 0 and 1!'")
@@ -264,7 +264,7 @@ class HardsubASS(HardsubMask):
         return mask.std.Limiter()
 
 
-def get_all_masks(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[HardsubMask]) -> vs.VideoNode:
+def get_all_masks(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: list[HardsubMask]) -> vs.VideoNode:
     """
     Get a clip of :py:class:`lvsfunc.dehardsub.HardsubSign` masks.
 
@@ -283,8 +283,8 @@ def get_all_masks(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[HardsubMas
     return mask.std.Limiter()
 
 
-def bounded_dehardsub(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: List[HardsubMask],
-                      partials: List[vs.VideoNode] | None = None) -> vs.VideoNode:
+def bounded_dehardsub(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: list[HardsubMask],
+                      partials: list[vs.VideoNode] | None = None) -> vs.VideoNode:
     """
     Apply a list of :py:class:`lvsfunc.dehardsub.HardsubSign`.
 
