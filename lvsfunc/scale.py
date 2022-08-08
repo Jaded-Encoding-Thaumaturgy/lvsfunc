@@ -10,13 +10,6 @@ from vsutil import depth, get_depth, get_w, get_y, iterate
 
 from .util import check_variable, scale_thresh
 
-try:
-    from cytoolz import functoolz
-except ModuleNotFoundError:
-    try:
-        from toolz import functoolz  # type: ignore
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("Cannot find functoolz: Please install toolz or cytoolz")
 
 core = vs.core
 
@@ -34,7 +27,6 @@ __all__ = [
 ]
 
 
-@functoolz.curry
 def descale_detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
                         threshold: float = 0.05) -> vs.VideoNode:
     """

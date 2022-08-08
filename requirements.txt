@@ -1,6 +1,5 @@
 VapourSynth>=59
 rich>=12.5.1
-toolz>=0.12.0
 vsutil>=0.8.0
 vskernels>=1.2.0
 vsexprtools>=1.0.2
