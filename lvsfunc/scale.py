@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 import vapoursynth as vs
 import vsscale
@@ -113,15 +113,18 @@ def descale(clip: vs.VideoNode,
 
     up_func = upscaler and vsscale.GenericScaler(upscaler)
 
-    out = vsscale.descale(  # type: ignore
-        clip, width, height, up_func, kernel, (src_top, src_left), mask,
-        vsscale.DescaleMode.PlaneAverage(threshold), show_mask
+    out = vsscale.descale(
+        clip, width, height, kernel, up_func, False if mask is None else mask,
+        vsscale.DescaleMode.PlaneDiff(threshold), None, None, (src_top, src_left),
+        result=True
     )
 
-    if show_mask:
-        return out[1]  # type: ignore
+    if show_mask and out.mask:
+        return out.mask
 
-    return out  # type: ignore
+    assert out.upscaled
+
+    return out.upscaled
 
 
 def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 720,
@@ -245,9 +248,10 @@ def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: in
     )
 
     return vsscale.descale(
-        clip, width, height, None, [BicubicSharp, kernel or Spline36],
-        mask=False, mode=vsscale.DescaleMode.KernelDiff(thr)
-    )
+        clip, width, height, [BicubicSharp, kernel or Spline36],
+        mask=False, mode=vsscale.DescaleMode.KernelDiff(thr),
+        result=True
+    ).descaled
 
 
 def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: int = 720,
@@ -274,9 +278,10 @@ def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: in
     )
 
     return vsscale.descale(
-        clip, width, height, False, [BicubicSharp, kernel or Spline36],
-        mask=False, mode=vsscale.DescaleMode.KernelDiff(thr)
-    )
+        clip, width, height, [BicubicSharp, kernel or Spline36],
+        mask=False, mode=vsscale.DescaleMode.KernelDiff(thr),
+        result=True
+    ).rescaled
 
 
 def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 720,
