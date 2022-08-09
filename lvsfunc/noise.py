@@ -51,7 +51,10 @@ def bm3d(clip: vs.VideoNode, sigma: float | list[float] = 0.75,
     :raises ValueError:     Invalid number of sigma parameters were passed.
     :raises ValueError:     Invalid number of radii parameters were passed.
     """
-    import vsdenoise
+    try:
+        import vsdenoise
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("bm3d: missing dependency `vsdenoise`!")
 
     warnings.warn('lvsfunc.bm3d: deprecated in favor of vsdenoise.BM3D!', DeprecationWarning)
 
