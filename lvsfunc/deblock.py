@@ -3,7 +3,7 @@ from __future__ import annotations
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Sequence, SupportsFloat, Tuple, cast
+from typing import Any, Literal, Sequence, SupportsFloat, cast
 
 import vapoursynth as vs
 from vskernels import Bicubic, Kernel, Matrix, Point, get_kernel, get_prop
@@ -22,7 +22,7 @@ __all__ = [
 
 def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strs: Sequence[float] = [10, 50, 75],
-                thrs: Sequence[Tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
+                thrs: Sequence[tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
                 matrix: Matrix | int | None = None,
                 kernel: Kernel | str = Bicubic(b=0, c=1/2),
                 cuda: bool = True, write_props: bool = False,
@@ -77,7 +77,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     def _eval_db(n: int, f: Sequence[vs.VideoFrame],
                  clip: vs.VideoNode, db_clips: Sequence[vs.VideoNode],
-                 nthrs: Sequence[Tuple[float, float, float]]) -> vs.VideoNode:
+                 nthrs: Sequence[tuple[float, float, float]]) -> vs.VideoNode:
 
         evref_diff, y_next_diff, y_prev_diff = [
             get_prop(f[i], prop, float)
@@ -151,8 +151,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 def dpir(
     clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 10, mode: str = 'deblock',
     matrix: Matrix | int | None = None, cuda: bool | Literal['trt'] | None = None, i444: bool = False,
-    tiles: int | Tuple[int, int] | None = None, overlap: int | Tuple[int, int] | None = 8,
-    zones: List[Tuple[Range | List[Range] | None, SupportsFloat | vs.VideoNode | None]] | None = None,
+    tiles: int | tuple[int, int] | None = None, overlap: int | tuple[int, int] | None = 8,
+    zones: list[tuple[Range | list[Range] | None, SupportsFloat | vs.VideoNode | None]] | None = None,
     fp16: bool | None = None, num_streams: int = 1, device_id: int = 0, kernel: Kernel | str = Bicubic(b=0, c=1/2)
 ) -> vs.VideoNode:
     """
@@ -331,11 +331,11 @@ def dpir(
     if zones:
         cache_strength_clips = dict[float, vs.VideoNode]()
 
-        dpir_zones = dict[int | Tuple[int | None, int | None], vs.VideoNode]()
+        dpir_zones = dict[int | tuple[int | None, int | None], vs.VideoNode]()
 
         for ranges, zstr in zones:
             if not zstr:
-                if isinstance(ranges, List):
+                if isinstance(ranges, list):
                     no_dpir_zones.extend(ranges)
                 else:
                     no_dpir_zones.append(ranges)
@@ -352,7 +352,7 @@ def dpir(
 
                 rstr_clip = cache_strength_clips[zstr]
 
-            lranges = ranges if isinstance(ranges, List) else [ranges]
+            lranges = ranges if isinstance(ranges, list) else [ranges]
 
             for rrange in lranges:
                 if rrange:
@@ -388,7 +388,7 @@ def dpir(
 
     if None in {cuda, fp16}:
         try:
-            info = cast(Dict[str, int], core.trt.DeviceProperties(device_id))
+            info = cast(dict[str, int], core.trt.DeviceProperties(device_id))
 
             fp16_available = info['major'] >= 7
             trt_available = True

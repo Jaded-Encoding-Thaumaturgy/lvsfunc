@@ -4,11 +4,11 @@ import colorsys
 import random
 import warnings
 from functools import partial, wraps
-from typing import Any, Callable, Dict, List, Tuple, cast
+from typing import Any, Callable, cast
 
 import vapoursynth as vs
 from typing_extensions import TypeGuard
-from vskernels import Bicubic, Kernel, get_kernel, get_matrix, get_prop, VNodeCallable
+from vskernels import Bicubic, Kernel, VNodeCallable, get_kernel, get_matrix, get_prop
 from vsutil import depth, get_subsampling, get_w, get_y
 
 from .exceptions import InvalidFormatError, VariableFormatError, VariableResolutionError
@@ -68,7 +68,7 @@ def quick_resample(clip: vs.VideoNode,
     return depth(filtered, clip.format.bits_per_sample)
 
 
-def normalize_ranges(clip: vs.VideoNode, ranges: Range | List[Range]) -> List[Tuple[int, int]]:
+def normalize_ranges(clip: vs.VideoNode, ranges: Range | list[Range]) -> list[tuple[int, int]]:
     r"""
     Normalize :py:func:`lvsfunc.types.Range`\(s) to a list of inclusive positive integer ranges.
 
@@ -105,7 +105,7 @@ def normalize_ranges(clip: vs.VideoNode, ranges: Range | List[Range]) -> List[Tu
 
 def replace_ranges(clip_a: vs.VideoNode,
                    clip_b: vs.VideoNode,
-                   ranges: Range | List[Range] | None,
+                   ranges: Range | list[Range] | None,
                    exclusive: bool = False,
                    use_plugin: bool = True) -> vs.VideoNode:
     """
@@ -287,7 +287,7 @@ def check_variable(clip: vs.VideoNode, function: str) -> TypeGuard[_VideoNode]:
     return True
 
 
-def load_bookmarks(bookmark_path: str) -> List[int]:
+def load_bookmarks(bookmark_path: str) -> list[int]:
     """
     Load VSEdit bookmarks.
 
@@ -307,7 +307,7 @@ def load_bookmarks(bookmark_path: str) -> List[int]:
     return bookmarks
 
 
-def frames_since_bookmark(clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoNode:
+def frames_since_bookmark(clip: vs.VideoNode, bookmarks: list[int]) -> vs.VideoNode:
     """
     Display frames since last bookmark to create easily reusable scenefiltering.
 
@@ -318,7 +318,7 @@ def frames_since_bookmark(clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoN
 
     :return:            Clip with bookmarked frames.
     """
-    def _frames_since_bookmark(n: int, clip: vs.VideoNode, bookmarks: List[int]) -> vs.VideoNode:
+    def _frames_since_bookmark(n: int, clip: vs.VideoNode, bookmarks: list[int]) -> vs.VideoNode:
         for i, bookmark in enumerate(bookmarks):
             frames_since = n - bookmark
 
@@ -425,7 +425,7 @@ def colored_clips(amount: int,
                   rand: bool = True,
                   seed: bytearray | bytes | float | str | None = None,
                   **kwargs: Any
-                  ) -> List[vs.VideoNode]:
+                  ) -> list[vs.VideoNode]:
     r"""
     Return a list of BlankClips with unique colors in sequential or random order.
 
@@ -458,7 +458,7 @@ def colored_clips(amount: int,
     if not (0 < max_hue <= 360):
         raise ValueError("colored_clips: `max_hue` must be greater than 0 and less than 360 degrees!")
 
-    blank_clip_args: Dict[str, Any] = {'keep': 1, **kwargs}
+    blank_clip_args: dict[str, Any] = {'keep': 1, **kwargs}
 
     hues = [i * max_hue / (amount - 1) for i in range(amount - 1)] + [max_hue]
 

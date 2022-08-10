@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import List
 
 import vapoursynth as vs
 from vsutil import depth, get_depth, join, split
@@ -68,7 +67,7 @@ def chroma_reconstruct(clip: vs.VideoNode, radius: int = 2, i444: bool = False) 
         else depth(merged, get_depth(clip))
 
 
-def regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1e-7) -> List[RegressClips]:
+def regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1e-7) -> list[RegressClips]:
     """
     Regress a clip using mangled luma and chroma.
 

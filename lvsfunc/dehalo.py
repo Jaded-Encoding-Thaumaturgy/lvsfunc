@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from functools import partial
-from typing import Any, Dict, Sequence
+from typing import Any, Sequence
 
 import vapoursynth as vs
 import vsdehalo
@@ -28,8 +28,8 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
              sigmaS: float = 1.5, sigmaR: float = 5/255,
              sigmaS_final: float | None = None, sigmaR_final: float | None = None,
              planes: int | Sequence[int] | None = None,
-             bilateral_args: Dict[str, Any] = {},
-             bm3d_args: Dict[str, Any] = {},
+             bilateral_args: dict[str, Any] = {},
+             bm3d_args: dict[str, Any] = {},
              ) -> vs.VideoNode:
     """
     Dehaloing function that uses bilateral and BM3D to remove bright haloing around edges.

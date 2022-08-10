@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Dict, List
+from typing import Any
 
 import vapoursynth as vs
 from vskernels import Bicubic, Kernel, Matrix, get_kernel, get_prop
@@ -19,10 +19,10 @@ __all__ = [
 ]
 
 
-def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
-         radius: int | List[int] | None = None, ref: vs.VideoNode | None = None,
+def bm3d(clip: vs.VideoNode, sigma: float | list[float] = 0.75,
+         radius: int | list[int] | None = None, ref: vs.VideoNode | None = None,
          pre: vs.VideoNode | None = None, refine: int = 1, matrix_s: str = "709",
-         basic_args: Dict[str, Any] = {}, final_args: Dict[str, Any] = {}) -> vs.VideoNode:
+         basic_args: dict[str, Any] = {}, final_args: dict[str, Any] = {}) -> vs.VideoNode:
     """
     BM3D denoising filter using the CPU.
 
@@ -51,7 +51,10 @@ def bm3d(clip: vs.VideoNode, sigma: float | List[float] = 0.75,
     :raises ValueError:     Invalid number of sigma parameters were passed.
     :raises ValueError:     Invalid number of radii parameters were passed.
     """
-    import vsdenoise
+    try:
+        import vsdenoise
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("bm3d: missing dependency `vsdenoise`!")
 
     warnings.warn('lvsfunc.bm3d: deprecated in favor of vsdenoise.BM3D!', DeprecationWarning)
 

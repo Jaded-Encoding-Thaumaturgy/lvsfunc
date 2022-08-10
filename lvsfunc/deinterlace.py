@@ -7,7 +7,7 @@ import warnings
 from fractions import Fraction
 from functools import partial
 from pathlib import Path
-from typing import Any, Dict, List, Sequence, cast
+from typing import Any, Sequence, cast
 
 import vapoursynth as vs
 from vsexprtools import mod2, mod4
@@ -17,7 +17,6 @@ from vsutil import Dither, depth, get_depth, get_neutral_value, get_w, get_y, sc
 
 from .comparison import Stack
 from .exceptions import InvalidFramerateError, TopFieldFirstError
-from .helpers import _prefilter_to_full_range
 from .render import clip_async_render, get_render_progress
 from .types import Direction
 from .util import check_variable, check_variable_format
@@ -187,8 +186,8 @@ def tivtc_vfr(clip: vs.VideoNode,
               tdec_in: Path | str = f".ivtc/{main_file}metrics.txt",
               timecodes_out: Path | str = f".ivtc/{main_file}timecodes.txt",
               decimate: int | bool = True,
-              tfm_args: Dict[str, Any] = {},
-              tdecimate_args: Dict[str, Any] = {}) -> vs.VideoNode:
+              tfm_args: dict[str, Any] = {},
+              tdecimate_args: dict[str, Any] = {}) -> vs.VideoNode:
     """
     Perform TFM and TDecimate on a clip that is supposed to be VFR.
 
@@ -247,8 +246,8 @@ def tivtc_vfr(clip: vs.VideoNode,
                       "If it still doesn't work, open the ``.ivtc`` directory and check if the files are 0kb. "
                       "If they are, delete them and run the function again.'")
 
-        tfm_analysis: Dict[str, Any] = {**tfm_args, 'output': str(tfm_f)}
-        tdec_analysis: Dict[str, Any] = {'mode': 4, **tdecimate_args, 'output': str(tdec_f)}
+        tfm_analysis: dict[str, Any] = {**tfm_args, 'output': str(tfm_f)}
+        tdec_analysis: dict[str, Any] = {'mode': 4, **tdecimate_args, 'output': str(tdec_f)}
 
         ivtc_clip = core.tivtc.TFM(clip, **tfm_analysis)
         ivtc_clip = core.tivtc.TDecimate(ivtc_clip, **tdec_analysis)
@@ -337,10 +336,10 @@ def decomb(clip: vs.VideoNode,
            decimate: bool = True, vinv: bool = False,
            rep: int | Sequence[int] = 0,
            show_mask: bool = False,
-           tfm_args: Dict[str, Any] = {},
-           tdec_args: Dict[str, Any] = {},
-           vinv_args: Dict[str, Any] = {},
-           qtgmc_args: Dict[str, Any] = {}) -> vs.VideoNode:
+           tfm_args: dict[str, Any] = {},
+           tdec_args: dict[str, Any] = {},
+           vinv_args: dict[str, Any] = {},
+           qtgmc_args: dict[str, Any] = {}) -> vs.VideoNode:
     """
     Perform relatively aggressive filtering to get rid of the combing on a interlaced/telecined source.
 
@@ -384,10 +383,10 @@ def decomb(clip: vs.VideoNode,
 
     VFM_TFF = int(tff)
 
-    tfm_kwargs: Dict[str, Any] = dict(order=VFM_TFF, mode=mode, chroma=True)
+    tfm_kwargs: dict[str, Any] = dict(order=VFM_TFF, mode=mode, chroma=True)
     tfm_kwargs |= tfm_args  # chroma set to True by default to match VFM
 
-    qtgmc_kwargs: Dict[str, Any] = dict(SourceMatch=3, Lossless=2, TR0=1, TR1=2, TR2=3, FPSDivisor=2, TFF=tff)
+    qtgmc_kwargs: dict[str, Any] = dict(SourceMatch=3, Lossless=2, TR0=1, TR1=2, TR2=3, FPSDivisor=2, TFF=tff)
     qtgmc_kwargs |= qtgmc_args
 
     def _pp(n: int, f: vs.VideoFrame, clip: vs.VideoNode, pp: vs.VideoNode) -> vs.VideoNode:
@@ -485,7 +484,7 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
 
     :raises TopFieldFirstError:     No automatic ``tff`` can be determined.
     """
-    def _ftf(n: int, f: List[vs.VideoFrame]) -> vs.VideoNode:
+    def _ftf(n: int, f: list[vs.VideoFrame]) -> vs.VideoNode:
         avg = (get_prop(f[0], 'PlaneStatsAverage', float),
                get_prop(f[1], 'PlaneStatsAverage', float))
 
@@ -523,7 +522,7 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
 
 def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None,
                      interlaced: bool = True, dec: bool | None = None,
-                     bob_clip: vs.VideoNode | None = None, qtgmc_args: Dict[str, Any] = {}
+                     bob_clip: vs.VideoNode | None = None, qtgmc_args: dict[str, Any] = {}
                      ) -> vs.VideoNode:
     """
     Deinterlacing function for interlaced credits (60i/30p) on top of telecined video (24p).
@@ -564,6 +563,12 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
     except ModuleNotFoundError:
         raise ModuleNotFoundError("pulldown_credits: missing dependency `havsfunc`!")
 
+    try:
+        from vsdenoise import prefilter_to_full_range
+    except ModuleNotFoundError:
+        from havsfunc import DitherLumaRebuild as prefilter_to_full_range  # type: ignore
+        warnings.warn("pulldown_credits: missing dependency `vsdenoise`!", ImportWarning)
+
     assert check_variable(clip, "pulldown_credits")
 
     if clip.fps != Fraction(30000, 1001):
@@ -574,7 +579,7 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
     elif isinstance(tff, (bool, int)):
         clip = clip.std.SetFieldBased(int(tff) + 1)
 
-    qtgmc_kwargs: Dict[str, Any] = dict(SourceMatch=3, Lossless=2, TR0=2, TR1=2, TR2=3, Preset="Placebo")
+    qtgmc_kwargs: dict[str, Any] = dict(SourceMatch=3, Lossless=2, TR0=2, TR1=2, TR2=3, Preset="Placebo")
     qtgmc_kwargs |= qtgmc_args
     qtgmc_kwargs |= dict(FPSDivisor=1, TFF=tff or bool(get_prop(clip.get_frame(0), '_FieldBased', int) - 1))
 
@@ -634,7 +639,7 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
             else:
                 jitter = bobbed.std.SelectEvery(5, [3 - invpos, 4 - invpos])
 
-        jsup_pre = _prefilter_to_full_range(jitter, 1.0).mv.Super(pel=2)
+        jsup_pre = prefilter_to_full_range(jitter, 1.0).mv.Super(pel=2)
         jsup = jitter.mv.Super(pel=2, levels=1)
         vect_f = jsup_pre.mv.Analyse(blksize=blksize, isb=False, delta=1, overlap=overlap)
         vect_b = jsup_pre.mv.Analyse(blksize=blksize, isb=True, delta=1, overlap=overlap)
@@ -676,13 +681,13 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
             else:
                 c2 = bobbed.std.SelectEvery(10, [offset, 1 + offset, 6 + offset, 5 + offset])
 
-        super1_pre = _prefilter_to_full_range(c1, 1.0).mv.Super(pel=2)
+        super1_pre = prefilter_to_full_range(c1, 1.0).mv.Super(pel=2)
         super1 = c1.mv.Super(pel=2, levels=1)
         vect_f1 = super1_pre.mv.Analyse(blksize=blksize, isb=False, delta=1, overlap=overlap)
         vect_b1 = super1_pre.mv.Analyse(blksize=blksize, isb=True, delta=1, overlap=overlap)
         fix1 = c1.mv.FlowInter(super1, vect_b1, vect_f1, time=50 + direction * 25).std.SelectEvery(4, [0, 2])
 
-        super2_pre = _prefilter_to_full_range(c2, 1.0).mv.Super(pel=2)
+        super2_pre = prefilter_to_full_range(c2, 1.0).mv.Super(pel=2)
         super2 = c2.mv.Super(pel=2, levels=1)
         vect_f2 = super2_pre.mv.Analyse(blksize=blksize, isb=False, delta=1, overlap=overlap)
         vect_b2 = super2_pre.mv.Analyse(blksize=blksize, isb=True, delta=1, overlap=overlap)
@@ -739,7 +744,7 @@ def _check_pattern(clip: vs.VideoNode, pattern: int = 0) -> bool:
     clip = sivtc(clip, pattern)
     clip = core.tdm.IsCombed(clip)
 
-    frames: List[int] = []
+    frames: list[int] = []
 
     def _cb(n: int, f: vs.VideoFrame) -> None:
         if get_prop(f, '_Combed', int):

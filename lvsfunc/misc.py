@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import warnings
 from functools import partial
-from typing import Any, List, Sequence, Tuple
+from typing import Any, Sequence
 
 import vapoursynth as vs
 from vskernels import Bicubic, Catrom, Kernel, Matrix, get_prop
@@ -124,11 +124,11 @@ def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
 
 
 def edgefixer(clip: vs.VideoNode,
-              left: int | List[int] | None = None,
-              right: int | List[int] | None = None,
-              top: int | List[int] | None = None,
-              bottom: int | List[int] | None = None,
-              radius: List[int] | None = None,
+              left: int | list[int] | None = None,
+              right: int | list[int] | None = None,
+              top: int | list[int] | None = None,
+              bottom: int | list[int] | None = None,
+              radius: list[int] | None = None,
               full_range: bool = False) -> vs.VideoNode:
     """
     Fix the issues with over- and undershoot for `ContinuityFixer <https://github.com/MonoS/VS-ContinuityFixer>`_.
@@ -199,7 +199,7 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
     :raises ValueError:     Too many values are supplied.
     :raises ValueError:     Any value in ``values`` are above 255.
     """
-    val: Tuple[int, int, int]
+    val: tuple[int, int, int]
 
     assert check_variable(clip, "shift_tint")
 
@@ -260,8 +260,8 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
 
 def wipe_row(clip: vs.VideoNode,
              ref: vs.VideoNode | None = None,
-             pos: Position | Tuple[int, int] = (1, 1),
-             size: Size | Tuple[int, int] | None = None,
+             pos: Position | tuple[int, int] = (1, 1),
+             size: Size | tuple[int, int] | None = None,
              show_mask: bool = False
              ) -> vs.VideoNode:
     """
@@ -319,7 +319,7 @@ def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
     den = clip.dfttest.DFTTest(sigma=prefilter_sigma) if prefilter else clip
     diff = core.std.MakeDiff(clip, den)
 
-    expr: str | List[str] = f'x y - {strength} * x +'
+    expr: str | list[str] = f'x y - {strength} * x +'
 
     if clip.format.color_family is not vs.GRAY:
         expr = [str(expr), "", ""]  # mypy wtf?
@@ -330,7 +330,7 @@ def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
 
 
 def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
-                 frame_ranges: Range | List[Range] | None = None, fade_length: int = 0,
+                 frame_ranges: Range | list[Range] | None = None, fade_length: int = 0,
                  matrix: Matrix | int | None = None) -> vs.VideoNode:
     """
     Overlay a logo or sign onto another clip.

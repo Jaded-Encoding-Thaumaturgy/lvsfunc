@@ -1,7 +1,6 @@
 import subprocess
 import sys
 import os
-from typing import List
 
 import pkg_resources
 
@@ -14,7 +13,7 @@ class InstallationException(Exception):
 
 pkg = 'lvsfunc'
 
-vsrepo_deps: List[str] = [
+vsrepo_deps = list[str]([
     'akarin',
     'BM3D',
     'Descale',
@@ -32,10 +31,9 @@ vsrepo_deps: List[str] = [
     'TIVTC',
     'vs-placebo',
     'ZNEDI3',
-]
+])
 
-pypi_deps: List[str] = [
-]
+pypi_deps = list[str]()
 
 
 def prompt_user() -> bool:

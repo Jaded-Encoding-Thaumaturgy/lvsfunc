@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable
 
 import vapoursynth as vs
 import vsscale
@@ -9,14 +9,6 @@ from vskernels import Bicubic, BicubicSharp, Catrom, Kernel, Spline36, Transfer,
 from vsutil import depth, get_depth, get_w, get_y, iterate
 
 from .util import check_variable, scale_thresh
-
-try:
-    from cytoolz import functoolz
-except ModuleNotFoundError:
-    try:
-        from toolz import functoolz  # type: ignore
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("Cannot find functoolz: Please install toolz or cytoolz")
 
 core = vs.core
 
@@ -34,7 +26,6 @@ __all__ = [
 ]
 
 
-@functoolz.curry
 def descale_detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
                         threshold: float = 0.05) -> vs.VideoNode:
     """
@@ -59,8 +50,8 @@ def descale_detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
 def descale(clip: vs.VideoNode,
             upscaler:
             Callable[[vs.VideoNode, int, int], vs.VideoNode] | None = None,
-            width: int | List[int] | None = None,
-            height: int | List[int] = 720,
+            width: int | list[int] | None = None,
+            height: int | list[int] = 720,
             kernel: Kernel | str = Bicubic(b=0, c=1/2),
             threshold: float = 0.0,
             mask: vsscale.CreditMaskT | vs.VideoNode | None
@@ -122,15 +113,18 @@ def descale(clip: vs.VideoNode,
 
     up_func = upscaler and vsscale.GenericScaler(upscaler)
 
-    out = vsscale.descale(  # type: ignore
-        clip, width, height, up_func, kernel, (src_top, src_left), mask,
-        vsscale.DescaleMode.PlaneAverage(threshold), show_mask
+    out = vsscale.descale(
+        clip, width, height, kernel, up_func, False if mask is None else mask,
+        vsscale.DescaleMode.PlaneDiff(threshold), None, None, (src_top, src_left),
+        result=True
     )
 
-    if show_mask:
-        return out[1]  # type: ignore
+    if show_mask and out.mask:
+        return out.mask
 
-    return out  # type: ignore
+    assert out.upscaled
+
+    return out.upscaled
 
 
 def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 720,
@@ -254,9 +248,10 @@ def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: in
     )
 
     return vsscale.descale(
-        clip, width, height, None, [BicubicSharp, kernel or Spline36],
-        mask=False, mode=vsscale.DescaleMode.KernelDiff(thr)
-    )
+        clip, width, height, [BicubicSharp, kernel or Spline36],
+        mask=False, mode=vsscale.DescaleMode.KernelDiff(thr),
+        result=True
+    ).descaled
 
 
 def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: int = 720,
@@ -283,9 +278,10 @@ def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: in
     )
 
     return vsscale.descale(
-        clip, width, height, False, [BicubicSharp, kernel or Spline36],
-        mask=False, mode=vsscale.DescaleMode.KernelDiff(thr)
-    )
+        clip, width, height, [BicubicSharp, kernel or Spline36],
+        mask=False, mode=vsscale.DescaleMode.KernelDiff(thr),
+        result=True
+    ).rescaled
 
 
 def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 720,
@@ -293,7 +289,7 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
                   downscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode] | Kernel | str = ssim_downsample,
                   credit_mask: vsscale.CreditMaskT | vs.VideoNode | None = descale_detail_mask, mask_thr: float = 0.05,
                   mix_strength: float = 0.25, show_mask: bool | int = False,
-                  nnedi3_args: Dict[str, Any] = {}, eedi3_args: Dict[str, Any] = {}) -> vs.VideoNode:
+                  nnedi3_args: dict[str, Any] = {}, eedi3_args: dict[str, Any] = {}) -> vs.VideoNode:
     """
     Rewrite of InsaneAA to make it easier to use and maintain.
 
@@ -338,10 +334,10 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
         raise ValueError(f"mixed_rescale: '`mask_thr` must be between 0.0 and 1.0! Not {mask_thr}!'")
 
     # Default settings set to match insaneAA as closely as reasonably possible
-    nnargs: Dict[str, Any] = dict(nsize=0, nns=4, qual=2, pscrn=1)
+    nnargs: dict[str, Any] = dict(nsize=0, nns=4, qual=2, pscrn=1)
     nnargs |= nnedi3_args
 
-    eediargs: Dict[str, Any] = dict(alpha=0.2, beta=0.25, gamma=1000, nrad=2, mdis=20)
+    eediargs: dict[str, Any] = dict(alpha=0.2, beta=0.25, gamma=1000, nrad=2, mdis=20)
     eediargs |= eedi3_args
 
     width = width or get_w(height, clip.width/clip.height, only_even=False)

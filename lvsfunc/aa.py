@@ -3,7 +3,7 @@ from __future__ import annotations
 import warnings
 from functools import partial
 from math import ceil
-from typing import Any, Callable, Dict, cast
+from typing import Any, Callable, cast
 
 import vapoursynth as vs
 import vsaa
@@ -100,7 +100,7 @@ def nnedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs
 
     :return:                Configured nnedi3 function.
     """
-    nnedi3_args: Dict[str, Any] = dict(field=0, dh=True, nsize=3, nns=3, qual=1)
+    nnedi3_args: dict[str, Any] = dict(field=0, dh=True, nsize=3, nns=3, qual=1)
     nnedi3_args.update(override)
 
     warnings.warn('lvsfunc.nnedi3: deprecated in favor of vsaa.Nnedi3!', DeprecationWarning)
@@ -124,7 +124,7 @@ def eedi3(opencl: bool = False, **override: Any) -> Callable[[vs.VideoNode], vs.
 
     :return:                Configured eedi3 function.
     """
-    eedi3_args: Dict[str, Any] = dict(field=0, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20)
+    eedi3_args: dict[str, Any] = dict(field=0, alpha=0.25, beta=0.5, gamma=40, nrad=2, mdis=20)
     eedi3_args.update(override)
 
     warnings.warn('lvsfunc.eedi3: deprecated in favor of vsaa.Eedi3!', DeprecationWarning)
@@ -288,7 +288,7 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
     """
     def _eedi3s(clip: vs.VideoNode, mclip: vs.VideoNode | None = None,
                 **eedi3_kwargs: Any) -> vs.VideoNode:
-        edi_args: Dict[str, Any] = {  # Eedi3 args for `eedi3s`
+        edi_args: dict[str, Any] = {  # Eedi3 args for `eedi3s`
             'field': int(tff), 'alpha': 0.125, 'beta': 0.25, 'gamma': 40,
             'nrad': 2, 'mdis': 20,
             'vcheck': 2, 'vthresh0': 12, 'vthresh1': 24, 'vthresh2': 4
