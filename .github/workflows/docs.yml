@@ -5,6 +5,13 @@ on:
     paths:
       - "**.py"
       - "**.rst"
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "**.py"
+      - "**.rst"
+
 
 jobs:
   docs:
