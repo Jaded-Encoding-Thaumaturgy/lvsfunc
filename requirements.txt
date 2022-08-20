@@ -7,3 +7,4 @@ vsrgtools>=1.0.0
 vsscale>=1.0.0
 vsaa>=1.1.0
 vsdehalo>=0.1.6
+typing-extensions>=3.10.0.2
