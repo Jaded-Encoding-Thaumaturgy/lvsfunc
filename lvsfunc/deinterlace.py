@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 import vapoursynth as vs
-from vsexprtools import mod2, mod4
+from vsexprtools import expect_bits, mod2, mod4
 from vskernels import Bicubic, BicubicDidee, Catrom, Kernel, get_kernel, get_prop
 from vsrgtools import repair
 from vsutil import depth, get_neutral_value, get_w, get_y, scale_value
@@ -452,7 +452,7 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
     return weave_y.std.SetFieldBased(0)[::2]
 
 
-def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None) -> vs.VideoNode:
+def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None, cuda: bool = False) -> vs.VideoNode:
     """
     Give a mathematically perfect solution to fades made *after* telecining (which made perfect IVTC impossible).
 
@@ -474,33 +474,47 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None) -> vs
 
     :param clip:                    Clip to process.
     :param tff:                     Top-field-first. `False` sets it to Bottom-Field-First.
-                                    If None, get the field order from the _FieldBased prop.
-    :param thr:                     Threshold for when a field should be adjusted.
-                                    Default is 2.2, which appears to be a safe value that doesn't
-                                    cause it to do weird stuff with orphan fields.
+                                    If `None`, get the field order from the _FieldBased prop.
+    :param cuda:                    Use cupy for certain calculations. `False` uses numpy instead.
 
-    :return:                        Clip with only fades fixed.
+    :return:                        Clip with fades (and only fades) accurately deinterlaced.
 
     :raises TopFieldFirstError:     No automatic ``tff`` can be determined.
     """
-    # I want to catch this before it reaches SeparateFields and give newer users a more useful error
-    if tff is None and get_prop(clip.get_frame(0), '_FieldBased', int) == 0:
+    bits, clip = expect_bits(clip, 32)
+
+    if isinstance(tff, int):
+        clip = clip.std.SetFieldBased(tff + 1)
+    elif get_prop(clip.get_frame(0), '_FieldBased', int) == 0:
         raise TopFieldFirstError("fix_telecined_fades")
-    elif isinstance(tff, (bool, int)):
-        clip = clip.std.SetFieldBased(int(tff) + 1)
 
-    clip = clip.std.Limiter().std.SeparateFields()
-    clip = clip.psm.PlaneAverage(value_exclude=0)
-    fe, fo = clip[::2], clip[1::2]
+    fields = clip.std.Limiter().std.SeparateFields()
 
-    expr = "x.psmAvg AVG! AVG@ 0 = x x AVG@ y.psmAvg + 2 / AVG@ / * ?"
+    if cuda:
+        try:
+            from stgfunc import mean_plane_value
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("fix_telecined_fades: missing dependency `stgfunc`!")
 
-    ffix = (
-        core.akarin.Expr([fe, fo], expr),
-        core.akarin.Expr([fo, fe], expr),
+        avg_props_clip = mean_plane_value(fields, [0.0, 1.0], 0, cuda=True, prop='psmAvg')
+    else:
+        avg_props_clip = fields.psm.PlaneAverage(value_exclude=[0.0, 1.0])
+
+    def props_bodge(f: list[vs.VideoFrame], n: int) -> vs.VideoFrame:
+        fout = f[0].copy()
+        fout.props.update(ftAvg=f[1].props.psmAvg, fbAvg=f[2].props.psmAvg)
+        return fout
+
+    props_clip = clip.std.ModifyFrame(
+        [clip, avg_props_clip[::2], avg_props_clip[1::2]], props_bodge
     )
 
-    return core.std.Interleave(ffix).std.DoubleWeave()[::2]
+    output = props_clip.akarin.Expr(
+        'Y 2 % BF! BF@ x.ftAvg x.fbAvg ? TAVG! '
+        'TAVG@ 0 = x x TAVG@ BF@ x.fbAvg x.ftAvg ? + 2 / TAVG@ / * ?'
+    )
+
+    return depth(output, bits)
 
 
 def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None,
