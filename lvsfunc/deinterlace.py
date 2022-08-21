@@ -158,7 +158,7 @@ def check_patterns(clip: vs.VideoNode, tff: bool | int | None = None) -> int:
     :raises TopFieldFirstError:     No automatic ``tff`` can be determined.
     :raises StopIteration:          No pattern resulted in a clean match.
     """
-    if get_prop(clip.get_frame(0), '_FieldBased', int) == 0 and tff is None:
+    if tff is None and get_prop(clip.get_frame(0), '_FieldBased', int) == 0:
         raise TopFieldFirstError("check_patterns")
     elif isinstance(tff, (bool, int)):
         clip = clip.std.SetFieldBased(int(tff) + 1)
@@ -452,8 +452,7 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
     return weave_y.std.SetFieldBased(0)[::2]
 
 
-def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
-                        thr: float = 2.2) -> vs.VideoNode:
+def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None) -> vs.VideoNode:
     """
     Give a mathematically perfect solution to fades made *after* telecining (which made perfect IVTC impossible).
 
@@ -485,7 +484,7 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
     :raises TopFieldFirstError:     No automatic ``tff`` can be determined.
     """
     # I want to catch this before it reaches SeparateFields and give newer users a more useful error
-    if get_prop(clip.get_frame(0), '_FieldBased', int) == 0 and tff is None:
+    if tff is None and get_prop(clip.get_frame(0), '_FieldBased', int) == 0:
         raise TopFieldFirstError("fix_telecined_fades")
     elif isinstance(tff, (bool, int)):
         clip = clip.std.SetFieldBased(int(tff) + 1)
@@ -501,7 +500,7 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
         core.akarin.Expr([fo, fe], expr),
     )
 
-    return ffix.std.Interleave().std.DoubleWeave()[::2]
+    return core.std.Interleave(ffix).std.DoubleWeave()[::2]
 
 
 def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None,
@@ -558,7 +557,7 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
     if clip.fps != Fraction(30000, 1001):
         raise ValueError("pulldown_credits: 'Your clip must have a framerate of 30000/1001!'")
 
-    if get_prop(clip.get_frame(0), '_FieldBased', int) == 0 and tff is None:
+    if tff is None and get_prop(clip.get_frame(0), '_FieldBased', int) == 0:
         raise TopFieldFirstError("pulldown_credits")
     elif isinstance(tff, (bool, int)):
         clip = clip.std.SetFieldBased(int(tff) + 1)
