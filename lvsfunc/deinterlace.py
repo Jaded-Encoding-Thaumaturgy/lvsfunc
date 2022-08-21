@@ -7,13 +7,13 @@ import warnings
 from fractions import Fraction
 from functools import partial
 from pathlib import Path
-from typing import Any, Sequence, cast
+from typing import Any, Sequence
 
 import vapoursynth as vs
 from vsexprtools import mod2, mod4
 from vskernels import Bicubic, BicubicDidee, Catrom, Kernel, get_kernel, get_prop
 from vsrgtools import repair
-from vsutil import Dither, depth, get_depth, get_neutral_value, get_w, get_y, scale_value
+from vsutil import depth, get_neutral_value, get_w, get_y, scale_value
 
 from .comparison import Stack
 from .exceptions import InvalidFramerateError, TopFieldFirstError
