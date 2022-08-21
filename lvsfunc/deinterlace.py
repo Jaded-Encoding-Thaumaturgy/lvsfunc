@@ -484,40 +484,24 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None,
 
     :raises TopFieldFirstError:     No automatic ``tff`` can be determined.
     """
-    def _ftf(n: int, f: list[vs.VideoFrame]) -> vs.VideoNode:
-        avg = (get_prop(f[0], 'PlaneStatsAverage', float),
-               get_prop(f[1], 'PlaneStatsAverage', float))
-
-        if avg[0] != avg[1]:
-            mean = sum(avg) / 2
-            fixed = (sep[0].akarin.Expr(f"x {mean} {avg[0]} / dup {thr} <= swap 1 ? *"),
-                     sep[1].akarin.Expr(f"x {mean} {avg[1]} / *"))
-        else:
-            fixed = cast(tuple[vs.VideoNode, vs.VideoNode], sep)
-
-        return core.std.Interleave(fixed).std.DoubleWeave()[::2]
-
-    # I want to catch this before it reaches separateFields and give newer users a more useful error
+    # I want to catch this before it reaches SeparateFields and give newer users a more useful error
     if get_prop(clip.get_frame(0), '_FieldBased', int) == 0 and tff is None:
         raise TopFieldFirstError("fix_telecined_fades")
     elif isinstance(tff, (bool, int)):
         clip = clip.std.SetFieldBased(int(tff) + 1)
 
-    clip32 = depth(clip, 32).std.Limiter()
-    bits = get_depth(clip)
+    clip = clip.std.Limiter().std.SeparateFields()
+    clip = clip.psm.PlaneAverage(value_exclude=0)
+    fe, fo = clip[::2], clip[1::2]
 
-    sep = clip32.std.SeparateFields().std.PlaneStats()
-    sep = sep[::2], sep[1::2]  # type: ignore # I know this isn't good, but frameeval breaks otherwise
-    ftf = core.std.FrameEval(clip32, _ftf, sep)  # and I don't know how or why
+    expr = "x.psmAvg AVG! AVG@ 0 = x x AVG@ y.psmAvg + 2 / AVG@ / * ?"
 
-    if bits == 32:
-        warnings.warn("fix_telecined_fades: 'Make sure to dither down BEFORE setting the FieldBased prop to 0! "
-                      "Not doing this MAY return some of the combing!'")
-    else:
-        ftf = depth(ftf, bits, dither_type=Dither.ERROR_DIFFUSION)
-        ftf = ftf.std.SetFieldBased(0)
+    ffix = (
+        core.akarin.Expr([fe, fo], expr),
+        core.akarin.Expr([fo, fe], expr),
+    )
 
-    return ftf
+    return ffix.std.Interleave().std.DoubleWeave()[::2]
 
 
 def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None,

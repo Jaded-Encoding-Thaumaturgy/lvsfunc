@@ -25,10 +25,11 @@ The following VapourSynth libraries are also required for full functionality:
 * `VapourSynth-fillborders <https://github.com/dubhater/vapoursynth-fillborders>`_
 * `VapourSynth-nnedi3 <https://github.com/dubhater/VapourSynth-nnedi3>`_
 * `VapourSynth-NNEDI3CL <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-NNEDI3CL>`_
+* `VapourSynth-planestatsmod <https://github.com/dnjulek/vapoursynth-planestatsmod>`_
 * `VapourSynth-RemapFrames <https://github.com/Irrational-Encoding-Wizardry/Vapoursynth-RemapFrames>`_
 * `vapoursynth-scxvid <https://github.com/dubhater/vapoursynth-scxvid>`_
 * `VapourSynth-TDeintMod <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-TDeintMod>`_
-* `vapoursynth-wwxd <https://github.com/dubhater/vapoursynth-wwxd>`_
+* `VapourSynth-wwxd <https://github.com/dubhater/vapoursynth-wwxd>`_
 * `vs-ContinuityFixer <https://github.com/MonoS/VS-ContinuityFixer>`_
 * `vs-imwri <https://github.com/vapoursynth/vs-imwri>`_
 * `vs-mlrt <https://github.com/AmusementClub/vs-mlrt>`_
