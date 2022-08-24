@@ -481,7 +481,7 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None, cuda:
 
     :raises TopFieldFirstError:     No automatic ``tff`` can be determined.
     """
-    bits, clip = expect_bits(clip, 32)
+    bits, _ = expect_bits(clip, 32)
 
     if isinstance(tff, int):
         clip = clip.std.SetFieldBased(tff + 1)
@@ -496,7 +496,7 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None, cuda:
         except ModuleNotFoundError:
             raise ModuleNotFoundError("fix_telecined_fades: missing dependency `stgfunc`!")
 
-        avg_props_clip = mean_plane_value(fields, [0.0, 1.0], 0, cuda=True, prop='psmAvg')
+        avg_props_clip = mean_plane_value(fields, [0.0, 1.0], cuda=True, prop='psmAvg', single_out=True, planes=0)
     else:
         avg_props_clip = fields.psm.PlaneAverage(value_exclude=[0.0, 1.0])
 
@@ -510,8 +510,8 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None, cuda:
     )
 
     output = props_clip.akarin.Expr(
-        'Y 2 % BF! BF@ x.ftAvg x.fbAvg ? TAVG! '
-        'TAVG@ 0 = x x TAVG@ BF@ x.fbAvg x.ftAvg ? + 2 / TAVG@ / * ?'
+        'Y 2 % BF! BF@ x.fbAvg x.ftAvg ? TAVG! '
+        'TAVG@ 0 = x x TAVG@ BF@ x.ftAvg x.fbAvg ? + 2 / TAVG@ / * ?'
     )
 
     return depth(output, bits)
