@@ -328,6 +328,8 @@ def dpir(
 
     no_dpir_zones = list[Range]()
 
+    zoned_strength_clip = strength_clip
+
     if zones:
         cache_strength_clips = dict[float, vs.VideoNode]()
 
@@ -360,7 +362,7 @@ def dpir(
 
         if len(dpir_zones) <= 2:
             for rrange, sclip in dpir_zones.items():
-                zoned_strength_clip = replace_ranges(strength_clip, sclip, rrange)
+                zoned_strength_clip = replace_ranges(zoned_strength_clip, sclip, rrange)
         else:
             dpir_ranges_zones = {
                 range(*(
@@ -383,8 +385,6 @@ def dpir(
                 return strength_clip
 
             zoned_strength_clip = strength_clip.std.FrameEval(_select_sclip)
-    else:
-        zoned_strength_clip = strength_clip
 
     if None in {cuda, fp16}:
         try:
