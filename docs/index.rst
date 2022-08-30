@@ -28,10 +28,10 @@ lvsfunc Documentation
     :target: https://pepy.tech/project/lvsfunc
 
 
-To get immediately started, it's recommended you check out the :ref:`quickstart <_quickstart>` page.
-If you are new to Python, visit the :ref:`Python Primer <_primer>` page to learn the basics.
+To get immediately started, it's recommended you check out the :ref:`quickstart <quickstart>` page.
+If you are new to Python, visit the :ref:`Python Primer <primer>` page to learn the basics.
 
-Want to contribute to lvsfunc? Check out the `how to contribute <_contribute>` section!
+Want to contribute to lvsfunc? Check out the `how to contribute <contribute>` section!
 
 .. automodule:: lvsfunc
     :members:

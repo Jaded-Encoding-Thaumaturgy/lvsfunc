@@ -1,5 +1,6 @@
+============
 Dependencies
-------------
+============
 
 lvsfunc depends on the following third-party scripts:
 

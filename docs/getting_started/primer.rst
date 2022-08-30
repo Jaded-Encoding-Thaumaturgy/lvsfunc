@@ -76,7 +76,7 @@ with all the other lvsfunc functions.
 
 For further information about specific functions,
 please refer to their individual documentation.
-You can find them by scouring the :ref:`"filters" <_filters>` pages to the left,
+You can find them by scouring the :ref:`"filters" <filters>` pages to the left,
 or using the search bar.
 
 
