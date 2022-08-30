@@ -1,10 +1,8 @@
 lvsfunc.helpers
----------------
+===============
 
 Basic helpers used throughout lvsfunc.
 These can be used by users as well.
-
----------------
 
 .. autosummary::
 

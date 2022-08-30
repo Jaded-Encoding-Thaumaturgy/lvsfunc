@@ -1,5 +1,5 @@
 lvsfunc.scale
--------------------
+=============
 
 (De)scaling and conversion functions and wrappers.
 

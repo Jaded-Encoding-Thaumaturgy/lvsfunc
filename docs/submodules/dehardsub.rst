@@ -1,5 +1,5 @@
 lvsfunc.dehardsub
------------------
+=================
 
 Dehardsubbing functions and wrappers.
 

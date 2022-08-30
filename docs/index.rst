@@ -1,14 +1,14 @@
+=====================
 lvsfunc Documentation
----------------------
+=====================
+
+.. _home:
 
 .. warning::
 
     | Anything **MAY** change at any time. The public API **SHOULD NOT** be considered stable.
     | If you use lvsfunc in any of your projects, consider hardcoding a version requirement.
 
-
-About
----------------
 
 .. image:: https://img.shields.io/pypi/pyversions/lvsfunc
 
@@ -28,24 +28,29 @@ About
     :target: https://pepy.tech/project/lvsfunc
 
 
+To get immediately started, it's recommended you check out the :ref:`quickstart <_quickstart>` page.
+If you are new to Python, visit the :ref:`Python Primer <_primer>` page to learn the basics.
+
+Want to contribute to lvsfunc? Check out the `how to contribute <_contribute>` section!
+
 .. automodule:: lvsfunc
     :members:
     :undoc-members:
     :show-inheritance:
 
+.. toctree::
+    :maxdepth: 1
+    :caption: Getting started
+
+    getting_started/quickstart
+    getting_started/install
+    getting_started/primer
+    getting_started/dependencies
+
 
 .. toctree::
-    :maxdepth: 4
-    :caption: Installation
-
-    installation/install
-    installation/dependencies
-    installation/usage
-
-
-.. toctree::
-    :maxdepth: 4
-    :caption: Sub-Modules
+    :maxdepth: 1
+    :caption: Filters
     :titlesonly:
 
     submodules/aa
@@ -73,7 +78,7 @@ Special Credits
 
 
 .. toctree::
-    :maxdepth: 4
+    :maxdepth: 1
     :caption: Changelogs
 
     changelogs/changelogs

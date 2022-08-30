@@ -1,9 +1,9 @@
 lvsfunc.mask
--------------------
+============
 
 Masks are used to limit where filtering takes place,
 and how strong the filtering is applied.
-`lvsfunc` offers a couple of masks,
+lvsfunc offers a couple of masks,
 and they're often used internally in other functions.
 
 All masks come limited by default,

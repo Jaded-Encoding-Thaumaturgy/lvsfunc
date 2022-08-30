@@ -1,5 +1,5 @@
 lvsfunc.deinterlace
--------------------
+===================
 
 Deinterlacing, IVTC, and post-deinterlacing functions and wrappers.
 

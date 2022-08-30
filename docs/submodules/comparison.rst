@@ -1,5 +1,5 @@
 lvsfunc.comparison
--------------------
+==================
 
 Comparison and analysis functions and wrappers.
 
