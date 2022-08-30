@@ -80,6 +80,7 @@ autodoc_mock_imports = [
     "vskernels",
     "vsrgtools",
     "vsutil",
+    "vsaa",
 ]
 
 # -- Extension configuration -------------------------------------------------
