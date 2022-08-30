@@ -55,5 +55,5 @@ double-check you have installed all the required :ref:`prequisites <install>`.
 .. important::
 
     If you have trouble calling lvsfunc functions,
-    double-check that you're not loading in the old **lvsfunc.py**!
+    double-check that you're not loading in the old **_lvsfunc.py_**!
     If you are, delete it from your ``site-packages`` and it should work properly.
