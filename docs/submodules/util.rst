@@ -12,7 +12,6 @@ Some of these may also be useful for regular scripting or other modules.
     lvsfunc.util.chroma_injector
     lvsfunc.util.colored_clips
     lvsfunc.util.frames_since_bookmark
-    lvsfunc.util.get_prop
     lvsfunc.util.load_bookmarks
     lvsfunc.util.match_clip
     lvsfunc.util.normalize_ranges
