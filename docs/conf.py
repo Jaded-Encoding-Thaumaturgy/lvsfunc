@@ -81,6 +81,8 @@ autodoc_mock_imports = [
     "vsrgtools",
     "vsutil",
     "vsaa",
+    "vsscale",
+    "vsdehalo",
 ]
 
 # -- Extension configuration -------------------------------------------------
