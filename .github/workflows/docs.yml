@@ -25,7 +25,6 @@ jobs:
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
-          pip install -r requirements.txt
           pip install -r docs/requirements.txt
       - name: Building sphinx
         run: python3 setup.py build_sphinx -W --keep-going
