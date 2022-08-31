@@ -1,5 +1,6 @@
+==============
 lvsfunc.render
--------------------
+==============
 
 Clip rendering helpers.
 

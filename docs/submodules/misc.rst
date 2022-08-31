@@ -1,5 +1,6 @@
+============
 lvsfunc.misc
-------------
+============
 
 Miscellaneous functions and wrappers that don't really have a place elsewhere.
 

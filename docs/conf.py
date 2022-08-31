@@ -42,6 +42,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.todo',
     'sphinx_autodoc_typehints',
+    'sphinx.ext.autosectionlabel',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -73,7 +74,16 @@ html_static_path = ['_static']
 
 autosummary_generate = True
 
-autodoc_mock_imports = ["vsutil", "vapoursynth", "vskernels", "vsrgtools", "vsexprtools"]
+autodoc_mock_imports = [
+    "vapoursynth",
+    "vsexprtools",
+    "vskernels",
+    "vsrgtools",
+    "vsutil",
+    "vsaa",
+    "vsscale",
+    "vsdehalo",
+]
 
 # -- Extension configuration -------------------------------------------------
 

@@ -1,5 +1,6 @@
+============
 Dependencies
-------------
+============
 
 lvsfunc depends on the following third-party scripts:
 
@@ -41,12 +42,12 @@ An attempt has been made to document major dependencies on a per-function basis.
 Unfortunately, \*func family modules have complex dependency graphs and documenting
 them is beyond the scope of this module.
 
-You can install most of these dependencies by running ``lvsfunc`` directly:
+You can install most of these dependencies by running lvsfunc directly:
 
 .. code-block:: console
 
     python -m lvsfunc
         Install/update lvsfunc dependencies? [y/n]:
 
-| Note that this does _not_ install every single dependency!
+| Note that this does **not** install every single dependency!
 | Just the ones that are easy to obtain through package managers!

@@ -1,5 +1,8 @@
-Installation Instructions
--------------------------
+============
+Installation
+============
+
+.. _install:
 
 .. important::
 
@@ -28,5 +31,5 @@ as well as accurately reflect the documentation.
 
     pip3 install git+https://github.com/Irrational-Encoding-Wizardry/lvsfunc.git --no-cache-dir -U
 
-It's recommended you use a release version over building from git,
+It's recommended you use a release version over building from git
 unless you require new functionality only available upstream.
