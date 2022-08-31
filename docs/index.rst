@@ -46,6 +46,7 @@ Want to contribute to lvsfunc? Check out the `how to contribute <contribute>` se
     getting_started/install
     getting_started/primer
     getting_started/dependencies
+    getting_started/community
 
 
 .. toctree::
