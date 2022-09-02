@@ -8,7 +8,7 @@ from typing import Any, Callable, cast
 
 import vapoursynth as vs
 from typing_extensions import TypeGuard
-from vskernels import Bicubic, Kernel, VNodeCallable, get_kernel, get_matrix, get_prop
+from vskernels import Bicubic, Kernel, Matrix, VNodeCallable, get_kernel, get_prop
 from vsutil import depth, get_subsampling, get_w, get_y
 
 from .exceptions import InvalidFormatError, VariableFormatError, VariableResolutionError
@@ -549,7 +549,8 @@ def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
     clip = kernel.scale(clip, ref.width, ref.height) if dimensions else clip
 
     if vformat:
-        clip = kernel.resample(clip, format=ref.format, matrix=get_matrix(ref))
+        assert ref.format
+        clip = kernel.resample(clip, format=ref.format, matrix=Matrix.from_video(ref))
 
     if matrices:
         ref_frame = ref.get_frame(0)
@@ -557,7 +558,8 @@ def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
         clip = clip.std.SetFrameProps(
             _Matrix=get_prop(ref_frame, '_Matrix', int),
             _Transfer=get_prop(ref_frame, '_Transfer', int),
-            _Primaries=get_prop(ref_frame, '_Primaries', int))
+            _Primaries=get_prop(ref_frame, '_Primaries', int)
+        )
 
     return clip.std.AssumeFPS(fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
 

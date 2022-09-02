@@ -9,10 +9,6 @@ These can be used by users as well.
 
     lvsfunc.helpers._check_has_nvidia
     lvsfunc.helpers._check_index_exists
-    lvsfunc.helpers._generate_dgi
-    lvsfunc.helpers._get_dgidx
-    lvsfunc.helpers._load_dgi
-    lvsfunc.helpers._tail
 
 .. automodule:: lvsfunc.helpers
     :members:

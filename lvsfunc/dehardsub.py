@@ -54,8 +54,10 @@ class HardsubMask(DeferredMask, ABC):
         pdhs = [hrdsb]
         dmasks = []
         partials = partials + [ref]
+
         assert masks[-1].format is not None
         thresh = scale_thresh(0.75, masks[-1])
+
         for p in partials:
             masks.append(core.akarin.Expr([masks[-1], self.get_mask(p, ref)], expr="x y -"))
             dmasks.append(iterate(core.akarin.Expr([masks[-1]], f"x {thresh} < 0 x ?"),
@@ -63,6 +65,7 @@ class HardsubMask(DeferredMask, ABC):
                                   4).std.Inflate())
             pdhs.append(core.std.MaskedMerge(pdhs[-1], p, dmasks[-1]))
             masks[-1] = core.std.MaskedMerge(masks[-1], masks[-1].std.Invert(), masks[-2])
+
         return pdhs, dmasks
 
     def apply_dehardsub(self, hrdsb: vs.VideoNode, ref: vs.VideoNode,

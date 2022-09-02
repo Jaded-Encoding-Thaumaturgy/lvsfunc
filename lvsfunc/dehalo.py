@@ -55,7 +55,6 @@ def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
 
     :return:                    Dehalo'd clip.
     """
-
     warnings.warn('lvsfunc.bidehalo: deprecated in favor of vsdehalo.bidehalo!', DeprecationWarning)
 
     return vsdehalo.bidehalo(
@@ -222,7 +221,6 @@ def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
 
     :raises ModuleNotFoundError:    Dependencies are missing.
     """
-
     warnings.warn('lvsfunc.fine_dehalo: deprecated in favor of vsdehalo.fine_dehalo!', DeprecationWarning)
 
     return vsdehalo.fine_dehalo(

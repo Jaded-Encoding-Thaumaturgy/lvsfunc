@@ -48,7 +48,6 @@ def clamp_aa(src: vs.VideoNode, weak: vs.VideoNode, strong: vs.VideoNode, streng
 
     :return:            Clip with clamped anti-aliasing.
     """
-
     warnings.warn('lvsfunc.clamp_aa: deprecated in favor of vsaa.clamp_aa!', DeprecationWarning)
 
     return vsaa.clamp_aa(src, weak, strong, strength)
@@ -68,7 +67,6 @@ def taa(clip: vs.VideoNode, aafun: Callable[[vs.VideoNode], vs.VideoNode] | Sing
 
     :return:            Antialiased clip.
     """
-
     warnings.warn('lvsfunc.taa: deprecated in favor of vsaa.transpose_aa!', DeprecationWarning)
 
     if isinstance(aafun, SingleRater):
@@ -154,7 +152,6 @@ def nneedi3_clamp(clip: vs.VideoNode, strength: float = 1,
 
     :return:                    Antialiased clip.
     """
-
     warnings.warn('lvsfunc.nneedi3_clamp: deprecated in favor of vsaa.masked_clamp_aa!', DeprecationWarning)
 
     return vsaa.masked_clamp_aa(clip, strength, mthr, mask, opencl=opencl)
@@ -185,7 +182,6 @@ def transpose_aa(clip: vs.VideoNode, eedi3: bool = False, rep: int = 13) -> vs.V
 
     :return:          Antialiased clip.
     """
-
     warnings.warn('lvsfunc.transpose_aa: deprecated in favor of vsaa.fine_aa!', DeprecationWarning)
 
     return vsaa.fine_aa(clip, True, vsaa.Eedi3() if eedi3 else vsaa.Nnedi3(), rep)
@@ -231,7 +227,6 @@ def upscaled_sraa(clip: vs.VideoNode,
 
     :raises ValueError:     ``rfactor`` is not above 1.
     """
-
     warnings.warn('lvsfunc.upscaled_sraa: deprecated in favor of vsaa.upscaled_sraa!', DeprecationWarning)
 
     if isinstance(supersampler, SuperSampler):
