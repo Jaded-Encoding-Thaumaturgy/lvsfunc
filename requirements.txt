@@ -9,3 +9,4 @@ vskernels>=1.2.0
 vsrgtools>=1.0.0
 vsscale>=1.0.0
 vsutil>=0.8.0
+vsparsedvd>=0.0.4

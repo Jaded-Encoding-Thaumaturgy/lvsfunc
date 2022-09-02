@@ -83,6 +83,7 @@ autodoc_mock_imports = [
     "vsaa",
     "vsscale",
     "vsdehalo",
+    "vsparsedvd",
 ]
 
 # -- Extension configuration -------------------------------------------------

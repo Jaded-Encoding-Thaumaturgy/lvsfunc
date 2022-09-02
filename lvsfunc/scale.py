@@ -39,7 +39,6 @@ def descale_detail_mask(clip: vs.VideoNode, rescaled_clip: vs.VideoNode,
 
     :return:               Mask of lost detail.
     """
-
     warnings.warn(
         'lvsfunc.descale_detail_mask: deprecated in favor of vsscale.descale_detail_mask!', DeprecationWarning
     )
@@ -106,7 +105,6 @@ def descale(clip: vs.VideoNode,
     :raises ValueError:     Asymmetric number of heights and widths are specified.
     :raises RuntimeError:   Variable clip gets returned.
     """
-
     warnings.warn(
         'lvsfunc.descale_detail_mask: deprecated in favor of vsscale.descale_detail_mask!', DeprecationWarning
     )
@@ -178,7 +176,6 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
 
     :return:            Downsampled clip.
     """
-
     warnings.warn('lvsfunc.ssim_downsample: deprecated in favor of vsscale.SSIM!', DeprecationWarning)
 
     if isinstance(kernel, str):
@@ -199,7 +196,6 @@ def gamma2linear(clip: vs.VideoNode, curve: Transfer, gcor: float = 1.0,
         | This function has been deprecated! It will be removed in a future commit.
 
     """
-
     warnings.warn('lvsfunc.gamma2linear: deprecated in favor of vsscale.gamma2linear!', DeprecationWarning)
 
     return vsscale.gamma2linear(clip, curve, gcor, sigmoid, thr, cont, epsilon)
@@ -215,7 +211,6 @@ def linear2gamma(clip: vs.VideoNode, curve: Transfer, gcor: float = 1.0,
         | This function has been deprecated! It will be removed in a future commit.
 
     """
-
     warnings.warn('lvsfunc.linear2gamma: deprecated in favor of vsscale.linear2gamma!', DeprecationWarning)
 
     return vsscale.linear2gamma(clip, curve, gcor, sigmoid, thr, cont)
@@ -241,7 +236,6 @@ def comparative_descale(clip: vs.VideoNode, width: int | None = None, height: in
 
     :raises CompareSameKernelError:     py:class:`vskernels.BicubicSharp` gets passed to ``kernel``.
     """
-
     warnings.warn(
         'lvsfunc.comparative_descale: deprecated in favor of vsscale.descale with mode=DescaleMode.KernelDiff!',
         DeprecationWarning
@@ -271,7 +265,6 @@ def comparative_restore(clip: vs.VideoNode, width: int | None = None, height: in
 
     :raises CompareSameKernelError:     py:class:`vskernels.BicubicSharp` gets passed to ``kernel``.
     """
-
     warnings.warn(
         'lvsfunc.comparative_restore: deprecated in favor of vsscale.descale with mode=DescaleMode.KernelDiff!',
         DeprecationWarning

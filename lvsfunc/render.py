@@ -27,9 +27,8 @@ __all__ = [
 
 
 class RenderContext:
-    """
-    Contains info on the current render operation.
-    """
+    """Contains info on the current render operation."""
+
     clip: vs.VideoNode
     queued: int
     frames: dict[int, vs.VideoFrame]
@@ -72,8 +71,9 @@ def clip_async_render(clip: vs.VideoNode,
                       progress: str | None = "Rendering clip...",
                       callback: RenderCallback | list[RenderCallback] | None = None) -> list[float]:
     """
-    Render a clip by requesting frames asynchronously using clip.get_frame_async,
-    providing for callback with frame number and frame object.
+    Render a clip by requesting frames asynchronously using clip.get_frame_async.
+
+    You must provide a callback with frame number and frame object.
 
     This is mostly a re-implementation of VideoNode.output, but a little bit slower since it's pure python.
     You only really need this when you want to render a clip while operating on each frame in order
@@ -194,7 +194,7 @@ def clip_async_render(clip: vs.VideoNode,
 
 
 def get_render_progress() -> Progress:
-    """Returns render progress."""
+    """Return render progress."""
     return Progress(
         TextColumn("{task.description}"),
         BarColumn(),

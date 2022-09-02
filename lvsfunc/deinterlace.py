@@ -498,7 +498,7 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None, cuda:
 
         avg_props_clip = mean_plane_value(fields, [0.0, 1.0], cuda=True, prop='psmAvg', single_out=True, planes=0)
     else:
-        avg_props_clip = fields.psm.PlaneAverage(value_exclude=[0.0, 1.0])
+        avg_props_clip = fields.psm.PlaneAverage(value_exclude=[0.0, 1.0])  # type:ignore
 
     def props_bodge(f: list[vs.VideoFrame], n: int) -> vs.VideoFrame:
         fout = f[0].copy()

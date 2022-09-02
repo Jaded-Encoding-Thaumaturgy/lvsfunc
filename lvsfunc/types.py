@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from enum import IntEnum, auto
+from dataclasses import dataclass
+from enum import Enum, IntEnum, auto
 from typing import Any, NamedTuple, Protocol, Tuple
 
 import vapoursynth as vs
@@ -91,3 +92,34 @@ class _VideoNode(vs.VideoNode):
     """Use for asserting a VideoFormat exists."""
 
     format: vs.VideoFormat
+
+
+class IndexingType(str, Enum):
+    """Indexing types."""
+
+    DGI = '.dgi'
+    LWI = '.lwi'
+
+
+@dataclass
+class IndexFile:
+    """Type of index file."""
+
+    type: IndexingType
+    exists: bool
+
+
+class IndexType(IntEnum):
+    """Type of index."""
+
+    IMAGE = auto()
+    NONE = auto()
+
+
+class MissingT:
+    """Missing."""
+
+    pass
+
+
+MISSING = MissingT()

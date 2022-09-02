@@ -1,18 +1,19 @@
 from __future__ import annotations
 
-import os
 import warnings
 from functools import partial
+from pathlib import Path
 from typing import Any, Sequence
 
 import vapoursynth as vs
 from vskernels import Bicubic, Catrom, Kernel, Matrix, get_prop
+from vsparsedvd import DGIndexNV, SPath  # type: ignore
 from vsutil import depth, get_depth, is_image, scale_value
 
 from .exceptions import InvalidMatrixError
-from .helpers import _check_index_exists, _generate_dgi, _get_dgidx, _load_dgi, _tail
+from .helpers import _check_index_exists
 from .mask import BoundingBox
-from .types import IndexExists, Position, Range, Size
+from .types import MISSING, IndexFile, IndexingType, IndexType, Position, Range, Size
 from .util import check_variable, match_clip, normalize_ranges, replace_ranges
 
 core = vs.core
@@ -29,20 +30,19 @@ __all__ = [
 ]
 
 
-def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
-           film_thr: float = 99.0, force_lsmas: bool = False,
+def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # type: ignore
+           force_lsmas: bool = False, film_thr: float = 99.0,
            tail_lines: int = 4, kernel: Kernel | str = Bicubic(b=0, c=1/2),
-           **index_args: Any) -> vs.VideoNode:
+           debug: bool = False, **index_args: Any) -> vs.VideoNode:
     """
     Index and load video clips for use in VapourSynth automatically.
 
     .. note::
-        | For this function to work properly, you NEED to have DGIndex(NV) in your PATH!
-        | DGIndexNV will be faster, but it only works with an NVidia GPU.
+        | For this function to work properly, you NEED to have DGIndexNV in your PATH!
 
-    This function will try to index the given video file using DGIndex(NV).
+    This function will try to index the given video file using DGIndexNV.
     If it can't, it will fall back on L-SMASH. L-SMASH can also be forced using ``force_lsmas``.
-    It also automatically determines if an image has been imported.
+    It also automatically determines if an image has been passed instead.
 
     This function will automatically check whether your clip is mostly FILM.
     If FILM is above ``film_thr`` and the order is above 0,
@@ -83,43 +83,72 @@ def source(path: os.PathLike[str] | str, ref: vs.VideoNode | None = None,
 
     :raises ValueError:     Something other than a path is passed to ``path``.
     """
-    if not isinstance(path, (os.PathLike, str)):
-        raise ValueError(f"source: 'Please input a path, not a {type(path).__class__.__name__}!'")
+    if path == MISSING:
+        return partial(  # type: ignore
+            source, ref=ref, force_lsmas=force_lsmas, film_thr=film_thr,
+            tail_lines=tail_lines, kernel=kernel, debug=debug, **index_args
+        )
+
+    if not Path(path).is_file:
+        raise FileNotFoundError(f"{path} could not be found!")
 
     path = str(path)
-    film_thr = 100.0 if film_thr >= 100 else film_thr
+
+    clip = None
+    film_thr = float(min(100, film_thr))
 
     if path.startswith('file:///'):
         path = path[8::]
 
-    dgidx, dgsrc = _get_dgidx()
+    file_type = _check_index_exists(path)
+    file_idx_type = isinstance(file_type, IndexFile) and file_type.type or None
 
-    match IndexExists.LWI_EXISTS if force_lsmas else _check_index_exists(path):
-        case IndexExists.PATH_IS_DGI:
-            order, film = _tail(path, tail_lines)
-            clip = _load_dgi(path, film_thr, dgsrc, order, film, **index_args)
-        case IndexExists.PATH_IS_IMG:
-            clip = core.imwri.Read(path, **index_args).std.SetFrameProps(lvf_idx='imwri')
-        case IndexExists.LWI_EXISTS:
-            clip = core.lsmas.LWLibavSource(path, **index_args).std.SetFrameProps(lvf_idx='lsmas')
-        case IndexExists.DGI_EXISTS:
-            order, film = _tail(f"{path}.dgi", tail_lines)
-            clip = _load_dgi(f"{path}.dgi", film_thr, dgsrc, order, film, **index_args)
-        case _:
-            filename, _ = os.path.splitext(path)
-            dgi_file = f'{filename}.dgi'
+    props = dict[str, Any]()
+    debug_props = dict[str, Any]()
 
-            dgi = _generate_dgi(path, dgidx)
+    if force_lsmas or file_idx_type is IndexingType.LWI:
+        clip = core.lsmas.LWLibavSource(path, **index_args)
+        debug_props |= dict(idx_used='lsmas')
+    elif file_type is IndexType.IMAGE:
+        clip = core.imwri.Read(path, **index_args)
+        debug_props |= dict(idx_used='imwri')
+    elif file_idx_type is IndexingType.DGI or file_type is IndexType.NONE:
+        try:
+            indexer = DGIndexNV()
 
-            if not dgi:
-                warnings.warn(f"source: 'Unable to index using {dgidx}! Falling back to lsmas...'")
-                clip = core.lsmas.LWLibavSource(path, **index_args).std.SetFrameProps(lvf_idx='lsmas')
-            else:
-                order, film = _tail(dgi_file, tail_lines)
-                clip = _load_dgi(dgi_file, film_thr, dgsrc, order, film, **index_args)
+            if not path.endswith(".dgi"):
+                path = indexer.index([SPath(path)], False, False)[0]
+
+            idx_info = indexer.get_info(path, 0).footer
+
+            props |= dict(
+                dgi_fieldop=0,
+                dgi_order=idx_info.order,
+                dgi_film=idx_info.film
+            )
+
+            indexer_kwargs = dict[str, Any]()
+            if idx_info.film >= film_thr:
+                indexer_kwargs |= dict(fieldop=1)
+                props |= dict(dgi_fieldop=1, _FieldBased=0)
+
+            clip = indexer.vps_indexer(path, **indexer_kwargs)
+            debug_props |= dict(idx_used='DGIndexNV')
+        except Exception as e:
+            warnings.warn(f"source: 'Unable to index using DGIndexNV! Falling back to lsmas...'\n\t{e}",
+                          RuntimeWarning)
+
+    if clip is None:
+        return source(path, ref=ref, force_lsmas=True, film_thr=film_thr,
+                      tail_lines=tail_lines, kernel=kernel, debug=debug, **index_args)
+
+    clip = clip.std.SetFrameProps(**props)
+
+    if debug:
+        clip = clip.std.SetFrameProps(**debug_props)
 
     if ref:
-        return match_clip(clip, ref, length=is_image(path), kernel=kernel)
+        return match_clip(clip, ref, length=is_image(str(path)), kernel=kernel)
     return clip
 
 

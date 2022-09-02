@@ -619,7 +619,7 @@ def diff(*clips: vs.VideoNode,
 
     if clips and not all([c.format for c in clips]):
         raise VariableFormatError("diff")
-    elif namedclips and not all([nc.format for nc in namedclips.values()]):
+    elif namedclips and not all([nc.format for nc in namedclips.values()]):  # noqa
         raise VariableFormatError("diff")
 
     def _to_ranges(iterable: list[int]) -> Iterable[tuple[int, int]]:
