@@ -739,9 +739,9 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
 
 
 def PARser(clip: vs.VideoNode, active_area: int,
-           dar: Dar | str | None = None, height: int | None = None,
+           dar: Dar | Fraction | None = None, height: int | None = None,
            region: Region | str = Region.NTSC,
-           return_result: bool = False) -> vs.VideoNode | dict[str, SupportsFloat]:
+           return_result: bool = False) -> vs.VideoNode | dict[str, SupportsFloat | tuple[int, int] | str]:
     """
     Calculate SAR (sample aspect ratio) and attach result as frameprops.
 
@@ -775,8 +775,9 @@ def PARser(clip: vs.VideoNode, active_area: int,
     :param active_area:         Width you would end up with post-cropping.
                                 Only take into account darker messed up edges!
     :param dar:                 Display Aspect Ratio. Refers to the analog television aspect ratio.
-                                Must be a :py:attr:`lvsfunc.types.Dar` enum  or string representing a Dar value.
-                                If None, automatically guesses based on the SAR props.
+                                Must be a :py:attr:`lvsfunc.types.Dar` enum, a string representing a Dar value,
+                                or a Fraction object containing a user-defined DAR.
+                                If None, automatically guesses DAR based on the SAR props.
                                 Default: None.
     :param height:              Height override. If None, auto-select based on region.
                                 This is not particularly useful unless you want to set it to 486p
@@ -796,13 +797,17 @@ def PARser(clip: vs.VideoNode, active_area: int,
     :raises ValueError:         Invalid ``Region`` is passed.
     """
     new_dar: tuple[int, int]
+    props: dict[str, SupportsFloat | tuple[int, int] | str] = dict()
 
     match dar:
+        case Fraction(): new_dar = dar.numerator, dar.denominator
         case Dar.WIDESCREEN: new_dar = 16, 9
         case Dar.FULLSCREEN: new_dar = 4, 3
         case Dar.SQUARE: return clip.std.SetFrameProps(_SARDen=1, _SARNum=1)
         case None: return PARser(clip, active_area, _calculate_dar_from_props(clip), height, region, return_result)
         case _: raise ValueError(f"Invalid DAR passed! Must be in {[str(e.value) for e in Dar]} or None!")
+
+    props |= dict(dar=new_dar)
 
     if height is None:
         match region:
@@ -816,11 +821,14 @@ def PARser(clip: vs.VideoNode, active_area: int,
     sarden = sar[0] // sargcd
     sarnum = sar[1] // sargcd
 
-    props: dict[str, SupportsFloat] = dict(_SARDen=sarden, _SARNum=sarnum)
+    props |= dict(_SARDen=sarden, _SARNum=sarnum)
 
     match dar:
-        case Dar.WIDESCREEN: props |= dict(amorp_width=clip.width * (sarden / sarnum))
-        case Dar.FULLSCREEN: props |= dict(amorp_height=clip.height * (sarnum / sarden))
+        case Dar.WIDESCREEN: props |= dict(amorph_width=clip.width * (sarden / sarnum))
+        case Dar.FULLSCREEN: props |= dict(amorph_height=clip.height * (sarnum / sarden))
+        case _: props |= dict(amorph__note="Use your best judgment to pick one!",
+                              amorph_width=clip.width * (sarden / sarnum),
+                              amorph_height=clip.height * (sarnum / sarden))
 
     if return_result:
         return props
