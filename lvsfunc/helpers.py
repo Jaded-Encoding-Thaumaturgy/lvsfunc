@@ -58,6 +58,6 @@ def _calculate_dar_from_props(clip: vs.VideoNode) -> Dar:
         )
 
     match sar:
-        case (11, 10): return Dar.FULLSCREEN
-        case (33, 40): return Dar.WIDESCREEN
+        case (11, 10) | (9, 8): return Dar.FULLSCREEN
+        case (33, 40) | (27, 32): return Dar.WIDESCREEN
         case _: raise ValueError("Could not calculate DAR. Please set the DAR manually.")
