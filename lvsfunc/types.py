@@ -7,7 +7,24 @@ from typing import Any, NamedTuple, Protocol, Tuple
 import vapoursynth as vs
 
 __all__ = [
-    'Coordinate', 'Direction', 'Position', 'Range', 'RegressClips', 'SceneChangeMode', 'Size', '_VideoNode'
+    '_VideoNode',
+    'Coordinate',
+    'Dar',
+    'Direction',
+    'IndexExists',
+    'IndexFile',
+    'IndexingType',
+    'IndexType',
+    'MISSING',
+    'MissingT',
+    'Position',
+    'Range',
+    'Region',
+    'RegressClips',
+    'SceneChangeMode',
+    'Shapes',
+    'Size',
+    'VSIdxFunction',
 ]
 
 Range = int | None | Tuple[int | None, int | None]
@@ -123,3 +140,20 @@ class MissingT:
 
 
 MISSING = MissingT()
+
+
+class Dar(str, Enum):
+    """StrEnum signifying an analog television aspect ratio."""
+
+    WIDESCREEN = "widescreen"
+    WIDE = WIDESCREEN
+    FULLSCREEN = "fullscreen"
+    FULL = FULLSCREEN
+    SQUARE = "square"
+
+
+class Region(str, Enum):
+    """StrEnum signifying an analog television region."""
+
+    NTSC = "NTSC"
+    PAL = "PAL"
