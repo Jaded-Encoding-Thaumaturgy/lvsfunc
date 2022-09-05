@@ -768,8 +768,11 @@ def PARser(clip: vs.VideoNode, active_area: int,
     This will result in the most accurate final image without introducing compounding resampling artefacting
     (don't worry, plenty programs still support anamorphic video).
 
-    Core idea for this from a `private gist <https://gist.github.com/wiwaz/40883bae396bef5eb9fc99d4de2377ec>`_
-    and heavily modified by LightArrowsEXE.
+    Core idea originated from a `private gist <https://gist.github.com/wiwaz/40883bae396bef5eb9fc99d4de2377ec>`_
+    and was heavily modified by LightArrowsEXE.
+
+    For more information, I highly recommend reading
+    `this blogpost <https://web.archive.org/web/20140218044518/http://lipas.uwasa.fi/~f76998/video/conversion/>`_.
 
     :param clip:                Input clip.
     :param active_area:         Width you would end up with post-cropping.
@@ -826,6 +829,7 @@ def PARser(clip: vs.VideoNode, active_area: int,
     match dar:
         case Dar.WIDESCREEN: props |= dict(amorph_width=clip.width * (sarden / sarnum))
         case Dar.FULLSCREEN: props |= dict(amorph_height=clip.height * (sarnum / sarden))
+        # TODO: autoguess which to return based on the sarnum maybe?
         case _: props |= dict(amorph__note="Use your best judgment to pick one!",
                               amorph_width=clip.width * (sarden / sarnum),
                               amorph_height=clip.height * (sarnum / sarden))
