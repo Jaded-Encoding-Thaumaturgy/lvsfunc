@@ -35,17 +35,6 @@ Or if you want the latest git version, install it with this command:
 $ pip3 install git+https://github.com/Irrational-Encoding-Wizardry/lvsfunc.git --no-cache-dir -U
 ```
 
-### Arch Linux
-
-Install the [AUR package](https://aur.archlinux.org/packages/vapoursynth-plugin-lvsfunc-git/) `vapoursynth-plugin-lvsfunc-git` with your favorite AUR helper:
-
-```sh
-$ yay -S vapoursynth-plugin-lvsfunc-git
-```
-
-Note that this may be outdated.
-It's recommended you grab the git version instead.
-
 ## Usage
 
 After installation, functions can be loaded and used as follows:
