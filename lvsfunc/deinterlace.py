@@ -739,7 +739,7 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
 
 
 def PARser(clip: vs.VideoNode, active_area: int,
-           dar: Dar | Fraction | None = None, height: int | None = None,
+           dar: Dar | str | Fraction | None = None, height: int | None = None,
            region: Region | str = Region.NTSC,
            return_result: bool = False) -> vs.VideoNode | dict[str, SupportsFloat | tuple[int, int] | str]:
     """
@@ -757,14 +757,14 @@ def PARser(clip: vs.VideoNode, active_area: int,
         * 711x480 (NTSC, MPEG-4)
 
     Make sure you absolutely DO NOT ACTUALLY CROP in the direction you're stretching!
-    If you do, the end result will be off, and the anamorphoc resolution will be wrong! Just leave them alone.
+    If you do, the end result will be off, and the aspect ratio will be wrong! Just leave them alone.
     It's okay to crop the top/bottom when going widescreen, and left/right when going fullscreen.
 
-    If you _really_ want to crop the pixels anyway, let the video decoder handle that during playback.
+    If you absolutely *must* crop the pixels away, consider letting the video decoder handle that during playback.
     See: `display-window (x265) <https://x265.readthedocs.io/en/master/cli.html#cmdoption-display-window>`_
 
     It's not recommended to stretch to the final resolution after calculating the SAR.
-    Instead, set the SAR in your encode settings and encode your video as anamorphic.
+    Instead, set the SAR in your encoder's settings and encode your video as anamorphic.
     This will result in the most accurate final image without introducing compounding resampling artefacting
     (don't worry, plenty programs still support anamorphic video).
 
@@ -781,23 +781,24 @@ def PARser(clip: vs.VideoNode, active_area: int,
                                 Must be a :py:attr:`lvsfunc.types.Dar` enum, a string representing a Dar value,
                                 or a Fraction object containing a user-defined DAR.
                                 If None, automatically guesses DAR based on the SAR props.
-                                Default: None.
+                                Default: assume based on current SAR properties.
     :param height:              Height override. If None, auto-select based on region.
                                 This is not particularly useful unless you want to set it to 486p
                                 (to use with for example a 1920x1080 -> 864x486 -> 864x480 downscaled + cropped DVD
-                                where the studio did not properly account for anamorphic resolutions).
-                                Default: None.
+                                where the studio did not properly account for anamorphic resolutions)
+                                or need to deal with ITU-R REC.601 video.
+                                Default: input clip's height.
     :param region:              Analog television region. Must be either NTSC or PAL.
                                 Must be a :py:attr:`lvsfunc.types.Region` enum  or string representing a Region value.
                                 Default: :py:attr:`lvsfunc.types.Region.NTSC`.
-    :param return_result:       Return the SAR result as a dict. Default: False.
+    :param return_result:       Return the results as a dict. Default: False.
 
     :return:                    Clip with corrected SAR props and anamorphic width/height prop,
                                 or a dictionary with all the results.
 
-    :raises FramePropError:     DAR is not set and no SAR props can be found.
-    :raises ValueError:         Invalid ``Dar`` is passed.
-    :raises ValueError:         Invalid ``Region`` is passed.
+    :raises FramePropError:     DAR is None and no SAR props are set on the input clip.
+    :raises ValueError:         Invalid :py:attr:`lvsfunc.types.Dar` is passed.
+    :raises ValueError:         Invalid :py:attr:`lvsfunc.types.Region` is passed.
     """
     new_dar: tuple[int, int]
     props: dict[str, SupportsFloat | tuple[int, int] | str] = dict()
