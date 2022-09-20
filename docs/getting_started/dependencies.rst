@@ -11,6 +11,7 @@ lvsfunc depends on the following third-party scripts:
 
 The following VapourSynth libraries are also required for full functionality:
 
+* `adaptivegrain <https://github.com/Irrational-Encoding-Wizardry/adaptivegrain>_`
 * `akarinVS <https://github.com/AkarinVS/vapoursynth-plugin>`_
 * `combmask <https://drive.google.com/file/d/15E0Ua27AndT-0zSHHCC1iL5SZO09Ntbv/view?usp=sharing>`_
 * `dgdecode <https://www.rationalqm.us/dgmpgdec/dgmpgdec.html>`_
