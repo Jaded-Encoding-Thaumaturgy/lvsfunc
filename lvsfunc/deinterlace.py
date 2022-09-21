@@ -6,8 +6,9 @@ import time
 import warnings
 from fractions import Fraction
 from functools import partial
+from math import gcd
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Sequence, SupportsFloat
 
 import vapoursynth as vs
 from vsexprtools import expect_bits, mod2, mod4
@@ -17,8 +18,9 @@ from vsutil import depth, get_neutral_value, get_w, get_y, scale_value
 
 from .comparison import Stack
 from .exceptions import InvalidFramerateError, TopFieldFirstError
+from .helpers import _calculate_dar_from_props
 from .render import clip_async_render, get_render_progress
-from .types import Direction
+from .types import Dar, Direction, Region
 from .util import check_variable, check_variable_format
 
 core = vs.core
@@ -34,6 +36,7 @@ __all__ = [
     'sivtc', 'SIVTC',
     'tivtc_vfr', 'TIVTC_VFR',
     'vinverse',
+    'PARser', 'parser',
 ]
 
 main_file = os.path.realpath(sys.argv[0]) if sys.argv[0] else None
@@ -735,6 +738,109 @@ def vinverse(clip: vs.VideoNode, sstr: float = 2.0,
                             'merge@ > x a@ - merge@ ? ?')
 
 
+def PARser(clip: vs.VideoNode, active_area: int,
+           dar: Dar | str | Fraction | None = None, height: int | None = None,
+           region: Region | str = Region.NTSC,
+           return_result: bool = False) -> vs.VideoNode | dict[str, SupportsFloat | tuple[int, int] | str]:
+    """
+    Calculate SAR (sample aspect ratio) and attach result as frameprops.
+
+    The active area is calculated by subtracting the dirty edges from the left and right side of the clip.
+    Only take the darker pixels into account, and make sure you gather them from bright scenes!
+    The SAR and anamorphic width/height will be added to the clip as props, but can also be printed.
+
+    List of common valid active areas (note that ``active_area`` only sets the width!):
+
+        * 704x480 (NTSC, MPEG-4)
+        * 708x480 (NTSC, SMPTE Rp87-1995)
+        * 710.85x486 (NTSC, ITU-R REC.601)
+        * 711x480 (NTSC, MPEG-4)
+
+    Make sure you absolutely DO NOT ACTUALLY CROP in the direction you're stretching!
+    If you do, the end result will be off, and the aspect ratio will be wrong! Just leave them alone.
+    It's okay to crop the top/bottom when going widescreen, and left/right when going fullscreen.
+
+    If you absolutely *must* crop the pixels away, consider letting the video decoder handle that during playback.
+    See: `display-window (x265) <https://x265.readthedocs.io/en/master/cli.html#cmdoption-display-window>`_
+
+    It's not recommended to stretch to the final resolution after calculating the SAR.
+    Instead, set the SAR in your encoder's settings and encode your video as anamorphic.
+    This will result in the most accurate final image without introducing compounding resampling artefacting
+    (don't worry, plenty programs still support anamorphic video).
+
+    Core idea originated from a `private gist <https://gist.github.com/wiwaz/40883bae396bef5eb9fc99d4de2377ec>`_
+    and was heavily modified by LightArrowsEXE.
+
+    For more information, I highly recommend reading
+    `this blogpost <https://web.archive.org/web/20140218044518/http://lipas.uwasa.fi/~f76998/video/conversion/>`_.
+
+    :param clip:                Input clip.
+    :param active_area:         Width you would end up with post-cropping.
+                                Only take into account darker messed up edges!
+    :param dar:                 Display Aspect Ratio. Refers to the analog television aspect ratio.
+                                Must be a :py:attr:`lvsfunc.types.Dar` enum, a string representing a Dar value,
+                                or a Fraction object containing a user-defined DAR.
+                                If None, automatically guesses DAR based on the SAR props.
+                                Default: assume based on current SAR properties.
+    :param height:              Height override. If None, auto-select based on region.
+                                This is not particularly useful unless you want to set it to 486p
+                                (to use with for example a 1920x1080 -> 864x486 -> 864x480 downscaled + cropped DVD
+                                where the studio did not properly account for anamorphic resolutions)
+                                or need to deal with ITU-R REC.601 video.
+                                Default: input clip's height.
+    :param region:              Analog television region. Must be either NTSC or PAL.
+                                Must be a :py:attr:`lvsfunc.types.Region` enum  or string representing a Region value.
+                                Default: :py:attr:`lvsfunc.types.Region.NTSC`.
+    :param return_result:       Return the results as a dict. Default: False.
+
+    :return:                    Clip with corrected SAR props and anamorphic width/height prop,
+                                or a dictionary with all the results.
+
+    :raises FramePropError:     DAR is None and no SAR props are set on the input clip.
+    :raises ValueError:         Invalid :py:attr:`lvsfunc.types.Dar` is passed.
+    :raises ValueError:         Invalid :py:attr:`lvsfunc.types.Region` is passed.
+    """
+    new_dar: tuple[int, int]
+    props: dict[str, SupportsFloat | tuple[int, int] | str] = dict()
+
+    match dar:
+        case Fraction(): new_dar = dar.numerator, dar.denominator
+        case Dar.WIDESCREEN: new_dar = 16, 9
+        case Dar.FULLSCREEN: new_dar = 4, 3
+        case Dar.SQUARE: return clip.std.SetFrameProps(_SARDen=1, _SARNum=1)
+        case None: return PARser(clip, active_area, _calculate_dar_from_props(clip), height, region, return_result)
+        case _: raise ValueError(f"Invalid DAR passed! Must be in {[str(e.value) for e in Dar]} or None!")
+
+    props |= dict(dar=new_dar)
+
+    if height is None:
+        match region:
+            case Region.NTSC: height = 480
+            case Region.PAL: height = 576
+            case _: raise ValueError(f"Invalid region passed! Must be in {[str(e.value) for e in Region]}!")
+
+    sar = new_dar[0] * height, new_dar[1] * active_area
+    sargcd = gcd(sar[0], sar[1])
+
+    sarden = sar[0] // sargcd
+    sarnum = sar[1] // sargcd
+
+    props |= dict(_SARDen=sarden, _SARNum=sarnum)
+
+    match dar:
+        case Dar.WIDESCREEN: props |= dict(amorph_width=clip.width * (sarden / sarnum))
+        case Dar.FULLSCREEN: props |= dict(amorph_height=clip.height * (sarnum / sarden))
+        # TODO: autoguess which to return based on the sarnum maybe?
+        case _: props |= dict(amorph__note="Use your best judgment to pick one!",
+                              amorph_width=clip.width * (sarden / sarnum),
+                              amorph_height=clip.height * (sarnum / sarden))
+
+    if return_result:
+        return props
+
+    return clip.std.SetFrameProps(**props)
+
+
 # helpers
 def _check_pattern(clip: vs.VideoNode, pattern: int = 0) -> bool:
     """:py:func:`lvsfunc.deinterlace.check_patterns` rendering behaviour."""
@@ -762,3 +868,4 @@ def _check_pattern(clip: vs.VideoNode, pattern: int = 0) -> bool:
 SIVTC = sivtc
 TIVTC_VFR = tivtc_vfr
 ivtc_credits = pulldown_credits
+parser = PARser
