@@ -487,7 +487,9 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None, cuda:
     bits, _ = expect_bits(clip, 32)
 
     if isinstance(tff, int):
-        clip = clip.std.SetFieldBased(tff + 1)
+        clip = clip.std.SetFieldBased(tff)
+    elif isinstance(tff, bool):
+        clip = clip.std.SetFieldBased(int(tff) + 1)
     elif get_prop(clip.get_frame(0), '_FieldBased', int) == 0:
         raise TopFieldFirstError("fix_telecined_fades")
 
