@@ -26,6 +26,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 matrix: Matrix | int | None = None,
                 kernel: Kernel | str = Bicubic(b=0, c=1/2),
                 cuda: bool = True, write_props: bool = False,
+                cuda: bool | Literal['trt'] | None = None,
+                write_props: bool = False,
                 **vsdpir_args: Any) -> vs.VideoNode:
     r"""
     Rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
@@ -65,7 +67,10 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     :param kernel:          py:class:`vskernels.Kernel` object used for conversions between YUV <-> RGB.
                             This can also be the string name of the kernel
                             (Default: py:class:`vskernels.Bicubic(0, 0.5)`).
-    :param cuda:            Use CUDA backend if True, else CPU backend.
+    :param cuda:            Used to select backend.
+                            Use CUDA if True, CUDA TensorRT if 'trt', else CPU OpenVINO if False.
+                            If ``None``, it will detect your system's capabilities
+                            and select the fastest backend.
     :param write_props:     whether to write verbose props.
     :param vsdpir_args:     Additional args to pass to :py:func:`lvsfunc.deblock.vsdpir`.
 
@@ -112,6 +117,10 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     if isinstance(kernel, str):
         kernel = get_kernel(kernel)()
 
+    vsdpir_final_args = dict(mode='deblock', cuda=cuda)
+    vsdpir_final_args |= vsdpir_args
+    vsdpir_final_args.pop('strength', None)
+
     nthrs = [tuple(x / 255 for x in thr) for thr in thrs]
 
     is_rgb = clip.format.color_family is vs.RGB
@@ -136,7 +145,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     diffprev = core.std.PlaneStats(rgb, rgb[0] + rgb, prop='YPrev')
 
     db_clips = [
-        dpir(rgb, strength=st, mode='deblock', cuda=cuda, **vsdpir_args)
+        dpir(rgb, strength=st, **vsdpir_final_args)
         .std.SetFrameProp('Adb_DeblockStrength', intval=int(st)) for st in strs
     ]
 
