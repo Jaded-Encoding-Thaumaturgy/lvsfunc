@@ -25,7 +25,6 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 thrs: Sequence[tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
                 matrix: Matrix | int | None = None,
                 kernel: Kernel | str = Bicubic(b=0, c=1/2),
-                cuda: bool = True, write_props: bool = False,
                 cuda: bool | Literal['trt'] | None = None,
                 write_props: bool = False,
                 **vsdpir_args: Any) -> vs.VideoNode:
