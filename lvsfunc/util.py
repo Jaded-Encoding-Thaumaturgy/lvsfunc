@@ -4,243 +4,22 @@ import colorsys
 import random
 import warnings
 from functools import partial, wraps
-from typing import Any, Callable, TypeGuard, cast
+from typing import Any, Callable, cast
 
 from vskernels import Bicubic, Kernel
 from vstools import (
-    F_VD, InvalidVideoFormatError, Matrix, VariableFormatError, VariableResolutionError, core, depth, get_prop,
-    get_subsampling, get_w, get_y, vs
+    F_VD, InvalidVideoFormatError, Matrix, check_variable, check_variable_format, core, depth, get_prop, get_w, get_y,
+    vs
 )
-
-from .types import Range, _VideoNode
 
 __all__ = [
     'allow_variable',
-    'check_variable',
     'chroma_injector',
     'colored_clips',
     'frames_since_bookmark',
     'load_bookmarks',
-    'normalize_ranges',
-    'padder',
-    'quick_resample',
-    'replace_ranges', 'rfs',
-    'scale_peak',
-    'scale_thresh'
+    'quick_resample'
 ]
-
-
-def quick_resample(clip: vs.VideoNode,
-                   function: Callable[[vs.VideoNode], vs.VideoNode]
-                   ) -> vs.VideoNode:
-    """
-    Quickly resample to 32/16/8 bit and back to the original depth in a one-liner.
-
-    .. warning:
-        This function will be either reworked or removed in a future version!
-
-    Useful for filters that only work in 16 bit or lower when you're working in float.
-
-    :param clip:        Clip to process.
-    :param function:    Filter to run after resampling (accepts and returns clip).
-
-    :return:            Filtered clip in original depth.
-    """
-    warnings.warn("quick_resample: 'This function will be either reworked or removed in a future version!'",
-                  FutureWarning)
-
-    assert check_variable_format(clip, "quick_resample")
-
-    try:  # Excepts all generic because >plugin/script writers being consistent >_>
-        dither = depth(clip, 32)
-        filtered = function(dither)
-    except:  # noqa: E722
-        try:
-            dither = depth(clip, 16)
-            filtered = function(dither)
-        except:  # noqa: E722
-            dither = depth(clip, 8)
-            filtered = function(dither)
-
-    return depth(filtered, clip.format.bits_per_sample)
-
-
-def normalize_ranges(clip: vs.VideoNode, ranges: Range | list[Range]) -> list[tuple[int, int]]:
-    r"""
-    Normalize :py:func:`lvsfunc.types.Range`\(s) to a list of inclusive positive integer ranges.
-
-    :param clip:        Reference clip used for length.
-    :param ranges:      Single :py:class:`lvsfunc.types.Range`,
-                        or a list of :py:class:`lvsfunc.types.Range`\(s).
-
-    :return:            List of inclusive positive ranges.
-    """
-    ranges = ranges if isinstance(ranges, list) else [ranges]
-
-    out = []
-    for r in ranges:
-        if isinstance(r, tuple):
-            start, end = r
-            if start is None:
-                start = 0
-            if end is None:
-                end = clip.num_frames - 1
-        elif r is None:
-            start = clip.num_frames - 1
-            end = clip.num_frames - 1
-        else:
-            start = r
-            end = r
-        if start < 0:
-            start = clip.num_frames - 1 + start
-        if end < 0:
-            end = clip.num_frames - 1 + end
-        out.append((start, end))
-
-    return out
-
-
-def replace_ranges(clip_a: vs.VideoNode,
-                   clip_b: vs.VideoNode,
-                   ranges: Range | list[Range] | None,
-                   exclusive: bool = False,
-                   use_plugin: bool = True) -> vs.VideoNode:
-    """
-    Remaps frame indices in a clip using ints and tuples rather than a string.
-
-    Frame ranges are inclusive. This behaviour can be changed by setting `exclusive=True`.
-
-    If you're trying to splice in clips, it's recommended you use `vstools.insert_clip` instead.
-
-    This function will try to call the `VapourSynth-RemapFrames` plugin before doing any of its own processing.
-    This should come with a speed boost, so it's recommended you install it.
-
-    Examples with clips ``black`` and ``white`` of equal length:
-
-        * ``replace_ranges(black, white, [(0, 1)])``: replace frames 0 and 1 with ``white``
-        * ``replace_ranges(black, white, [(None, None)])``: replace the entire clip with ``white``
-        * ``replace_ranges(black, white, [(0, None)])``: same as previous
-        * ``replace_ranges(black, white, [(200, None)])``: replace 200 until the end with ``white``
-        * ``replace_ranges(black, white, [(200, -1)])``: replace 200 until the end with ``white``,
-          leaving 1 frame of ``black``
-
-    Alias for this function is ``lvsfunc.rfs``.
-
-    Dependencies:
-
-    * `VapourSynth-RemapFrames <https://github.com/Irrational-Encoding-Wizardry/Vapoursynth-RemapFrames>`_
-
-    :param clip_a:          Original clip.
-    :param clip_b:          Replacement clip.
-    :param ranges:          Ranges to replace clip_a (original clip) with clip_b (replacement clip).
-
-                            Integer values in the list indicate single frames,
-
-                            Tuple values indicate inclusive ranges.
-
-                            Negative integer values will be wrapped around based on clip_b's length.
-
-                            None values are context dependent:
-
-                                * None provided as sole value to ranges: no-op
-                                * Single None value in list: Last frame in clip_b
-                                * None as first value of tuple: 0
-                                * None as second value of tuple: Last frame in clip_b
-    :param exclusive:       Use exclusive ranges (Default: False).
-    :param use_plugin:      Use the ReplaceFramesSimple plugin for the rfs call (Default: True).
-
-    :return:                Clip with ranges from clip_a replaced with clip_b.
-
-    :raises ValueError:     A string is passed instead of a list of ranges.
-    """
-    if ranges != 0 and not ranges:
-        return clip_a
-
-    if isinstance(ranges, str):  # type:ignore[unreachable]
-        raise ValueError("replace_ranges: 'This function does not take strings! Please use a list of tuples or ints!")
-
-    if clip_a.num_frames != clip_b.num_frames:
-        warnings.warn("replace_ranges: "
-                      f"'The number of frames ({clip_a.num_frames} vs. {clip_b.num_frames}) do not match! "
-                      "The function will still work, but you may run into unintended errors with the output clip!'")
-
-    nranges = normalize_ranges(clip_b, ranges)
-
-    if use_plugin and hasattr(core, 'remap'):
-        return core.remap.ReplaceFramesSimple(
-            clip_a, clip_b, mismatch=True,
-            mappings=' '.join(f'[{s} {e + (exclusive if s != e else 0)}]' for s, e in nranges)
-        )
-
-    out = clip_a
-    shift = 1 + exclusive
-
-    for start, end in nranges:
-        tmp = clip_b[start:end + shift]
-        if start != 0:
-            tmp = out[: start] + tmp
-        if end < out.num_frames - 1:
-            tmp = tmp + out[end + shift:]
-        out = tmp
-
-    return out
-
-
-def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -> float:
-    """
-    Scale binarization thresholds from float to int.
-
-    :param thresh:          Threshold [0, 1]. If greater than 1, assumed to be in native clip range.
-    :param clip:            Clip to scale to.
-    :param assume:          | Assume input is this depth when given input > 1.
-                            | If ``None``, assume ``clip``'s format (Default: None).
-
-    :return:                Threshold scaled to [0, 2^clip.depth - 1] (if vs.INTEGER).
-
-    :raises ValueError:     Thresholds are negative.
-    """
-    assert check_variable_format(clip, "scale_thresh")
-
-    if thresh < 0:
-        raise ValueError("scale_thresh: 'Thresholds must be positive!'")
-    if thresh > 1:
-        return thresh if not assume \
-            else round(thresh/((1 << assume) - 1) * ((1 << clip.format.bits_per_sample) - 1))
-    return thresh if clip.format.sample_type == vs.FLOAT or thresh > 1 \
-        else round(thresh * ((1 << clip.format.bits_per_sample) - 1))
-
-
-def check_variable_format(clip: vs.VideoNode, function: str) -> TypeGuard[_VideoNode]:
-    """
-    Check for variable format and return an error if found.
-
-    :raises VariableFormatError:    The clip is of a variable format.
-    """
-    if clip.format is None:
-        raise VariableFormatError(function)
-    return True
-
-
-def check_variable_resolution(clip: vs.VideoNode, function: str) -> None:
-    """
-    Check for variable width or height and return an error if found.
-
-    :raises VariableResolutionError:    The clip has a variable resolution.
-    """
-    if 0 in (clip.width, clip.height):
-        raise VariableResolutionError(function)
-
-
-def check_variable(clip: vs.VideoNode, function: str) -> TypeGuard[_VideoNode]:
-    """
-    Check for variable format and a variable resolution and return an error if found.
-
-    :raises VariableFormatError:        The clip is of a variable format.
-    :raises VariableResolutionError:    The clip has a variable resolution.
-    """
-    check_variable_format(clip, function)
-    check_variable_resolution(clip, function)
-    return True
 
 
 def load_bookmarks(bookmark_path: str) -> list[int]:
@@ -520,7 +299,3 @@ def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
         )
 
     return clip.std.AssumeFPS(fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
-
-
-# Aliases
-rfs = replace_ranges
