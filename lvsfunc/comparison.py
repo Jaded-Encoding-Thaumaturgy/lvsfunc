@@ -9,7 +9,7 @@ from typing import Any, Callable, Iterable, Iterator, Literal, Sequence, TypeVar
 
 from vskernels import Catrom
 from vstools import (
-    FormatsMismatchError, InvalidVideoFormatError, Matrix, VariableFormatError, core, depth, get_prop, get_subsampling,
+    FormatsMismatchError, InvalidColorFamilyError, Matrix, VariableFormatError, core, depth, get_prop, get_subsampling,
     get_w, check_variable, check_variable_format, check_variable_resolution
 )
 from vstools import split as split_planes
@@ -478,19 +478,18 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
     (vertical by default),
     then stacked with the full-sized plane in the direction specified (horizontal by default).
 
-    :param clip:                    Clip to process (must be in YUV or RGB planar format).
-    :param stack_vertical:          Stack the planes vertically (Default: ``False``).
+    :param clip:                        Clip to process (must be in YUV or RGB planar format).
+    :param stack_vertical:              Stack the planes vertically (Default: ``False``).
 
-    :return:                        Clip with stacked planes.
+    :return:                            Clip with stacked planes.
 
-    :raises InvalidVideoFormatError:     Clip is not YUV or RGB.
-    :raises TypeError:              Clip is of an unexpected color family.
-    :raises TypeError:              Clip returns an unexpected subsampling.
+    :raises InvalidColorFamilyError:    Clip is not YUV or RGB.
+    :raises TypeError:                  Clip is of an unexpected color family.
+    :raises TypeError:                  Clip returns an unexpected subsampling.
     """
-    assert check_variable(clip, "stack_planes")
+    assert check_variable(clip, stack_planes)
 
-    if clip.format.num_planes != 3:
-        raise InvalidVideoFormatError("stack_planes", "{func}: Input clip must be of a YUV or RGB planar format!")
+    InvalidColorFamilyError.check(clip, (vs.YUV, vs.RGB), stack_planes)
 
     yuv_planes = split_planes(clip)
 

@@ -2,23 +2,18 @@ from __future__ import annotations
 
 import colorsys
 import random
-import warnings
 from functools import partial, wraps
 from typing import Any, Callable, cast
 
 from vskernels import Bicubic, Kernel
-from vstools import (
-    F_VD, InvalidVideoFormatError, Matrix, check_variable, check_variable_format, core, depth, get_prop, get_w, get_y,
-    vs
-)
+from vstools import F_VD, InvalidColorFamilyError, Matrix, check_variable, core, get_prop, get_w, get_y, vs
 
 __all__ = [
     'allow_variable',
     'chroma_injector',
     'colored_clips',
     'frames_since_bookmark',
-    'load_bookmarks',
-    'quick_resample'
+    'load_bookmarks'
 ]
 
 
@@ -94,8 +89,8 @@ def chroma_injector(func: F_VD) -> F_VD:
 
     :return:                        Decorated function.
 
-    :raises InvalidFormatError:     Input clip is not YUV or GRAY.
-    :raises InvalidFormatError:     Output clip is not YUV or GRAY.
+    :raises InvalidColorFamilyError:     Input clip is not YUV or GRAY.
+    :raises InvalidColorFamilyError:     Output clip is not YUV or GRAY.
     """
     @wraps(func)
     def inner(_chroma: vs.VideoNode, clip: vs.VideoNode, *args: Any,
@@ -116,10 +111,7 @@ def chroma_injector(func: F_VD) -> F_VD:
 
         out_fmt: vs.VideoFormat | None = None
         if clip.format is not None:
-            if clip.format.color_family not in (vs.GRAY, vs.YUV):
-                raise InvalidVideoFormatError(
-                    "chroma_injector", "{func}: 'Input clip must be of a YUV or GRAY format!'"
-                )
+            InvalidColorFamilyError.check(clip, (vs.GRAY, vs.YUV), chroma_injector)
 
             in_fmt = core.register_format(vs.GRAY, clip.format.sample_type,
                                           clip.format.bits_per_sample, 0, 0)
@@ -141,9 +133,10 @@ def chroma_injector(func: F_VD) -> F_VD:
         result = func(clip_in, *args, **kwargs)
 
         if result.format is not None:
-            if result.format.color_family not in (vs.GRAY, vs.YUV):
-                raise InvalidVideoFormatError(
-                    "chroma_injector", "{func}: 'can only decorate function with YUV and/or GRAY format return!'")
+            InvalidColorFamilyError.check(
+                result, (vs.GRAY, vs.YUV), chroma_injector,
+                message='Can only decorate function returning clips having {correct} color family!'
+            )
 
             if result.format.color_family == vs.GRAY:
                 return result
