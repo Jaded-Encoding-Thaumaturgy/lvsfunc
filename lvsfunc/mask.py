@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import math
 from abc import ABC, abstractmethod
 from functools import partial
 from typing import Any, Callable, Sequence
 
-from vsrgtools import removegrain, gauss_blur
+from vsrgtools import gauss_blur, removegrain
 from vstools import (
-    ColorRange, check_variable, check_variable_resolution, core, depth, get_depth, get_y, iterate, join,
-    normalize_planes, replace_ranges, scale_peak, scale_thresh, split, vs, FrameRangesN
+    ColorRange, FrameRangesN, check_variable, check_variable_resolution, core, depth, get_y, iterate, join,
+    normalize_planes, replace_ranges, scale_thresh, split, vs
 )
 
 from .types import Position, Shapes, Size
@@ -18,7 +17,6 @@ __all__ = [
     'DeferredMask',
     'detail_mask_neo',
     'detail_mask',
-    'fine_dehalo_mask',
     'halo_mask',
     'mt_xxpand_multi', 'minm', 'maxm',
     'range_mask',
@@ -186,87 +184,6 @@ def halo_mask(clip: vs.VideoNode, rad: int = 2,
     # Additional blurring to amplify the mask
     mask = core.std.Convolution(mask, matrix)
     return core.akarin.Expr(mask, expr="x 2 *").std.Limiter()
-
-
-def fine_dehalo_mask(clip: vs.VideoNode,
-                     rx: float = 2.0, ry: float = 2.0,
-                     thmi: float = 80, thma: float = 128,
-                     thlimi: float = 50, thlima: float = 100,
-                     show_mask: bool | int = False) -> vs.VideoNode:
-    """
-    Create the mask for fine_dehalo.
-
-    This allows you to use the mask without having to jump through all the other code in fine_dehalo.
-
-    You can return the mask at different stages during the process with `show_mask`.
-
-    * 1 = Full mask (for backwards and fine_dehalo compatibility)
-
-    :param clip:            Clip to process.
-    :param rx:              Horizontal radius for halo removal. Must be greater than 1. Will be rounded up.
-    :param ry:              Vertical radius for halo removal. Must be greater than 1.  Will be rounded up.
-    :param thmi:            Minimum threshold for sharp edges. Keep only the sharpest edges (line edges).
-                            To see the effects of this setting take a look at the strong mask (show_mask=4).
-    :param thma:            Maximum threshold for sharp edges. Keep only the sharpest edges (line edges).
-                            To see the effects of this setting take a look at the strong mask (show_mask=4).
-    :param thlimi:          Minimum limiting threshold. Includes more edges than previously, but ignores simple details.
-    :param thlima:          Maximum limiting threshold. Includes more edges than previously, but ignores simple details.
-    :param show_mask:       Return mask clip at various stages in the operation. Valid options are 1–7.
-
-    :return:                Halo mask clip.
-
-    :raises ValueError:     ``rx`` or ``ry`` are smaller than 1.0.
-    :raises ValueError:     Invalid value for ``show_mask`` is passed.
-    """
-    assert check_variable(clip, "halo_mask")
-
-    clip_y = get_y(clip)
-
-    if not all(x >= 1 for x in (rx, ry)):
-        raise ValueError("halo_mask: '`rx` and `ry` must both be bigger than 1.0!'")
-
-    if show_mask is not False and not (0 < int(show_mask) <= 7):
-        raise ValueError("halo_mask: 'Valid values for `show_mask` are 1–7!'")
-
-    bits = get_depth(clip)
-    peak = (1 << bits) - 1
-    smax = scale_peak(255, peak)
-    thmi, thma, thlimi, thlima = map(partial(scale_peak, peak=peak), [thmi, thma, thlimi, thlima])
-    rx_i, ry_i = int(math.ceil(rx)), int(math.ceil(rx))
-
-    # Basic edge detection, thresholding will be applied later.
-    edges = clip_y.std.Prewitt()
-
-    # Keeps only the sharpest edges (line edges)
-    strong = core.akarin.Expr(edges, f"x {thmi} - {thma-thmi} / {smax} *")
-
-    # Extends them to include the potential halos
-    large: vs.VideoNode = maxm(strong, rx_i, ry_i)[-1]
-
-    # Includes more edges than previously, but ignores simple details
-    light = core.akarin.Expr(edges, f"x {thlimi} - {thlima-thlimi} / {smax} *")
-
-    # Growing the mask
-    shrink = maxm(light, sw=rx_i, sh=ry_i, mode=Shapes.ELLIPSE)[-1]
-    shrink = core.akarin.Expr(shrink, "x 2 *")
-    shrink = minm(shrink, sw=rx_i, sh=rx_i, mode=Shapes.ELLIPSE)[-1]
-    shrink = shrink.std.Convolution(matrix=[1] * 9).std.Convolution(matrix=[1] * 9)
-
-    shr_med = core.akarin.Expr([strong, shrink], expr="x y max")
-
-    mask = core.akarin.Expr([large, shr_med], expr="x y - 2 *")
-    mask = core.std.Convolution(mask, matrix=[1] * 9)
-    mask = core.akarin.Expr([mask], expr="x 2 *").std.Limiter()
-
-    match show_mask:
-        case 1: return mask
-        case 2: return shrink
-        case 3: return edges
-        case 4: return strong
-        case 5: return light
-        case 6: return large
-        case 7: return shr_med
-        case _: return mask
 
 
 def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
