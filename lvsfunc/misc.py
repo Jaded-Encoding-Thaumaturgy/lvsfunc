@@ -9,12 +9,11 @@ from vskernels import Catrom, KernelT
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
 from vstools import (
     InvalidMatrixError, Matrix, check_variable, core, depth, get_depth, get_prop, normalize_ranges, replace_ranges,
-    scale_value, vs
+    scale_value, vs, MISSING, FrameRangesN, FileType, check_perms, CustomValueError, IndexingType
 )
 
-from .helpers import _check_index_exists
 from .mask import BoundingBox
-from .types import MISSING, FrameRangesN, IndexFile, IndexingType, IndexType, Position, Size
+from .types import Position, Size
 from .util import match_clip
 
 __all__ = [
@@ -81,36 +80,48 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
 
     :raises ValueError:     Something other than a path is passed to ``path``.
     """
-    if path == MISSING:
+    if path is MISSING:
         return partial(  # type: ignore
             source, ref=ref, force_lsmas=force_lsmas, film_thr=film_thr,
             tail_lines=tail_lines, kernel=kernel, debug=debug, **index_args
         )
 
-    if not Path(path).is_file:
-        raise FileNotFoundError(f"{path} could not be found!")
-
-    path = str(path)
-
     clip = None
     film_thr = float(min(100, film_thr))
 
-    if path.startswith('file:///'):
+    if str(path).startswith('file:///'):
         path = path[8::]
 
-    file_type = _check_index_exists(path)
-    file_idx_type = isinstance(file_type, IndexFile) and file_type.type or None
+    path = Path(path)
+    check_perms(path, 'r', func=source)
+
+    file = FileType.parse(path) if path.exists() else None
+
+    def _check_file_type(file_type: FileType) -> bool:
+        return (
+            file_type is FileType.VIDEO or file_type is FileType.IMAGE
+        ) or (
+            file_type.is_index and _check_file_type(file_type.file_type)
+        )
+
+    if not file or not _check_file_type(file.file_type):
+        for itype in IndexingType:
+            if (newpath := path.with_suffix(f'{path.suffix}{itype.value}')).exists():
+                file = FileType.parse(newpath)
+
+    if not file or not _check_file_type(file.file_type):
+        raise CustomValueError('File isn\'t a video!', source)
 
     props = dict[str, Any]()
     debug_props = dict[str, Any]()
 
-    if force_lsmas or file_idx_type is IndexingType.LWI:
+    if force_lsmas or file.ext is IndexingType.LWI:
         clip = core.lsmas.LWLibavSource(path, **index_args)
         debug_props |= dict(idx_used='lsmas')
-    elif file_type is IndexType.IMAGE:
+    elif file.file_type is FileType.IMAGE:
         clip = core.imwri.Read(path, **index_args)
         debug_props |= dict(idx_used='imwri')
-    elif file_idx_type is IndexingType.DGI or file_type is IndexType.NONE:
+    elif file.ext is IndexingType.DGI:
         try:
             indexer = DGIndexNV()
 
@@ -133,20 +144,22 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
             clip = indexer.vps_indexer(path, **indexer_kwargs)
             debug_props |= dict(idx_used='DGIndexNV')
         except Exception as e:
-            warnings.warn(f"source: 'Unable to index using DGIndexNV! Falling back to lsmas...'\n\t{e}",
-                          RuntimeWarning)
+            warnings.warn(f"source: 'Unable to index using DGIndexNV! Falling back to lsmas...'\n\t{e}", RuntimeWarning)
 
     if clip is None:
-        return source(path, ref=ref, force_lsmas=True, film_thr=film_thr,
-                      tail_lines=tail_lines, kernel=kernel, debug=debug, **index_args)
+        return source(
+            path, ref=ref, force_lsmas=True, film_thr=film_thr,
+            tail_lines=tail_lines, kernel=kernel, debug=debug, **index_args
+        )
+
+    if debug:
+        props |= debug_props
 
     clip = clip.std.SetFrameProps(**props)
 
-    if debug:
-        clip = clip.std.SetFrameProps(**debug_props)
-
     if ref:
-        return match_clip(clip, ref, length=is_image(str(path)), kernel=kernel)
+        return match_clip(clip, ref, length=file.file_type is FileType.IMAGE, kernel=kernel)
+
     return clip
 
 

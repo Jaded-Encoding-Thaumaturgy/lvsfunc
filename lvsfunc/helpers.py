@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 import subprocess as sp
-from pathlib import Path
 
 from vstools import FramePropError, get_prop, vs
 
-from .types import Dar, IndexFile, IndexingType, IndexType
+from .types import Dar
 
 __all__ = [
     '_check_has_nvidia',
-    '_check_index_exists',
     '_calculate_dar_from_props',
 ]
 
@@ -21,24 +19,6 @@ def _check_has_nvidia() -> bool:
         return True
     except sp.CalledProcessError:
         return False
-
-
-def _check_index_exists(path: str | Path) -> IndexFile | IndexType:
-    """Check whether a lwi or dgi exists. Returns an IndexExists Enum."""
-    path = Path(path)
-
-    for itype in IndexingType:
-        if path.suffix == itype.value:
-            return IndexFile(itype, path.exists())
-
-    for itype in IndexingType:
-        if path.with_suffix(f'{path.suffix}{itype.value}').exists():
-            return IndexFile(itype, True)
-
-    if is_image(str(path)):
-        return IndexType.IMAGE
-
-    return IndexType.NONE
 
 
 def _calculate_dar_from_props(clip: vs.VideoNode) -> Dar:
