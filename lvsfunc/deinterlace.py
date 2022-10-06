@@ -14,14 +14,13 @@ from vskernels import Bicubic, BicubicDidee, Catrom, Kernel
 from vsrgtools import repair
 from vstools import (
     InvalidFramerateError, TopFieldFirstError, core, depth, expect_bits, get_neutral_value, get_prop, get_w, get_y,
-    mod2, mod4, scale_value, vs
+    mod2, mod4, scale_value, vs, check_variable, check_variable_format
 )
 
 from .comparison import Stack
 from .helpers import _calculate_dar_from_props
 from .render import clip_async_render, get_render_progress
 from .types import Dar, Direction, Region
-from .util import check_variable, check_variable_format
 
 __all__ = [
     'check_patterns',

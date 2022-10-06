@@ -4,9 +4,7 @@ from typing import Any, Callable
 
 from vskernels import Bicubic, Catrom, Kernel
 from vsscale import CreditMaskT, descale_detail_mask, ssim_downsample
-from vstools import core, depth, get_depth, get_w, get_y, iterate, vs
-
-from .util import check_variable, scale_thresh
+from vstools import core, depth, get_depth, get_w, get_y, iterate, vs, check_variable, scale_thresh
 
 __all__ = [
     'mixed_rescale'
@@ -69,7 +67,7 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
     eediargs: dict[str, Any] = dict(alpha=0.2, beta=0.25, gamma=1000, nrad=2, mdis=20)
     eediargs |= eedi3_args
 
-    width = width or get_w(height, clip.width/clip.height, only_even=False)
+    width = width or get_w(height, clip.width/ clip.height, 1)
 
     if not isinstance(kernel, Kernel):
         kernel = Kernel.from_param(kernel)()

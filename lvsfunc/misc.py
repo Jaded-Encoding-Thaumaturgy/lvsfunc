@@ -7,13 +7,12 @@ from typing import Any, Sequence
 
 from vskernels import Bicubic, Catrom, Kernel
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
-from vstools import Matrix, core, depth, get_depth, get_prop, scale_value, vs
+from vstools import Matrix, core, depth, get_depth, get_prop, scale_value, vs, InvalidMatrixError, check_variable,normalize_ranges, replace_ranges
 
-from .exceptions import InvalidMatrixError
 from .helpers import _check_index_exists
 from .mask import BoundingBox
 from .types import MISSING, IndexFile, IndexingType, IndexType, Position, Range, Size
-from .util import check_variable, match_clip, normalize_ranges, replace_ranges
+from .util import match_clip
 
 __all__ = [
     'edgefixer', 'ef',

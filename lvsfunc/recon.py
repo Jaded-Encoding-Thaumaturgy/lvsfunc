@@ -3,10 +3,9 @@ from __future__ import annotations
 from functools import partial
 
 
-from vstools import depth, get_depth, join, split, vs, core
+from vstools import depth, get_depth, join, split, vs, core, check_variable
 
 from .types import RegressClips
-from .util import check_variable
 
 
 __all__ = [

@@ -3,9 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from vskernels import Bicubic, Kernel
-from vstools import DitherType, Matrix, core, depth, get_depth, get_prop, get_y, join, plane, vs
-
-from .util import check_variable
+from vstools import DitherType, Matrix, core, depth, get_depth, get_prop, get_y, join, plane, vs, check_variable
 
 __all__ = [
     'chickendream'

@@ -10,9 +10,7 @@ Don't tell louis this exists though, else I'm a dead man.
 from __future__ import annotations
 
 from vskernels import Point
-from vstools import core, mod_x, vs
-
-from .util import check_variable_resolution
+from vstools import check_variable_resolution, core, mod_x, vs
 
 __all__ = [
     'minecraftify'

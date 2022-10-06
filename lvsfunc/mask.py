@@ -6,10 +6,12 @@ from functools import partial
 from typing import Any, Callable, Sequence
 
 from vsrgtools import removegrain
-from vstools import ColorRange, core, depth, get_depth, get_y, iterate, join, normalize_planes, split, vs
+from vstools import (
+    ColorRange, check_variable, check_variable_resolution, core, depth, get_depth, get_y, iterate, join,
+    normalize_planes, replace_ranges, scale_peak, scale_thresh, split, vs
+)
 
 from .types import Position, Range, Shapes, Size
-from .util import check_variable, check_variable_resolution, quick_resample, replace_ranges, scale_peak, scale_thresh
 
 __all__ = [
     'BoundingBox',

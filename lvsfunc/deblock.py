@@ -5,11 +5,9 @@ from pathlib import Path
 from typing import Any, Literal, Sequence, SupportsFloat, cast
 
 from vskernels import Bicubic, Kernel, Point
-from vstools import DitherType, Matrix, core, depth, get_depth, get_prop, vs
+from vstools import DitherType, Matrix, core, depth, get_depth, get_prop, vs, check_variable, replace_ranges, FrameRangesN
 
 from .helpers import _check_has_nvidia
-from .types import Range
-from .util import check_variable, replace_ranges
 
 __all__ = [
     'autodb_dpir', 'dpir', 'vsdpir'

@@ -3,11 +3,10 @@ from __future__ import annotations
 from abc import ABC
 from typing import Any
 
-from vstools import core, iterate, split, vs
+from vstools import core, iterate, split, vs, check_variable, normalize_ranges, replace_ranges, scale_thresh
 
 from .mask import DeferredMask
 from .types import Range
-from .util import check_variable, normalize_ranges, replace_ranges, scale_thresh
 
 __all__ = [
     'bounded_dehardsub',
