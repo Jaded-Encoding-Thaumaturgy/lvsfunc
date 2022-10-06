@@ -21,7 +21,6 @@ from .misc import *
 from .noise import *
 from .recon import *
 from .render import *
-from .scale import *
 from .util import *
 
 denoise = noise
