@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from vskernels import Bicubic, Catrom, Kernel
+from vskernels import Catrom, Kernel, KernelT
 from vsscale import CreditMaskT, descale_detail_mask, ssim_downsample, GenericScaler
 from vstools import core, depth, get_depth, get_w, get_y, iterate, vs, check_variable, scale_thresh
 
@@ -12,8 +12,8 @@ __all__ = [
 
 
 def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 720,
-                  kernel: Kernel | str = Bicubic(b=0, c=1/2),
-                  downscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode] | Kernel | str = ssim_downsample,
+                  kernel: KernelT = Catrom,
+                  downscaler: Callable[[vs.VideoNode, int, int], vs.VideoNode] | KernelT = ssim_downsample,
                   credit_mask: CreditMaskT | vs.VideoNode | None = descale_detail_mask, mask_thr: float = 0.05,
                   mix_strength: float = 0.25, show_mask: bool | int = False,
                   nnedi3_args: dict[str, Any] = {}, eedi3_args: dict[str, Any] = {}) -> vs.VideoNode:
@@ -36,7 +36,7 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
     :param height:          Upscale height (Default: 720).
     :param kernel:          py:class:`vskernels.Kernel` object used for the descaling.
                             This can also be the string name of the kernel
-                            (Default: py:class:`vskernels.Bicubic(b=0, c=1/2)`).
+                            (Default: py:class:`vskernels.Catrom`).
     :param downscaler:      Kernel or custom scaler used to downscale the clip.
                             This can also be the string name of the kernel
                             (Default: py:func:`lvsfunc.scale.ssim_downsample`).

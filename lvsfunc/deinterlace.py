@@ -10,7 +10,7 @@ from math import gcd
 from pathlib import Path
 from typing import Any, Sequence, SupportsFloat
 
-from vskernels import Bicubic, BicubicDidee, Catrom, Kernel
+from vskernels import KernelT, BicubicDidee, Catrom, Kernel
 from vsrgtools import repair
 from vstools import (
     InvalidFramerateError, TopFieldFirstError, core, depth, expect_bits, get_neutral_value, get_prop, get_w, get_y,
@@ -414,7 +414,7 @@ def decomb(clip: vs.VideoNode,
 
 def descale_fields(clip: vs.VideoNode, tff: bool = True,
                    width: int | None = None, height: int = 720,
-                   kernel: Kernel | str = Bicubic(b=0, c=1/2),
+                   kernel: KernelT = Catrom,
                    src_top: float = 0.0) -> vs.VideoNode:
     """
     Descale interwoven upscaled fields, also known as a cross conversion.

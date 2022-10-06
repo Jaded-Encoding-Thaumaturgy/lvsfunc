@@ -11,7 +11,7 @@ from vstools import (
     normalize_planes, replace_ranges, scale_peak, scale_thresh, split, vs
 )
 
-from .types import Position, FrameRangesN, Shapes, Size
+from .types import FrameRangesN, Position, Shapes, Size
 
 __all__ = [
     'BoundingBox',

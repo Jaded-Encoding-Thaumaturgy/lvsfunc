@@ -5,7 +5,7 @@ import random
 from functools import partial, wraps
 from typing import Any, Callable, cast
 
-from vskernels import Bicubic, Kernel
+from vskernels import Catrom, KernelT, Kernel
 from vstools import F_VD, InvalidColorFamilyError, Matrix, check_variable, core, get_prop, get_w, get_y, vs
 
 __all__ = [
@@ -253,7 +253,7 @@ def allow_variable(width: int | None = None, height: int | None = None,
 def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
                dimensions: bool = True, vformat: bool = True,
                matrices: bool = True, length: bool = False,
-               kernel: Kernel | str = Bicubic(b=0, c=1/2)) -> vs.VideoNode:
+               kernel: KernelT = Catrom) -> vs.VideoNode:
     """
     Try matching the given clip's format with the reference clip's.
 
@@ -265,7 +265,7 @@ def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
     :param length:      Match clip length (Default: False).
     :param kernel:      py:class:`vskernels.Kernel` object used for the format conversion.
                         This can also be the string name of the kernel
-                        (Default: py:class:`vskernels.Bicubic(b=0, c=1/2)`).
+                        (Default: py:class:`vskernels.Catrom`).
 
     :return:            Clip that matches the ref clip in format.
     """

@@ -3,7 +3,7 @@ from __future__ import annotations
 import subprocess as sp
 from pathlib import Path
 
-from vstools import get_prop, vs, FramePropError
+from vstools import FramePropError, get_prop, vs
 
 from .types import Dar, IndexFile, IndexingType, IndexType
 

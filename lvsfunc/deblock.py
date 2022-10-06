@@ -4,7 +4,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Literal, Sequence, SupportsFloat, cast
 
-from vskernels import Bicubic, Kernel, Point
+from vskernels import Catrom, KernelT, Kernel, Point
 from vstools import (
     DitherType, FrameRangesN, Matrix, check_variable, core, depth, get_depth, get_prop, replace_ranges, vs
 )
@@ -20,7 +20,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strs: Sequence[float] = [10, 50, 75],
                 thrs: Sequence[tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
                 matrix: Matrix | int | None = None,
-                kernel: Kernel | str = Bicubic(b=0, c=1/2),
+                kernel: KernelT = Catrom,
                 cuda: bool | Literal['trt'] | None = None,
                 write_props: bool = False,
                 **vsdpir_args: Any) -> vs.VideoNode:
@@ -157,7 +157,7 @@ def dpir(
     matrix: Matrix | int | None = None, cuda: bool | Literal['trt'] | None = None, i444: bool = False,
     tiles: int | tuple[int, int] | None = None, overlap: int | tuple[int, int] | None = 8,
     zones: list[tuple[FrameRangesN | FrameRangesN | None, SupportsFloat | vs.VideoNode | None]] | None = None,
-    fp16: bool | None = None, num_streams: int = 1, device_id: int = 0, kernel: Kernel | str = Bicubic(b=0, c=1/2)
+    fp16: bool | None = None, num_streams: int = 1, device_id: int = 0, kernel: KernelT = Catrom
 ) -> vs.VideoNode:
     """
     DPIR, or Plug-and-Play Image Restoration with Deep Denoiser Prior, is a denoise and deblocking neural network.

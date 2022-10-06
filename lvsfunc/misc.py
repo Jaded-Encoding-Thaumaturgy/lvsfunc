@@ -5,13 +5,16 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Sequence
 
-from vskernels import Bicubic, Catrom, Kernel
+from vskernels import Catrom, KernelT
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
-from vstools import Matrix, core, depth, get_depth, get_prop, scale_value, vs, InvalidMatrixError, check_variable, normalize_ranges, replace_ranges
+from vstools import (
+    InvalidMatrixError, Matrix, check_variable, core, depth, get_depth, get_prop, normalize_ranges, replace_ranges,
+    scale_value, vs
+)
 
 from .helpers import _check_index_exists
 from .mask import BoundingBox
-from .types import MISSING, IndexFile, IndexingType, IndexType, Position, FrameRangesN, Size
+from .types import MISSING, FrameRangesN, IndexFile, IndexingType, IndexType, Position, Size
 from .util import match_clip
 
 __all__ = [
@@ -27,7 +30,7 @@ __all__ = [
 
 def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # type: ignore
            force_lsmas: bool = False, film_thr: float = 99.0,
-           tail_lines: int = 4, kernel: Kernel | str = Bicubic(b=0, c=1/2),
+           tail_lines: int = 4, kernel: KernelT = Catrom,
            debug: bool = False, **index_args: Any) -> vs.VideoNode:
     """
     Index and load video clips for use in VapourSynth automatically.
@@ -67,7 +70,7 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
     :param force_lsmas:     Force files to be imported with L-SMASH (Default: False).
     :param kernel:          py:class:`vskernels.Kernel` object used for converting the `clip` to match `ref`.
                             This can also be the string name of the kernel
-                            (Default: py:class:`vskernels.Bicubic(b=0, c=1/2)`).
+                            (Default: py:class:`vskernels.Catrom`).
     :param tail_lines:      Lines to check on the tail of the dgi file.
                             Increase this value if FILM and ORDER do exist in your dgi file
                             but it's having trouble finding them.

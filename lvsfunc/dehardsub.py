@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from typing import Any
 
-from vstools import core, iterate, split, vs, check_variable, normalize_ranges, replace_ranges, scale_thresh
+from vstools import check_variable, core, iterate, normalize_ranges, replace_ranges, scale_thresh, split, vs
 
 from .mask import DeferredMask
 from .types import FrameRangesN

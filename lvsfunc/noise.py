@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from vskernels import Bicubic, Kernel
+from vskernels import KernelT, Catrom, Kernel
 from vstools import DitherType, Matrix, core, depth, get_depth, get_prop, get_y, join, plane, vs, check_variable
 
 __all__ = [
@@ -18,7 +18,7 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
                  show_mask: bool = False,
                  draft: bool = True,
                  matrix: Matrix | int | None = None,
-                 kernel: Kernel | str = Bicubic(b=0, c=1/2),
+                 kernel: KernelT = Catrom,
                  **chkdr_args: Any) -> vs.VideoNode:
     """
     Realistic film grain generator.
@@ -81,7 +81,7 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
                             in which case it stays as `None`.
     :param kernel:          py:class:`vskernels.Kernel` object used for conversions between YUV <-> RGB.
                             This can also be the string name of the kernel
-                            (Default: py:class:`vskernels.Bicubic(b=0, c=1/2)`).
+                            (Default: py:class:`vskernels.Catrom`).
     :param chkdr_args:      Additional args to pass to chickendream.
 
     :return:                Grained clip in the input clip's format.

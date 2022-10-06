@@ -4,8 +4,7 @@ from functools import partial
 
 from vskernels import BSpline, Catrom
 from vsrgtools import repair
-from vstools import clamp, core, get_depth, get_y, mod4, vs, check_variable
-
+from vstools import check_variable, clamp, core, get_depth, get_y, mod4, vs
 
 __all__ = [
     'masked_dha'
