@@ -8,10 +8,10 @@ from typing import Any, Callable, Sequence
 from vsrgtools import removegrain, gauss_blur
 from vstools import (
     ColorRange, check_variable, check_variable_resolution, core, depth, get_depth, get_y, iterate, join,
-    normalize_planes, replace_ranges, scale_peak, scale_thresh, split, vs
+    normalize_planes, replace_ranges, scale_peak, scale_thresh, split, vs, FrameRangesN
 )
 
-from .types import FrameRangesN, Position, Shapes, Size
+from .types import Position, Shapes, Size
 
 __all__ = [
     'BoundingBox',
