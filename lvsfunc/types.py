@@ -1,33 +1,21 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from enum import Enum, IntEnum, auto
-from typing import Any, NamedTuple, Protocol, Tuple
+from typing import Any, NamedTuple, Protocol
 
-from vstools import vs
+from vstools import CustomIntEnum, CustomStrEnum, vs
 
 __all__ = [
-    '_VideoNode',
     'Coordinate',
-    'Dar',
     'Direction',
-    'IndexExists',
-    'IndexFile',
-    'IndexingType',
-    'IndexType',
-    'MISSING',
-    'MissingT',
-    'Position',
-    'Range',
-    'Region',
-    'RegressClips',
     'SceneChangeMode',
-    'Shapes',
+    'Position',
     'Size',
     'VSIdxFunction',
+    'Shapes',
+    'RegressClips',
+    'Dar',
+    'Region'
 ]
-
-Range = int | None | Tuple[int | None, int | None]
 
 
 class Coordinate():
@@ -47,14 +35,14 @@ class Coordinate():
         self.y = y
 
 
-class Direction(IntEnum):
+class Direction(CustomIntEnum):
     """Enum to simplify direction argument."""
 
     HORIZONTAL = 0
     VERTICAL = 1
 
 
-class SceneChangeMode(IntEnum):
+class SceneChangeMode(CustomIntEnum):
     """Size type for :py:func:`lvsfunc.render.find_scene_changes`."""
 
     WWXD = 0
@@ -79,7 +67,7 @@ class VSIdxFunction(Protocol):
         ...
 
 
-class Shapes(IntEnum):
+class Shapes(CustomIntEnum):
     """Convolution coordinates for :py:func:`lvsfunc.mask.mt_xxpand_multi`."""
 
     RECTANGLE = 0
@@ -95,54 +83,7 @@ class RegressClips(NamedTuple):
     correlation: vs.VideoNode
 
 
-class IndexExists(IntEnum):
-    """Check if certain files exist for :py:func:`lvsfunc.misc.source`."""
-
-    PATH_IS_DGI = auto()
-    PATH_IS_IMG = auto()
-    LWI_EXISTS = auto()
-    DGI_EXISTS = auto()
-    NONE = auto()
-
-
-class _VideoNode(vs.VideoNode):
-    """Use for asserting a VideoFormat exists."""
-
-    format: vs.VideoFormat
-
-
-class IndexingType(str, Enum):
-    """Indexing types."""
-
-    DGI = '.dgi'
-    LWI = '.lwi'
-
-
-@dataclass
-class IndexFile:
-    """Type of index file."""
-
-    type: IndexingType
-    exists: bool
-
-
-class IndexType(IntEnum):
-    """Type of index."""
-
-    IMAGE = auto()
-    NONE = auto()
-
-
-class MissingT:
-    """Missing."""
-
-    pass
-
-
-MISSING = MissingT()
-
-
-class Dar(str, Enum):
+class Dar(CustomStrEnum):
     """StrEnum signifying an analog television aspect ratio."""
 
     WIDESCREEN = "widescreen"
@@ -152,7 +93,7 @@ class Dar(str, Enum):
     SQUARE = "square"
 
 
-class Region(str, Enum):
+class Region(CustomStrEnum):
     """StrEnum signifying an analog television region."""
 
     NTSC = "NTSC"
