@@ -8,13 +8,13 @@ from fractions import Fraction
 from functools import partial
 from math import gcd
 from pathlib import Path
-from typing import Any, Sequence, SupportsFloat
+from typing import Any, SupportsFloat
 
-from vskernels import KernelT, BicubicDidee, Catrom, Kernel
+from vskernels import BicubicDidee, Catrom, Kernel, KernelT
 from vsrgtools import repair
 from vstools import (
-    InvalidFramerateError, TopFieldFirstError, core, depth, expect_bits, get_neutral_value, get_prop, get_w, get_y,
-    mod2, mod4, scale_value, vs, check_variable, check_variable_format
+    FieldBased, FieldBasedT, InvalidFramerateError, check_variable, check_variable_format, core, depth, get_depth,
+    get_neutral_value, get_prop, get_w, get_y, mod2, mod4, scale_value, vs
 )
 
 from .comparison import Stack
@@ -25,7 +25,6 @@ from .types import Dar, Direction, Region
 __all__ = [
     'check_patterns',
     'deblend',
-    'decomb',
     'descale_fields',
     'fix_telecined_fades',
     'pulldown_credits', 'ivtc_credits',
@@ -41,8 +40,7 @@ main_file = f"{os.path.splitext(os.path.basename(str(main_file)))[0]}_"
 main_file = "{yourScriptName}_" if main_file in ("__main___", "setup_") else main_file
 
 
-def sivtc(clip: vs.VideoNode, pattern: int = 0,
-          tff: bool = True, decimate: bool = True) -> vs.VideoNode:
+def sivtc(clip: vs.VideoNode, pattern: int = 0, tff: bool | FieldBasedT = True, decimate: bool = True) -> vs.VideoNode:
     """
     Simplest form of a fieldmatching function.
 
@@ -58,7 +56,7 @@ def sivtc(clip: vs.VideoNode, pattern: int = 0,
     """
     pattern = pattern % 5
 
-    defivtc = core.std.SeparateFields(clip, tff=tff).std.DoubleWeave()
+    defivtc = core.std.SeparateFields(clip, tff=FieldBased.from_param(tff).field).std.DoubleWeave()
     selectlist = [[0, 3, 6, 8], [0, 2, 5, 8], [0, 2, 4, 7], [2, 4, 6, 9], [1, 4, 6, 8]]
     dec = core.std.SelectEvery(defivtc, 10, selectlist[pattern]) if decimate else defivtc
     return dec.std.SetFieldBased(0).std.SetFrameProp(prop='SIVTC_pattern', intval=pattern)
@@ -132,7 +130,7 @@ def seek_cycle(clip: vs.VideoNode, write_props: bool = True, scale: int = -1) ->
     return Stack([vert_pad, stack, vert_pad, stack_abcde], direction=Direction.VERTICAL).clip
 
 
-def check_patterns(clip: vs.VideoNode, tff: bool | int | None = None) -> int:
+def check_patterns(clip: vs.VideoNode, tff: bool | FieldBasedT | None = None) -> int:
     """
     Naïve function that iterates over a given clip and tries out every simple 3:2 IVTC pattern.
 
@@ -158,10 +156,7 @@ def check_patterns(clip: vs.VideoNode, tff: bool | int | None = None) -> int:
     :raises TopFieldFirstError:     No automatic ``tff`` can be determined.
     :raises StopIteration:          No pattern resulted in a clean match.
     """
-    if tff is None and get_prop(clip.get_frame(0), '_FieldBased', int) == 0:
-        raise TopFieldFirstError("check_patterns")
-    elif isinstance(tff, (bool, int)):
-        clip = clip.std.SetFieldBased(int(tff) + 1)
+    clip = FieldBased.ensure_presence(clip, tff, check_patterns)
 
     clip = depth(clip, 8)
 
@@ -331,7 +326,7 @@ def deblend(clip: vs.VideoNode, start: int = 0,
         if decimate else debl
 
 
-def descale_fields(clip: vs.VideoNode, tff: bool = True,
+def descale_fields(clip: vs.VideoNode, tff: bool | FieldBasedT = True,
                    width: int | None = None, height: int = 720,
                    kernel: KernelT = Catrom,
                    src_top: float = 0.0) -> vs.VideoNode:
@@ -361,7 +356,7 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
 
     kernel = Kernel.ensure_obj(kernel)
 
-    clip = clip.std.SetFieldBased(2-int(tff))
+    clip = FieldBased.ensure_presence(clip, tff)
 
     sep = core.std.SeparateFields(get_y(clip))
     descaled = kernel.descale(sep, width, height_field, (src_top, 0))
@@ -370,7 +365,7 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
     return weave_y.std.SetFieldBased(0)[::2]
 
 
-def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None, cuda: bool = False) -> vs.VideoNode:
+def fix_telecined_fades(clip: vs.VideoNode, tff: bool | FieldBasedT | None = None, cuda: bool = False) -> vs.VideoNode:
     """
     Give a mathematically perfect solution to fades made *after* telecining (which made perfect IVTC impossible).
 
@@ -390,23 +385,18 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None, cuda:
     Taken from this gist and modified by LightArrowsEXE.
     <https://gist.github.com/blackpilling/bf22846bfaa870a57ad77925c3524eb1>
 
-    :param clip:                    Clip to process.
-    :param tff:                     Top-field-first. `False` sets it to Bottom-Field-First.
-                                    If `None`, get the field order from the _FieldBased prop.
-    :param cuda:                    Use cupy for certain calculations. `False` uses numpy instead.
+    :param clip:                            Clip to process.
+    :param tff:                             Top-field-first. `False` sets it to Bottom-Field-First.
+                                            If `None`, get the field order from the _FieldBased prop.
+    :param cuda:                            Use cupy for certain calculations. `False` uses numpy instead.
 
-    :return:                        Clip with fades (and only fades) accurately deinterlaced.
+    :return:                                Clip with fades (and only fades) accurately deinterlaced.
 
-    :raises TopFieldFirstError:     No automatic ``tff`` can be determined.
+    :raises UndefinedFieldBasedError:       No automatic ``tff`` can be determined.
     """
-    bits, _ = expect_bits(clip, 32)
+    bits = get_depth(clip)
 
-    if isinstance(tff, int):
-        clip = clip.std.SetFieldBased(tff)
-    elif isinstance(tff, bool):
-        clip = clip.std.SetFieldBased(int(tff) + 1)
-    elif get_prop(clip.get_frame(0), '_FieldBased', int) == 0:
-        raise TopFieldFirstError("fix_telecined_fades")
+    clip = FieldBased.ensure_presence(clip, tff, fix_telecined_fades)
 
     fields = clip.std.Limiter().std.SeparateFields()
 
@@ -437,7 +427,7 @@ def fix_telecined_fades(clip: vs.VideoNode, tff: bool | int | None = None, cuda:
     return depth(output, bits)
 
 
-def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None,
+def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | FieldBasedT | None = None,
                      interlaced: bool = True, dec: bool | None = None,
                      bob_clip: vs.VideoNode | None = None, qtgmc_args: dict[str, Any] = {}
                      ) -> vs.VideoNode:
@@ -491,14 +481,12 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
     if clip.fps != Fraction(30000, 1001):
         raise ValueError("pulldown_credits: 'Your clip must have a framerate of 30000/1001!'")
 
-    if tff is None and get_prop(clip.get_frame(0), '_FieldBased', int) == 0:
-        raise TopFieldFirstError("pulldown_credits")
-    elif isinstance(tff, (bool, int)):
-        clip = clip.std.SetFieldBased(int(tff) + 1)
+    tff = FieldBased.from_param(tff, pulldown_credits) or FieldBased.from_video(clip, True)
+    clip = FieldBased.ensure_presence(clip, tff)
 
     qtgmc_kwargs: dict[str, Any] = dict(SourceMatch=3, Lossless=2, TR0=2, TR1=2, TR2=3, Preset="Placebo")
     qtgmc_kwargs |= qtgmc_args
-    qtgmc_kwargs |= dict(FPSDivisor=1, TFF=tff or bool(get_prop(clip.get_frame(0), '_FieldBased', int) - 1))
+    qtgmc_kwargs |= dict(FPSDivisor=1, TFF=tff.field)
 
     if dec is not False:  # Automatically enable dec unless set to False
         dec = any(x in clip.get_frame(0).props for x in {"VFMMatch", "TFMMatch"})
