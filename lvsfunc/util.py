@@ -272,8 +272,7 @@ def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
     assert check_variable(clip, "match_clip")
     assert check_variable(ref, "match_clip")
 
-    if not isinstance(kernel, Kernel):
-        kernel = Kernel.from_param(kernel)()
+    kernel = Kernel.ensure_obj(kernel)
 
     clip = clip * ref.num_frames if length else clip
     clip = kernel.scale(clip, ref.width, ref.height) if dimensions else clip

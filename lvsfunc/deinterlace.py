@@ -440,8 +440,7 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
     height_field = int(height/2)
     width = width or get_w(height, clip.width/clip.height)
 
-    if not isinstance(kernel, Kernel):
-        kernel = Kernel.from_param(kernel)()
+    kernel = Kernel.ensure_obj(kernel)
 
     clip = clip.std.SetFieldBased(2-int(tff))
 

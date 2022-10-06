@@ -109,8 +109,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
         raise ValueError('autodb_dpir: You must pass an equal amount of values to '
                          f'strength {len(strs)} and thrs {len(thrs)}!')
 
-    if not isinstance(kernel, Kernel):
-        kernel = Kernel.from_param(kernel)()
+    kernel = Kernel.ensure_obj(kernel)
 
     vsdpir_final_args = dict[str, Any](mode='deblock', cuda=cuda)
     vsdpir_final_args |= vsdpir_args
@@ -234,8 +233,7 @@ def dpir(
 
     assert check_variable(clip, "dpir")
 
-    if not isinstance(kernel, Kernel):
-        kernel = Kernel.from_param(kernel)()
+    kernel = Kernel.ensure_obj(kernel)
 
     bit_depth = get_depth(clip)
     is_rgb, is_gray = (clip.format.color_family is f for f in (vs.RGB, vs.GRAY))

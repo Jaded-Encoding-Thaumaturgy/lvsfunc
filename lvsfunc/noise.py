@@ -98,8 +98,7 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
     if show_mask:
         return adap_mask
 
-    if not isinstance(kernel, Kernel):
-        kernel = Kernel.from_param(kernel)()
+    kernel = Kernel.ensure_obj(kernel)
 
     bit_depth = get_depth(clip)
     is_rgb, is_gray = (clip.format.color_family is f for f in (vs.RGB, vs.GRAY))
