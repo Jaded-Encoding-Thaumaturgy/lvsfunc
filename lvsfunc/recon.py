@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import partial
 
 import vapoursynth as vs
-from vsutil import depth, get_depth, join, split
+from vstools import depth, get_depth, join, split
 
 from .types import RegressClips
 from .util import check_variable

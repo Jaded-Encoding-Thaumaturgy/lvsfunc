@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Any, Literal, Sequence, SupportsFloat, cast
 
 import vapoursynth as vs
-from vskernels import Bicubic, Kernel, Matrix, Point, get_kernel, get_prop
-from vsutil import Dither, depth, get_depth
+from vskernels import Bicubic, Kernel, Point
+from vstools import DitherType, depth, get_depth, get_prop, Matrix
 
 from .helpers import _check_has_nvidia
 from .types import Range
@@ -113,8 +113,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
         raise ValueError('autodb_dpir: You must pass an equal amount of values to '
                          f'strength {len(strs)} and thrs {len(thrs)}!')
 
-    if isinstance(kernel, str):
-        kernel = get_kernel(kernel)()
+    if not isinstance(kernel, Kernel):
+        kernel = Kernel.from_param(kernel)()
 
     vsdpir_final_args = dict(mode='deblock', cuda=cuda)
     vsdpir_final_args |= vsdpir_args
@@ -241,13 +241,13 @@ def dpir(
 
     assert check_variable(clip, "dpir")
 
-    if isinstance(kernel, str):
-        kernel = get_kernel(kernel)()
+    if not isinstance(kernel, Kernel):
+        kernel = Kernel.from_param(kernel)()
 
     bit_depth = get_depth(clip)
     is_rgb, is_gray = (clip.format.color_family is f for f in (vs.RGB, vs.GRAY))
 
-    clip_32 = depth(clip, 32, dither_type=Dither.ERROR_DIFFUSION)
+    clip_32 = depth(clip, 32, dither_type=DitherType.ERROR_DIFFUSION)
 
     match mode.lower():
         case 'deblock': model = DPIRModel.drunet_deblocking_grayscale if is_gray else DPIRModel.drunet_deblocking_color

@@ -6,9 +6,8 @@ from threading import Condition
 from typing import BinaryIO, Callable, TextIO
 
 import vapoursynth as vs
-from vskernels import get_prop
+from vstools import get_prop, InvalidVideoFormatError
 
-from .exceptions import InvalidFormatError
 from .progress import BarColumn, FPSColumn, Progress, TextColumn, TimeRemainingColumn
 from .types import SceneChangeMode
 
@@ -152,7 +151,7 @@ def clip_async_render(clip: vs.VideoNode,
         if clip.format is None:
             raise ValueError("clip_async_render: 'Cannot render a variable format clip to y4m!'")
         if clip.format.color_family not in (vs.YUV, vs.GRAY):
-            raise InvalidFormatError("clip_async_render", "{func}: Can only render YUV and GRAY clips to y4m!")
+            raise InvalidVideoFormatError("clip_async_render", "{func}: Can only render YUV and GRAY clips to y4m!")
         if clip.format.color_family == vs.GRAY:
             y4mformat = "mono"
         else:

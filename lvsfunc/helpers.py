@@ -5,7 +5,7 @@ from pathlib import Path
 
 import vapoursynth as vs
 from vskernels import VideoPropError, get_prop
-from vsutil import is_image
+from vstools import is_image
 
 from .exceptions import FramePropError
 from .types import Dar, IndexFile, IndexingType, IndexType

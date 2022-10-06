@@ -9,7 +9,7 @@ import vsdehalo
 from vsexprtools import clamp, mod4
 from vskernels import BSpline, Catrom
 from vsrgtools import repair
-from vsutil import get_depth, get_y
+from vstools import get_depth, get_y
 
 from .util import check_variable, scale_peak
 

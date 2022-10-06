@@ -10,8 +10,8 @@ Don't tell louis this exists though, else I'm a dead man.
 from __future__ import annotations
 
 import vapoursynth as vs
-from vsexprtools import mod_x
 from vskernels import Point
+from vstools import mod_x
 
 from .util import check_variable_resolution
 

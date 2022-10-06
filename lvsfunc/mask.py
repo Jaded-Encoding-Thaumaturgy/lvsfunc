@@ -6,10 +6,8 @@ from functools import partial
 from typing import Any, Callable, Sequence
 
 import vapoursynth as vs
-from vsexprtools.util import normalise_planes
 from vsrgtools import removegrain
-from vsutil import Range as CRange
-from vsutil import depth, get_depth, get_y, iterate, join, split
+from vstools import depth, get_depth, get_y, iterate, join, split, normalize_planes, ColorRange
 
 from .types import Position, Range, Shapes, Size
 from .util import check_variable, check_variable_resolution, quick_resample, replace_ranges, scale_peak, scale_thresh
@@ -437,7 +435,7 @@ class DeferredMask(ABC):
 
         if len(self.refframes) == 0:
             hm = depth(self._mask(clip, ref), clip.format.bits_per_sample,
-                       range=CRange.FULL, range_in=CRange.FULL)
+                       range_out=ColorRange.FULL, range_in=ColorRange.FULL)
         else:
             hm = core.std.BlankClip(ref, format=ref.format.replace(color_family=vs.GRAY,
                                                                    subsampling_h=0, subsampling_w=0).id)
@@ -447,7 +445,7 @@ class DeferredMask(ABC):
                 elif rf < 0:
                     rf = ref.num_frames - 1 + rf
                 mask = depth(self._mask(clip[rf], ref[rf]), clip.format.bits_per_sample,
-                             range=CRange.FULL, range_in=CRange.FULL)
+                             range_out=ColorRange.FULL, range_in=ColorRange.FULL)
                 hm = replace_ranges(hm, core.akarin.Expr([hm, mask*len(hm)], expr="x y max"), range)
 
         hm = hm.std.Limiter()
@@ -473,7 +471,7 @@ def mt_xxpand_multi(clip: vs.VideoNode,
     """
     assert check_variable(clip, "mt_xxpand_multi")
 
-    planes = normalise_planes(clip, planes)
+    planes = normalize_planes(clip, planes)
 
     params: dict[str, Any] = dict(planes=planes)
     params |= m_params

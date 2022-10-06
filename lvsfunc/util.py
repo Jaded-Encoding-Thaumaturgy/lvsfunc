@@ -4,14 +4,15 @@ import colorsys
 import random
 import warnings
 from functools import partial, wraps
-from typing import Any, Callable, cast
+from typing import Any, Callable, TypeGuard, cast
 
 import vapoursynth as vs
-from typing_extensions import TypeGuard
-from vskernels import Bicubic, Kernel, Matrix, VNodeCallable, get_kernel, get_prop
-from vsutil import depth, get_subsampling, get_w, get_y
+from vskernels import Bicubic, Kernel
+from vstools import (
+    F_VD, InvalidVideoFormatError, Matrix, VariableFormatError, VariableResolutionError, depth, get_prop,
+    get_subsampling, get_w, get_y
+)
 
-from .exceptions import InvalidFormatError, VariableFormatError, VariableResolutionError
 from .types import Range, _VideoNode
 
 core = vs.core
@@ -113,7 +114,7 @@ def replace_ranges(clip_a: vs.VideoNode,
 
     Frame ranges are inclusive. This behaviour can be changed by setting `exclusive=True`.
 
-    If you're trying to splice in clips, it's recommended you use `vsutil.insert_clip` instead.
+    If you're trying to splice in clips, it's recommended you use `vstools.insert_clip` instead.
 
     This function will try to call the `VapourSynth-RemapFrames` plugin before doing any of its own processing.
     This should come with a speed boost, so it's recommended you install it.
@@ -332,7 +333,7 @@ def frames_since_bookmark(clip: vs.VideoNode, bookmarks: list[int]) -> vs.VideoN
     return core.std.FrameEval(clip, partial(_frames_since_bookmark, clip=clip, bookmarks=bookmarks))
 
 
-def chroma_injector(func: VNodeCallable) -> VNodeCallable:
+def chroma_injector(func: F_VD) -> F_VD:
     """
     Inject reference chroma.
 
@@ -382,7 +383,9 @@ def chroma_injector(func: VNodeCallable) -> VNodeCallable:
         out_fmt: vs.VideoFormat | None = None
         if clip.format is not None:
             if clip.format.color_family not in (vs.GRAY, vs.YUV):
-                raise InvalidFormatError("chroma_injector", "{func}: 'Input clip must be of a YUV or GRAY format!'")
+                raise InvalidVideoFormatError(
+                    "chroma_injector", "{func}: 'Input clip must be of a YUV or GRAY format!'"
+                )
 
             in_fmt = core.register_format(vs.GRAY, clip.format.sample_type,
                                           clip.format.bits_per_sample, 0, 0)
@@ -405,7 +408,7 @@ def chroma_injector(func: VNodeCallable) -> VNodeCallable:
 
         if result.format is not None:
             if result.format.color_family not in (vs.GRAY, vs.YUV):
-                raise InvalidFormatError("chroma_injector",
+                raise InvalidVideoFormatError("chroma_injector",
                                          "{func}: 'can only decorate function with YUV and/or GRAY format return!'")
 
             if result.format.color_family == vs.GRAY:
@@ -417,7 +420,7 @@ def chroma_injector(func: VNodeCallable) -> VNodeCallable:
         else:
             return allow_variable()(get_y)(result)
 
-    return cast(VNodeCallable, inner)
+    return cast(F_VD, inner)
 
 
 def colored_clips(amount: int,
@@ -504,7 +507,7 @@ def allow_variable(width: int | None = None, height: int | None = None,
     if height is not None:
         width = width if width else get_w(height)
 
-    def inner(func: VNodeCallable) -> VNodeCallable:
+    def inner(func: F_VD) -> F_VD:
         @wraps(func)
         def inner2(clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
             def frameeval_wrapper(n: int, f: vs.VideoFrame) -> vs.VideoNode:
@@ -515,7 +518,7 @@ def allow_variable(width: int | None = None, height: int | None = None,
             clip_out = clip_out.resize.Point(width, height) if width and height else clip_out
             return core.std.FrameEval(clip_out, frameeval_wrapper, prop_src=[clip])
 
-        return cast(VNodeCallable, inner2)
+        return cast(F_VD, inner2)
 
     return inner
 
@@ -542,8 +545,8 @@ def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
     assert check_variable(clip, "match_clip")
     assert check_variable(ref, "match_clip")
 
-    if isinstance(kernel, str):
-        kernel = get_kernel(kernel)()
+    if not isinstance(kernel, Kernel):
+        kernel = Kernel.from_param(kernel)()
 
     clip = clip * ref.num_frames if length else clip
     clip = kernel.scale(clip, ref.width, ref.height) if dimensions else clip

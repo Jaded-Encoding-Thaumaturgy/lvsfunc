@@ -5,8 +5,8 @@ from typing import Any, Callable
 
 import vapoursynth as vs
 import vsscale
-from vskernels import Bicubic, BicubicSharp, Catrom, Kernel, Spline36, Transfer, VSFunction, get_kernel
-from vsutil import depth, get_depth, get_w, get_y, iterate
+from vskernels import Bicubic, BicubicSharp, Catrom, Kernel, Spline36
+from vstools import depth, get_depth, get_w, get_y, iterate, Transfer, VSFunction
 
 from .util import check_variable, scale_thresh
 
@@ -178,8 +178,8 @@ def ssim_downsample(clip: vs.VideoNode, width: int | None = None, height: int = 
     """
     warnings.warn('lvsfunc.ssim_downsample: deprecated in favor of vsscale.SSIM!', DeprecationWarning)
 
-    if isinstance(kernel, str):
-        kernel = get_kernel(kernel)()
+    if not isinstance(kernel, Kernel):
+        kernel = Kernel.from_param(kernel)()
 
     return vsscale.ssim_downsample(
         clip, width, height, smooth, kernel, gamma if curve is None else curve, sigmoid
@@ -335,11 +335,11 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
 
     width = width or get_w(height, clip.width/clip.height, only_even=False)
 
-    if isinstance(kernel, str):
-        kernel = get_kernel(kernel)()
+    if not isinstance(kernel, Kernel):
+        kernel = Kernel.from_param(kernel)()
 
-    if isinstance(downscaler, str):
-        downscaler = get_kernel(downscaler)()
+    if not isinstance(downscaler, Kernel):
+        downscaler = Kernel.from_param(downscaler)()
 
     bits = get_depth(clip)
     clip_y = get_y(clip)

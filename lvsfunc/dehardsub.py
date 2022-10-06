@@ -4,7 +4,7 @@ from abc import ABC
 from typing import Any
 
 import vapoursynth as vs
-from vsutil import iterate, split
+from vstools import iterate, split
 
 from .mask import DeferredMask
 from .types import Range

@@ -11,13 +11,14 @@ from pathlib import Path
 from typing import Any, Sequence, SupportsFloat
 
 import vapoursynth as vs
-from vsexprtools import expect_bits, mod2, mod4
-from vskernels import Bicubic, BicubicDidee, Catrom, Kernel, get_kernel, get_prop
+from vskernels import Bicubic, BicubicDidee, Catrom, Kernel
 from vsrgtools import repair
-from vsutil import depth, get_neutral_value, get_w, get_y, scale_value
+from vstools import (
+    InvalidFramerateError, TopFieldFirstError, depth, expect_bits, get_neutral_value, get_prop, get_w, get_y, mod2,
+    mod4, scale_value
+)
 
 from .comparison import Stack
-from .exceptions import InvalidFramerateError, TopFieldFirstError
 from .helpers import _calculate_dar_from_props
 from .render import clip_async_render, get_render_progress
 from .types import Dar, Direction, Region
@@ -443,8 +444,8 @@ def descale_fields(clip: vs.VideoNode, tff: bool = True,
     height_field = int(height/2)
     width = width or get_w(height, clip.width/clip.height)
 
-    if isinstance(kernel, str):
-        kernel = get_kernel(kernel)()
+    if not isinstance(kernel, Kernel):
+        kernel = Kernel.from_param(kernel)()
 
     clip = clip.std.SetFieldBased(2-int(tff))
 
@@ -537,7 +538,7 @@ def pulldown_credits(clip: vs.VideoNode, frame_ref: int, tff: bool | None = None
     Likewise, if your credits are 30p (as opposed to 60i), you should set `interlaced` to False.
 
     The recommended way to use this filter is to trim out the area with interlaced credits,
-    apply this function, and `vsutil.insert_clip` the clip back into a properly IVTC'd clip.
+    apply this function, and `vstools.insert_clip` the clip back into a properly IVTC'd clip.
     Alternatively, use `muvsfunc.VFRSplice` to splice the clip back in if you're dealing with a VFR clip.
 
     :param clip:                    Clip to process. Framerate must be 30000/1001.

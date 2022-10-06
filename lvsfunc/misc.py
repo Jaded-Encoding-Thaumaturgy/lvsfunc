@@ -8,7 +8,7 @@ from typing import Any, Sequence
 import vapoursynth as vs
 from vskernels import Bicubic, Catrom, Kernel, Matrix, get_prop
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
-from vsutil import depth, get_depth, is_image, scale_value
+from vstools import depth, get_depth, is_image, scale_value
 
 from .exceptions import InvalidMatrixError
 from .helpers import _check_index_exists

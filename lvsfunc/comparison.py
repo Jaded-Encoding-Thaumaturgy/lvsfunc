@@ -8,9 +8,9 @@ from itertools import groupby, zip_longest
 from typing import Any, Callable, Iterable, Iterator, Literal, Sequence, TypeVar, overload
 
 import vapoursynth as vs
-from vskernels import Catrom, get_matrix, get_prop
-from vsutil import depth, get_subsampling, get_w
-from vsutil import split as split_planes
+from vskernels import Catrom
+from vstools import depth, get_subsampling, get_w, get_prop, Matrix
+from vstools import split as split_planes
 
 from .dehardsub import hardsub_mask
 from .exceptions import ClipsAndNamedClipsError, InvalidFormatError, NotEqualFormatsError, VariableFormatError
@@ -396,7 +396,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     """
     def _resample(clip: vs.VideoNode) -> vs.VideoNode:
         # Resampling to 8 bit and RGB to properly display how it appears on your screen
-        return core.resize.Bicubic(clip, format=vs.RGB24, matrix_in=get_matrix(clip),
+        return core.resize.Bicubic(clip, format=vs.RGB24, matrix_in=Matrix.from_video(clip),
                                    dither_type='error_diffusion')
 
     check_variable_resolution(clip_a, "compare")
@@ -460,7 +460,7 @@ def stack_compare(*clips: vs.VideoNode,
                       "Will be using clipa's height instead.")
         height = int(clipa.height / 2)
 
-    scaled_width = get_w(height, only_even=False)
+    scaled_width = get_w(height, mod=1)
 
     diff = core.std.MakeDiff(clipa=clipa, clipb=clipb)
     diff = Catrom().scale(diff, scaled_width * 2, height * 2).text.FrameNum(8)
@@ -678,7 +678,7 @@ def diff(*clips: vs.VideoNode,
         comparison = Interleave({f'{name_a}': core.std.Splice([a[f] for f in frames]),
                                  f'{name_b}': core.std.Splice([b[f] for f in frames])}).clip
     else:
-        scaled_width = get_w(height, only_even=False)
+        scaled_width = get_w(height, mod=1)
         diff = diff.resize.Spline36(width=scaled_width * 2, height=height * 2).text.FrameNum(9)
         a, b = (c.resize.Spline36(width=scaled_width, height=height).text.FrameNum(9) for c in (a, b))
 

@@ -4,8 +4,8 @@ import warnings
 from typing import Any
 
 import vapoursynth as vs
-from vskernels import Bicubic, Kernel, Matrix, get_kernel, get_prop
-from vsutil import Dither, depth, get_depth, get_y, join, plane
+from vskernels import Bicubic, Kernel
+from vstools import DitherType, depth, get_depth, get_y, join, plane, get_prop, Matrix
 
 from .util import check_variable
 
@@ -153,13 +153,13 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
     if show_mask:
         return adap_mask
 
-    if isinstance(kernel, str):
-        kernel = get_kernel(kernel)()
+    if not isinstance(kernel, Kernel):
+        kernel = Kernel.from_param(kernel)()
 
     bit_depth = get_depth(clip)
     is_rgb, is_gray = (clip.format.color_family is f for f in (vs.RGB, vs.GRAY))
 
-    clip_32 = depth(clip, 32, dither_type=Dither.ERROR_DIFFUSION)
+    clip_32 = depth(clip, 32, dither_type=DitherType.ERROR_DIFFUSION)
 
     if is_gray or (is_rgb and chroma):
         return depth(core.chkdr.grain(clip_32.std.Limiter(), **chkdr_args), bit_depth)
