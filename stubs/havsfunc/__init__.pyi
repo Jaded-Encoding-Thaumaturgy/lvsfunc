@@ -2,6 +2,8 @@
 
 from typing import Any, Mapping
 
+import vapoursynth as vs
+
 
 def QTGMC(
     Input: vs.VideoNode, Preset: str = 'Slower',
