@@ -1,15 +1,11 @@
 from __future__ import annotations
 
-import warnings
 from functools import partial
-from typing import Any, Sequence
 
 import vapoursynth as vs
-import vsdehalo
-from vsexprtools import clamp, mod4
 from vskernels import BSpline, Catrom
 from vsrgtools import repair
-from vstools import get_depth, get_y
+from vstools import get_depth, get_y, clamp, mod4
 
 from .util import check_variable, scale_peak
 
@@ -17,50 +13,8 @@ core = vs.core
 
 
 __all__ = [
-    'masked_dha',
-    # Deprecated
-    'bidehalo',
-    'fine_dehalo',
+    'masked_dha'
 ]
-
-
-def bidehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
-             sigmaS: float = 1.5, sigmaR: float = 5/255,
-             sigmaS_final: float | None = None, sigmaR_final: float | None = None,
-             planes: int | Sequence[int] | None = None,
-             bilateral_args: dict[str, Any] = {},
-             bm3d_args: dict[str, Any] = {},
-             ) -> vs.VideoNode:
-    """
-    Dehaloing function that uses bilateral and BM3D to remove bright haloing around edges.
-
-    .. warning::
-        | This function has been deprecated! It will be removed in a future commit.
-
-    If a ref clip is passed, that will be masked onto the clip instead of a blurred clip.
-
-    :param clip:                Source clip.
-    :param ref:                 Ref clip.
-    :param sigmaS:              Bilateral's spatial weight sigma.
-    :param sigmaR:              Bilateral's range weight sigma.
-    :param sigmaS_final:        Final bilateral call's spatial weight sigma.
-                                You'll want this to be much weaker than the initial `sigmaS`.
-                                If `None`, 1/3rd of `sigmaS`.
-    :param sigmaR_final:        Bilateral's range weight sigma.
-                                if `None`, same as `sigmaR`
-    :param bilateral_args:      Additional parameters to pass to bilateral.
-    :param bm3d_args:           Additional parameters to pass to :py:func:`lvsfunc.noise.bm3d`.
-    :param planes:              Specifies which planes will be processed.
-                                Any unprocessed planes will be simply copied.
-
-    :return:                    Dehalo'd clip.
-    """
-    warnings.warn('lvsfunc.bidehalo: deprecated in favor of vsdehalo.bidehalo!', DeprecationWarning)
-
-    return vsdehalo.bidehalo(
-        clip, sigmaS, sigmaR, sigmaS_final, sigmaR_final,
-        planes=planes, bm3d_args=bm3d_args, bilateral_args=bilateral_args
-    )
 
 
 def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
@@ -162,69 +116,3 @@ def masked_dha(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     mfc = core.std.MaskedMerge(clip_y, umfc, mask_f)
     return core.std.ShufflePlanes([mfc, clip], [0, 1, 2], vs.YUV) \
         if clip.format.color_family != vs.GRAY else mfc
-
-
-def fine_dehalo(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
-                rx: float = 1.8, ry: float = 1.8,
-                brightstr: float = 1.0, darkstr: float = 0.0,
-                thmi: float = 80, thma: float = 128, thlimi: float = 50, thlima: float = 100,
-                lowsens: float = 50, highsens: float = 50, rfactor: float = 1.25,
-                show_mask: bool | int = False,
-                planes: int | Sequence[int] | None = None) -> vs.VideoNode:
-    """
-    Light's rewrite of fine_dehalo.py.
-
-    .. warning::
-        | This function has been deprecated! It will be removed in a future commit.
-
-    This is a slight rewrite of the standalone script that has been floating around
-    with support for a ``ref`` clip. Original can be found in havsfunc if requested.
-
-    There have been changes made to the way the masks are expanded/inpanded, as well as strengths.
-    This isn't strictly better or worse than the original version, just different.
-
-    This function is rather sensitive to the rx and ry settings.
-    Set them as low as possible! If the radii are set too high, it will start missing small spots.
-
-    `darkstr` is set to 0 by default in this function. This is because more often than not,
-    it simply does more damage than people will likely want.
-
-    The sensitivity settings are rather difficult to define.
-    In essence, they define the window between how weak an effect is for it to be processed,
-    and how strong it has to be before it's fully discarded.
-
-    :param clip:                    Clip to process.
-    :param ref:                     Reference clip. Will replace regular dehaloing.
-    :param rx:                      Horizontal radius for halo removal. Must be greater than 1. Will be rounded up.
-    :param ry:                      Vertical radius for halo removal. Must be greater than 1. Will be rounded up.
-    :param brightstr:               Strength for bright halo removal.
-    :param darkstr:                 Strength for dark halo removal. Must be between 0 and 1.
-    :param thmi:                    Minimum threshold for sharp edges. Keep only the sharpest edges (line edges).
-                                    To see the effects of this setting take a look at the strong mask (show_mask=4).
-    :param thma:                    Maximum threshold for sharp edges. Keep only the sharpest edges (line edges).
-                                    To see the effects of this setting take a look at the strong mask (show_mask=4).
-    :param thlimi:                  Minimum limiting threshold. Includes more edges than previously,
-                                    but ignores simple details.
-    :param thlima:                  Maximum limiting threshold. Includes more edges than previously,
-                                    but ignores simple details.
-    :param lowsens:                 Lower sensitivity range. The lower this is, the more it will process.
-                                    Must be between 0 and 100.
-    :param highsens:                Upper sensitivity range. The higher this is, the more it will process.
-                                    Must be between 0 and 100.
-    :param rfactor:                 Image enlargement factor. Set to >1 to enable some form of aliasing-protection.
-                                    Must be greater than 1.
-    :param show_mask:               Return mask clip. Valid options are 1–7.
-    :param planes:                  Specifies which planes will be processed.
-                                    Any unprocessed planes will be simply copied.
-
-    :return:                        Dehalo'd clip or halo mask clip.
-
-    :raises ModuleNotFoundError:    Dependencies are missing.
-    """
-    warnings.warn('lvsfunc.fine_dehalo: deprecated in favor of vsdehalo.fine_dehalo!', DeprecationWarning)
-
-    return vsdehalo.fine_dehalo(
-        clip, ref, rx, ry, darkstr, brightstr, int(lowsens), int(highsens),
-        thmi, thma, thlimi, thlima, rfactor,
-        planes=planes, show_mask=show_mask
-    )

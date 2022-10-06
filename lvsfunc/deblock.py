@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import warnings
 from functools import partial
 from pathlib import Path
 from typing import Any, Literal, Sequence, SupportsFloat, cast
@@ -176,9 +175,6 @@ def dpir(
     For more information, see `the original DPIR repository <https://github.com/cszn/DPIR>`_.
 
     Thanks `Setsugen no ao <https://github.com/Setsugennoao>`_!
-
-    | Alias for this function is ``lvsfunc.vsdpir``.
-    | Note that this will be deprecated in the future!
 
     Dependencies:
 
@@ -440,10 +436,3 @@ def dpir(
         return depth(run_dpir, bit_depth)
 
     return kernel.resample(run_dpir, targ_format, targ_matrix)
-
-
-# deprecated aliases
-def vsdpir(clip: vs.VideoNode, **dpir_args: Any) -> vs.VideoNode:
-    """Deprecate alias of :py:func:`lvsfunc.deblock.dpir`."""
-    warnings.warn("vsdpir: This alias has been deprecated in favor of `dpir`!")
-    return dpir(clip, **dpir_args)

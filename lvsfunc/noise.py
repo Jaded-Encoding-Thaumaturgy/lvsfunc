@@ -13,56 +13,8 @@ core = vs.core
 
 
 __all__ = [
-    'chickendream',
-    # Deprecated
-    'bm3d'
+    'chickendream'
 ]
-
-
-def bm3d(clip: vs.VideoNode, sigma: float | list[float] = 0.75,
-         radius: int | list[int] | None = None, ref: vs.VideoNode | None = None,
-         pre: vs.VideoNode | None = None, refine: int = 1, matrix_s: str = "709",
-         basic_args: dict[str, Any] = {}, final_args: dict[str, Any] = {}) -> vs.VideoNode:
-    """
-    BM3D denoising filter using the CPU.
-
-    .. warning::
-        | This function has been deprecated! It will be removed in a future commit.
-
-    Dependencies:
-
-    * `VapourSynth-BM3D <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-BM3D>`_
-
-    :param clip:            Clip to process.
-    :param sigma:           Denoising strength for both basic and final estimations.
-    :param radius:          Temporal radius for both basic and final estimations.
-    :param ref:             Reference clip for the final estimation.
-    :param pre:             Prefiltered clip for the basic estimation.
-    :param refine:          Iteration of the final clip.
-                            0 = basic estimation only
-                            1 = basic + final estimation
-                            n = basic + n final estimations
-    :param matrix_s:        Color matrix of the Clip to process.
-    :param basic_args:      Args to pass to the basic estimation.
-    :param final_args:      Args to pass to the final estimation.
-
-    :return:                Denoised clip.
-
-    :raises ValueError:     Invalid number of sigma parameters were passed.
-    :raises ValueError:     Invalid number of radii parameters were passed.
-    """
-    try:
-        import vsdenoise
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("bm3d: missing dependency `vsdenoise`!")
-
-    warnings.warn('lvsfunc.bm3d: deprecated in favor of vsdenoise.BM3D!', DeprecationWarning)
-
-    vsd_bm3d = vsdenoise.BM3D(clip, sigma, radius, vsdenoise.Profile.NORMAL, pre, ref, refine)
-    vsd_bm3d.basic_args |= basic_args
-    vsd_bm3d.final_args |= final_args
-
-    return vsd_bm3d.clip
 
 
 def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
