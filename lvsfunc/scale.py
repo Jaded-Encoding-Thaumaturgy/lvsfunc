@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from vskernels import Bicubic, Catrom, Kernel
-from vsscale import CreditMaskT, descale_detail_mask, ssim_downsample
+from vsscale import CreditMaskT, descale_detail_mask, ssim_downsample, GenericScaler
 from vstools import core, depth, get_depth, get_w, get_y, iterate, vs, check_variable, scale_thresh
 
 __all__ = [
@@ -67,13 +67,16 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
     eediargs: dict[str, Any] = dict(alpha=0.2, beta=0.25, gamma=1000, nrad=2, mdis=20)
     eediargs |= eedi3_args
 
-    width = width or get_w(height, clip.width/ clip.height, 1)
+    width = width or get_w(height, clip.width / clip.height, 1)
 
     if not isinstance(kernel, Kernel):
         kernel = Kernel.from_param(kernel)()
 
     if not isinstance(downscaler, Kernel):
-        downscaler = Kernel.from_param(downscaler)()
+        if callable(downscaler):
+            downscaler = GenericScaler(downscaler)
+        else:
+            downscaler = Kernel.from_param(downscaler)()
 
     bits = get_depth(clip)
     clip_y = get_y(clip)
@@ -83,11 +86,7 @@ def mixed_rescale(clip: vs.VideoNode, width: None | int = None, height: int = 72
     descaled = kernel.descale(clip_y, width, height)
     upscaled = kernel.scale(descaled, clip.width, clip.height)
 
-    if isinstance(downscaler, Kernel):
-        downscaled = downscaler.scale(clip_y, width, height)
-    else:
-        downscaled = depth(downscaler(clip_y, width, height), bits)
-        downscaler = Catrom()
+    downscaled = downscaler.scale(clip_y, width, height)
 
     merged = core.akarin.Expr([descaled, downscaled], f'x {mix_strength} * y 1 {mix_strength} - * +')
 
