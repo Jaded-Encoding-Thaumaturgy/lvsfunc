@@ -104,7 +104,3 @@ def based_aa(clip: vs.VideoNode, shader_file: str = "FSRCNNX_x2_56-16-4-1.glsl",
     if clip.format.num_planes == 1:
         return aa_merge
     return join([aa_merge, plane(clip, 1), plane(clip, 2)])
-
-
-# Aliases
-sraa = upscaled_sraa
