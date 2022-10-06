@@ -7,11 +7,11 @@ from typing import Any, Sequence
 
 from vskernels import Bicubic, Catrom, Kernel
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
-from vstools import Matrix, core, depth, get_depth, get_prop, scale_value, vs, InvalidMatrixError, check_variable,normalize_ranges, replace_ranges
+from vstools import Matrix, core, depth, get_depth, get_prop, scale_value, vs, InvalidMatrixError, check_variable, normalize_ranges, replace_ranges
 
 from .helpers import _check_index_exists
 from .mask import BoundingBox
-from .types import MISSING, IndexFile, IndexingType, IndexType, Position, Range, Size
+from .types import MISSING, IndexFile, IndexingType, IndexType, Position, FrameRangesN, Size
 from .util import match_clip
 
 __all__ = [
@@ -354,7 +354,7 @@ def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
 
 
 def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
-                 frame_ranges: Range | list[Range] | None = None, fade_length: int = 0,
+                 frame_ranges: FrameRangesN | FrameRangesN | None = None, fade_length: int = 0,
                  matrix: Matrix | int | None = None) -> vs.VideoNode:
     """
     Overlay a logo or sign onto another clip.
@@ -373,12 +373,13 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
                                     through :py:func:`core.vapoursnth.imwri.Read` or a path string to the image file,
                                     and **MUST** be the same dimensions as the ``clip`` to process.
     :param frame_ranges:            Frame ranges or starting frame to apply the overlay to.
-                                    See :py:attr:`lvsfunc.types.Range` for more info.
+                                    See :py:attr:`vstools.FrameRange` for more info.
                                     If None, overlays the entire clip.
-                                    If a Range is passed, the overlaid clip will only show up inside that range.
+                                    If a FrameRange is passed, the overlaid clip will only show up inside that range.
                                     If only a single integer is given, it will start on that frame and
                                     stay until the end of the clip.
-                                    Note that this function only accepts a single Range! You can't pass a list of them!
+                                    Note that this function only accepts a single FrameRange!
+                                    You can't pass a list of them!
     :param fade_length:             Length to fade the clips into each other.
                                     The fade will start and end on the frames given in frame_ranges.
                                     If set to 0, it won't fade and the sign will simply pop in.

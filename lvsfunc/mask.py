@@ -11,7 +11,7 @@ from vstools import (
     normalize_planes, replace_ranges, scale_peak, scale_thresh, split, vs
 )
 
-from .types import Position, Range, Shapes, Size
+from .types import Position, FrameRangesN, Shapes, Size
 
 __all__ = [
     'BoundingBox',
@@ -286,7 +286,7 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
     :param rad:         Depth in pixels of the detail/edge masking.
     :param radc:        Chroma equivalent to ``rad``.
 
-    :return:            Range mask.
+    :return:            FrameRangesN mask.
     """
     assert check_variable(clip, "range_mask")
 
@@ -381,17 +381,17 @@ class DeferredMask(ABC):
                         (Default: ``None``, no bounding).
     :param blur:        Blur the bounding mask (Default: False).
     :param refframe:    A single frame number to use to generate the mask
-                        or a list of frame numbers with the same length as :py:func:`lvsfunc.types.Range`.
+                        or a list of frame numbers with the same length as :py:func:`lvsfunc.types.FrameRangesN`.
 
     :raises ValueError: Reference frame and ranges mismatch.
     """
 
-    ranges: list[Range]
+    ranges: FrameRangesN
     bound: BoundingBox | None
     refframes: list[int | None]
     blur: bool
 
-    def __init__(self, ranges: Range | list[Range] | None = None,
+    def __init__(self, ranges: FrameRangesN | FrameRangesN | None = None,
                  bound: BoundingBox | tuple[tuple[int, int], tuple[int, int]] | None = None,
                  *,
                  blur: bool = False, refframes: int | list[int] | None = None):

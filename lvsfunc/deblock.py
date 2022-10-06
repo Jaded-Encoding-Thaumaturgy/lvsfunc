@@ -154,7 +154,7 @@ def dpir(
     clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 10, mode: str = 'deblock',
     matrix: Matrix | int | None = None, cuda: bool | Literal['trt'] | None = None, i444: bool = False,
     tiles: int | tuple[int, int] | None = None, overlap: int | tuple[int, int] | None = 8,
-    zones: list[tuple[Range | list[Range] | None, SupportsFloat | vs.VideoNode | None]] | None = None,
+    zones: list[tuple[FrameRangesN | FrameRangesN | None, SupportsFloat | vs.VideoNode | None]] | None = None,
     fp16: bool | None = None, num_streams: int = 1, device_id: int = 0, kernel: Kernel | str = Bicubic(b=0, c=1/2)
 ) -> vs.VideoNode:
     """
@@ -325,7 +325,7 @@ def dpir(
     else:
         strength_clip = _get_strength_clip(clip_rgb, strength)
 
-    no_dpir_zones = list[Range]()
+    no_dpir_zones = FrameRangesN()
 
     zoned_strength_clip = strength_clip
 
