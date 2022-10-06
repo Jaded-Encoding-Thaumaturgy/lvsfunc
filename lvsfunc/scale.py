@@ -2,15 +2,11 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-import vapoursynth as vs
 from vskernels import Bicubic, Catrom, Kernel
-from vsscale import descale_detail_mask, ssim_downsample, CreditMaskT
-from vstools import depth, get_depth, get_w, get_y, iterate
+from vsscale import CreditMaskT, descale_detail_mask, ssim_downsample
+from vstools import core, depth, get_depth, get_w, get_y, iterate, vs
 
 from .util import check_variable, scale_thresh
-
-core = vs.core
-
 
 __all__ = [
     'mixed_rescale'

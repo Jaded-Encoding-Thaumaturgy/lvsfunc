@@ -1,16 +1,11 @@
 from __future__ import annotations
 
-import warnings
 from typing import Any
 
-import vapoursynth as vs
 from vskernels import Bicubic, Kernel
-from vstools import DitherType, depth, get_depth, get_y, join, plane, get_prop, Matrix
+from vstools import DitherType, Matrix, core, depth, get_depth, get_prop, get_y, join, plane, vs
 
 from .util import check_variable
-
-core = vs.core
-
 
 __all__ = [
     'chickendream'

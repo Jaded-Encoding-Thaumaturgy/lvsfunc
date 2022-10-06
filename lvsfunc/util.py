@@ -6,17 +6,13 @@ import warnings
 from functools import partial, wraps
 from typing import Any, Callable, TypeGuard, cast
 
-import vapoursynth as vs
 from vskernels import Bicubic, Kernel
 from vstools import (
-    F_VD, InvalidVideoFormatError, Matrix, VariableFormatError, VariableResolutionError, depth, get_prop,
-    get_subsampling, get_w, get_y
+    F_VD, InvalidVideoFormatError, Matrix, VariableFormatError, VariableResolutionError, core, depth, get_prop,
+    get_subsampling, get_w, get_y, vs
 )
 
 from .types import Range, _VideoNode
-
-core = vs.core
-
 
 __all__ = [
     'allow_variable',
@@ -214,47 +210,6 @@ def scale_thresh(thresh: float, clip: vs.VideoNode, assume: int | None = None) -
         else round(thresh * ((1 << clip.format.bits_per_sample) - 1))
 
 
-def scale_peak(value: float, peak: float) -> float:
-    """Full-range scale function that scales a value from [0, 255] to [0, peak]."""
-    return value * peak / 255
-
-
-def padder(clip: vs.VideoNode,
-           left: int = 32, right: int = 32,
-           top: int = 32, bottom: int = 32) -> vs.VideoNode:
-    """
-    Pad out the pixels on the side by the given amount of pixels.
-
-    For a 4:2:0 clip, the output must be an even resolution.
-
-    Dependencies:
-
-    * `VapourSynth-fillborders <https://github.com/dubhater/vapoursynth-fillborders>`_
-
-    :param clip:        Clip to process.
-    :param left:        Padding added to the left side of the clip.
-    :param right:       Padding added to the right side of the clip.
-    :param top:         Padding added to the top side of the clip.
-    :param bottom:      Padding added to the bottom side of the clip.
-
-    :return:            Padded clip.
-
-    :raises ValueError: A non-even resolution is passed on a YUV420 clip.
-    """
-    assert check_variable(clip, "padder")
-
-    width = clip.width+left+right
-    height = clip.height+top+bottom
-
-    if get_subsampling(clip) == '420' and ((width % 2 != 0) or (height % 2 != 0)):
-        raise ValueError("padder: 'Values must result in an even resolution when passing a YUV420 clip!'")
-
-    scaled = core.resize.Point(clip, width, height,
-                               src_top=-1*top, src_left=-1*left,
-                               src_width=width, src_height=height)
-    return core.fb.FillBorders(scaled, left=left, right=right, top=top, bottom=bottom)
-
-
 def check_variable_format(clip: vs.VideoNode, function: str) -> TypeGuard[_VideoNode]:
     """
     Check for variable format and return an error if found.
@@ -408,8 +363,8 @@ def chroma_injector(func: F_VD) -> F_VD:
 
         if result.format is not None:
             if result.format.color_family not in (vs.GRAY, vs.YUV):
-                raise InvalidVideoFormatError("chroma_injector",
-                                         "{func}: 'can only decorate function with YUV and/or GRAY format return!'")
+                raise InvalidVideoFormatError(
+                    "chroma_injector", "{func}: 'can only decorate function with YUV and/or GRAY format return!'")
 
             if result.format.color_family == vs.GRAY:
                 return result

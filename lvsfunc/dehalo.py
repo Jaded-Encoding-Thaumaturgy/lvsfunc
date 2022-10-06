@@ -2,15 +2,11 @@ from __future__ import annotations
 
 from functools import partial
 
-import vapoursynth as vs
 from vskernels import BSpline, Catrom
 from vsrgtools import repair
-from vstools import get_depth, get_y, clamp, mod4
+from vstools import clamp, core, get_depth, get_y, mod4, vs
 
 from .util import check_variable, scale_peak
-
-core = vs.core
-
 
 __all__ = [
     'masked_dha'

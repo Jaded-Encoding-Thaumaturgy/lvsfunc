@@ -5,15 +5,11 @@ from abc import ABC, abstractmethod
 from functools import partial
 from typing import Any, Callable, Sequence
 
-import vapoursynth as vs
 from vsrgtools import removegrain
-from vstools import depth, get_depth, get_y, iterate, join, split, normalize_planes, ColorRange
+from vstools import ColorRange, core, depth, get_depth, get_y, iterate, join, normalize_planes, split, vs
 
 from .types import Position, Range, Shapes, Size
 from .util import check_variable, check_variable_resolution, quick_resample, replace_ranges, scale_peak, scale_thresh
-
-core = vs.core
-
 
 __all__ = [
     'BoundingBox',

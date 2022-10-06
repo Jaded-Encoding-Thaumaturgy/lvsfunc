@@ -2,8 +2,6 @@
 
 from typing import Sequence
 
-import vapoursynth as vs
-
 
 def kirsch(src: vs.VideoNode) -> vs.VideoNode: ...
 

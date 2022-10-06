@@ -7,18 +7,19 @@ from abc import ABC, abstractmethod
 from itertools import groupby, zip_longest
 from typing import Any, Callable, Iterable, Iterator, Literal, Sequence, TypeVar, overload
 
-import vapoursynth as vs
 from vskernels import Catrom
-from vstools import depth, get_subsampling, get_w, get_prop, Matrix
+from vstools import (
+    FormatsMismatchError, InvalidVideoFormatError, Matrix, VariableFormatError, core, depth, get_prop, get_subsampling,
+    get_w
+)
 from vstools import split as split_planes
+from vstools import vs
 
 from .dehardsub import hardsub_mask
-from .exceptions import ClipsAndNamedClipsError, InvalidFormatError, NotEqualFormatsError, VariableFormatError
+from .exceptions import ClipsAndNamedClipsError
 from .render import clip_async_render
 from .types import Direction
 from .util import check_variable, check_variable_format, check_variable_resolution
-
-core = vs.core
 
 __all__ = [
     'compare', 'comp',
@@ -391,7 +392,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     :return:                Interleaved clip containing specified frames from `clip_a` and `clip_b`.
 
     :raises ValueError:     More comparisons requested than frames available.
-    :raises NotEqualFormatsError:
+    :raises FormatsMismatchError:
                             Format of given clips don't match.
     """
     def _resample(clip: vs.VideoNode) -> vs.VideoNode:
@@ -413,7 +414,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
         assert check_variable_format(clip_b, "compare")
 
         if clip_a.format.id != clip_b.format.id:
-            raise NotEqualFormatsError("compare")
+            raise FormatsMismatchError("compare")
 
     if print_frame:
         clip_a = clip_a.text.Text("Clip A").text.FrameNum(alignment=9)
@@ -483,14 +484,14 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
 
     :return:                        Clip with stacked planes.
 
-    :raises InvalidFormatError:     Clip is not YUV or RGB.
+    :raises InvalidVideoFormatError:     Clip is not YUV or RGB.
     :raises TypeError:              Clip is of an unexpected color family.
     :raises TypeError:              Clip returns an unexpected subsampling.
     """
     assert check_variable(clip, "stack_planes")
 
     if clip.format.num_planes != 3:
-        raise InvalidFormatError("stack_planes", "{func}: Input clip must be of a YUV or RGB planar format!")
+        raise InvalidVideoFormatError("stack_planes", "{func}: Input clip must be of a YUV or RGB planar format!")
 
     yuv_planes = split_planes(clip)
 

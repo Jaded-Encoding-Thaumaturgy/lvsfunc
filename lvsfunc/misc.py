@@ -5,19 +5,15 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Sequence
 
-import vapoursynth as vs
-from vskernels import Bicubic, Catrom, Kernel, Matrix, get_prop
+from vskernels import Bicubic, Catrom, Kernel
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
-from vstools import depth, get_depth, is_image, scale_value
+from vstools import Matrix, core, depth, get_depth, get_prop, scale_value, vs
 
 from .exceptions import InvalidMatrixError
 from .helpers import _check_index_exists
 from .mask import BoundingBox
 from .types import MISSING, IndexFile, IndexingType, IndexType, Position, Range, Size
 from .util import check_variable, match_clip, normalize_ranges, replace_ranges
-
-core = vs.core
-
 
 __all__ = [
     'edgefixer', 'ef',

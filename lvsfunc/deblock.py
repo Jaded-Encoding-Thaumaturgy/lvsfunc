@@ -4,15 +4,12 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Literal, Sequence, SupportsFloat, cast
 
-import vapoursynth as vs
 from vskernels import Bicubic, Kernel, Point
-from vstools import DitherType, depth, get_depth, get_prop, Matrix
+from vstools import DitherType, Matrix, core, depth, get_depth, get_prop, vs
 
 from .helpers import _check_has_nvidia
 from .types import Range
 from .util import check_variable, replace_ranges
-
-core = vs.core
 
 __all__ = [
     'autodb_dpir', 'dpir', 'vsdpir'

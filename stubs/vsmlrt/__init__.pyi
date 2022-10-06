@@ -2,7 +2,6 @@ import enum
 from dataclasses import dataclass
 from typing import Literal, SupportsFloat
 
-import vapoursynth as vs
 
 models_path: str
 

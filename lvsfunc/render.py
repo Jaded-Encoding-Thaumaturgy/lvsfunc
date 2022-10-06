@@ -5,13 +5,10 @@ from functools import partial
 from threading import Condition
 from typing import BinaryIO, Callable, TextIO
 
-import vapoursynth as vs
-from vstools import get_prop, InvalidVideoFormatError
+from vstools import InvalidVideoFormatError, core, get_prop, vs
 
 from .progress import BarColumn, FPSColumn, Progress, TextColumn, TimeRemainingColumn
 from .types import SceneChangeMode
-
-core = vs.core
 
 RenderCallback = Callable[[int, vs.VideoFrame], None]
 

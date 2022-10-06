@@ -3,14 +3,9 @@ from __future__ import annotations
 import subprocess as sp
 from pathlib import Path
 
-import vapoursynth as vs
-from vskernels import VideoPropError, get_prop
-from vstools import is_image
+from vstools import get_prop, vs, FramePropError
 
-from .exceptions import FramePropError
 from .types import Dar, IndexFile, IndexingType, IndexType
-
-core = vs.core
 
 __all__ = [
     '_check_has_nvidia',
@@ -52,7 +47,7 @@ def _calculate_dar_from_props(clip: vs.VideoNode) -> Dar:
 
     try:
         sar = get_prop(frame, "_SARDen", int), get_prop(frame, "_SARNum", int)
-    except VideoPropError as e:
+    except FramePropError as e:
         raise FramePropError(
             "PARser", "", f"SAR props not found! Make sure your video indexing plugin sets them!\n\t{e}"
         )

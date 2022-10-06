@@ -33,10 +33,8 @@ Usage Instructions
 
 .. code-block:: python
 
-    import vapoursynth as vs
+    from vstools import vs, core
     import lvsfunc as lvf
-
-    core = vs.core
 
 5. Call functions as necessary
 

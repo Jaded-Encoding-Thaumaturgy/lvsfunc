@@ -9,13 +9,10 @@ Don't tell louis this exists though, else I'm a dead man.
 """
 from __future__ import annotations
 
-import vapoursynth as vs
 from vskernels import Point
-from vstools import mod_x
+from vstools import core, mod_x, vs
 
 from .util import check_variable_resolution
-
-core = vs.core
 
 __all__ = [
     'minecraftify'

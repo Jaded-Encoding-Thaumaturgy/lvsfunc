@@ -3,15 +3,11 @@ from __future__ import annotations
 from math import ceil
 from typing import Any
 
-import vapoursynth as vs
 from vskernels import Box, Point
 from vsscale import ssim_downsample
-from vstools import depth, fallback, get_depth, get_y, join, plane, scale_value
+from vstools import core, depth, fallback, get_depth, get_y, join, plane, scale_value, vs
 
 from .util import check_variable
-
-core = vs.core
-
 
 __all__ = [
     'based_aa'

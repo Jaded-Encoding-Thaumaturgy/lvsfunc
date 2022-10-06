@@ -3,14 +3,11 @@ from __future__ import annotations
 from abc import ABC
 from typing import Any
 
-import vapoursynth as vs
-from vstools import iterate, split
+from vstools import core, iterate, split, vs
 
 from .mask import DeferredMask
 from .types import Range
 from .util import check_variable, normalize_ranges, replace_ranges, scale_thresh
-
-core = vs.core
 
 __all__ = [
     'bounded_dehardsub',

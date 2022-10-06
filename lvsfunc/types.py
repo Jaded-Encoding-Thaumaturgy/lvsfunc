@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum, IntEnum, auto
 from typing import Any, NamedTuple, Protocol, Tuple
 
-import vapoursynth as vs
+from vstools import vs
 
 __all__ = [
     '_VideoNode',
