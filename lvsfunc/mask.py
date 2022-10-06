@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from functools import partial
 from typing import Any, Callable, Sequence
 
-from vsrgtools import removegrain
+from vsrgtools import removegrain, gauss_blur
 from vstools import (
     ColorRange, check_variable, check_variable_resolution, core, depth, get_depth, get_y, iterate, join,
     normalize_planes, replace_ranges, scale_peak, scale_thresh, split, vs
@@ -55,13 +55,14 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
     brz_a = scale_thresh(brz_a, clip)
     brz_b = scale_thresh(brz_b, clip)
 
-    blur = (quick_resample(clip, partial(core.bilateral.Gaussian, sigma=sigma))
-            if sigma else clip)
+    y = get_y(clip)
 
-    mask_a = range_mask(get_y(blur), rad=rad)
+    blur = gauss_blur(y, sigma) if sigma else y
+
+    mask_a = range_mask(blur, rad=rad)
     mask_a = core.std.Binarize(mask_a, brz_a)
 
-    mask_b = core.std.Prewitt(get_y(blur))
+    mask_b = blur.std.Prewitt()
     mask_b = core.std.Binarize(mask_b, brz_b)
 
     mask = core.akarin.Expr([mask_a, mask_b], 'x y max')
