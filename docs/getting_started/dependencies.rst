@@ -7,7 +7,7 @@ lvsfunc depends on the following third-party scripts:
 * `havsfunc <https://github.com/HomeOfVapourSynthEvolution/havsfunc>`_
 * `kagefunc <https://github.com/Irrational-Encoding-Wizardry/kagefunc>`_
 * `vs-mlrt <https://github.com/AmusementClub/vs-mlrt>`_
-* `vsutil <https://pypi.org/project/vsutil/>`_
+* `vstools <https://pypi.org/project/vstools/>`_
 
 The following VapourSynth libraries are also required for full functionality:
 

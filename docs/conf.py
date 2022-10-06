@@ -79,7 +79,7 @@ autodoc_mock_imports = [
     "vsexprtools",
     "vskernels",
     "vsrgtools",
-    "vsutil",
+    "vstools",
     "vsaa",
     "vsscale",
     "vsdehalo",
