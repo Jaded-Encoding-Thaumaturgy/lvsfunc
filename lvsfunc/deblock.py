@@ -5,12 +5,14 @@ from pathlib import Path
 from typing import Any, Literal, Sequence, SupportsFloat, cast
 
 from vskernels import Bicubic, Kernel, Point
-from vstools import DitherType, Matrix, core, depth, get_depth, get_prop, vs, check_variable, replace_ranges, FrameRangesN
+from vstools import (
+    DitherType, FrameRangesN, Matrix, check_variable, core, depth, get_depth, get_prop, replace_ranges, vs
+)
 
 from .helpers import _check_has_nvidia
 
 __all__ = [
-    'autodb_dpir', 'dpir', 'vsdpir'
+    'autodb_dpir', 'dpir'
 ]
 
 
@@ -110,7 +112,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     if not isinstance(kernel, Kernel):
         kernel = Kernel.from_param(kernel)()
 
-    vsdpir_final_args = dict(mode='deblock', cuda=cuda)
+    vsdpir_final_args = dict[str, Any](mode='deblock', cuda=cuda)
     vsdpir_final_args |= vsdpir_args
     vsdpir_final_args.pop('strength', None)
 
