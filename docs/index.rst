@@ -57,7 +57,6 @@ Want to contribute to lvsfunc? Check out the `how to contribute <contribute>` se
     submodules/aa
     submodules/comparison
     submodules/deblock
-    submodules/dehalo
     submodules/dehardsub
     submodules/exceptions
     submodules/helpers
@@ -66,7 +65,6 @@ Want to contribute to lvsfunc? Check out the `how to contribute <contribute>` se
     submodules/noise
     submodules/recon
     submodules/render
-    submodules/scale
     submodules/types
     submodules/util
 
