@@ -4,7 +4,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Literal, Sequence, SupportsFloat, cast
 
-from vskernels import Catrom, KernelT, Kernel, Point
+from vskernels import Catrom, Kernel, KernelT, Point
 from vstools import (
     DitherType, FrameRangesN, Matrix, check_variable, core, depth, get_depth, get_prop, replace_ranges, vs
 )

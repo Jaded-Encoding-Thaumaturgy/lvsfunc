@@ -2,11 +2,9 @@ from __future__ import annotations
 
 from functools import partial
 
-
-from vstools import depth, get_depth, join, split, vs, core, check_variable
+from vstools import check_variable, core, depth, get_depth, join, split, vs
 
 from .types import RegressClips
-
 
 __all__ = [
     'chroma_reconstruct',

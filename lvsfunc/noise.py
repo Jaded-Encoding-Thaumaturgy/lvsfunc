@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from vskernels import KernelT, Catrom, Kernel
-from vstools import DitherType, Matrix, core, depth, get_depth, get_prop, get_y, join, plane, vs, check_variable
+from vskernels import Catrom, Kernel, KernelT
+from vstools import DitherType, Matrix, check_variable, core, depth, get_depth, get_prop, get_y, join, plane, vs
 
 __all__ = [
     'chickendream'

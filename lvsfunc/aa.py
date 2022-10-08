@@ -5,8 +5,7 @@ from typing import Any
 
 from vskernels import Box, Point
 from vsscale import ssim_downsample
-from vstools import core, depth, fallback, get_depth, get_y, join, plane, scale_value, vs, check_variable
-
+from vstools import check_variable, core, depth, fallback, get_depth, get_y, join, plane, scale_value, vs
 
 __all__ = [
     'based_aa'

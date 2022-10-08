@@ -8,8 +8,8 @@ from typing import Any, Sequence
 from vskernels import Catrom, KernelT
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
 from vstools import (
-    InvalidMatrixError, Matrix, check_variable, core, depth, get_depth, get_prop, normalize_ranges, replace_ranges,
-    scale_value, vs, MISSING, FrameRangesN, FileType, check_perms, CustomValueError, IndexingType
+    MISSING, CustomValueError, FileType, FrameRangesN, IndexingType, InvalidMatrixError, Matrix, check_perms,
+    check_variable, core, depth, get_depth, get_prop, normalize_ranges, replace_ranges, scale_value, vs
 )
 
 from .mask import BoundingBox
