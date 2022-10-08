@@ -8,8 +8,8 @@ from typing import Any, Sequence
 from vskernels import Catrom, KernelT
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
 from vstools import (
-    MISSING, CustomValueError, FileType, FrameRangesN, IndexingType, InvalidMatrixError, Matrix, check_perms,
-    check_variable, core, depth, get_depth, get_prop, normalize_ranges, replace_ranges, scale_value, vs
+    MISSING, CustomValueError, FileType, FrameRangeN, FrameRangesN, IndexingType, InvalidMatrixError, Matrix,
+    check_perms, check_variable, core, depth, get_depth, get_prop, normalize_ranges, replace_ranges, scale_value, vs
 )
 
 from .mask import BoundingBox
@@ -80,7 +80,7 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
 
     :raises ValueError:     Something other than a path is passed to ``path``.
     """
-    if path is MISSING:
+    if path is MISSING:  # type: ignore
         return partial(  # type: ignore
             source, ref=ref, force_lsmas=force_lsmas, film_thr=film_thr,
             tail_lines=tail_lines, kernel=kernel, debug=debug, **index_args
@@ -90,7 +90,7 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
     film_thr = float(min(100, film_thr))
 
     if str(path).startswith('file:///'):
-        path = path[8::]
+        path = str(path)[8::]
 
     path = Path(path)
     check_perms(path, 'r', func=source)
@@ -116,16 +116,16 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
     debug_props = dict[str, Any]()
 
     if force_lsmas or file.ext is IndexingType.LWI:
-        clip = core.lsmas.LWLibavSource(path, **index_args)
+        clip = core.lsmas.LWLibavSource(str(path), **index_args)
         debug_props |= dict(idx_used='lsmas')
     elif file.file_type is FileType.IMAGE:
-        clip = core.imwri.Read(path, **index_args)
+        clip = core.imwri.Read(str(path), **index_args)
         debug_props |= dict(idx_used='imwri')
-    elif file.ext is IndexingType.DGI:
+    elif file.ext is IndexingType.DGI or not force_lsmas:
         try:
             indexer = DGIndexNV()
 
-            if not path.endswith(".dgi"):
+            if not path.suffix == ".dgi":
                 path = indexer.index([SPath(path)], False, False)[0]
 
             idx_info = indexer.get_info(path, 0).footer
@@ -370,7 +370,7 @@ def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
 
 
 def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
-                 frame_ranges: FrameRangesN | FrameRangesN | None = None, fade_length: int = 0,
+                 frame_ranges: FrameRangeN | FrameRangesN | None = None, fade_length: int = 0,
                  matrix: Matrix | int | None = None) -> vs.VideoNode:
     """
     Overlay a logo or sign onto another clip.

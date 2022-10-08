@@ -6,7 +6,7 @@ from typing import Any, Callable, Sequence
 
 from vsrgtools import gauss_blur, removegrain
 from vstools import (
-    ColorRange, FrameRangesN, check_variable, check_variable_resolution, core, depth, get_y, iterate, join,
+    ColorRange, FrameRangeN, FrameRangesN, check_variable, check_variable_resolution, core, depth, get_y, iterate, join,
     normalize_planes, replace_ranges, scale_thresh, split, vs
 )
 
@@ -309,7 +309,7 @@ class DeferredMask(ABC):
     refframes: list[int | None]
     blur: bool
 
-    def __init__(self, ranges: FrameRangesN | FrameRangesN | None = None,
+    def __init__(self, ranges: FrameRangeN | FrameRangesN | None = None,
                  bound: BoundingBox | tuple[tuple[int, int], tuple[int, int]] | None = None,
                  *,
                  blur: bool = False, refframes: int | list[int] | None = None):

@@ -5,7 +5,7 @@ import random
 from functools import partial, wraps
 from typing import Any, Callable, cast
 
-from vskernels import Catrom, KernelT, Kernel
+from vskernels import Catrom, Kernel, KernelT
 from vstools import F_VD, InvalidColorFamilyError, Matrix, check_variable, core, get_prop, get_w, get_y, vs
 
 __all__ = [

@@ -4,7 +4,7 @@ from abc import ABC
 from typing import Any
 
 from vstools import (
-    FrameRangesN, check_variable, core, iterate, normalize_ranges, replace_ranges, scale_thresh, split, vs
+    FrameRangeN, FrameRangesN, check_variable, core, iterate, normalize_ranges, replace_ranges, scale_thresh, split, vs
 )
 
 from .mask import DeferredMask
@@ -189,7 +189,7 @@ class HardsubLineFade(HardsubLine):
 
     ref_float: float
 
-    def __init__(self, ranges: FrameRangesN | FrameRangesN, *args: Any,
+    def __init__(self, ranges: FrameRangeN | FrameRangesN, *args: Any,
                  refframe: float = 0.5, **kwargs: Any) -> None:
         if refframe < 0 or refframe > 1:
             raise ValueError("HardsubLineFade: '`refframe` must be between 0 and 1!'")
@@ -219,7 +219,7 @@ class HardsubSignFade(HardsubSign):
 
     ref_float: float
 
-    def __init__(self, ranges: FrameRangesN | FrameRangesN, *args: Any,
+    def __init__(self, ranges: FrameRangeN | FrameRangesN, *args: Any,
                  refframe: float = 0.5, **kwargs: Any) -> None:
         if refframe < 0 or refframe > 1:
             raise ValueError("HardsubSignFade: 'refframe must be between 0 and 1!'")

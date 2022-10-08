@@ -6,7 +6,7 @@ from typing import Any, Literal, Sequence, SupportsFloat, cast
 
 from vskernels import Catrom, Kernel, KernelT, Point
 from vstools import (
-    DitherType, FrameRangesN, Matrix, check_variable, core, depth, get_depth, get_prop, replace_ranges, vs
+    DitherType, FrameRangeN, FrameRangesN, Matrix, check_variable, core, depth, get_depth, get_prop, replace_ranges, vs
 )
 
 from .helpers import _check_has_nvidia
@@ -155,7 +155,7 @@ def dpir(
     clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 10, mode: str = 'deblock',
     matrix: Matrix | int | None = None, cuda: bool | Literal['trt'] | None = None, i444: bool = False,
     tiles: int | tuple[int, int] | None = None, overlap: int | tuple[int, int] | None = 8,
-    zones: list[tuple[FrameRangesN | FrameRangesN | None, SupportsFloat | vs.VideoNode | None]] | None = None,
+    zones: list[tuple[FrameRangeN | FrameRangesN | None, SupportsFloat | vs.VideoNode | None]] | None = None,
     fp16: bool | None = None, num_streams: int = 1, device_id: int = 0, kernel: KernelT = Catrom
 ) -> vs.VideoNode:
     """
