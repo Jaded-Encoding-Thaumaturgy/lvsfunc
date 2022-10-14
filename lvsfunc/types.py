@@ -2,19 +2,16 @@ from __future__ import annotations
 
 from typing import Any, NamedTuple, Protocol
 
-from vstools import CustomIntEnum, CustomStrEnum, vs
+from vstools import CustomIntEnum, vs
 
 __all__ = [
     'Coordinate',
-    'Direction',
     'SceneChangeMode',
     'Position',
     'Size',
     'VSIdxFunction',
     'Shapes',
-    'RegressClips',
-    'Dar',
-    'Region'
+    'RegressClips'
 ]
 
 
@@ -33,13 +30,6 @@ class Coordinate():
             raise ValueError(f"{self.__class__.__name__}: 'Can't be negative!'")
         self.x = x
         self.y = y
-
-
-class Direction(CustomIntEnum):
-    """Enum to simplify direction argument."""
-
-    HORIZONTAL = 0
-    VERTICAL = 1
 
 
 class SceneChangeMode(CustomIntEnum):
@@ -81,20 +71,3 @@ class RegressClips(NamedTuple):
     slope: vs.VideoNode
     intercept: vs.VideoNode
     correlation: vs.VideoNode
-
-
-class Dar(CustomStrEnum):
-    """StrEnum signifying an analog television aspect ratio."""
-
-    WIDESCREEN = "widescreen"
-    WIDE = WIDESCREEN
-    FULLSCREEN = "fullscreen"
-    FULL = FULLSCREEN
-    SQUARE = "square"
-
-
-class Region(CustomStrEnum):
-    """StrEnum signifying an analog television region."""
-
-    NTSC = "NTSC"
-    PAL = "PAL"
