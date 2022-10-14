@@ -8,15 +8,12 @@ These are generally generic enough to allow other maintainers to make use of the
 .. autosummary::
 
     lvsfunc.types.Coordinate
-    lvsfunc.types.Direction
     lvsfunc.types.SceneChangeMode
     lvsfunc.types.Position
     lvsfunc.types.Size
     lvsfunc.types.VSIdxFunction
     lvsfunc.types.Shapes
     lvsfunc.types.RegressClips
-    lvsfunc.types.Dar
-    lvsfunc.types.Region
 
 .. autoclass:: lvsfunc.types
     :members:

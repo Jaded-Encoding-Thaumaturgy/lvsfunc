@@ -10,7 +10,7 @@ from typing import Any, Callable, Iterable, Iterator, Literal, Sequence, TypeVar
 from vskernels import Catrom
 from vstools import (
     FormatsMismatchError, InvalidColorFamilyError, Matrix, VariableFormatError, check_variable, check_variable_format,
-    check_variable_resolution, core, depth, get_prop, get_subsampling, get_w
+    check_variable_resolution, core, depth, get_prop, get_subsampling, get_w, Direction
 )
 from vstools import split as split_planes
 from vstools import vs
@@ -18,7 +18,6 @@ from vstools import vs
 from .dehardsub import hardsub_mask
 from .exceptions import ClipsAndNamedClipsError
 from .render import clip_async_render
-from .types import Direction
 
 __all__ = [
     'compare', 'comp',
