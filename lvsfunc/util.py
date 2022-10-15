@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import colorsys
 import random
+import subprocess as sp
 from functools import partial
 from typing import Any
 
@@ -9,10 +10,20 @@ from vskernels import Catrom, Kernel, KernelT
 from vstools import Matrix, check_variable, core, get_prop, vs
 
 __all__ = [
+    'check_has_nvidia',
     'colored_clips',
     'frames_since_bookmark',
     'load_bookmarks'
 ]
+
+
+def check_has_nvidia() -> bool:
+    """Check if the user has an Nvidia GPU."""
+    try:
+        sp.check_output('nvidia-smi')
+        return True
+    except sp.CalledProcessError:
+        return False
 
 
 def load_bookmarks(bookmark_path: str) -> list[int]:

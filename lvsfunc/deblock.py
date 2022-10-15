@@ -9,7 +9,7 @@ from vstools import (
     DitherType, FrameRangeN, FrameRangesN, Matrix, check_variable, core, depth, get_depth, get_prop, replace_ranges, vs
 )
 
-from .helpers import _check_has_nvidia
+from .util import check_has_nvidia
 
 __all__ = [
     'autodb_dpir', 'dpir'
@@ -396,7 +396,7 @@ def dpir(
             trt_available = False
 
     if cuda is None:
-        cuda = 'trt' if trt_available else _check_has_nvidia()
+        cuda = 'trt' if trt_available else check_has_nvidia()
 
     if fp16 is None:
         fp16 = fp16_available
