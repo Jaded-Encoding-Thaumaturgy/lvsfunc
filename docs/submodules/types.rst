@@ -11,7 +11,6 @@ These are generally generic enough to allow other maintainers to make use of the
     lvsfunc.types.SceneChangeMode
     lvsfunc.types.Position
     lvsfunc.types.Size
-    lvsfunc.types.Shapes
     lvsfunc.types.RegressClips
 
 .. autoclass:: lvsfunc.types

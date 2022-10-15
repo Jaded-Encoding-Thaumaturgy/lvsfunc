@@ -9,7 +9,6 @@ __all__ = [
     'SceneChangeMode',
     'Position',
     'Size',
-    'Shapes',
     'RegressClips'
 ]
 
@@ -46,14 +45,6 @@ class SceneChangeMode(CustomIntEnum):
     SCXVID = 1
     WWXD_SCXVID_UNION = 2
     WWXD_SCXVID_INTERSECTION = 3
-
-
-class Shapes(CustomIntEnum):
-    """Convolution coordinates for :py:func:`lvsfunc.mask.mt_xxpand_multi`."""
-
-    RECTANGLE = 0
-    ELLIPSE = 1
-    LOSANGE = 2
 
 
 class RegressClips(NamedTuple):

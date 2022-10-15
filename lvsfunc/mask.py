@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Any, Callable, Sequence
+from typing import Callable, Sequence
 
 from vsrgtools import gauss_blur, removegrain
 from vstools import (
     ColorRange, FrameRangeN, FrameRangesN, check_variable, check_variable_resolution, core, depth, get_y, iterate, join,
-    normalize_planes, replace_ranges, scale_thresh, split, vs
+    replace_ranges, scale_thresh, split, vs
 )
 
-from .types import Position, Shapes, Size
+from .types import Position, Size
 
 __all__ = [
     'BoundingBox',
@@ -18,8 +18,7 @@ __all__ = [
     'detail_mask_neo',
     'detail_mask',
     'halo_mask',
-    'mt_xxpand_multi', 'minm', 'maxm',
-    'range_mask',
+    'range_mask'
 ]
 
 
@@ -239,7 +238,7 @@ def _minmax(clip: vs.VideoNode, iterations: int, maximum: bool) -> vs.VideoNode:
     return clip
 
 
-class BoundingBox():
+class BoundingBox:
     """
     Positional bounding box.
 
@@ -371,48 +370,3 @@ class DeferredMask(ABC):
     @abstractmethod
     def _mask(self, clip: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
         pass
-
-
-def mt_xxpand_multi(clip: vs.VideoNode,
-                    sw: float = 1, sh: float | None = None,
-                    mode: Shapes | int = Shapes.ELLIPSE,
-                    start: int = 0,
-                    m__imum: Callable[..., vs.VideoNode] = core.std.Maximum,
-                    planes: list[int] = [0, 1, 2],
-                    **m_params: Any) -> list[vs.VideoNode]:
-    """
-    Mask expanding/inpanding function written by `Zastin <https://github.com/kgrabs>`_.
-
-    Performs multiple Minimums/Maximums.
-    """
-    assert check_variable(clip, "mt_xxpand_multi")
-
-    planes = normalize_planes(clip, planes)
-
-    params: dict[str, Any] = dict(planes=planes)
-    params |= m_params
-
-    sh = sh or sw
-
-    match mode:
-        case Shapes.ELLIPSE: coordinates = [[1] * 8, [0, 1, 0, 1, 1, 0, 1, 0],
-                                            [0, 1, 0, 1, 1, 0, 1, 0]]
-        case Shapes.LOSANGE: coordinates = [[0, 1, 0, 1, 1, 0, 1, 0]] * 3
-        case _: coordinates = [[1] * 8] * 3
-
-    clips: list[vs.VideoNode] = [clip]
-    end = int(min(sw, sh)) + start
-
-    for x in range(start, end):
-        clips += [m__imum(clips[-1], coordinates=coordinates[x % 3], **params)]
-    for x in range(end, int(end + sw - sh)):
-        clips += [m__imum(clips[-1], coordinates=[0, 0, 0, 1, 1, 0, 0, 0], **params)]
-    for x in range(end, int(end + sh - sw)):
-        clips += [m__imum(clips[-1], coordinates=[0, 1, 0, 0, 0, 0, 1, 0], **params)
-                  .std.Limiter()]
-
-    return clips
-
-
-maxm = partial(mt_xxpand_multi, m__imum=core.std.Maximum)
-minm = partial(mt_xxpand_multi, m__imum=core.std.Minimum)
