@@ -9,10 +9,7 @@
 
 # flake8: noqa
 
-from . import (
-    aa, comparison, deblock, dehardsub, exceptions, fun, helpers, mask, misc, noise, recon, render, types, util
-)
-from .aa import *
+from . import comparison, deblock, dehardsub, exceptions, fun, helpers, mask, misc, noise, recon, render, types, util
 from .comparison import *
 from .deblock import *
 from .dehardsub import *
