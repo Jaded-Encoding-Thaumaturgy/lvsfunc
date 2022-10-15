@@ -6,11 +6,9 @@ from functools import partial, wraps
 from typing import Any, Callable, cast
 
 from vskernels import Catrom, Kernel, KernelT
-from vstools import F_VD, InvalidColorFamilyError, Matrix, check_variable, core, get_prop, get_w, get_y, vs
+from vstools import F_VD, Matrix, check_variable, core, get_prop, get_w, vs
 
 __all__ = [
-    'allow_variable',
-    'chroma_injector',
     'colored_clips',
     'frames_since_bookmark',
     'load_bookmarks'
@@ -60,94 +58,6 @@ def frames_since_bookmark(clip: vs.VideoNode, bookmarks: list[int]) -> vs.VideoN
 
         return core.text.Text(clip, str(result))
     return core.std.FrameEval(clip, partial(_frames_since_bookmark, clip=clip, bookmarks=bookmarks))
-
-
-def chroma_injector(func: F_VD) -> F_VD:
-    """
-    Inject reference chroma.
-
-    This is a function decorator. That means it must be called above a function. For example:
-
-    .. code-block:: py
-
-        @chroma_injector()
-        def function(clip: vs.VideoNode) -> vs.VideoNode:
-            ...
-
-    This can be used to inject reference chroma into a function which would normally
-    only receive luma, such as an upscaler passed to :py:func:`lvsfunc.scale.descale`.
-
-    The chroma is resampled to the input clip's width, height, and pixel format,
-    shuffled to YUV444PX, then passed to the function.
-    Luma is then extracted from the function result and returned.
-
-    The first argument of the function is assumed to be the luma source.
-    This works with variable resolution and may work with variable format,
-    however the latter is wholly untested and likely a bad idea in every conceivable use case.
-
-    :param func:                    Function to call with injected chroma.
-
-    :return:                        Decorated function.
-
-    :raises InvalidColorFamilyError:     Input clip is not YUV or GRAY.
-    :raises InvalidColorFamilyError:     Output clip is not YUV or GRAY.
-    """
-    @wraps(func)
-    def inner(_chroma: vs.VideoNode, clip: vs.VideoNode, *args: Any,
-              **kwargs: Any) -> vs.VideoNode:
-
-        def upscale_chroma(n: int, f: vs.VideoFrame) -> vs.VideoNode:
-            luma = y.resize.Point(f.width, f.height, format=f.format.id)
-            if out_fmt is not None:
-                fmt = out_fmt
-            else:
-                fmt = core.register_format(vs.YUV, f.format.sample_type,
-                                           f.format.bits_per_sample, 0, 0)
-            chroma = _chroma.resize.Spline36(f.width, f.height,
-                                             format=fmt.id)
-            res = core.std.ShufflePlanes([luma, chroma], planes=[0, 1, 2],
-                                         colorfamily=vs.YUV)
-            return res
-
-        out_fmt: vs.VideoFormat | None = None
-        if clip.format is not None:
-            InvalidColorFamilyError.check(clip, (vs.GRAY, vs.YUV), chroma_injector)
-
-            in_fmt = core.register_format(vs.GRAY, clip.format.sample_type,
-                                          clip.format.bits_per_sample, 0, 0)
-            y = allow_variable(format=in_fmt.id)(get_y)(clip)
-            # We want to use YUV444PX for chroma injection
-            out_fmt = core.register_format(vs.YUV, clip.format.sample_type,
-                                           clip.format.bits_per_sample, 0, 0)
-        else:
-            y = allow_variable()(get_y)(clip)
-
-        if y.width != 0 and y.height != 0 and out_fmt is not None:
-            chroma = _chroma.resize.Spline36(y.width, y.height, format=out_fmt.id)
-            clip_in = core.std.ShufflePlanes([y, chroma], planes=[0, 1, 2],
-                                             colorfamily=vs.YUV)
-        else:
-            y_f = y.resize.Point(format=out_fmt.id) if out_fmt is not None else y
-            clip_in = core.std.FrameEval(y_f, upscale_chroma, prop_src=[y])
-
-        result = func(clip_in, *args, **kwargs)
-
-        if result.format is not None:
-            InvalidColorFamilyError.check(
-                result, (vs.GRAY, vs.YUV), chroma_injector,
-                message='Can only decorate function returning clips having {correct} color family!'
-            )
-
-            if result.format.color_family == vs.GRAY:
-                return result
-
-            res_fmt = core.register_format(vs.GRAY, result.format.sample_type,
-                                           result.format.bits_per_sample, 0, 0)
-            return allow_variable(format=res_fmt.id)(get_y)(result)
-        else:
-            return allow_variable()(get_y)(result)
-
-    return cast(F_VD, inner)
 
 
 def colored_clips(amount: int,
