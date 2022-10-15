@@ -54,12 +54,10 @@ Want to contribute to lvsfunc? Check out the `how to contribute <contribute>` se
     :caption: Filters
     :titlesonly:
 
-    submodules/aa
     submodules/comparison
     submodules/deblock
     submodules/dehardsub
     submodules/exceptions
-    submodules/helpers
     submodules/mask
     submodules/misc
     submodules/noise

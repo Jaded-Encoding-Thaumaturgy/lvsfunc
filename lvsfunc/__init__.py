@@ -19,5 +19,3 @@ from .noise import *
 from .recon import *
 from .render import *
 from .util import *
-
-denoise = noise
