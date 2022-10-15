@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import colorsys
 import random
-from functools import partial, wraps
-from typing import Any, Callable, cast
+from functools import partial
+from typing import Any
 
 from vskernels import Catrom, Kernel, KernelT
-from vstools import F_VD, Matrix, check_variable, core, get_prop, get_w, vs
+from vstools import Matrix, check_variable, core, get_prop, vs
 
 __all__ = [
     'colored_clips',
