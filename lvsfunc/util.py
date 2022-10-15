@@ -112,54 +112,6 @@ def colored_clips(amount: int,
     return [core.std.BlankClip(color=color, **blank_clip_args) for color in rgb_color_list]
 
 
-def allow_variable(width: int | None = None, height: int | None = None,
-                   format: int | None = None
-                   ) -> Callable[[Callable[..., vs.VideoNode]], Callable[..., vs.VideoNode]]:
-    """
-    Allow a variable-res and/or variable-format clip to be passed to a function.
-
-    This is a function decorator. That means it must be called above a function. For example:
-
-    .. code-block:: py
-
-        @allow_variable()
-        def function(clip: vs.VideoNode) -> vs.VideoNode:
-            ...
-
-    This can be used on functions that otherwise would not be able to accept it.
-    Implemented by FrameEvaling and resizing the clip to each frame.
-
-    Does not work when the function needs to return a different format unless an output format is specified.
-    As such, this decorator must be called as a function when used (e.g. ``@allow_variable()``
-    or ``@allow_variable(format=vs.GRAY16)``).
-
-    If the provided clip is variable format, no output format is required to be specified.
-
-    :param width:       Output clip width.
-    :param height:      Output clip height.
-    :param format:      Output clip format.
-
-    :return:            Function decorator for the given output format.
-    """
-    if height is not None:
-        width = width if width else get_w(height)
-
-    def inner(func: F_VD) -> F_VD:
-        @wraps(func)
-        def inner2(clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
-            def frameeval_wrapper(n: int, f: vs.VideoFrame) -> vs.VideoNode:
-                res = func(clip.resize.Point(f.width, f.height, format=f.format.id), *args, **kwargs)
-                return res.resize.Point(format=format) if format else res
-
-            clip_out = clip.resize.Point(format=format) if format else clip
-            clip_out = clip_out.resize.Point(width, height) if width and height else clip_out
-            return core.std.FrameEval(clip_out, frameeval_wrapper, prop_src=[clip])
-
-        return cast(F_VD, inner2)
-
-    return inner
-
-
 def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
                dimensions: bool = True, vformat: bool = True,
                matrices: bool = True, length: bool = False,
