@@ -22,7 +22,6 @@ __all__ = [
     'overlay_sign',
     'shift_tint',
     'source', 'src',
-    'unsharpen',
     'wipe_row',
 ]
 
@@ -329,44 +328,6 @@ def wipe_row(clip: vs.VideoNode,
     if show_mask:
         return sqmask
     return core.std.MaskedMerge(clip, ref, sqmask)
-
-
-def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
-              prefilter: bool = True, prefilter_sigma: float = 0.75) -> vs.VideoNode:
-    """
-    Diff'd unsharpening function.
-
-    Performs one-dimensional sharpening as such: "Original + (Original - blurred) * Strength"
-    It then merges back noise and detail that was prefiltered away,
-
-    Negative values will blur instead. This can be useful for trying to undo sharpening.
-
-    This function is not recommended for normal use,
-    but may be useful as prefiltering for detail- or edgemasks.
-
-    :param clip:                Clip to process.
-    :param strength:            Amount to multiply blurred clip with original clip by.
-                                Negative values will blur the clip instead.
-    :param sigma:               Sigma for the gaussian blur.
-    :param prefilter:           Pre-denoising to prevent the unsharpening from picking up random noise.
-    :param prefilter_sigma:     Strength for the pre-denoising.
-    :param show_mask:           Show halo mask.
-
-    :return:                    Unsharpened clip.
-    """
-    assert check_variable(clip, "unsharpen")
-
-    den = clip.dfttest.DFTTest(sigma=prefilter_sigma) if prefilter else clip
-    diff = core.std.MakeDiff(clip, den)
-
-    expr: str | list[str] = f'x y - {strength} * x +'
-
-    if clip.format.color_family is not vs.GRAY:
-        expr = [str(expr), "", ""]  # mypy wtf?
-
-    blurred_clip = core.bilateral.Gaussian(den, sigma=sigma)
-    unsharp = core.akarin.Expr([den, blurred_clip], expr)
-    return core.std.MergeDiff(unsharp, diff)
 
 
 def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
