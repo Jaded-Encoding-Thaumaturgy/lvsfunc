@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from functools import partial
 from typing import Callable, Sequence
 
 from vsrgtools import gauss_blur, removegrain
@@ -17,7 +16,6 @@ __all__ = [
     'DeferredMask',
     'detail_mask_neo',
     'detail_mask',
-    'halo_mask',
     'range_mask'
 ]
 
@@ -121,68 +119,6 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
     rm_grain = removegrain(merged, rg_mode)
 
     return depth(rm_grain, clip.format.bits_per_sample).std.Limiter()
-
-
-def halo_mask(clip: vs.VideoNode, rad: int = 2,
-              brz: float = 0.35,
-              thmi: float = 0.315, thma: float = 0.5,
-              thlimi: float = 0.195, thlima: float = 0.392,
-              edgemask: vs.VideoNode | None = None) -> vs.VideoNode:
-    """
-    Halo mask to catch basic haloing.
-
-    Inspired by the mask from FineDehalo.
-
-    Most of it was copied from there, but some key adjustments have been made
-    to center it specifically around masking.
-
-    rx and ry are now combined into rad and expects an integer.
-    Float made sense for FineDehalo since it uses DeHalo_alpha for dehaloing,
-    but the masks themselves use rounded rx/ry values, so there's no reason to bother with floats here.
-
-    All thresholds are float and will be scaled to ``clip``'s format.
-    If thresholds are greater than 1, they will be asummed to be in 8-bit and scaled accordingly.
-
-    :param clip:            Clip to process.
-    :param rad:             Radius for the mask.
-    :param brz:             Binarizing for shrinking mask (Default: 0.35).
-    :param thmi:            Minimum threshold for sharp edges; keep only the sharpest edges.
-    :param thma:            Maximum threshold for sharp edges; keep only the sharpest edges.
-    :param thlimi:          Minimum limiting threshold; includes more edges than previously, but ignores simple details.
-    :param thlima:          Maximum limiting threshold; includes more edges than previously, but ignores simple details.
-    :param edgemask:        Edgemask to use. If None, uses :py:func:`vapoursynth.core.std.Prewitt` (Default: None).
-
-    :return:                Halo mask.
-    """
-    assert check_variable(clip, "halo_mask")
-
-    smax = scale_thresh(1.0, clip)
-
-    thmi, thma, thlimi, thlima = (scale_thresh(t, clip, assume=8) for t in [thmi, thma, thlimi, thlima])
-
-    matrix = [1, 2, 1, 2, 4, 2, 1, 2, 1]
-
-    edgemask = edgemask or get_y(clip).std.Prewitt()
-
-    # Preserve just the strongest edges
-    strong = core.akarin.Expr(edgemask, expr=f"x {thmi} - {thlima-thlimi} / {smax} *")
-    # Expand to pick up additional halos
-    expand = iterate(strong, core.std.Maximum, rad)
-
-    # Having too many intersecting lines will oversmooth the mask. We get rid of those here.
-    light = core.akarin.Expr(edgemask, expr=f"x {thlimi} - {thma-thmi} / {smax} *")
-    shrink = iterate(light, core.std.Maximum, rad)
-    shrink = core.std.Binarize(shrink, scale_thresh(brz, clip))
-    shrink = iterate(shrink, core.std.Minimum, rad)
-    shrink = iterate(shrink, partial(core.std.Convolution, matrix=matrix), 2)
-
-    # Making sure the lines are actually excluded
-    excl = core.akarin.Expr([strong, shrink], expr="x y max")
-    # Subtract and boosting to make sure we get the max pixel values for dehaloing
-    mask = core.akarin.Expr([expand, excl], expr="x y - 2 *")
-    # Additional blurring to amplify the mask
-    mask = core.std.Convolution(mask, matrix)
-    return core.akarin.Expr(mask, expr="x 2 *").std.Limiter()
 
 
 def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
