@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from typing import Any
 
+from vsexprtools import norm_expr
 from vstools import (
     FrameRangeN, FrameRangesN, check_variable, core, iterate, normalize_ranges, replace_ranges, scale_thresh, split, vs
 )
@@ -56,8 +57,8 @@ class HardsubMask(DeferredMask, ABC):
         thresh = scale_thresh(0.75, masks[-1])
 
         for p in partials:
-            masks.append(core.akarin.Expr([masks[-1], self.get_mask(p, ref)], expr="x y -"))
-            dmasks.append(iterate(core.akarin.Expr([masks[-1]], f"x {thresh} < 0 x ?"),
+            masks.append(norm_expr([masks[-1], self.get_mask(p, ref)], "x y -"))
+            dmasks.append(iterate(norm_expr([masks[-1]], f"x {thresh} < 0 x ?"),
                                   core.std.Maximum,
                                   4).std.Inflate())
             pdhs.append(core.std.MaskedMerge(pdhs[-1], p, dmasks[-1]))
@@ -279,7 +280,7 @@ def get_all_masks(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: list[HardsubMas
 
     mask = core.std.BlankClip(ref, format=ref.format.replace(color_family=vs.GRAY, subsampling_w=0, subsampling_h=0).id)
     for sign in signs:
-        mask = replace_ranges(mask, core.akarin.Expr([mask, sign.get_mask(hrdsb, ref)], 'x y +'), sign.ranges)
+        mask = replace_ranges(mask, norm_expr([mask, sign.get_mask(hrdsb, ref)], 'x y +'), sign.ranges)
     return mask.std.Limiter()
 
 
@@ -317,9 +318,9 @@ def hardsub_mask(hrdsb: vs.VideoNode, ref: vs.VideoNode, thresh: float = 0.06,
     assert check_variable(hrdsb, "hardsub_mask")
     assert check_variable(ref, "hardsub_mask")
 
-    hsmf = core.akarin.Expr([hrdsb, ref], 'x y - abs') \
+    hsmf = norm_expr([hrdsb, ref], 'x y - abs') \
         .resize.Point(format=hrdsb.format.replace(subsampling_w=0, subsampling_h=0).id)
-    hsmf = core.akarin.Expr(split(hsmf), "x y z max max")
+    hsmf = norm_expr(split(hsmf), "x y z max max")
     hsmf = hsmf.std.Binarize(scale_thresh(thresh, hsmf))
     hsmf = iterate(hsmf, core.std.Minimum, minimum)
     hsmf = iterate(hsmf, core.std.Maximum, expand)

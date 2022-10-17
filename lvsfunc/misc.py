@@ -5,6 +5,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Sequence
 
+from vsexprtools import norm_expr
 from vskernels import Catrom, KernelT
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
 from vstools import (
@@ -257,7 +258,7 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
     cdepth = get_depth(clip)
     cv = [scale_value(v, 8, cdepth) for v in val] if cdepth != 8 else list(val)
 
-    return core.akarin.Expr(clip, expr=[f'x {cv[0]} +', f'x {cv[1]} +', f'x {cv[2]} +'])
+    return norm_expr(clip, expr=[f'x {cv[0]} +', f'x {cv[1]} +', f'x {cv[2]} +'])
 
 
 def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,

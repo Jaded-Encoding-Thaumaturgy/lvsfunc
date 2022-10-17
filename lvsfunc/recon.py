@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import partial
 
+from vsexprtools import norm_expr
 from vstools import check_variable, core, depth, get_depth, join, split, vs
 
 from .types import RegressClips
@@ -76,7 +77,7 @@ def regress(x: vs.VideoNode, *ys: vs.VideoNode, radius: int = 2, eps: float = 1e
     if radius <= 0:
         raise ValueError("Regress: 'radius must be greater than 0!'")
 
-    Expr = core.akarin.Expr
+    Expr = norm_expr
     E = partial(vs.core.std.BoxBlur, hradius=radius, vradius=radius)
 
     def mul(*c: vs.VideoNode) -> vs.VideoNode:
@@ -117,10 +118,10 @@ def reconstruct_multi(c: vs.VideoNode, r: RegressClips, radius: int = 2) -> vs.V
     """
     assert check_variable(c, "reconstruct_multi")
 
-    weights = core.akarin.Expr(r.correlation, 'x 0.5 - 0.5 / 0 max')
-    slope_pm = core.akarin.Expr((r.slope, weights), 'x y *')
+    weights = norm_expr(r.correlation, 'x 0.5 - 0.5 / 0 max')
+    slope_pm = norm_expr((r.slope, weights), 'x y *')
     slope_pm_sum = _mean(slope_pm, radius)
-    recons = core.akarin.Expr((c, slope_pm_sum), 'x y *')
+    recons = norm_expr((c, slope_pm_sum), 'x y *')
     return recons
 
 

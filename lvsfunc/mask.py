@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Callable, Sequence
 
+from vsexprtools import norm_expr
 from vsrgtools import gauss_blur, removegrain
 from vstools import (
     ColorRange, FrameRangeN, FrameRangesN, check_variable, check_variable_resolution, core, depth, get_y, iterate, join,
@@ -60,7 +61,7 @@ def detail_mask(clip: vs.VideoNode, sigma: float | None = None,
     mask_b = blur.std.Prewitt()
     mask_b = core.std.Binarize(mask_b, brz_b)
 
-    mask = core.akarin.Expr([mask_a, mask_b], 'x y max')
+    mask = norm_expr([mask_a, mask_b], 'x y max')
     mask = removegrain(mask, 22)
     return removegrain(mask, 11).std.Limiter()
 
@@ -105,7 +106,7 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
     blur_pf = core.bilateral.Gaussian(clip_y, sigma=sigma / 4 * 3)
 
     blur_pref = blur_func(clip_y, blur_pf, sigma)
-    blur_pref_diff = core.akarin.Expr([blur_pref, clip_y], "x y -").std.Deflate()
+    blur_pref_diff = norm_expr([blur_pref, clip_y], "x y -").std.Deflate()
     blur_pref = iterate(blur_pref_diff, core.std.Inflate, 4)
 
     prew_mask = edgemask_func(clip_y).std.Deflate().std.Inflate()
@@ -115,7 +116,7 @@ def detail_mask_neo(clip: vs.VideoNode, sigma: float = 1.0,
     if lines_brz > 0:
         prew_mask = prew_mask.std.Binarize(lines_brz)
 
-    merged = core.akarin.Expr([blur_pref, prew_mask], "x y +")
+    merged = norm_expr([blur_pref, prew_mask], "x y +")
     rm_grain = removegrain(merged, rg_mode)
 
     return depth(rm_grain, clip.format.bits_per_sample).std.Limiter()
@@ -149,13 +150,13 @@ def range_mask(clip: vs.VideoNode, rad: int = 2, radc: int = 0) -> vs.VideoNode:
     if clip.format.color_family == vs.GRAY:  # type:ignore[union-attr]
         ma = _minmax(clip, rad, True)
         mi = _minmax(clip, rad, False)
-        mask = core.akarin.Expr([ma, mi], 'x y -')
+        mask = norm_expr([ma, mi], 'x y -')
     else:
         planes = split(clip)
         for i, rad_ in enumerate([rad, radc, radc]):
             ma = _minmax(planes[i], rad_, True)
             mi = _minmax(planes[i], rad_, False)
-            planes[i] = core.akarin.Expr([ma, mi], 'x y -')
+            planes[i] = norm_expr([ma, mi], 'x y -')
         mask = join(planes)
 
     return mask.std.Limiter()
@@ -297,7 +298,7 @@ class DeferredMask(ABC):
                     rf = ref.num_frames - 1 + rf
                 mask = depth(self._mask(clip[rf], ref[rf]), clip.format.bits_per_sample,
                              range_out=ColorRange.FULL, range_in=ColorRange.FULL)
-                hm = replace_ranges(hm, core.akarin.Expr([hm, mask*len(hm)], expr="x y max"), range)
+                hm = replace_ranges(hm, norm_expr([hm, mask * len(hm)], "x y max"), range)
 
         hm = hm.std.Limiter()
 

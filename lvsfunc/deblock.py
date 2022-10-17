@@ -4,6 +4,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Literal, Sequence, SupportsFloat, cast
 
+from vsexprtools import norm_expr
 from vskernels import Catrom, Kernel, KernelT, Point
 from vstools import (
     DitherType, FrameRangeN, FrameRangesN, Matrix, check_variable, core, depth, get_depth, get_prop, replace_ranges, vs
@@ -131,7 +132,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     maxvalue = (1 << rgb.format.bits_per_sample) - 1  # type:ignore[union-attr]
     evref = core.std.Prewitt(rgb)
-    evref = core.akarin.Expr(evref, f"x {edgevalue} >= {maxvalue} x ?")
+    evref = norm_expr(evref, f"x {edgevalue} >= {maxvalue} x ?")
     evref_rm = evref.std.Median().std.Convolution(matrix=[1, 2, 1, 2, 4, 2, 1, 2, 1])
 
     diffevref = core.std.PlaneStats(evref, evref_rm, prop='EdgeValRef')
@@ -255,7 +256,7 @@ def dpir(
             raise ValueError("dpir: '`strength` must be a GRAY clip!'")
 
         if fmt.id == vs.GRAY8:
-            strength = strength.akarin.Expr('x 255 /', vs.GRAYS)
+            strength = norm_expr(strength, 'x 255 /', format=vs.GRAYS)
         elif fmt.id != vs.GRAYS:
             raise ValueError("dpir: '`strength` must be GRAY8 or GRAYS!'")
 
