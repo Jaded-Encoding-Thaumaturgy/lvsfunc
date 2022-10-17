@@ -14,7 +14,6 @@ class InstallationException(Exception):
 pkg = 'lvsfunc'
 
 vsrepo_deps = list[str]([
-    'akarin',
     'BM3D',
     'Descale',
     'EEDI3 (obsolete)',
