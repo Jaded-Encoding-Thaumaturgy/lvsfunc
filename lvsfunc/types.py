@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-from typing import NamedTuple
-
-from vstools import CustomIntEnum, vs
+from vstools import CustomIntEnum
 
 __all__ = [
     'Coordinate',
     'SceneChangeMode',
     'Position',
-    'Size',
-    'RegressClips'
+    'Size'
 ]
 
 
@@ -45,11 +42,3 @@ class SceneChangeMode(CustomIntEnum):
     SCXVID = 1
     WWXD_SCXVID_UNION = 2
     WWXD_SCXVID_INTERSECTION = 3
-
-
-class RegressClips(NamedTuple):
-    """Regress clip types for :py:func:`lvsfunc.recon.regress`."""
-
-    slope: vs.VideoNode
-    intercept: vs.VideoNode
-    correlation: vs.VideoNode
