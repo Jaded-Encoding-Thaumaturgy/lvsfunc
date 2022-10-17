@@ -20,7 +20,6 @@ vsrepo_deps = list[str]([
     'EEDI3 (obsolete)',
     'fillborders',
     'fmtconv',
-    'havsfunc',
     'kagefunc',
     'lsmas',
     'NNEDI3CL',

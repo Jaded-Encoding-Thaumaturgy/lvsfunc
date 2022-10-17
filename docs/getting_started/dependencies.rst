@@ -4,7 +4,6 @@ Dependencies
 
 lvsfunc depends on the following third-party scripts:
 
-* `havsfunc <https://github.com/HomeOfVapourSynthEvolution/havsfunc>`_
 * `kagefunc <https://github.com/Irrational-Encoding-Wizardry/kagefunc>`_
 * `vs-mlrt <https://github.com/AmusementClub/vs-mlrt>`_
 * `vstools <https://pypi.org/project/vstools/>`_

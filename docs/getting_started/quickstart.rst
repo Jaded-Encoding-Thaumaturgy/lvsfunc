@@ -40,7 +40,7 @@ Usage Instructions
 
 .. code-block:: python
 
-    src = lvf.misc.source("C:/PATH/TO/VIDEO.mkv")
+    src = lvf.source("C:/PATH/TO/VIDEO.mkv")
 
 .. important::
 
