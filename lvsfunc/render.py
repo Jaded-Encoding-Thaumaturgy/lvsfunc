@@ -5,9 +5,8 @@ from functools import partial
 from threading import Condition
 from typing import BinaryIO, Callable, TextIO
 
-from vstools import InvalidColorFamilyError, core, get_prop, vs
+from vstools import InvalidColorFamilyError, core, get_prop, get_render_progress, vs
 
-from .progress import BarColumn, FPSColumn, Progress, TextColumn, TimeRemainingColumn
 from .types import SceneChangeMode
 
 RenderCallback = Callable[[int, vs.VideoFrame], None]
@@ -17,7 +16,6 @@ __all__ = [
     'clip_async_render',
     'find_scene_changes',
     'finish_frame',
-    'get_render_progress',
     'RenderContext',
 ]
 
@@ -191,18 +189,6 @@ def clip_async_render(clip: vs.VideoNode,
             p.stop()
 
     return ctx.timecodes  # might as well
-
-
-def get_render_progress() -> Progress:
-    """Return render progress."""
-    return Progress(
-        TextColumn("{task.description}"),
-        BarColumn(),
-        TextColumn("{task.completed}/{task.total}"),
-        TextColumn("{task.percentage:>3.02f}%"),
-        FPSColumn(),
-        TimeRemainingColumn(),
-    )
 
 
 def find_scene_changes(clip: vs.VideoNode, mode: SceneChangeMode = SceneChangeMode.WWXD) -> list[int]:

@@ -1,5 +1,4 @@
 VapourSynth>=59
-rich>=12.6.0
 vstools>=1.2.0
 vskernels>=2.1.0
 vsrgtools>=1.1.0
