@@ -3,14 +3,12 @@ from __future__ import annotations
 from abc import ABC
 from typing import Any
 
-import vapoursynth as vs
-from vsutil import iterate, split
+from vsexprtools import norm_expr, ExprOp
+from vstools import (
+    FrameRangeN, FrameRangesN, check_variable, core, iterate, normalize_ranges, replace_ranges, scale_thresh, split, vs
+)
 
 from .mask import DeferredMask
-from .types import Range
-from .util import check_variable, normalize_ranges, replace_ranges, scale_thresh
-
-core = vs.core
 
 __all__ = [
     'bounded_dehardsub',
@@ -36,7 +34,7 @@ class HardsubMask(DeferredMask, ABC):
                      (Default: ``None``, no bounding)
     :param blur:     Blur the bounding mask (Default: True).
     :param refframe: A single frame number to use to generate the mask.
-                     or a list of frame numbers with the same length as :py:func:`lvsfunc.types.Range`
+                     or a list of frame numbers with the same length as :py:func:`vstools.FrameRange`
     """
 
     def get_progressive_dehardsub(self, hrdsb: vs.VideoNode, ref: vs.VideoNode,
@@ -59,8 +57,8 @@ class HardsubMask(DeferredMask, ABC):
         thresh = scale_thresh(0.75, masks[-1])
 
         for p in partials:
-            masks.append(core.akarin.Expr([masks[-1], self.get_mask(p, ref)], expr="x y -"))
-            dmasks.append(iterate(core.akarin.Expr([masks[-1]], f"x {thresh} < 0 x ?"),
+            masks.append(ExprOp.SUB.combine(masks[-1], self.get_mask(p, ref)))
+            dmasks.append(iterate(norm_expr([masks[-1]], f"x {thresh} < 0 x ?"),
                                   core.std.Maximum,
                                   4).std.Inflate())
             pdhs.append(core.std.MaskedMerge(pdhs[-1], p, dmasks[-1]))
@@ -192,7 +190,7 @@ class HardsubLineFade(HardsubLine):
 
     ref_float: float
 
-    def __init__(self, ranges: Range | list[Range], *args: Any,
+    def __init__(self, ranges: FrameRangeN | FrameRangesN, *args: Any,
                  refframe: float = 0.5, **kwargs: Any) -> None:
         if refframe < 0 or refframe > 1:
             raise ValueError("HardsubLineFade: '`refframe` must be between 0 and 1!'")
@@ -222,7 +220,7 @@ class HardsubSignFade(HardsubSign):
 
     ref_float: float
 
-    def __init__(self, ranges: Range | list[Range], *args: Any,
+    def __init__(self, ranges: FrameRangeN | FrameRangesN, *args: Any,
                  refframe: float = 0.5, **kwargs: Any) -> None:
         if refframe < 0 or refframe > 1:
             raise ValueError("HardsubSignFade: 'refframe must be between 0 and 1!'")
@@ -282,7 +280,7 @@ def get_all_masks(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: list[HardsubMas
 
     mask = core.std.BlankClip(ref, format=ref.format.replace(color_family=vs.GRAY, subsampling_w=0, subsampling_h=0).id)
     for sign in signs:
-        mask = replace_ranges(mask, core.akarin.Expr([mask, sign.get_mask(hrdsb, ref)], 'x y +'), sign.ranges)
+        mask = replace_ranges(mask, ExprOp.ADD.combine(mask, sign.get_mask(hrdsb, ref)), sign.ranges)
     return mask.std.Limiter()
 
 
@@ -320,9 +318,9 @@ def hardsub_mask(hrdsb: vs.VideoNode, ref: vs.VideoNode, thresh: float = 0.06,
     assert check_variable(hrdsb, "hardsub_mask")
     assert check_variable(ref, "hardsub_mask")
 
-    hsmf = core.akarin.Expr([hrdsb, ref], 'x y - abs') \
+    hsmf = ExprOp.SUB.combine(hrdsb, ref, suffix=ExprOp.ABS) \
         .resize.Point(format=hrdsb.format.replace(subsampling_w=0, subsampling_h=0).id)
-    hsmf = core.akarin.Expr(split(hsmf), "x y z max max")
+    hsmf = ExprOp.MAX.combine(*split(hsmf))
     hsmf = hsmf.std.Binarize(scale_thresh(thresh, hsmf))
     hsmf = iterate(hsmf, core.std.Minimum, minimum)
     hsmf = iterate(hsmf, core.std.Maximum, expand)

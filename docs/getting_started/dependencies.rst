@@ -4,15 +4,13 @@ Dependencies
 
 lvsfunc depends on the following third-party scripts:
 
-* `havsfunc <https://github.com/HomeOfVapourSynthEvolution/havsfunc>`_
 * `kagefunc <https://github.com/Irrational-Encoding-Wizardry/kagefunc>`_
 * `vs-mlrt <https://github.com/AmusementClub/vs-mlrt>`_
-* `vsutil <https://pypi.org/project/vsutil/>`_
+* `vstools <https://pypi.org/project/vstools/>`_
 
 The following VapourSynth libraries are also required for full functionality:
 
 * `adaptivegrain <https://github.com/Irrational-Encoding-Wizardry/adaptivegrain>_`
-* `akarinVS <https://github.com/AkarinVS/vapoursynth-plugin>`_
 * `combmask <https://drive.google.com/file/d/15E0Ua27AndT-0zSHHCC1iL5SZO09Ntbv/view?usp=sharing>`_
 * `dgdecode <https://www.rationalqm.us/dgmpgdec/dgmpgdec.html>`_
 * `dgdecodenv <https://www.rationalqm.us/dgdecnv/binaries/>`_

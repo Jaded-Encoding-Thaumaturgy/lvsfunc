@@ -11,7 +11,6 @@ Miscellaneous functions and wrappers that don't really have a place elsewhere.
     lvsfunc.misc.overlay_sign
     lvsfunc.misc.shift_tint
     lvsfunc.misc.source
-    lvsfunc.misc.unsharpen
     lvsfunc.misc.wipe_row
 
 .. automodule:: lvsfunc.misc

@@ -7,18 +7,17 @@ from abc import ABC, abstractmethod
 from itertools import groupby, zip_longest
 from typing import Any, Callable, Iterable, Iterator, Literal, Sequence, TypeVar, overload
 
-import vapoursynth as vs
-from vskernels import Catrom, get_matrix, get_prop
-from vsutil import depth, get_subsampling, get_w
-from vsutil import split as split_planes
+from vskernels import Catrom
+from vstools import (
+    FormatsMismatchError, InvalidColorFamilyError, Matrix, VariableFormatError, check_variable, check_variable_format,
+    check_variable_resolution, core, depth, get_prop, get_subsampling, get_w, Direction
+)
+from vstools import split as split_planes
+from vstools import vs
 
 from .dehardsub import hardsub_mask
-from .exceptions import ClipsAndNamedClipsError, InvalidFormatError, NotEqualFormatsError, VariableFormatError
+from .exceptions import ClipsAndNamedClipsError
 from .render import clip_async_render
-from .types import Direction
-from .util import check_variable, check_variable_format, check_variable_resolution
-
-core = vs.core
 
 __all__ = [
     'compare', 'comp',
@@ -391,12 +390,12 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
     :return:                Interleaved clip containing specified frames from `clip_a` and `clip_b`.
 
     :raises ValueError:     More comparisons requested than frames available.
-    :raises NotEqualFormatsError:
+    :raises FormatsMismatchError:
                             Format of given clips don't match.
     """
     def _resample(clip: vs.VideoNode) -> vs.VideoNode:
         # Resampling to 8 bit and RGB to properly display how it appears on your screen
-        return core.resize.Bicubic(clip, format=vs.RGB24, matrix_in=get_matrix(clip),
+        return core.resize.Bicubic(clip, format=vs.RGB24, matrix_in=Matrix.from_video(clip),
                                    dither_type='error_diffusion')
 
     check_variable_resolution(clip_a, "compare")
@@ -413,7 +412,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
         assert check_variable_format(clip_b, "compare")
 
         if clip_a.format.id != clip_b.format.id:
-            raise NotEqualFormatsError("compare")
+            raise FormatsMismatchError("compare")
 
     if print_frame:
         clip_a = clip_a.text.Text("Clip A").text.FrameNum(alignment=9)
@@ -460,7 +459,7 @@ def stack_compare(*clips: vs.VideoNode,
                       "Will be using clipa's height instead.")
         height = int(clipa.height / 2)
 
-    scaled_width = get_w(height, only_even=False)
+    scaled_width = get_w(height, mod=1)
 
     diff = core.std.MakeDiff(clipa=clipa, clipb=clipb)
     diff = Catrom().scale(diff, scaled_width * 2, height * 2).text.FrameNum(8)
@@ -478,19 +477,18 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
     (vertical by default),
     then stacked with the full-sized plane in the direction specified (horizontal by default).
 
-    :param clip:                    Clip to process (must be in YUV or RGB planar format).
-    :param stack_vertical:          Stack the planes vertically (Default: ``False``).
+    :param clip:                        Clip to process (must be in YUV or RGB planar format).
+    :param stack_vertical:              Stack the planes vertically (Default: ``False``).
 
-    :return:                        Clip with stacked planes.
+    :return:                            Clip with stacked planes.
 
-    :raises InvalidFormatError:     Clip is not YUV or RGB.
-    :raises TypeError:              Clip is of an unexpected color family.
-    :raises TypeError:              Clip returns an unexpected subsampling.
+    :raises InvalidColorFamilyError:    Clip is not YUV or RGB.
+    :raises TypeError:                  Clip is of an unexpected color family.
+    :raises TypeError:                  Clip returns an unexpected subsampling.
     """
-    assert check_variable(clip, "stack_planes")
+    assert check_variable(clip, stack_planes)
 
-    if clip.format.num_planes != 3:
-        raise InvalidFormatError("stack_planes", "{func}: Input clip must be of a YUV or RGB planar format!")
+    InvalidColorFamilyError.check(clip, (vs.YUV, vs.RGB), stack_planes)
 
     yuv_planes = split_planes(clip)
 
@@ -678,7 +676,7 @@ def diff(*clips: vs.VideoNode,
         comparison = Interleave({f'{name_a}': core.std.Splice([a[f] for f in frames]),
                                  f'{name_b}': core.std.Splice([b[f] for f in frames])}).clip
     else:
-        scaled_width = get_w(height, only_even=False)
+        scaled_width = get_w(height, mod=1)
         diff = diff.resize.Spline36(width=scaled_width * 2, height=height * 2).text.FrameNum(9)
         a, b = (c.resize.Spline36(width=scaled_width, height=height).text.FrameNum(9) for c in (a, b))
 

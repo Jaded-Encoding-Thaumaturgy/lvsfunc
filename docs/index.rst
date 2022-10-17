@@ -54,20 +54,14 @@ Want to contribute to lvsfunc? Check out the `how to contribute <contribute>` se
     :caption: Filters
     :titlesonly:
 
-    submodules/aa
     submodules/comparison
     submodules/deblock
-    submodules/dehalo
     submodules/dehardsub
-    submodules/deinterlace
     submodules/exceptions
-    submodules/helpers
     submodules/mask
     submodules/misc
     submodules/noise
-    submodules/recon
     submodules/render
-    submodules/scale
     submodules/types
     submodules/util
 

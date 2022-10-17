@@ -1,68 +1,13 @@
 from __future__ import annotations
 
-import warnings
 from typing import Any
 
-import vapoursynth as vs
-from vskernels import Bicubic, Kernel, Matrix, get_kernel, get_prop
-from vsutil import Dither, depth, get_depth, get_y, join, plane
-
-from .util import check_variable
-
-core = vs.core
-
+from vskernels import Catrom, Kernel, KernelT
+from vstools import DitherType, Matrix, check_variable, core, depth, get_depth, get_prop, get_y, join, plane, vs
 
 __all__ = [
-    'chickendream',
-    # Deprecated
-    'bm3d'
+    'chickendream'
 ]
-
-
-def bm3d(clip: vs.VideoNode, sigma: float | list[float] = 0.75,
-         radius: int | list[int] | None = None, ref: vs.VideoNode | None = None,
-         pre: vs.VideoNode | None = None, refine: int = 1, matrix_s: str = "709",
-         basic_args: dict[str, Any] = {}, final_args: dict[str, Any] = {}) -> vs.VideoNode:
-    """
-    BM3D denoising filter using the CPU.
-
-    .. warning::
-        | This function has been deprecated! It will be removed in a future commit.
-
-    Dependencies:
-
-    * `VapourSynth-BM3D <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-BM3D>`_
-
-    :param clip:            Clip to process.
-    :param sigma:           Denoising strength for both basic and final estimations.
-    :param radius:          Temporal radius for both basic and final estimations.
-    :param ref:             Reference clip for the final estimation.
-    :param pre:             Prefiltered clip for the basic estimation.
-    :param refine:          Iteration of the final clip.
-                            0 = basic estimation only
-                            1 = basic + final estimation
-                            n = basic + n final estimations
-    :param matrix_s:        Color matrix of the Clip to process.
-    :param basic_args:      Args to pass to the basic estimation.
-    :param final_args:      Args to pass to the final estimation.
-
-    :return:                Denoised clip.
-
-    :raises ValueError:     Invalid number of sigma parameters were passed.
-    :raises ValueError:     Invalid number of radii parameters were passed.
-    """
-    try:
-        import vsdenoise
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("bm3d: missing dependency `vsdenoise`!")
-
-    warnings.warn('lvsfunc.bm3d: deprecated in favor of vsdenoise.BM3D!', DeprecationWarning)
-
-    vsd_bm3d = vsdenoise.BM3D(clip, sigma, radius, vsdenoise.Profile.NORMAL, pre, ref, refine)
-    vsd_bm3d.basic_args |= basic_args
-    vsd_bm3d.final_args |= final_args
-
-    return vsd_bm3d.clip
 
 
 def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
@@ -73,7 +18,7 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
                  show_mask: bool = False,
                  draft: bool = True,
                  matrix: Matrix | int | None = None,
-                 kernel: Kernel | str = Bicubic(b=0, c=1/2),
+                 kernel: KernelT = Catrom,
                  **chkdr_args: Any) -> vs.VideoNode:
     """
     Realistic film grain generator.
@@ -136,7 +81,7 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
                             in which case it stays as `None`.
     :param kernel:          py:class:`vskernels.Kernel` object used for conversions between YUV <-> RGB.
                             This can also be the string name of the kernel
-                            (Default: py:class:`vskernels.Bicubic(b=0, c=1/2)`).
+                            (Default: py:class:`vskernels.Catrom`).
     :param chkdr_args:      Additional args to pass to chickendream.
 
     :return:                Grained clip in the input clip's format.
@@ -153,13 +98,12 @@ def chickendream(clip: vs.VideoNode, sigma: float = 0.35,
     if show_mask:
         return adap_mask
 
-    if isinstance(kernel, str):
-        kernel = get_kernel(kernel)()
+    kernel = Kernel.ensure_obj(kernel)
 
     bit_depth = get_depth(clip)
     is_rgb, is_gray = (clip.format.color_family is f for f in (vs.RGB, vs.GRAY))
 
-    clip_32 = depth(clip, 32, dither_type=Dither.ERROR_DIFFUSION)
+    clip_32 = depth(clip, 32, dither_type=DitherType.ERROR_DIFFUSION)
 
     if is_gray or (is_rgb and chroma):
         return depth(core.chkdr.grain(clip_32.std.Limiter(), **chkdr_args), bit_depth)
