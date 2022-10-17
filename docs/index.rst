@@ -61,7 +61,6 @@ Want to contribute to lvsfunc? Check out the `how to contribute <contribute>` se
     submodules/mask
     submodules/misc
     submodules/noise
-    submodules/recon
     submodules/render
     submodules/types
     submodules/util
