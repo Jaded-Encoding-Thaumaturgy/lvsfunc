@@ -10,8 +10,8 @@ from vskernels import Catrom, KernelT
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
 from vstools import (
     MISSING, CustomValueError, FileType, FrameRangeN, FrameRangesN, IndexingType, InvalidMatrixError, Matrix,
-    check_perms, check_variable, core, depth, get_depth, get_prop, normalize_ranges, replace_ranges, scale_value, vs
-)
+    check_perms, check_variable, core, depth, get_depth, get_prop, normalize_ranges, replace_ranges, normalize_seq, vs,
+    scale_8bit)
 
 from .mask import BoundingBox
 from .types import Position, Size
@@ -239,26 +239,20 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
     :raises ValueError:     Too many values are supplied.
     :raises ValueError:     Any value in ``values`` are above 255.
     """
-    val: tuple[int, int, int]
-
     assert check_variable(clip, "shift_tint")
 
-    if isinstance(values, int):
-        val = (values, values, values)
-    elif len(values) == 2:
-        val = (values[0], values[1], values[1])
-    elif len(values) == 3:
-        val = (values[0], values[1], values[2])
-    else:
-        raise ValueError("shift_tint: 'Too many values supplied!'")
+    if isinstance(values, Sequence):
+        if len(values) > 3:
+            raise ValueError("shift_tint: 'Too many values supplied!'")
 
-    if any(v > 255 or v < -255 for v in val):
-        raise ValueError("shift_tint: 'Every value in \"values\" must be below 255!'")
+        if any(abs(v) > 255 for v in values):
+            raise ValueError("shift_tint: 'Every value in \"values\" must be below 255!'")
+    elif abs(values) > 255:
+        raise ValueError("shift_tint: '\"values\" must be below 255!'")
 
-    cdepth = get_depth(clip)
-    cv = [scale_value(v, 8, cdepth) for v in val] if cdepth != 8 else list(val)
-
-    return norm_expr(clip, expr=[f'x {cv[0]} +', f'x {cv[1]} +', f'x {cv[2]} +'])
+    return norm_expr(
+        clip, 'x {shift} +', shift=[scale_8bit(clip, v) for v in normalize_seq(values)]
+    )
 
 
 def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
