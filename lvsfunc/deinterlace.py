@@ -824,18 +824,18 @@ def PARser(clip: vs.VideoNode, active_area: int,
     sar = new_dar[0] * height, new_dar[1] * active_area
     sargcd = gcd(sar[0], sar[1])
 
-    sarden = sar[0] // sargcd
-    sarnum = sar[1] // sargcd
+    sarnum = sar[0] // sargcd
+    sarden = sar[1] // sargcd
 
     props |= dict(_SARDen=sarden, _SARNum=sarnum)
 
     match dar:
-        case Dar.WIDESCREEN: props |= dict(amorph_width=clip.width * (sarden / sarnum))
-        case Dar.FULLSCREEN: props |= dict(amorph_height=clip.height * (sarnum / sarden))
+        case Dar.WIDESCREEN: props |= dict(amorph_width=clip.width * (sarnum / sarden))
+        case Dar.FULLSCREEN: props |= dict(amorph_height=clip.height * (sarden / sarnum))
         # TODO: autoguess which to return based on the sarnum maybe?
         case _: props |= dict(amorph__note="Use your best judgment to pick one!",
-                              amorph_width=clip.width * (sarden / sarnum),
-                              amorph_height=clip.height * (sarnum / sarden))
+                              amorph_width=clip.width * (sarnum / sarden),
+                              amorph_height=clip.height * (sarden / sarnum))
 
     if return_result:
         return props
