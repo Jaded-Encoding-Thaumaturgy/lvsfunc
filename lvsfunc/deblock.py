@@ -120,10 +120,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     is_rgb = clip.format.color_family is vs.RGB
 
     if not is_rgb:
-        if matrix is None:
-            matrix = get_prop(clip.get_frame(0), "_Matrix", int)
-
-        targ_matrix = Matrix(matrix)
+        targ_matrix = Matrix.from_param(matrix) or Matrix.from_video(clip)
 
         rgb = kernel.resample(clip, format=vs.RGBS, matrix_in=targ_matrix)
     else:
