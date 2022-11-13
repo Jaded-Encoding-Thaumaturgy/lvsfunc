@@ -66,9 +66,9 @@ You can also import individual functions from sub-modules.
 
 .. code-block:: py
 
-    from lvsfunc.noise import chickendream
+    from lvsfunc.deblock import dpir
 
-    grained_clip = chickendream(clip)
+    deblocked_clip = dpir(clip)
 
 This is useful if you only need a single function
 and don't want to pollute your auto-completion
