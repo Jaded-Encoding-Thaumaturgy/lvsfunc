@@ -3,14 +3,11 @@ from __future__ import annotations
 from abc import ABC
 from typing import Any
 
-import vapoursynth as vs
-from vsutil import iterate, split
+from vstools import (
+    FrameRangeN, FrameRangesN, check_variable, core, iterate, normalize_ranges, replace_ranges, scale_thresh, split, vs
+)
 
 from .mask import DeferredMask
-from .types import Range
-from .util import check_variable, normalize_ranges, replace_ranges, scale_thresh
-
-core = vs.core
 
 __all__ = [
     'bounded_dehardsub',
@@ -36,7 +33,7 @@ class HardsubMask(DeferredMask, ABC):
                      (Default: ``None``, no bounding)
     :param blur:     Blur the bounding mask (Default: True).
     :param refframe: A single frame number to use to generate the mask.
-                     or a list of frame numbers with the same length as :py:func:`lvsfunc.types.Range`
+                     or a list of frame numbers with the same length as :py:func:`vstools.FrameRange`
     """
 
     def get_progressive_dehardsub(self, hrdsb: vs.VideoNode, ref: vs.VideoNode,
@@ -192,7 +189,7 @@ class HardsubLineFade(HardsubLine):
 
     ref_float: float
 
-    def __init__(self, ranges: Range | list[Range], *args: Any,
+    def __init__(self, ranges: FrameRangeN | FrameRangesN, *args: Any,
                  refframe: float = 0.5, **kwargs: Any) -> None:
         if refframe < 0 or refframe > 1:
             raise ValueError("HardsubLineFade: '`refframe` must be between 0 and 1!'")
@@ -222,7 +219,7 @@ class HardsubSignFade(HardsubSign):
 
     ref_float: float
 
-    def __init__(self, ranges: Range | list[Range], *args: Any,
+    def __init__(self, ranges: FrameRangeN | FrameRangesN, *args: Any,
                  refframe: float = 0.5, **kwargs: Any) -> None:
         if refframe < 0 or refframe > 1:
             raise ValueError("HardsubSignFade: 'refframe must be between 0 and 1!'")

@@ -5,14 +5,9 @@ from functools import partial
 from threading import Condition
 from typing import BinaryIO, Callable, TextIO
 
-import vapoursynth as vs
-from vskernels import get_prop
+from vstools import InvalidColorFamilyError, core, get_prop, get_render_progress, vs
 
-from .exceptions import InvalidFormatError
-from .progress import BarColumn, FPSColumn, Progress, TextColumn, TimeRemainingColumn
 from .types import SceneChangeMode
-
-core = vs.core
 
 RenderCallback = Callable[[int, vs.VideoFrame], None]
 
@@ -21,7 +16,6 @@ __all__ = [
     'clip_async_render',
     'find_scene_changes',
     'finish_frame',
-    'get_render_progress',
     'RenderContext',
 ]
 
@@ -79,22 +73,22 @@ def clip_async_render(clip: vs.VideoNode,
     You only really need this when you want to render a clip while operating on each frame in order
     or you want timecodes without using vspipe.
 
-    :param clip:                    Clip to render.
-    :param outfile:                 Y4MPEG render output BinaryIO handle. If None, no Y4M output is performed.
-                                    Use :py:func:`sys.stdout.buffer` for stdout. (Default: None)
-    :param timecodes:               Timecode v2 file TextIO handle. If None, timecodes will not be written.
-    :param progress:                String to use for render progress display.
-                                    If empty or ``None``, no progress display.
-    :param callback:                Single or list of callbacks to be performed. The callbacks are called.
-                                    when each sequential frame is output, not when each frame is done.
-                                    Must have signature ``Callable[[int, vs.VideoNode], None]``
-                                    See :py:func:`lvsfunc.comparison.diff` for a use case (Default: None).
+    :param clip:                        Clip to render.
+    :param outfile:                     Y4MPEG render output BinaryIO handle. If None, no Y4M output is performed.
+                                        Use :py:func:`sys.stdout.buffer` for stdout. (Default: None)
+    :param timecodes:                   Timecode v2 file TextIO handle. If None, timecodes will not be written.
+    :param progress:                    String to use for render progress display.
+                                        If empty or ``None``, no progress display.
+    :param callback:                    Single or list of callbacks to be performed. The callbacks are called.
+                                        when each sequential frame is output, not when each frame is done.
+                                        Must have signature ``Callable[[int, vs.VideoNode], None]``
+                                        See :py:func:`lvsfunc.comparison.diff` for a use case (Default: None).
 
-    :return:                        List of timecodes from rendered clip.
+    :return:                            List of timecodes from rendered clip.
 
-    :raises ValueError:             Variable format clip is passed.
-    :raises InvalidFormatError:     Non-YUV or GRAY clip is passed.
-    :raises ValueError:             "What have you done?"
+    :raises ValueError:                 Variable format clip is passed.
+    :raises InvalidColorFamilyError:    Non-YUV or GRAY clip is passed.
+    :raises ValueError:                 "What have you done?"
     """
     cbl = [] if callback is None else callback if isinstance(callback, list) else [callback]
 
@@ -151,8 +145,12 @@ def clip_async_render(clip: vs.VideoNode,
     if outfile:
         if clip.format is None:
             raise ValueError("clip_async_render: 'Cannot render a variable format clip to y4m!'")
-        if clip.format.color_family not in (vs.YUV, vs.GRAY):
-            raise InvalidFormatError("clip_async_render", "{func}: Can only render YUV and GRAY clips to y4m!")
+
+        InvalidColorFamilyError.check(
+            clip, (vs.YUV, vs.GRAY), clip_async_render,
+            message='Can only render to y4m clips with {correct} color family, not {wrong}!'
+        )
+
         if clip.format.color_family == vs.GRAY:
             y4mformat = "mono"
         else:
@@ -191,18 +189,6 @@ def clip_async_render(clip: vs.VideoNode,
             p.stop()
 
     return ctx.timecodes  # might as well
-
-
-def get_render_progress() -> Progress:
-    """Return render progress."""
-    return Progress(
-        TextColumn("{task.description}"),
-        BarColumn(),
-        TextColumn("{task.completed}/{task.total}"),
-        TextColumn("{task.percentage:>3.02f}%"),
-        FPSColumn(),
-        TimeRemainingColumn(),
-    )
 
 
 def find_scene_changes(clip: vs.VideoNode, mode: SceneChangeMode = SceneChangeMode.WWXD) -> list[int]:

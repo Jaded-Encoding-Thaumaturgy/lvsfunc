@@ -1,12 +1,6 @@
 VapourSynth>=59
-rich==12.5.1
-stgfunc==1.0.1
-typing-extensions==3.10.0.2
-vsaa==1.1.0
-vsdehalo==0.1.6
-vsexprtools==1.0.2
-vskernels==1.2.0
-vsrgtools==1.0.0
-vsscale==1.0.0
-vsutil==0.8.0
-vsparsedvd==0.0.4
+vstools>=1.4.1
+vskernels>=2.2.1
+vsrgtools>=1.2.1
+vsscale>=1.3.1
+vsparsedvd>=0.1.0

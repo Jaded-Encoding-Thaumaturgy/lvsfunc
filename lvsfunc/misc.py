@@ -5,19 +5,16 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Sequence
 
-import vapoursynth as vs
-from vskernels import Bicubic, Catrom, Kernel, Matrix, get_prop
+from vskernels import Catrom, KernelT
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
-from vsutil import depth, get_depth, is_image, scale_value
+from vstools import (
+    MISSING, CustomValueError, FileType, FrameRangeN, FrameRangesN, IndexingType, InvalidMatrixError, Matrix,
+    check_perms, check_variable, core, depth, get_depth, get_prop, normalize_ranges, replace_ranges, scale_value, vs
+)
 
-from .exceptions import InvalidMatrixError
-from .helpers import _check_index_exists
 from .mask import BoundingBox
-from .types import MISSING, IndexFile, IndexingType, IndexType, Position, Range, Size
-from .util import check_variable, match_clip, normalize_ranges, replace_ranges
-
-core = vs.core
-
+from .types import Position, Size
+from .util import match_clip
 
 __all__ = [
     'edgefixer', 'ef',
@@ -25,14 +22,13 @@ __all__ = [
     'overlay_sign',
     'shift_tint',
     'source', 'src',
-    'unsharpen',
     'wipe_row',
 ]
 
 
 def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # type: ignore
            force_lsmas: bool = False, film_thr: float = 99.0,
-           tail_lines: int = 4, kernel: Kernel | str = Bicubic(b=0, c=1/2),
+           tail_lines: int = 4, kernel: KernelT = Catrom,
            debug: bool = False, **index_args: Any) -> vs.VideoNode:
     """
     Index and load video clips for use in VapourSynth automatically.
@@ -72,7 +68,7 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
     :param force_lsmas:     Force files to be imported with L-SMASH (Default: False).
     :param kernel:          py:class:`vskernels.Kernel` object used for converting the `clip` to match `ref`.
                             This can also be the string name of the kernel
-                            (Default: py:class:`vskernels.Bicubic(b=0, c=1/2)`).
+                            (Default: py:class:`vskernels.Catrom`).
     :param tail_lines:      Lines to check on the tail of the dgi file.
                             Increase this value if FILM and ORDER do exist in your dgi file
                             but it's having trouble finding them.
@@ -83,40 +79,52 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
 
     :raises ValueError:     Something other than a path is passed to ``path``.
     """
-    if path == MISSING:
+    if path is MISSING:  # type: ignore
         return partial(  # type: ignore
             source, ref=ref, force_lsmas=force_lsmas, film_thr=film_thr,
             tail_lines=tail_lines, kernel=kernel, debug=debug, **index_args
         )
 
-    if not Path(path).is_file:
-        raise FileNotFoundError(f"{path} could not be found!")
-
-    path = str(path)
-
     clip = None
     film_thr = float(min(100, film_thr))
 
-    if path.startswith('file:///'):
-        path = path[8::]
+    if str(path).startswith('file:///'):
+        path = str(path)[8::]
 
-    file_type = _check_index_exists(path)
-    file_idx_type = isinstance(file_type, IndexFile) and file_type.type or None
+    path = Path(path)
+    check_perms(path, 'r', func=source)
+
+    file = FileType.parse(path) if path.exists() else None
+
+    def _check_file_type(file_type: FileType) -> bool:
+        return (
+            file_type is FileType.VIDEO or file_type is FileType.IMAGE
+        ) or (
+            file_type.is_index and _check_file_type(file_type.file_type)  # type: ignore
+        )
+
+    if not file or not _check_file_type(file.file_type):
+        for itype in IndexingType:
+            if (newpath := path.with_suffix(f'{path.suffix}{itype.value}')).exists():
+                file = FileType.parse(newpath)
+
+    if not file or not _check_file_type(file.file_type):
+        raise CustomValueError('File isn\'t a video!', source)
 
     props = dict[str, Any]()
     debug_props = dict[str, Any]()
 
-    if force_lsmas or file_idx_type is IndexingType.LWI:
-        clip = core.lsmas.LWLibavSource(path, **index_args)
+    if force_lsmas or file.ext is IndexingType.LWI:
+        clip = core.lsmas.LWLibavSource(str(path), **index_args)
         debug_props |= dict(idx_used='lsmas')
-    elif file_type is IndexType.IMAGE:
-        clip = core.imwri.Read(path, **index_args)
+    elif file.file_type is FileType.IMAGE:
+        clip = core.imwri.Read(str(path), **index_args)
         debug_props |= dict(idx_used='imwri')
-    elif file_idx_type is IndexingType.DGI or file_type is IndexType.NONE:
+    elif file.ext is IndexingType.DGI or not force_lsmas:
         try:
             indexer = DGIndexNV()
 
-            if not path.endswith(".dgi"):
+            if not path.suffix == ".dgi":
                 path = indexer.index([SPath(path)], False, False)[0]
 
             idx_info = indexer.get_info(path, 0).footer
@@ -135,20 +143,22 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
             clip = indexer.vps_indexer(path, **indexer_kwargs)
             debug_props |= dict(idx_used='DGIndexNV')
         except Exception as e:
-            warnings.warn(f"source: 'Unable to index using DGIndexNV! Falling back to lsmas...'\n\t{e}",
-                          RuntimeWarning)
+            warnings.warn(f"source: 'Unable to index using DGIndexNV! Falling back to lsmas...'\n\t{e}", RuntimeWarning)
 
     if clip is None:
-        return source(path, ref=ref, force_lsmas=True, film_thr=film_thr,
-                      tail_lines=tail_lines, kernel=kernel, debug=debug, **index_args)
+        return source(
+            path, ref=ref, force_lsmas=True, film_thr=film_thr,
+            tail_lines=tail_lines, kernel=kernel, debug=debug, **index_args
+        )
+
+    if debug:
+        props |= debug_props
 
     clip = clip.std.SetFrameProps(**props)
 
-    if debug:
-        clip = clip.std.SetFrameProps(**debug_props)
-
     if ref:
-        return match_clip(clip, ref, length=is_image(str(path)), kernel=kernel)
+        return match_clip(clip, ref, length=file.file_type is FileType.IMAGE, kernel=kernel)
+
     return clip
 
 
@@ -320,46 +330,8 @@ def wipe_row(clip: vs.VideoNode,
     return core.std.MaskedMerge(clip, ref, sqmask)
 
 
-def unsharpen(clip: vs.VideoNode, strength: float = 1.0, sigma: float = 1.5,
-              prefilter: bool = True, prefilter_sigma: float = 0.75) -> vs.VideoNode:
-    """
-    Diff'd unsharpening function.
-
-    Performs one-dimensional sharpening as such: "Original + (Original - blurred) * Strength"
-    It then merges back noise and detail that was prefiltered away,
-
-    Negative values will blur instead. This can be useful for trying to undo sharpening.
-
-    This function is not recommended for normal use,
-    but may be useful as prefiltering for detail- or edgemasks.
-
-    :param clip:                Clip to process.
-    :param strength:            Amount to multiply blurred clip with original clip by.
-                                Negative values will blur the clip instead.
-    :param sigma:               Sigma for the gaussian blur.
-    :param prefilter:           Pre-denoising to prevent the unsharpening from picking up random noise.
-    :param prefilter_sigma:     Strength for the pre-denoising.
-    :param show_mask:           Show halo mask.
-
-    :return:                    Unsharpened clip.
-    """
-    assert check_variable(clip, "unsharpen")
-
-    den = clip.dfttest.DFTTest(sigma=prefilter_sigma) if prefilter else clip
-    diff = core.std.MakeDiff(clip, den)
-
-    expr: str | list[str] = f'x y - {strength} * x +'
-
-    if clip.format.color_family is not vs.GRAY:
-        expr = [str(expr), "", ""]  # mypy wtf?
-
-    blurred_clip = core.bilateral.Gaussian(den, sigma=sigma)
-    unsharp = core.akarin.Expr([den, blurred_clip], expr)
-    return core.std.MergeDiff(unsharp, diff)
-
-
 def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
-                 frame_ranges: Range | list[Range] | None = None, fade_length: int = 0,
+                 frame_ranges: FrameRangeN | FrameRangesN | None = None, fade_length: int = 0,
                  matrix: Matrix | int | None = None) -> vs.VideoNode:
     """
     Overlay a logo or sign onto another clip.
@@ -378,12 +350,13 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
                                     through :py:func:`core.vapoursnth.imwri.Read` or a path string to the image file,
                                     and **MUST** be the same dimensions as the ``clip`` to process.
     :param frame_ranges:            Frame ranges or starting frame to apply the overlay to.
-                                    See :py:attr:`lvsfunc.types.Range` for more info.
+                                    See :py:attr:`vstools.FrameRange` for more info.
                                     If None, overlays the entire clip.
-                                    If a Range is passed, the overlaid clip will only show up inside that range.
+                                    If a FrameRange is passed, the overlaid clip will only show up inside that range.
                                     If only a single integer is given, it will start on that frame and
                                     stay until the end of the clip.
-                                    Note that this function only accepts a single Range! You can't pass a list of them!
+                                    Note that this function only accepts a single FrameRange!
+                                    You can't pass a list of them!
     :param fade_length:             Length to fade the clips into each other.
                                     The fade will start and end on the frames given in frame_ranges.
                                     If set to 0, it won't fade and the sign will simply pop in.

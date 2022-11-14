@@ -1,6 +1,6 @@
+import os
 import subprocess
 import sys
-import os
 
 import pkg_resources
 
@@ -20,7 +20,6 @@ vsrepo_deps = list[str]([
     'EEDI3 (obsolete)',
     'fillborders',
     'fmtconv',
-    'havsfunc',
     'kagefunc',
     'lsmas',
     'NNEDI3CL',

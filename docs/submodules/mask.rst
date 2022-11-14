@@ -17,9 +17,6 @@ messing with your masked output.
     lvsfunc.mask.DeferredMask
     lvsfunc.mask.detail_mask
     lvsfunc.mask.detail_mask_neo
-    lvsfunc.mask.fine_dehalo_mask
-    lvsfunc.mask.halo_mask
-    lvsfunc.mask.mt_xxpand_multi
     lvsfunc.mask.range_mask
 
 .. autoclass:: lvsfunc.mask.BoundingBox
@@ -38,4 +35,4 @@ messing with your masked output.
     :members:
     :undoc-members:
     :show-inheritance:
-    :exclude-members: BoundingBox, DeferredMask, minm, maxm
+    :exclude-members: BoundingBox, DeferredMask

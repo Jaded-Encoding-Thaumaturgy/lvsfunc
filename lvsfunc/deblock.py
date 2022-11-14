@@ -1,22 +1,18 @@
 from __future__ import annotations
 
-import warnings
 from functools import partial
 from pathlib import Path
 from typing import Any, Literal, Sequence, SupportsFloat, cast
 
-import vapoursynth as vs
-from vskernels import Bicubic, Kernel, Matrix, Point, get_kernel, get_prop
-from vsutil import Dither, depth, get_depth
+from vskernels import Catrom, Kernel, KernelT, Point
+from vstools import (
+    DitherType, FrameRangeN, FrameRangesN, Matrix, check_variable, core, depth, get_depth, get_prop, replace_ranges, vs
+)
 
-from .helpers import _check_has_nvidia
-from .types import Range
-from .util import check_variable, replace_ranges
-
-core = vs.core
+from .util import check_has_nvidia
 
 __all__ = [
-    'autodb_dpir', 'dpir', 'vsdpir'
+    'autodb_dpir', 'dpir'
 ]
 
 
@@ -24,7 +20,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strs: Sequence[float] = [10, 50, 75],
                 thrs: Sequence[tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
                 matrix: Matrix | int | None = None,
-                kernel: Kernel | str = Bicubic(b=0, c=1/2),
+                kernel: KernelT = Catrom,
                 cuda: bool | Literal['trt'] | None = None,
                 write_props: bool = False,
                 **vsdpir_args: Any) -> vs.VideoNode:
@@ -113,10 +109,9 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
         raise ValueError('autodb_dpir: You must pass an equal amount of values to '
                          f'strength {len(strs)} and thrs {len(thrs)}!')
 
-    if isinstance(kernel, str):
-        kernel = get_kernel(kernel)()
+    kernel = Kernel.ensure_obj(kernel)
 
-    vsdpir_final_args = dict(mode='deblock', cuda=cuda)
+    vsdpir_final_args = dict[str, Any](mode='deblock', cuda=cuda)
     vsdpir_final_args |= vsdpir_args
     vsdpir_final_args.pop('strength', None)
 
@@ -125,10 +120,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     is_rgb = clip.format.color_family is vs.RGB
 
     if not is_rgb:
-        if matrix is None:
-            matrix = get_prop(clip.get_frame(0), "_Matrix", int)
-
-        targ_matrix = Matrix(matrix)
+        targ_matrix = Matrix.from_param(matrix) or Matrix.from_video(clip)
 
         rgb = kernel.resample(clip, format=vs.RGBS, matrix_in=targ_matrix)
     else:
@@ -160,8 +152,8 @@ def dpir(
     clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = 10, mode: str = 'deblock',
     matrix: Matrix | int | None = None, cuda: bool | Literal['trt'] | None = None, i444: bool = False,
     tiles: int | tuple[int, int] | None = None, overlap: int | tuple[int, int] | None = 8,
-    zones: list[tuple[Range | list[Range] | None, SupportsFloat | vs.VideoNode | None]] | None = None,
-    fp16: bool | None = None, num_streams: int = 1, device_id: int = 0, kernel: Kernel | str = Bicubic(b=0, c=1/2)
+    zones: list[tuple[FrameRangeN | FrameRangesN | None, SupportsFloat | vs.VideoNode | None]] | None = None,
+    fp16: bool | None = None, num_streams: int = 1, device_id: int = 0, kernel: KernelT = Catrom
 ) -> vs.VideoNode:
     """
     DPIR, or Plug-and-Play Image Restoration with Deep Denoiser Prior, is a denoise and deblocking neural network.
@@ -176,9 +168,6 @@ def dpir(
     For more information, see `the original DPIR repository <https://github.com/cszn/DPIR>`_.
 
     Thanks `Setsugen no ao <https://github.com/Setsugennoao>`_!
-
-    | Alias for this function is ``lvsfunc.vsdpir``.
-    | Note that this will be deprecated in the future!
 
     Dependencies:
 
@@ -241,13 +230,12 @@ def dpir(
 
     assert check_variable(clip, "dpir")
 
-    if isinstance(kernel, str):
-        kernel = get_kernel(kernel)()
+    kernel = Kernel.ensure_obj(kernel)
 
     bit_depth = get_depth(clip)
     is_rgb, is_gray = (clip.format.color_family is f for f in (vs.RGB, vs.GRAY))
 
-    clip_32 = depth(clip, 32, dither_type=Dither.ERROR_DIFFUSION)
+    clip_32 = depth(clip, 32, dither_type=DitherType.ERROR_DIFFUSION)
 
     match mode.lower():
         case 'deblock': model = DPIRModel.drunet_deblocking_grayscale if is_gray else DPIRModel.drunet_deblocking_color
@@ -334,7 +322,7 @@ def dpir(
     else:
         strength_clip = _get_strength_clip(clip_rgb, strength)
 
-    no_dpir_zones = list[Range]()
+    no_dpir_zones = FrameRangesN()
 
     zoned_strength_clip = strength_clip
 
@@ -405,7 +393,7 @@ def dpir(
             trt_available = False
 
     if cuda is None:
-        cuda = 'trt' if trt_available else _check_has_nvidia()
+        cuda = 'trt' if trt_available else check_has_nvidia()
 
     if fp16 is None:
         fp16 = fp16_available
@@ -440,10 +428,3 @@ def dpir(
         return depth(run_dpir, bit_depth)
 
     return kernel.resample(run_dpir, targ_format, targ_matrix)
-
-
-# deprecated aliases
-def vsdpir(clip: vs.VideoNode, **dpir_args: Any) -> vs.VideoNode:
-    """Deprecate alias of :py:func:`lvsfunc.deblock.dpir`."""
-    warnings.warn("vsdpir: This alias has been deprecated in favor of `dpir`!")
-    return dpir(clip, **dpir_args)

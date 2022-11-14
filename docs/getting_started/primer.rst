@@ -66,9 +66,9 @@ You can also import individual functions from sub-modules.
 
 .. code-block:: py
 
-    from lvsfunc.noise import chickendream
+    from lvsfunc.deblock import dpir
 
-    grained_clip = chickendream(clip)
+    deblocked_clip = dpir(clip)
 
 This is useful if you only need a single function
 and don't want to pollute your auto-completion
@@ -108,7 +108,7 @@ They must be used as such:
 
     from vskernels import Bicubic
 
-    kernel = Bicubic().scale()
+    kernel = Bicubic.scale(...)
 
 The "Bicubic" that was imported is simply a preset that defines the base parameters for the scaling operation.
 It can be further tweaked by changing the values as such:
@@ -122,20 +122,14 @@ These are the following:
 
 .. code-block:: python
 
-    Bicubic().scale()
-    Bicubic().descale()
-    Bicubic().resample()
-    Bicubic().shift()
+    Bicubic.scale()
+    Bicubic.descale()
+    Bicubic.resample()
+    Bicubic.shift()
 
 A lot of functions accept a Kernel object.
 All you need to do is simply pass a Kernel you want to use to the function,
 and it will use the methods as necessary internally.
-
-.. code-block:: python
-
-    lvf.a_function(clip, kernel=Bicubic())
-
-If you run into a kernel-related error, you may need to simply pass the class, not an object!
 
 .. code-block:: python
 
