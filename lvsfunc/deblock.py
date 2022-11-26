@@ -20,7 +20,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strs: Sequence[float] = [10, 50, 75],
                 thrs: Sequence[tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
                 matrix: Matrix | int | None = None,
-                edgemasker: Callable[[vs.VideoNode], vs.VideoNode] = core.std.Prewitt,
+                edgemasker: Callable[[vs.VideoNode], vs.VideoNode] | None = None,
                 kernel: KernelT = Catrom,
                 cuda: bool | Literal['trt'] | None = None,
                 return_mask: bool = False,
@@ -113,6 +113,9 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     if len(strs) != len(thrs):
         raise ValueError('autodb_dpir: You must pass an equal amount of values to '
                          f'strength {len(strs)} and thrs {len(thrs)}!')
+
+    if edgemasker is None:
+        edgemasker = core.std.Prewitt
 
     kernel = Kernel.ensure_obj(kernel)
 
