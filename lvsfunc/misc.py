@@ -97,7 +97,7 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
     file = FileType.parse(path) if path.exists() else None
 
     def _check_file_type(file_type: FileType) -> bool:
-        return (
+        return (  # type:ignore[return-value]
             file_type is FileType.VIDEO or file_type is FileType.IMAGE
         ) or (
             file_type.is_index  # and _check_file_type(file_type.file_type)  # type: ignore
