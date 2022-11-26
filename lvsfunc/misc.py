@@ -124,7 +124,7 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
         try:
             indexer = DGIndexNV()
 
-            if not path.suffix == ".dgi":
+            if path.suffix != ".dgi":
                 path = indexer.index([SPath(path)], False, False)[0]
 
             idx_info = indexer.get_info(path, 0).footer

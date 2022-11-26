@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from functools import partial
 from pathlib import Path
-from typing import Any, Literal, Sequence, SupportsFloat, cast, Callable
+from typing import Any, Callable, Literal, Sequence, SupportsFloat, cast
 
 from vskernels import Catrom, Kernel, KernelT, Point
-from vstools import (
-    DitherType, FrameRangeN, FrameRangesN, Matrix, check_variable, core, depth, get_depth, get_prop, replace_ranges, vs
-)
+from vstools import (DitherType, FrameRangeN, FrameRangesN, Matrix,
+                     check_variable, core, depth, get_depth, get_prop,
+                     replace_ranges, vs)
 
 from .util import check_has_nvidia
 
@@ -235,7 +235,8 @@ def dpir(
     :raises TypeError:              ``strength`` is not a :py:attr:`typing.SupportsFloat` or VideoNode.
     """
     try:
-        from vsmlrt import Backend, DPIRModel, backendT, calc_tilesize, inference, models_path
+        from vsmlrt import (Backend, DPIRModel, backendT, calc_tilesize,
+                            inference, models_path)
     except ModuleNotFoundError:
         raise ModuleNotFoundError("dpir: 'missing dependency `vsmlrt`!'")
 
