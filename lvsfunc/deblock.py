@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import partial
 from pathlib import Path
-from typing import Any, Literal, Sequence, SupportsFloat, cast
+from typing import Any, Literal, Sequence, SupportsFloat, cast, Callable
 
 from vskernels import Catrom, Kernel, KernelT, Point
 from vstools import (
@@ -20,8 +20,10 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 strs: Sequence[float] = [10, 50, 75],
                 thrs: Sequence[tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
                 matrix: Matrix | int | None = None,
+                edgemasker: Callable[[vs.VideoNode], vs.VideoNode] = core.std.Prewitt,
                 kernel: KernelT = Catrom,
                 cuda: bool | Literal['trt'] | None = None,
+                return_mask: bool = False,
                 write_props: bool = False,
                 **vsdpir_args: Any) -> vs.VideoNode:
     r"""
@@ -59,6 +61,8 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                             See :py:attr:`lvsfunc.types.Matrix` for more info.
                             If `None`, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
                             in which case it stays as `None`.
+    :param edgemasker:      Edgemasking function to use for calculating the edgevalues.
+                            Default: Prewitt.
     :param kernel:          py:class:`vskernels.Kernel` object used for conversions between YUV <-> RGB.
                             This can also be the string name of the kernel
                             (Default: py:class:`vskernels.Bicubic(0, 0.5)`).
@@ -66,6 +70,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                             Use CUDA if True, CUDA TensorRT if 'trt', else CPU OpenVINO if False.
                             If ``None``, it will detect your system's capabilities
                             and select the fastest backend.
+    :param return_mask:     Return the mask used for calculating the edgevalues.
     :param write_props:     whether to write verbose props.
     :param vsdpir_args:     Additional args to pass to :py:func:`lvsfunc.deblock.vsdpir`.
 
@@ -120,16 +125,22 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     is_rgb = clip.format.color_family is vs.RGB
 
     if not is_rgb:
-        targ_matrix = Matrix.from_param(matrix) or Matrix.from_video(clip)
+        if matrix is None:
+            matrix = get_prop(clip.get_frame(0), "_Matrix", int)
+
+        targ_matrix = Matrix(matrix)
 
         rgb = kernel.resample(clip, format=vs.RGBS, matrix_in=targ_matrix)
     else:
         rgb = clip
 
     maxvalue = (1 << rgb.format.bits_per_sample) - 1  # type:ignore[union-attr]
-    evref = core.std.Prewitt(rgb)
+    evref = edgemasker(rgb)
     evref = core.akarin.Expr(evref, f"x {edgevalue} >= {maxvalue} x ?")
     evref_rm = evref.std.Median().std.Convolution(matrix=[1, 2, 1, 2, 4, 2, 1, 2, 1])
+
+    if return_mask:
+        return kernel.resample(evref_rm, format=clip.format, matrix=targ_matrix if not is_rgb else None)
 
     diffevref = core.std.PlaneStats(evref, evref_rm, prop='EdgeValRef')
     diffnext = core.std.PlaneStats(rgb, rgb.std.DeleteFrames([0]), prop='YNext')
