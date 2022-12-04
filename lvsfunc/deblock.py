@@ -239,7 +239,7 @@ def dpir(
     try:
         from vsmlrt import Backend, DPIRModel, backendT, calc_tilesize, inference, models_path
     except ModuleNotFoundError as e:
-        raise DependencyNotFoundError(e)
+        raise DependencyNotFoundError(dpir, e)
 
     assert check_variable(clip, "dpir")
 

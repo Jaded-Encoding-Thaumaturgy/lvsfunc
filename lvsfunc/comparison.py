@@ -828,7 +828,7 @@ def source_mediainfo(filepath: str, print_mediainfo: bool = False,
     try:
         from pymediainfo import MediaInfo  # type:ignore
     except ModuleNotFoundError as e:
-        raise DependencyNotFoundError(e)
+        raise DependencyNotFoundError(source_mediainfo, e)
 
     from pprint import pformat, pprint
 

@@ -106,7 +106,7 @@ class HardsubSignKgf(HardsubMask):
         try:
             from kagefunc import hardsubmask_fades
         except ModuleNotFoundError as e:
-            raise DependencyNotFoundError(e)
+            raise DependencyNotFoundError(HardsubSignKgf, e)
 
         self.hardsubmask_fades = hardsubmask_fades
         self.highpass = highpass
@@ -164,7 +164,7 @@ class HardsubLine(HardsubMask):
         try:
             from kagefunc import hardsubmask
         except ModuleNotFoundError as e:
-            raise DependencyNotFoundError(e)
+            raise DependencyNotFoundError(HardsubLine, e)
 
         self.hardsubmask = hardsubmask
         super().__init__(*args, **kwargs)

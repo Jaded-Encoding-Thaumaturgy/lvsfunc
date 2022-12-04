@@ -378,7 +378,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
         try:
             from kagefunc import crossfade
         except ModuleNotFoundError as e:
-            raise DependencyNotFoundError(e)
+            raise DependencyNotFoundError(overlay_sign, e, reason="fade_length > 0")
 
     assert check_variable(clip, "overlay_sign")
 
