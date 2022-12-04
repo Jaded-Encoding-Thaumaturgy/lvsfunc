@@ -861,14 +861,14 @@ def source_mediainfo(filepath: str, print_mediainfo: bool = False,
         stream_size = stream_size[-1]
 
     prop_dict.update({
-        "encode_date": gtrack.get("encoded_date") or fallback,
-        "total_filesize": gtrack.get("other_file_size")[-1] or fallback,
+        "encode_date": gtrack.get("encoded_date", fallback),
+        "total_filesize": gtrack.get("other_file_size", [fallback])[-1],
         "v_filesize": stream_size or fallback,
-        "v_bitdepth": vtrack.get("bit_depth") or fallback,
-        "v_codec": f"{vtrack.get('format') or fallback}"
+        "v_bitdepth": vtrack.get("bit_depth", fallback),
+        "v_codec": f"{vtrack.get('format', fallback)}"
         + f" ({vtrack['format_profile']})"
         if vtrack.get("format_profile") else "",
-        "v_writing_library": truncate_string(vtrack.get("writing_library") or fallback, 40),
+        "v_writing_library": truncate_string(vtrack.get("writing_library", fallback), 40),
     })
 
     if vtrack.get("muxing_mode") and vtrack.get("muxing_mode") == "Header stripping":
@@ -886,7 +886,7 @@ def source_mediainfo(filepath: str, print_mediainfo: bool = False,
             "aq-bias-strength", "aq-mode", "aq-strength", "bframes", "crf", "cutree", "no-cutree", "me",
             "no-sao", "open-gop", "psy-rd", "psy-rdoq", "qcomp", "rd", "ref", "sao", "subme", "deblock",
             "bitrate", "vbv_maxrate", "vbv_bufsize", "no-sao-non-deblock", "sao-non-deblock",
-            "no-strong-intra-smoothing", "strong-intra-smoothing"
+            "no-strong-intra-smoothing", "strong-intra-smoothing",
             # x264 (incl. dupes, but set will dedupe it)
             "mbtree", "no-mbtree", "aq",
         }
