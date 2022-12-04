@@ -848,12 +848,10 @@ def source_mediainfo(filepath: str, print_mediainfo: bool = False,
     mi = MediaInfo.parse(filepath)
     gtrack = mi.general_tracks[0].to_data()
     vtrack = mi.video_tracks[stream_idx].to_data()
-    atrack = mi.audio_tracks[stream_idx].to_data()
 
     if print_mediainfo:
         pprint(gtrack, sort_dicts=False, width=120, compact=True)
         pprint(vtrack, sort_dicts=False, width=120, compact=True)
-        pprint(atrack, sort_dicts=False, width=120, compact=True)
 
     stream_size = vtrack.get("other_stream_size")
 
