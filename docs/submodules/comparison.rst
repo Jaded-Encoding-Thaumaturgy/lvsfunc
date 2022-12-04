@@ -2,6 +2,8 @@
 lvsfunc.comparison
 ==================
 
+.. _filters:
+
 Comparison and analysis functions and wrappers.
 
 .. autosummary::
