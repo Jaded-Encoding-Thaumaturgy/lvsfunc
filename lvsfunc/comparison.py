@@ -934,8 +934,10 @@ def source_mediainfo(filepath: str, print_mediainfo: bool = False,
                 str(k).replace("v_enc_settings_", ""): v for k, v in sorted_encset.items()
             }}
 
-        sort = pformat(print_dict, sort_dicts=False, width=100, compact=True, indent=0)
-        clip = clip.text.Text(sort[1:-1]).text.FrameNum(8) \
+        sort = pformat(print_dict, sort_dicts=False, width=100, compact=True, indent=0)[1:-1]
+        sort = sort.replace(": {", ": {\n    ").replace("'}", "\n}").replace("                 ", "")
+
+        clip = clip.text.Text(sort).text.FrameNum(8) \
             .text.FrameProps(["_PictType", "_Matrix", "_Transfer", "_Primaries"], 9)
 
     prop_dict.update(encset_dict)
