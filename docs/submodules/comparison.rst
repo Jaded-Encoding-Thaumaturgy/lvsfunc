@@ -10,6 +10,7 @@ Comparison and analysis functions and wrappers.
     lvsfunc.comparison.diff
     lvsfunc.comparison.diff_hardsub_mask
     lvsfunc.comparison.interleave
+    lvsfunc.comparison.source_mediainfo
     lvsfunc.comparison.split
     lvsfunc.comparison.stack_compare
     lvsfunc.comparison.stack_horizontal

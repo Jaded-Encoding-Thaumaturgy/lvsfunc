@@ -8,9 +8,10 @@ These are generally generic enough to allow other maintainers to make use of the
 .. autosummary::
 
     lvsfunc.types.Coordinate
-    lvsfunc.types.SceneChangeMode
     lvsfunc.types.Position
+    lvsfunc.types.SceneChangeMode
     lvsfunc.types.Size
+    lvsfunc.types.x265_me_map
 
 .. autoclass:: lvsfunc.types
     :members:

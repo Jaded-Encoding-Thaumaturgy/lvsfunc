@@ -5,19 +5,22 @@ import random
 import warnings
 from abc import ABC, abstractmethod
 from itertools import groupby, zip_longest
+from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Literal, Sequence, TypeVar, overload
 
 from vskernels import Catrom
-from vstools import (
-    FormatsMismatchError, InvalidColorFamilyError, Matrix, VariableFormatError, check_variable, check_variable_format,
-    check_variable_resolution, core, depth, get_prop, get_subsampling, get_w, Direction
-)
+from vstools import (Direction, FormatsMismatchError, InvalidColorFamilyError, Matrix, VariableFormatError,
+                     check_variable, check_variable_format, check_variable_resolution, core, depth, get_prop,
+                     get_subsampling, get_w)
 from vstools import split as split_planes
 from vstools import vs
 
 from .dehardsub import hardsub_mask
 from .exceptions import ClipsAndNamedClipsError
+from .misc import source
 from .render import clip_async_render
+from .types import x265_me_map
+from .util import truncate_string
 
 __all__ = [
     'compare', 'comp',
@@ -26,6 +29,7 @@ __all__ = [
     'diff',
     'Interleave',
     'interleave',
+    'source_mediainfo',
     'Split',
     'split',
     'stack_compare', 'scomp',
@@ -792,6 +796,144 @@ def tile(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     return Tile(clips if clips else namedclips).clip
 
 
+def source_mediainfo(filepath: str, print_mediainfo: bool = False,
+                     print_props: bool = False, **source_kwargs: Any) -> vs.VideoNode:
+    """
+    Simple source indexing wrapper that adds mediainfo as props as well.
+
+    This works exactly like :py:func:`misc.source`,
+    except it further gathers information pertaining to the source file.
+    This function is meant to be used for comparisons between multiple encodes.
+
+    Alias for this function is ``lvsfunc.srcm``.
+
+    Dependencies:
+        * `pymediainfo`
+
+    :param filepath:            Path to input file.
+    :param print_mediainfo:     Print MediaInfo to stdout.
+                                This includes general, video, and audio information.
+                                Only the first track found is printed.
+    :param print_props:         Print the properties added by this function on the output clip.
+                                This is meant for comping where you want to share additional information
+                                about the sources you're comping.
+    :param source_kwargs:       Keyword arguments passed to :py:func:`misc.source`.
+
+    :return:                    Clip with MediaInfo properties added.
+    """
+    try:
+        from pymediainfo import MediaInfo  # type:ignore
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("source_mediainfo: 'missing dependency `pymediainfo`!'")
+
+    from pprint import pformat, pprint
+
+    # TODO: Rewrie this. It's pretty inefficient atm and has no caching.
+
+    prop_dict: dict[str, Any] = dict()
+    encset_dict: dict[str, str] = {}
+    sorted_encset: dict[str, str] = {}
+
+    filename = Path(filepath).stem
+    prop_dict.update({"filename": truncate_string(filename, 64)})
+    fallback = "Unknown"
+
+    clip = source(filepath, **source_kwargs)
+
+    stream_idx = source_kwargs.get("stream_index") or 0
+
+    mi = MediaInfo.parse(filepath)
+    gtrack = mi.general_tracks[0].to_data()
+    vtrack = mi.video_tracks[stream_idx].to_data()
+    atrack = mi.audio_tracks[stream_idx].to_data()
+
+    if print_mediainfo:
+        pprint(gtrack, sort_dicts=False, width=120, compact=True)
+        pprint(vtrack, sort_dicts=False, width=120, compact=True)
+        pprint(atrack, sort_dicts=False, width=120, compact=True)
+
+    stream_size = vtrack.get("other_stream_size")
+
+    if stream_size:
+        stream_size = stream_size[-1]
+
+    prop_dict.update({
+        "encode_date": gtrack.get("encoded_date") or fallback,
+        "total_filesize": gtrack.get("other_file_size")[-1] or fallback,
+        "v_filesize": stream_size or fallback,
+        "v_bitdepth": vtrack.get("bit_depth") or fallback,
+        "v_codec": f"{vtrack.get('format') or fallback}"
+        + f" ({vtrack['format_profile']})"
+        if vtrack.get("format_profile") else "",
+        "v_writing_library": truncate_string(vtrack.get("writing_library") or fallback, 40),
+    })
+
+    if vtrack.get("muxing_mode") and vtrack.get("muxing_mode") == "Header stripping":
+        warnings.warn(f"Warning! {filename}'s muxing mode was set to \"Header stripping\"! Very little information "
+                      "could be gathered from the MediaInfo!", ImportWarning)
+
+    if vtrack.get("encoding_settings"):
+        # Separating useful and extra encoding settings from the long string of settings.
+        split_settings = str(vtrack.get("encoding_settings")).split(" / ")
+        aqmode: str = fallback
+
+        # TODO: Add more codecs' most useful settings
+        collected_settings: set[str] = {
+            # x265
+            "aq-bias-strength", "aq-mode", "aq-strength", "bframes", "crf", "cutree", "no-cutree", "me",
+            "no-sao", "open-gop", "psy-rd", "psy-rdoq", "qcomp", "rd", "ref", "sao", "subme", "deblock",
+            "bitrate", "vbv_maxrate", "vbv_bufsize", "no-sao-non-deblock", "sao-non-deblock",
+            "no-strong-intra-smoothing", "strong-intra-smoothing"
+            # x264 (incl. dupes, but set will dedupe it)
+            "mbtree", "no-mbtree", "aq",
+        }
+
+        for x in split_settings:
+            split = x.strip().split("=")
+
+            if not collected_settings.intersection(set(split)):
+                continue
+
+            match split[0]:
+                case "cutree" | "no-cutree":
+                    split = ["cutree", str(split[0] == "cutree")]
+                case "sao" | "no-sao":
+                    split = ["sao", str(split[0] == "sao")]
+                case "sao-non-deblock" | "no-sao-non-deblock":
+                    split = ["sao-non-deblock", str(split[0] == "sao-non-deblock")]
+                case "strong-intra-smoothing" | "no-strong-intra-smoothing":
+                    split = ["strong-intra-smoothing", str(split[0] == "strong-intra-smoothing")]
+                case "me":
+                    if vtrack.get("format") == "HEVC":
+                        split[1] = x265_me_map[int(split[1])]
+                case "aq-mode" | "aq":
+                    aqmode = split[1]
+                    continue
+                case "aq-strength": split = ["aq", f"{aqmode}:{split[1]}"]
+
+            encset_dict |= {f"v_enc_settings_{split[0].replace('-', '_')}": split[1]}
+
+        sorted_encset = dict(sorted(encset_dict.items()))
+
+    if print_props:
+        print_dict = prop_dict
+
+        if vtrack.get("encoding_settings"):
+            print_dict |= {"v_encode_settings": {
+                str(k).replace("v_enc_settings_", ""): v for k, v in sorted_encset.items()
+            }}
+
+        sort = pformat(print_dict, sort_dicts=False, width=100, compact=True, indent=0)
+        clip = clip.text.Text(sort[1:-1]).text.FrameNum(8) \
+            .text.FrameProps(["_PictType", "_Matrix", "_Transfer", "_Primaries"], 9)
+
+    prop_dict.update(encset_dict)
+    clip = clip.std.SetFrameProps(**prop_dict)
+
+    return clip
+
+
 # Aliases
 comp = compare
 scomp = stack_compare
+srcm = source_mediainfo

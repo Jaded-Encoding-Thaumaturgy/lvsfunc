@@ -6,7 +6,8 @@ __all__ = [
     'Coordinate',
     'SceneChangeMode',
     'Position',
-    'Size'
+    'Size',
+    'x265_me_map',
 ]
 
 
@@ -42,3 +43,8 @@ class SceneChangeMode(CustomIntEnum):
     SCXVID = 1
     WWXD_SCXVID_UNION = 2
     WWXD_SCXVID_INTERSECTION = 3
+
+
+x265_me_map: list[str] = [
+    "dia", "hex", "umh", "star", "sea", "full"
+]

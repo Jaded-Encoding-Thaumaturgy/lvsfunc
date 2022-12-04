@@ -13,7 +13,9 @@ __all__ = [
     'check_has_nvidia',
     'colored_clips',
     'frames_since_bookmark',
-    'load_bookmarks'
+    'load_bookmarks',
+    'match_clip',
+    'truncate_string',
 ]
 
 
@@ -164,3 +166,11 @@ def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
         )
 
     return clip.std.AssumeFPS(fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
+
+
+def truncate_string(str_in: str, max_length: int, suffix: str = "...") -> str:
+    """Truncate a string if it surpasses a certain length."""
+    if len(str_in) > max_length:
+        return str_in[:max_length - len(suffix)] + suffix
+
+    return str_in
