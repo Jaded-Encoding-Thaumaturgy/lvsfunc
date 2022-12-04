@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import random
+import re
 import warnings
 from abc import ABC, abstractmethod
 from itertools import groupby, zip_longest
@@ -849,6 +850,13 @@ def source_mediainfo(filepath: str, print_mediainfo: bool = False,
     gtrack = mi.general_tracks[0].to_data()
     vtrack = mi.video_tracks[stream_idx].to_data()
 
+    # Try to obtain the grouptag, else fall back on filename.
+    # This may not be entirely accurate, but I gotta try something!
+    group = re.match(r"\[[a-zA-Z\-\u4e00-\u9fff一-]+\]", filename)
+
+    if group:
+        group = group.group(0)
+
     if print_mediainfo:
         pprint(gtrack, sort_dicts=False, width=120, compact=True)
         pprint(vtrack, sort_dicts=False, width=120, compact=True)
@@ -884,9 +892,9 @@ def source_mediainfo(filepath: str, print_mediainfo: bool = False,
             "aq-bias-strength", "aq-mode", "aq-strength", "bframes", "crf", "cutree", "no-cutree", "me",
             "no-sao", "open-gop", "psy-rd", "psy-rdoq", "qcomp", "rd", "ref", "sao", "subme", "deblock",
             "bitrate", "vbv_maxrate", "vbv_bufsize", "no-sao-non-deblock", "sao-non-deblock",
-            "no-strong-intra-smoothing", "strong-intra-smoothing",
+            "no-strong-intra-smoothing", "strong-intra-smoothing", "rc-lookahead", "merange", "zones",
             # x264 (incl. dupes, but set will dedupe it)
-            "mbtree", "no-mbtree", "aq",
+            "mbtree", "no-mbtree", "aq", "rc",  "ratetol",
         }
 
         for x in split_settings:
@@ -931,6 +939,7 @@ def source_mediainfo(filepath: str, print_mediainfo: bool = False,
             .text.FrameProps(["_PictType", "_Matrix", "_Transfer", "_Primaries"], 9)
 
     prop_dict.update(encset_dict)
+    prop_dict.update({"Name": group or filename})
     clip = clip.std.SetFrameProps(**prop_dict)
 
     return clip
