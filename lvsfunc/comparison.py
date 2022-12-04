@@ -898,6 +898,8 @@ def source_mediainfo(filepath: str, print_mediainfo: bool = False,
             match split[0]:
                 case "cutree" | "no-cutree":
                     split = ["cutree", str(split[0] == "cutree")]
+                case "mbtree":
+                    split = ["mbtree", str(int(split[1]) == 1)]
                 case "sao" | "no-sao":
                     split = ["sao", str(split[0] == "sao")]
                 case "sao-non-deblock" | "no-sao-non-deblock":
@@ -907,7 +909,7 @@ def source_mediainfo(filepath: str, print_mediainfo: bool = False,
                 case "me":
                     if vtrack.get("format") == "HEVC":
                         split[1] = x265_me_map[int(split[1])]
-                case "aq-mode" | "aq":
+                case "aq-mode":
                     aqmode = split[1]
                     continue
                 case "aq-strength": split = ["aq", f"{aqmode}:{split[1]}"]
