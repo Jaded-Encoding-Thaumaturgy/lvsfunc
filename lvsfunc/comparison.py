@@ -850,12 +850,15 @@ def source_mediainfo(filepath: str, print_mediainfo: bool = False,
     gtrack = mi.general_tracks[0].to_data()
     vtrack = mi.video_tracks[stream_idx].to_data()
 
-    # Try to obtain the grouptag, else fall back on filename.
+    # Try to obtain the grouptag to save as the output name for vspreview comping, else fall back on filename.
     # This may not be entirely accurate, but I gotta try something!
+    if "_lossless" in filename:
+        filename = "Filtered lossless"
+
     group = re.match(r"\[[a-zA-Z\-\u4e00-\u9fff一-]+\]", filename)
 
     if group:
-        group = group.group(0)
+        group = group.group(0)  # type:ignore
 
     if print_mediainfo:
         pprint(gtrack, sort_dicts=False, width=120, compact=True)
@@ -867,14 +870,16 @@ def source_mediainfo(filepath: str, print_mediainfo: bool = False,
         stream_size = stream_size[-1]
 
     prop_dict.update({
-        "encode_date": gtrack.get("encoded_date", fallback),
+        # Basic information
+        "encode_date": f"{gtrack.get('encoded_date', gtrack.get('file_last_modification_date', fallback)):.23}",
         "total_filesize": gtrack.get("other_file_size", [fallback])[-1],
         "v_filesize": stream_size or fallback,
+        # Format/writing information
         "v_bitdepth": vtrack.get("bit_depth", fallback),
-        "v_codec": f"{vtrack.get('format', fallback)}"
-        + f" ({vtrack['format_profile']})"
-        if vtrack.get("format_profile") else "",
+        "v_codec": f"{vtrack.get('format', gtrack.get('video_format_list', fallback))}"
+                   + (f" ({vtrack['format_profile']})" if vtrack.get("format_profile") else ""),
         "v_writing_library": truncate_string(vtrack.get("writing_library", fallback), 40),
+        "v_subsampling": vtrack.get("other_chroma_subsampling", [fallback])[-1],
     })
 
     if vtrack.get("muxing_mode") and vtrack.get("muxing_mode") == "Header stripping":
@@ -935,7 +940,7 @@ def source_mediainfo(filepath: str, print_mediainfo: bool = False,
             }}
 
         sort = pformat(print_dict, sort_dicts=False, width=100, compact=True, indent=0)[1:-1]
-        sort = sort.replace(": {", ": {\n    ").replace("'}", "\n}").replace("                 ", "")
+        sort = sort.replace(": {", ": {\n    ").replace("'}", "'\n}").replace("                 ", "")
 
         clip = clip.text.Text(sort).text.FrameNum(8) \
             .text.FrameProps(["_PictType", "_Matrix", "_Transfer", "_Primaries"], 9)
