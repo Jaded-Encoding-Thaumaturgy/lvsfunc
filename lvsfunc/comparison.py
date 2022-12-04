@@ -29,7 +29,7 @@ __all__ = [
     'diff',
     'Interleave',
     'interleave',
-    'source_mediainfo',
+    'source_mediainfo', 'srcm',
     'Split',
     'split',
     'stack_compare', 'scomp',
