@@ -7,10 +7,9 @@ from typing import Any, Sequence
 
 from vskernels import Catrom, KernelT
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
-from vstools import (
-    MISSING, CustomValueError, FileType, FrameRangeN, FrameRangesN, IndexingType, InvalidMatrixError, Matrix,
-    check_perms, check_variable, core, depth, get_depth, get_prop, normalize_ranges, replace_ranges, scale_value, vs
-)
+from vstools import (MISSING, CustomValueError, DependencyNotFoundError, FileType, FrameRangeN, FrameRangesN,
+                     IndexingType, InvalidMatrixError, Matrix, check_perms, check_variable, core, depth, get_depth,
+                     get_prop, normalize_ranges, replace_ranges, scale_value, vs)
 
 from .mask import BoundingBox
 from .types import Position, Size
@@ -368,7 +367,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     :return:                        Clip with a logo or sign overlaid on top for the given frame ranges,
                                     either with or without a fade.
 
-    :raises ModuleNotFoundError:    Dependencies are missing.
+    :raises DependencyNotFoundError: Dependencies are missing.
     :raises ValueError:             ``overlay`` is not a VideoNode or a path.
     :raises ValueError:             The overlay clip is not of the same dimensions as the input clip.
     :raises InvalidMatrixError:     ``Matrix`` is an invalid value.
@@ -378,8 +377,8 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     if fade_length > 0:
         try:
             from kagefunc import crossfade
-        except ModuleNotFoundError:
-            raise ModuleNotFoundError("overlay_sign: 'missing dependency `kagefunc`!'")
+        except ModuleNotFoundError as e:
+            raise DependencyNotFoundError(e)
 
     assert check_variable(clip, "overlay_sign")
 

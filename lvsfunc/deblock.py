@@ -5,9 +5,8 @@ from pathlib import Path
 from typing import Any, Callable, Literal, Sequence, SupportsFloat, cast
 
 from vskernels import Catrom, Kernel, KernelT, Point
-from vstools import (DitherType, FrameRangeN, FrameRangesN, Matrix,
-                     check_variable, core, depth, get_depth, get_prop,
-                     replace_ranges, vs)
+from vstools import (DependencyNotFoundError, DitherType, FrameRangeN, FrameRangesN, Matrix, check_variable, core,
+                     depth, get_depth, get_prop, replace_ranges, vs)
 
 from .util import check_has_nvidia
 
@@ -231,17 +230,16 @@ def dpir(
 
     :return:                        Deblocked or denoised clip in either the given clip's format or YUV444PS.
 
-    :raises ModuleNotFoundError:    Dependencies are missing.
+    :raises DependencyNotFoundError: Dependencies are missing.
     :raises TypeError:              Invalid ``mode`` is given.
     :raises ValueError:             ``strength`` is a VideoNode, but not GRAY8 or GRAYS.
     :raises ValueError:             ``strength`` is a VideoNode, but of a different length than the input clip.
     :raises TypeError:              ``strength`` is not a :py:attr:`typing.SupportsFloat` or VideoNode.
     """
     try:
-        from vsmlrt import (Backend, DPIRModel, backendT, calc_tilesize,
-                            inference, models_path)
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("dpir: 'missing dependency `vsmlrt`!'")
+        from vsmlrt import Backend, DPIRModel, backendT, calc_tilesize, inference, models_path
+    except ModuleNotFoundError as e:
+        raise DependencyNotFoundError(e)
 
     assert check_variable(clip, "dpir")
 

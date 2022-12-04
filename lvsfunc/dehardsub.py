@@ -3,9 +3,8 @@ from __future__ import annotations
 from abc import ABC
 from typing import Any
 
-from vstools import (
-    FrameRangeN, FrameRangesN, check_variable, core, iterate, normalize_ranges, replace_ranges, scale_thresh, split, vs
-)
+from vstools import (DependencyNotFoundError, FrameRangeN, FrameRangesN, check_variable, core, iterate,
+                     normalize_ranges, replace_ranges, scale_thresh, split, vs)
 
 from .mask import DeferredMask
 
@@ -97,7 +96,7 @@ class HardsubSignKgf(HardsubMask):
     :param highpass:                Highpass filter for hardsub detection (16-bit, Default: 5000).
     :param expand:                  :py:func:`kgf.hardsubmask_fades` expand parameter (Default: 8).
 
-    :raises ModuleNotFoundError:    Dependencies are missing.
+    :raises DependencyNotFoundError: Dependencies are missing.
     """
 
     highpass: int
@@ -106,8 +105,8 @@ class HardsubSignKgf(HardsubMask):
     def __init__(self, *args: Any, highpass: int = 5000, expand: int = 8, **kwargs: Any) -> None:
         try:
             from kagefunc import hardsubmask_fades
-        except ModuleNotFoundError:
-            raise ModuleNotFoundError("HardsubSignKgf: missing dependency `kagefunc`!")
+        except ModuleNotFoundError as e:
+            raise DependencyNotFoundError(e)
 
         self.hardsubmask_fades = hardsubmask_fades
         self.highpass = highpass
@@ -155,7 +154,7 @@ class HardsubLine(HardsubMask):
 
     :param expand:                  :py:func:`kgf.hardsubmask` expand parameter (Default: clip.width // 200).
 
-    :raises ModuleNotFoundError:    Dependencies are missing.
+    :raises DependencyNotFoundError: Dependencies are missing.
     """
 
     expand: int | None
@@ -164,8 +163,8 @@ class HardsubLine(HardsubMask):
         self.expand = expand
         try:
             from kagefunc import hardsubmask
-        except ModuleNotFoundError:
-            raise ModuleNotFoundError("HardsubLine: missing dependency `kagefunc`!")
+        except ModuleNotFoundError as e:
+            raise DependencyNotFoundError(e)
 
         self.hardsubmask = hardsubmask
         super().__init__(*args, **kwargs)

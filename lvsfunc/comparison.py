@@ -9,9 +9,9 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Literal, Sequence, TypeVar, overload
 
 from vskernels import Catrom
-from vstools import (Direction, FormatsMismatchError, InvalidColorFamilyError, Matrix, VariableFormatError,
-                     check_variable, check_variable_format, check_variable_resolution, core, depth, get_prop,
-                     get_subsampling, get_w)
+from vstools import (DependencyNotFoundError, Direction, FormatsMismatchError, InvalidColorFamilyError, Matrix,
+                     VariableFormatError, check_variable, check_variable_format, check_variable_resolution, core, depth,
+                     get_prop, get_subsampling, get_w)
 from vstools import split as split_planes
 from vstools import vs
 
@@ -819,12 +819,15 @@ def source_mediainfo(filepath: str, print_mediainfo: bool = False,
                                 about the sources you're comping.
     :param source_kwargs:       Keyword arguments passed to :py:func:`misc.source`.
 
+    :raises DependencyNotFoundError:
+                                Dependencies are missing.
+
     :return:                    Clip with MediaInfo properties added.
     """
     try:
         from pymediainfo import MediaInfo  # type:ignore
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("source_mediainfo: 'missing dependency `pymediainfo`!'")
+    except ModuleNotFoundError as e:
+        raise DependencyNotFoundError(e)
 
     from pprint import pformat, pprint
 
