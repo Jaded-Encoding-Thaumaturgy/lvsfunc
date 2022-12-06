@@ -25,7 +25,7 @@ __all__ = [
 ]
 
 
-def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # type: ignore
+def source(filepath: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # type: ignore
            force_lsmas: bool = False, film_thr: float = 99.0,
            tail_lines: int = 4, kernel: KernelT = Catrom,
            debug: bool = False, **index_args: Any) -> vs.VideoNode:
@@ -33,7 +33,7 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
     Index and load video clips for use in VapourSynth automatically.
 
     .. note::
-        | For this function to work properly, you NEED to have DGIndexNV in your PATH!
+        | For this function to work properly, it's recommended you have DGIndexNV in your PATH!
 
     This function will try to index the given video file using DGIndexNV.
     If it can't, it will fall back on L-SMASH. L-SMASH can also be forced using ``force_lsmas``.
@@ -48,6 +48,12 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
     This affects the dimensions, framerates, matrix/transfer/primaries,
     and in the case of an image, the length of the clip.
 
+    And finally, this function will also add the given filepath to the props.
+    This allows for conditional filtering in the event you have multiple input clips.
+
+    If you'd like additional information concerning the input file,
+    please consult py:func:`comparison.source_mediainfo`.
+
     Alias for this function is ``lvsfunc.src``.
 
     Dependencies:
@@ -59,26 +65,28 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
 
     Thanks `RivenSkaye <https://github.com/RivenSkaye>`_!
 
-    :param file:            File to index and load in.
-    :param ref:             Use another clip as reference for the clip's format,
-                            resolution, framerate, and matrix/transfer/primaries (Default: None).
-    :param film_thr:        FILM percentage the dgi must exceed for ``fieldop=1`` to be set automatically.
-                            If set above 100.0, it's silently lowered to 100.0 (Default: 99.0).
-    :param force_lsmas:     Force files to be imported with L-SMASH (Default: False).
-    :param kernel:          py:class:`vskernels.Kernel` object used for converting the `clip` to match `ref`.
-                            This can also be the string name of the kernel
-                            (Default: py:class:`vskernels.Catrom`).
-    :param tail_lines:      Lines to check on the tail of the dgi file.
-                            Increase this value if FILM and ORDER do exist in your dgi file
-                            but it's having trouble finding them.
-                            Set to 2 for a very minor speed-up, as that's usually enough to find them (Default: 4).
-    :param kwargs:          Optional arguments passed to the indexing filter.
+    :param filepath:            File to index and load in.
+    :param ref:                 Use another clip as reference for the clip's format,
+                                resolution, framerate, and matrix/transfer/primaries (Default: None).
+    :param force_lsmas:         Force files to be imported with L-SMASH (Default: False).
+    :param film_thr:            FILM percentage the dgi must exceed for ``fieldop=1`` to be set automatically.
+                                If set above 100.0, it's silently lowered to 100.0 (Default: 99.0).
+    :param tail_lines:          Lines to check on the tail of the dgi file.
+                                Increase this value if FILM and ORDER do exist in your dgi file
+                                but it's having trouble finding them.
+                                Set to 2 for a very minor speed-up, as that's usually enough to find them (Default: 4).
+    :param kernel:              py:class:`vskernels.Kernel` object used for converting the `clip` to match `ref`.
+                                This can also be the string name of the kernel
+                                (Default: py:class:`vskernels.Catrom`).
+    :param debug:               Return debug information as frame properties. Default: False.
+    :param kwargs:              Optional arguments passed to the indexing filter.
 
-    :return:                VapourSynth clip representing the input file.
+    :return:                    VapourSynth clip representing the input file.
 
-    :raises ValueError:     Something other than a path is passed to ``path``.
+    :raises ValueError:         Something other than a path is passed to ``filepath``.
+    :raises CustomValueError:   Something other than a video or image file is passed to ``filepath``.
     """
-    if path is MISSING:  # type: ignore
+    if filepath is MISSING:  # type: ignore
         return partial(  # type: ignore
             source, ref=ref, force_lsmas=force_lsmas, film_thr=film_thr,
             tail_lines=tail_lines, kernel=kernel, debug=debug, **index_args
@@ -87,13 +95,13 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
     clip = None
     film_thr = float(min(100, film_thr))
 
-    if str(path).startswith('file:///'):
-        path = str(path)[8::]
+    if str(filepath).startswith('file:///'):
+        filepath = str(filepath)[8::]
 
-    path = Path(path)
-    check_perms(path, 'r', func=source)
+    filepath = Path(filepath)
+    check_perms(filepath, 'r', func=source)
 
-    file = FileType.parse(path) if path.exists() else None
+    file = FileType.parse(filepath) if filepath.exists() else None
 
     def _check_file_type(file_type: FileType) -> bool:
         return (  # type:ignore[return-value]
@@ -104,7 +112,7 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
 
     if not file or not _check_file_type(FileType(file.file_type)):
         for itype in IndexingType:
-            if (newpath := path.with_suffix(f'{path.suffix}{itype.value}')).exists():
+            if (newpath := filepath.with_suffix(f'{filepath.suffix}{itype.value}')).exists():
                 file = FileType.parse(newpath)
 
     if not file or not _check_file_type(FileType(file.file_type)):
@@ -114,19 +122,19 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
     debug_props = dict[str, Any]()
 
     if force_lsmas or file.ext is IndexingType.LWI:
-        clip = core.lsmas.LWLibavSource(str(path), **index_args)
+        clip = core.lsmas.LWLibavSource(str(filepath), **index_args)
         debug_props |= dict(idx_used='lsmas')
     elif file.file_type is FileType.IMAGE:
-        clip = core.imwri.Read(str(path), **index_args)
+        clip = core.imwri.Read(str(filepath), **index_args)
         debug_props |= dict(idx_used='imwri')
     elif file.ext is IndexingType.DGI or not force_lsmas:
         try:
             indexer = DGIndexNV()
 
-            if path.suffix != ".dgi":
-                path = indexer.index([SPath(path)], False, False)[0]
+            if filepath.suffix != ".dgi":
+                filepath = indexer.index([SPath(filepath)], False, False)[0]
 
-            idx_info = indexer.get_info(path, 0).footer
+            idx_info = indexer.get_info(filepath, 0).footer
 
             props |= dict(
                 dgi_fieldop=0,
@@ -139,16 +147,18 @@ def source(path: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # ty
                 indexer_kwargs |= dict(fieldop=1)
                 props |= dict(dgi_fieldop=1, _FieldBased=0)
 
-            clip = indexer.vps_indexer(path, **indexer_kwargs)
+            clip = indexer.vps_indexer(filepath, **indexer_kwargs)
             debug_props |= dict(idx_used='DGIndexNV')
         except Exception as e:
             warnings.warn(f"source: 'Unable to index using DGIndexNV! Falling back to lsmas...'\n\t{e}", RuntimeWarning)
 
     if clip is None:
         return source(
-            path, ref=ref, force_lsmas=True, film_thr=film_thr,
+            filepath, ref=ref, force_lsmas=True, film_thr=film_thr,
             tail_lines=tail_lines, kernel=kernel, debug=debug, **index_args
         )
+
+    props |= dict(idx_filepath=str(filepath))
 
     if debug:
         props |= debug_props
