@@ -800,7 +800,7 @@ def tile(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
 def source_mediainfo(filepath: str, print_mediainfo: bool = False,
                      print_props: bool = False, **source_kwargs: Any) -> vs.VideoNode:
     """
-    Simple source indexing wrapper that adds mediainfo as props as well.
+    Wrap ``source`` and add MediaInfo to the clip as frameprops.
 
     This works exactly like :py:func:`misc.source`,
     except it further gathers information pertaining to the source file.
@@ -899,7 +899,7 @@ def source_mediainfo(filepath: str, print_mediainfo: bool = False,
             "bitrate", "vbv_maxrate", "vbv_bufsize", "no-sao-non-deblock", "sao-non-deblock",
             "no-strong-intra-smoothing", "strong-intra-smoothing", "rc-lookahead", "merange", "zones",
             # x264 (incl. dupes, but set will dedupe it)
-            "mbtree", "no-mbtree", "aq", "rc",  "ratetol",
+            "mbtree", "no-mbtree", "aq", "rc", "ratetol",
         }
 
         for x in split_settings:
