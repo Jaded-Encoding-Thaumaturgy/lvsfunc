@@ -3,10 +3,10 @@ from __future__ import annotations
 from abc import ABC
 from typing import Any
 
-from vstools import (DependencyNotFoundError, FrameRangeN, FrameRangesN, check_variable, core, iterate,
-                     normalize_ranges, replace_ranges, scale_thresh, split, vs)
-
-from .mask import DeferredMask
+from vsmasks import DeferredMask
+from vstools import (
+    FrameRangeN, FrameRangesN, check_variable, core, iterate, normalize_ranges, replace_ranges, scale_thresh, split, vs
+)
 
 __all__ = [
     'bounded_dehardsub',

@@ -6,13 +6,13 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from vskernels import Catrom, KernelT
+from vsmasks import BoundingBox
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
-from vstools import (MISSING, CustomValueError, DependencyNotFoundError, FileType, FrameRangeN, FrameRangesN,
-                     IndexingType, InvalidMatrixError, Matrix, check_perms, check_variable, core, depth, get_depth,
-                     get_prop, normalize_ranges, replace_ranges, scale_value, vs)
+from vstools import (
+    MISSING, CustomValueError, FileType, FrameRangeN, FrameRangesN, IndexingType, InvalidMatrixError, Matrix,
+    check_perms, check_variable, core, depth, get_depth, get_prop, normalize_ranges, replace_ranges, scale_value, vs,Position, Size
+)
 
-from .mask import BoundingBox
-from .types import Position, Size
 from .util import match_clip
 
 __all__ = [

@@ -9,12 +9,11 @@
 
 # flake8: noqa
 
-from . import comparison, deblock, dehardsub, exceptions, mask, misc, render, types, util
+from . import comparison, deblock, dehardsub, exceptions, misc, render, types, util
 from .comparison import *
 from .deblock import *
 from .dehardsub import *
 from .exceptions import *
-from .mask import *
 from .misc import *
 from .render import *
 from .types import *
