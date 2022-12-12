@@ -12,7 +12,7 @@ from typing import Any, Callable, Iterable, Iterator, Literal, Sequence, TypeVar
 from vskernels import Catrom
 from vstools import (DependencyNotFoundError, Direction, FormatsMismatchError, InvalidColorFamilyError, Matrix,
                      VariableFormatError, check_variable, check_variable_format, check_variable_resolution, core, depth,
-                     get_prop, get_subsampling, get_w)
+                     get_prop, get_subsampling, get_w, CustomValueError)
 from vstools import split as split_planes
 from vstools import vs
 
@@ -615,15 +615,15 @@ def diff(*clips: vs.VideoNode,
         raise ClipsAndNamedClipsError("diff")
 
     if (clips and len(clips) != 2) or (namedclips and len(namedclips) != 2):
-        raise ValueError("diff: Must pass exactly 2 `clips` or `namedclips`!")
+        raise CustomValueError("Must pass exactly 2 `clips` or `namedclips`!", diff)
 
-    if thr >= 128:
-        raise ValueError("diff: `thr` must be below 128!")
+    if 1 <= thr < 128:
+        raise CustomValueError(f"`thr` must be between 1 and 128, not {thr}!", diff)
 
     if clips and not all([c.format for c in clips]):
-        raise VariableFormatError("diff")
+        raise VariableFormatError(diff)
     elif namedclips and not all([nc.format for nc in namedclips.values()]):  # noqa
-        raise VariableFormatError("diff")
+        raise VariableFormatError(diff)
 
     def _to_ranges(iterable: list[int]) -> Iterable[tuple[int, int]]:
         iterable = sorted(set(iterable))
@@ -637,6 +637,10 @@ def diff(*clips: vs.VideoNode,
         nc = list(namedclips.values())
         a, b = depth(nc[0], 8), depth(nc[1], 8)
 
+    if a.num_frames != b.num_frames:
+        raise CustomValueError(f"Length of first clip ({a.num_frames} frames) does not match "
+                               f"length of second clip ({b.num_frames} frames)!", diff)
+
     frames = []
     if thr <= 1:
         ps = core.std.PlaneStats(a, b)
@@ -646,16 +650,19 @@ def diff(*clips: vs.VideoNode,
                 frames.append(n)
 
         clip_async_render(ps, progress="Diffing clips...", callback=_cb)
-        diff = core.std.MakeDiff(a, b)
+        diff_clip = core.std.MakeDiff(a, b)
     else:
-        diff = diff_func(a, b).std.PlaneStats()
-        t = float if diff.format.sample_type == vs.FLOAT else int  # type:ignore[union-attr]
+        diff_clip = diff_func(a, b).std.PlaneStats()
+
+        assert diff_clip.format
+
+        typ = float if diff_clip.format.sample_type == vs.FLOAT else int
 
         def _cb(n: int, f: vs.VideoFrame) -> None:
-            if get_prop(f, 'PlaneStatsMin', t) <= thr or get_prop(f, 'PlaneStatsMax', t) >= 255 - thr > thr:
+            if get_prop(f, 'PlaneStatsMin', typ) <= thr or get_prop(f, 'PlaneStatsMax', typ) >= 255 - thr > thr:
                 frames.append(n)
 
-        clip_async_render(diff, progress="Diffing clips...", callback=_cb)
+        clip_async_render(diff_clip, progress="Diffing clips...", callback=_cb)
 
     if not frames:
         raise StopIteration("diff: No differences found!")
@@ -682,15 +689,15 @@ def diff(*clips: vs.VideoNode,
                                  f'{name_b}': core.std.Splice([b[f] for f in frames])}).clip
     else:
         scaled_width = get_w(height, mod=1)
-        diff = diff.resize.Spline36(width=scaled_width * 2, height=height * 2).text.FrameNum(9)
+        diff_clip = diff_clip.resize.Spline36(width=scaled_width * 2, height=height * 2).text.FrameNum(9)
         a, b = (c.resize.Spline36(width=scaled_width, height=height).text.FrameNum(9) for c in (a, b))
 
         diff_stack = Stack({f'{name_a}': core.std.Splice([a[f] for f in frames]),
                             f'{name_b}': core.std.Splice([b[f] for f in frames])}).clip
-        diff = diff.text.Text(text='diff', alignment=8)
-        diff = core.std.Splice([diff[f] for f in frames])
+        diff_clip = diff_clip.text.Text(text='diff', alignment=8)
+        diff_clip = core.std.Splice([diff_clip[f] for f in frames])
 
-        comparison = Stack((diff_stack, diff), direction=Direction.VERTICAL).clip
+        comparison = Stack((diff_stack, diff_clip), direction=Direction.VERTICAL).clip
 
     if return_ranges:
         return comparison, list(_to_ranges(frames))
