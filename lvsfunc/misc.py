@@ -232,39 +232,6 @@ def limit_dark(
     return clip.std.FrameEval(_diff, avg.akarin.Expr('x.PlaneStatsAverage'))
 
 
-def wipe_row(clip: vs.VideoNode,
-             ref: vs.VideoNode | None = None,
-             pos: Position | tuple[int, int] = (1, 1),
-             size: Size | tuple[int, int] | None = None,
-             show_mask: bool = False
-             ) -> vs.VideoNode:
-    """
-    Wipe a row or column with a blank clip.
-
-    You can also give it a different clip to replace a row with.
-
-    :param clip:            Clip to process.
-    :param secondary:       Clip to replace wiped rows with (Default: None).
-    :param width:           Width of row (Default: 1).
-    :param height:          Height of row (Default: 1).
-    :param offset_x:        X-offset of row (Default: 0).
-    :param offset_y:        Y-offset of row (Default: 0).
-
-    :return:                Clip with given rows or columns wiped.
-    """
-    assert check_variable(clip, "wipe_row")
-
-    ref = ref or core.std.BlankClip(clip)
-
-    if size is None:
-        size = (clip.width-2, clip.height-2)
-    sqmask = BoundingBox(pos, size).get_mask(clip)
-
-    if show_mask:
-        return sqmask
-    return core.std.MaskedMerge(clip, ref, sqmask)
-
-
 def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
                  frame_ranges: FrameRangeN | FrameRangesN | None = None, fade_length: int = 0,
                  matrix: Matrix | int | None = None) -> vs.VideoNode:
