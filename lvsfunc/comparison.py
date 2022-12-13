@@ -10,13 +10,14 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Literal, Sequence, TypeVar, overload
 
 from vskernels import Catrom
-from vstools import (DependencyNotFoundError, Direction, FormatsMismatchError, InvalidColorFamilyError, Matrix,
-                     VariableFormatError, check_variable, check_variable_format, check_variable_resolution, core, depth,
-                     get_prop, get_subsampling, get_w, CustomValueError)
+from vstools import (
+    CustomValueError, DependencyNotFoundError, Direction, FormatsMismatchError, InvalidColorFamilyError, Matrix,
+    VariableFormatError, check_variable, check_variable_format, check_variable_resolution, core, depth, get_prop,
+    get_subsampling, get_w
+)
 from vstools import split as split_planes
 from vstools import vs
 
-from .dehardsub import hardsub_mask
 from .exceptions import ClipsAndNamedClipsError
 from .misc import source
 from .render import clip_async_render
@@ -26,7 +27,6 @@ from .util import truncate_string
 __all__ = [
     'compare', 'comp',
     'Comparer',
-    'diff_hardsub_mask',
     'diff',
     'Interleave',
     'interleave',
@@ -518,23 +518,6 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
         raise TypeError(f"stack_planes: Unexpected subsampling {get_subsampling(clip)}!")
 
 
-def diff_hardsub_mask(a: vs.VideoNode, b: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
-    """
-    Diff func for :py:func:`lvsfunc.comparison.diff` to use a hardsub mask.
-
-    This is kinda slow.
-
-    :param a:   Clip A.
-    :param b:   Clip B.
-
-    :return:    Diff masked with :py:func:`lvsfunc.dehardsub.hardsub_mask`.
-    """
-    assert check_variable(a, "diff_hardsub_mask")
-    assert check_variable(b, "diff_hardsub_mask")
-
-    return core.std.MaskedMerge(core.std.MakeDiff(a, a), core.std.MakeDiff(a, b), hardsub_mask(a, b, **kwargs))
-
-
 @overload
 def diff(*clips: vs.VideoNode,
          thr: float = ...,
@@ -674,7 +657,7 @@ def diff(*clips: vs.VideoNode,
         for e in exclusion_ranges:
             if isinstance(e, int):
                 e = (e, e)
-            start, end = e[0], e[1]+1
+            start, end = e[0], e[1] + 1
             r += list(range(start, end))
         frames = [f for f in frames if f not in r]
 
