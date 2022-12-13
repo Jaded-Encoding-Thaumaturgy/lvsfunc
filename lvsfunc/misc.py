@@ -197,8 +197,9 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
     return ExprOp.ADD.combine(clip, suffix=[scale_8bit(clip, v) for v in val])
 
 
-def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
-               threshold: float = 0.25, threshold_range: int | None = None) -> vs.VideoNode:
+def limit_dark(
+    clip: vs.VideoNode, filtered: vs.VideoNode, thr: float = 0.25, thr_lower: float | None = None
+) -> vs.VideoNode:
     """
     Replace frames in a clip with a filtered clip when the frame's luminosity exceeds the threshold.
 
@@ -216,22 +217,19 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
 
     :raises ValueError:         ``threshold_range`` is a higher value than ``threshold``.
     """
-    def _diff(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
-              filtered: vs.VideoNode, threshold: float,
-              threshold_range: int | None) -> vs.VideoNode:
-        psa = get_prop(f, "PlaneStatsAverage", float)
-        if threshold_range:
-            return filtered if threshold_range <= psa <= threshold else clip
-        else:
-            return clip if psa > threshold else filtered
+    if thr_lower is None:
+        def _diff(n: int, f: vs.VideoFrame) -> vs.VideoNode:
+            return clip if f[0][0, 0] > thr else filtered  # type: ignore
+    else:
+        def _diff(n: int, f: vs.VideoFrame) -> vs.VideoNode:
+            return filtered if thr_lower <= f[0][0, 0] <= thr else clip  # type: ignore
 
-    if threshold_range and threshold_range > threshold:
-        raise ValueError(f"limit_dark: '\"threshold_range\" ({threshold_range}) must be "
-                         f"a lower value than \"threshold\" ({threshold})!'")
+    if thr_lower is not None and thr_lower > thr:
+        raise CustomValueError('"thr_lower" must be a lower value than "thr"!', limit_dark, (thr_lower, thr))
 
-    avg = core.std.PlaneStats(clip)
-    return core.std.FrameEval(clip, partial(_diff, clip=clip, filtered=filtered,
-                                            threshold=threshold, threshold_range=threshold_range), avg)
+    avg = clip.std.BlankClip(1, 1, vs.GRAYS).std.CopyFrameProps(clip.std.PlaneStats())
+
+    return clip.std.FrameEval(_diff, avg.akarin.Expr('x.PlaneStatsAverage'))
 
 
 def wipe_row(clip: vs.VideoNode,
