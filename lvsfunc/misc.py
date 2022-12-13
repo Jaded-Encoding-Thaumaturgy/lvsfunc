@@ -16,7 +16,6 @@ from vstools import (
 from .util import match_clip
 
 __all__ = [
-    'edgefixer', 'ef',
     'limit_dark',
     'overlay_sign',
     'shift_tint',
@@ -169,59 +168,6 @@ def source(filepath: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  
         return match_clip(clip, ref, length=file.file_type is FileType.IMAGE, kernel=kernel)
 
     return clip
-
-
-def edgefixer(clip: vs.VideoNode,
-              left: int | list[int] | None = None,
-              right: int | list[int] | None = None,
-              top: int | list[int] | None = None,
-              bottom: int | list[int] | None = None,
-              radius: list[int] | None = None,
-              full_range: bool = False) -> vs.VideoNode:
-    """
-    Fix the issues with over- and undershoot for `ContinuityFixer <https://github.com/MonoS/VS-ContinuityFixer>`_.
-
-    This also adds what are in my opinion "more sane" ways of handling the parameters and given values.
-
-    ...If possible, you should be using bbmod instead, though.
-
-    Alias for this function is ``lvsfunc.ef``.
-
-    .. warning::
-        This function may be rewritten in the future, and functionality may change!
-
-    Dependencies:
-
-    * `vs-ContinuityFixer <https://github.com/MonoS/VS-ContinuityFixer>`_
-
-    :param clip:            Clip to process.
-    :param left:            Number of pixels to fix on the left (Default: None).
-    :param right:           Number of pixels to fix on the right (Default: None).
-    :param top:             Number of pixels to fix on the top (Default: None).
-    :param bottom:          Number of pixels to fix on the bottom (Default: None).
-    :param radius:          Radius for edgefixing (Default: None).
-    :param full_range:      Does not run the expression over the clip to fix over/undershoot (Default: False).
-
-    :return:                Clip with fixed edges.
-    """
-    warnings.warn("edgefixer: This function's functionality will change in a future version, "
-                  "and will likely be renamed. Please make sure to update your scripts once it does.",
-                  FutureWarning)
-
-    assert check_variable(clip, "edgefixer")
-
-    if left is None:
-        left = 0
-    if right is None:
-        right = left
-    if top is None:
-        top = left
-    if bottom is None:
-        bottom = top
-
-    ef = core.cf.ContinuityFixer(clip, left, top, right, bottom, radius)
-    limit: vs.VideoNode = ef if full_range else core.std.Limiter(ef, 16.0, [235, 240])
-    return limit
 
 
 def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.VideoNode:
@@ -448,7 +394,6 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
 
 
 # Aliases
-ef = edgefixer
 src = source
 
 # TODO: Write function that only masks px of a certain color/threshold of colors.
