@@ -10,9 +10,9 @@ from vskernels import Catrom, KernelT
 from vsmasks import BoundingBox
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
 from vstools import (
-    MISSING, CustomIndexError, CustomValueError, FileType, FrameRangeN, FrameRangesN, IndexingType, InvalidMatrixError,
-    Matrix, check_perms, check_variable, core, depth, get_depth, get_prop, normalize_ranges, normalize_seq,
-    replace_ranges, scale_8bit, scale_value, vs, Position, Size)
+    MISSING, CustomIndexError, CustomTypeError, CustomValueError, DependencyNotFoundError, FileType, FrameRangeN,
+    FrameRangesN, IndexingType, InvalidMatrixError, Matrix, check_perms, check_variable, core, depth, get_depth,
+    get_prop, normalize_ranges, normalize_seq, replace_ranges, scale_8bit, scale_value, vs, Position, Size)
 
 from .util import match_clip
 
@@ -283,61 +283,58 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
         except ModuleNotFoundError as e:
             raise DependencyNotFoundError(overlay_sign, e, reason="fade_length > 0")
 
-    assert check_variable(clip, "overlay_sign")
+    assert check_variable(clip, overlay_sign)
 
-    ov_type = type(overlay)
+    is_string = isinstance(overlay, str)
     clip_fam = clip.format.color_family
 
-    # TODO: This can probably be done better
-    if not isinstance(overlay, (vs.VideoNode, str)):
-        raise ValueError("overlay_sign: '`overlay` must be a VideoNode object or a string path!'")
-    elif isinstance(overlay, str):
-        overlay = core.imwri.Read(overlay, alpha=True)
+    if is_string:
+        overlay = core.imwri.Read(overlay, alpha=True)  # type: ignore
 
-    if (clip.width != overlay.width) or (clip.height != overlay.height):
-        raise ValueError("overlay_sign: 'Your overlay clip must have the same dimensions as your input clip!'")
+    if not isinstance(overlay, vs.VideoNode):
+        raise CustomValueError('`overlay` must be a VideoNode object or a string path!', overlay_sign)
+
+    assert check_variable(overlay, overlay_sign)
+
+    if (clip.width, clip.height) != (overlay.width, overlay.height):
+        raise CustomValueError('Your overlay clip must have the same dimensions as your input clip!', overlay_sign)
 
     if isinstance(frame_ranges, list) and len(frame_ranges) > 1:
-        warnings.warn("overlay_sign: 'Only one range is currently supported! "
-                      "Grabbing the first item in list.'")
+        warnings.warn("overlay_sign: 'Only one range is currently supported! Grabbing the first item in list.'")
         frame_ranges = frame_ranges[0]
+
+    if overlay.format.color_family is not clip_fam:
+        if clip_fam is vs.RGB:
+            overlay = Catrom.resample(overlay, clip.format.id, matrix_in=matrix)
+        else:
+            overlay = Catrom.resample(overlay, clip.format.id, matrix)
 
     overlay = overlay[0] * clip.num_frames
 
-    if matrix is None:
-        matrix = get_prop(clip.get_frame(0), "_Matrix", int)
-
-    if matrix == 2:
-        raise InvalidMatrixError("overlay_sign")
-
-    if overlay.format.color_family is not clip_fam:  # type:ignore[union-attr]
-        if clip_fam is vs.RGB:
-            overlay = Catrom().resample(overlay, clip.format.id, matrix_in=matrix)
-        else:
-            overlay = Catrom().resample(overlay, clip.format.id, matrix)
-
     try:
-        mask = core.std.PropToClip(overlay)
+        mask = overlay.std.PropToClip('_Alpha')
     except vs.Error:
-        if ov_type is str:
-            raise ValueError("overlay_sign: 'Please make sure your image has an alpha channel!'")
-        else:
-            raise TypeError("overlay_sign: 'Please make sure you loaded your sign in using imwri.Read!'")
+        if is_string:
+            raise CustomValueError('Please make sure your image has an alpha channel!', overlay_sign)
 
-    merge = core.std.MaskedMerge(clip, overlay, depth(mask, get_depth(overlay)).std.Limiter())
+        raise CustomTypeError('Please make sure you loaded your sign in using imwri.Read!', overlay_sign)
+
+    merge = clip.std.MaskedMerge(overlay, depth(mask, get_depth(overlay)).std.Limiter())
 
     if not frame_ranges:
         return merge
 
     if fade_length > 0:
         if isinstance(frame_ranges, int):
-            return crossfade(clip[:frame_ranges+fade_length], merge[frame_ranges:], fade_length)
-        else:
-            start, end = normalize_ranges(clip, frame_ranges)[0]
-            merge = crossfade(clip[:start+fade_length], merge[start:], fade_length)
-            return crossfade(merge[:end], clip[end-fade_length:], fade_length)
-    else:
-        return replace_ranges(clip, merge, frame_ranges)
+            return crossfade(clip[:frame_ranges + fade_length], merge[frame_ranges:], fade_length)
+
+        start, end = normalize_ranges(clip, frame_ranges)[0]
+
+        merge = crossfade(clip[:start + fade_length], merge[start:], fade_length)
+
+        return crossfade(merge[:end], clip[end - fade_length:], fade_length)
+
+    return replace_ranges(clip, merge, frame_ranges)
 
 
 # Aliases
