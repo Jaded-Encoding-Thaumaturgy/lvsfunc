@@ -4,14 +4,15 @@ import warnings
 from functools import partial
 from pathlib import Path
 from typing import Any, Sequence
+from vsexprtools import ExprOp
 
 from vskernels import Catrom, KernelT
 from vsmasks import BoundingBox
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
 from vstools import (
-    MISSING, CustomValueError, FileType, FrameRangeN, FrameRangesN, IndexingType, InvalidMatrixError, Matrix,
-    check_perms, check_variable, core, depth, get_depth, get_prop, normalize_ranges, replace_ranges, scale_value, vs,
-    Position, Size)
+    MISSING, CustomIndexError, CustomValueError, FileType, FrameRangeN, FrameRangesN, IndexingType, InvalidMatrixError,
+    Matrix, check_perms, check_variable, core, depth, get_depth, get_prop, normalize_ranges, normalize_seq,
+    replace_ranges, scale_8bit, scale_value, vs, Position, Size)
 
 from .util import match_clip
 
@@ -177,42 +178,23 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
     Can be used to fix green tints in Crunchyroll sources, for example.
     Only use this if you know what you're doing!
 
-    This function accepts a single integer or a list of integers.
-    Values passed should mimic those of an 8bit clip.
-    If your clip is not 8bit, they will be scaled accordingly.
-
-    If you only pass 1 value, it will copied to every plane.
-    If you pass 2, the 2nd one will be copied over to the 3rd.
-    Don't pass more than three.
+    This function accepts a single int8 or a list of int8 values.
 
     :param clip:            Clip to process.
     :param values:          Value added to every pixel, scales accordingly to your clip's depth (Default: 16).
 
     :return:                Clip with pixel values added.
 
-    :raises ValueError:     Too many values are supplied.
-    :raises ValueError:     Any value in ``values`` are above 255.
+    :raises IndexError:     Any value in ``values`` are above 255.
     """
-    val: tuple[int, int, int]
-
     assert check_variable(clip, "shift_tint")
 
-    if isinstance(values, int):
-        val = (values, values, values)
-    elif len(values) == 2:
-        val = (values[0], values[1], values[1])
-    elif len(values) == 3:
-        val = (values[0], values[1], values[2])
-    else:
-        raise ValueError("shift_tint: 'Too many values supplied!'")
+    val = normalize_seq(values)
 
     if any(v > 255 or v < -255 for v in val):
-        raise ValueError("shift_tint: 'Every value in \"values\" must be below 255!'")
+        raise CustomIndexError('Every value in "values" must be an 8 bit number!', shift_tint)
 
-    cdepth = get_depth(clip)
-    cv = [scale_value(v, 8, cdepth) for v in val] if cdepth != 8 else list(val)
-
-    return core.akarin.Expr(clip, expr=[f'x {cv[0]} +', f'x {cv[1]} +', f'x {cv[2]} +'])
+    return ExprOp.ADD.combine(clip, suffix=[scale_8bit(clip, v) for v in val])
 
 
 def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
