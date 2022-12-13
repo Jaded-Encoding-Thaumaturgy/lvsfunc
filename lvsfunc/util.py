@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import colorsys
 import random
-import subprocess as sp
 from functools import partial
 from typing import Any
 
