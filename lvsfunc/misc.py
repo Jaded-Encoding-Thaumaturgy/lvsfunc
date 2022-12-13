@@ -20,8 +20,7 @@ __all__ = [
     'limit_dark',
     'overlay_sign',
     'shift_tint',
-    'source', 'src',
-    'wipe_row',
+    'source', 'src'
 ]
 
 
