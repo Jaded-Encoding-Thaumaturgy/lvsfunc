@@ -10,22 +10,12 @@ from vskernels import Catrom, Kernel, KernelT
 from vstools import Matrix, check_variable, core, get_prop, vs
 
 __all__ = [
-    'check_has_nvidia',
     'colored_clips',
     'frames_since_bookmark',
     'load_bookmarks',
     'match_clip',
     'truncate_string',
 ]
-
-
-def check_has_nvidia() -> bool:
-    """Check if the user has an Nvidia GPU."""
-    try:
-        sp.check_output('nvidia-smi')
-        return True
-    except sp.CalledProcessError:
-        return False
 
 
 def load_bookmarks(bookmark_path: str) -> list[int]:
