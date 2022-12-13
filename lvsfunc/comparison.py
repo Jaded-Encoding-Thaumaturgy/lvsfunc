@@ -595,7 +595,7 @@ def diff(*clips: vs.VideoNode,
     :raises StopIteration:      No differences are found.
     """
     if clips and namedclips:
-        raise ClipsAndNamedClipsError("diff")
+        raise ClipsAndNamedClipsError(diff)
 
     if (clips and len(clips) != 2) or (namedclips and len(namedclips) != 2):
         raise CustomValueError("Must pass exactly 2 `clips` or `namedclips`!", diff)
@@ -702,7 +702,7 @@ def interleave(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode
                         Both positional and named clips are given.
     """
     if clips and namedclips:
-        raise ClipsAndNamedClipsError("interleave")
+        raise ClipsAndNamedClipsError(interleave)
     return Interleave(clips if clips else namedclips).clip
 
 
@@ -724,7 +724,7 @@ def split(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
                         Both positional and named clips are given.
     """
     if clips and namedclips:
-        raise ClipsAndNamedClipsError("split")
+        raise ClipsAndNamedClipsError(split)
     return Split(clips if clips else namedclips, label_alignment=2).clip
 
 
@@ -742,7 +742,7 @@ def stack_horizontal(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.Vid
                         Both positional and named clips are given.
     """
     if clips and namedclips:
-        raise ClipsAndNamedClipsError("stack_horizontal")
+        raise ClipsAndNamedClipsError(stack_horizontal)
     return Stack(clips if clips else namedclips).clip
 
 
@@ -760,7 +760,7 @@ def stack_vertical(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.Video
                         Both positional and named clips are given.
     """
     if clips and namedclips:
-        raise ClipsAndNamedClipsError("stack_vertical")
+        raise ClipsAndNamedClipsError(stack_vertical)
     return Stack(clips if clips else namedclips, direction=Direction.VERTICAL).clip
 
 
@@ -783,7 +783,7 @@ def tile(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
                         Both positional and named clips are given.
     """
     if clips and namedclips:
-        raise ClipsAndNamedClipsError("tile")
+        raise ClipsAndNamedClipsError(tile)
     return Tile(clips if clips else namedclips).clip
 
 

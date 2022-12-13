@@ -10,8 +10,8 @@ from vsmasks import BoundingBox
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
 from vstools import (
     MISSING, CustomValueError, FileType, FrameRangeN, FrameRangesN, IndexingType, InvalidMatrixError, Matrix,
-    check_perms, check_variable, core, depth, get_depth, get_prop, normalize_ranges, replace_ranges, scale_value, vs,Position, Size
-)
+    check_perms, check_variable, core, depth, get_depth, get_prop, normalize_ranges, replace_ranges, scale_value, vs,
+    Position, Size)
 
 from .util import match_clip
 
