@@ -339,6 +339,3 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
 
 # Aliases
 src = source
-
-# TODO: Write function that only masks px of a certain color/threshold of colors.
-#       Think the magic wand tool in various image-editing programs.
