@@ -617,7 +617,7 @@ def diff(*clips: vs.VideoNode,
     if (clips and len(clips) != 2) or (namedclips and len(namedclips) != 2):
         raise CustomValueError("Must pass exactly 2 `clips` or `namedclips`!", diff)
 
-    if 1 <= thr < 128:
+    if not 1 <= thr < 128:
         raise CustomValueError(f"`thr` must be between 1 and 128, not {thr}!", diff)
 
     if clips and not all([c.format for c in clips]):
