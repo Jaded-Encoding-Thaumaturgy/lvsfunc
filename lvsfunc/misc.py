@@ -4,15 +4,15 @@ import warnings
 from functools import partial
 from pathlib import Path
 from typing import Any, Sequence
-from vsexprtools import ExprOp
 
+from vsexprtools import ExprOp
 from vskernels import Catrom, KernelT
-from vsmasks import BoundingBox
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
 from vstools import (
     MISSING, CustomIndexError, CustomTypeError, CustomValueError, DependencyNotFoundError, FileType, FrameRangeN,
-    FrameRangesN, IndexingType, InvalidMatrixError, Matrix, check_perms, check_variable, core, depth, get_depth,
-    get_prop, normalize_ranges, normalize_seq, replace_ranges, scale_8bit, scale_value, vs, Position, Size)
+    FrameRangesN, IndexingType, Matrix, check_perms, check_variable, core, depth, get_depth, normalize_ranges,
+    normalize_seq, replace_ranges, scale_8bit, vs
+)
 
 from .util import match_clip
 
