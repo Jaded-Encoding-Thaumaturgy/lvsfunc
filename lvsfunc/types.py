@@ -3,37 +3,9 @@ from __future__ import annotations
 from vstools import CustomIntEnum
 
 __all__ = [
-    'Coordinate',
     'SceneChangeMode',
-    'Position',
-    'Size',
     'x265_me_map',
 ]
-
-
-class Coordinate():
-    """
-    Positive set of (x, y) coordinates.
-
-    :raises ValueError:     Negative values get passed.
-    """
-
-    x: int
-    y: int
-
-    def __init__(self, x: int, y: int):
-        if x < 0 or y < 0:
-            raise ValueError(f"{self.__class__.__name__}: 'Can't be negative!'")
-        self.x = x
-        self.y = y
-
-
-class Position(Coordinate):
-    """Position type for :py:class:`lvsfunc.mask.BoundingBox`."""
-
-
-class Size(Coordinate):
-    """Size type for :py:class:`lvsfunc.mask.BoundingBox`."""
 
 
 class SceneChangeMode(CustomIntEnum):

@@ -5,10 +5,10 @@ from pathlib import Path
 from typing import Any, Callable, Literal, Sequence, SupportsFloat, cast
 
 from vskernels import Catrom, Kernel, KernelT, Point
-from vstools import (DependencyNotFoundError, DitherType, FrameRangeN, FrameRangesN, Matrix, check_variable, core,
-                     depth, get_depth, get_prop, replace_ranges, vs)
-
-from .util import check_has_nvidia
+from vstools import (
+    DependencyNotFoundError, DitherType, FrameRangeN, FrameRangesN, Matrix, check_variable, core, depth, get_depth,
+    get_nvidia_version, get_prop, replace_ranges, vs
+)
 
 __all__ = [
     'autodb_dpir', 'dpir'
@@ -406,7 +406,7 @@ def dpir(
             trt_available = False
 
     if cuda is None:
-        cuda = 'trt' if trt_available else check_has_nvidia()
+        cuda = 'trt' if trt_available else get_nvidia_version() is not None
 
     if fp16 is None:
         fp16 = fp16_available

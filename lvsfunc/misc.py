@@ -5,23 +5,22 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Sequence
 
+from vsexprtools import ExprOp
 from vskernels import Catrom, KernelT
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
-from vstools import (MISSING, CustomValueError, DependencyNotFoundError, FileType, FrameRangeN, FrameRangesN,
-                     IndexingType, InvalidMatrixError, Matrix, check_perms, check_variable, core, depth, get_depth,
-                     get_prop, normalize_ranges, replace_ranges, scale_value, vs)
+from vstools import (
+    MISSING, CustomIndexError, CustomTypeError, CustomValueError, DependencyNotFoundError, FileType, FrameRangeN,
+    FrameRangesN, IndexingType, Matrix, check_perms, check_variable, core, depth, get_depth, normalize_ranges,
+    normalize_seq, replace_ranges, scale_8bit, vs
+)
 
-from .mask import BoundingBox
-from .types import Position, Size
 from .util import match_clip
 
 __all__ = [
-    'edgefixer', 'ef',
     'limit_dark',
     'overlay_sign',
     'shift_tint',
-    'source', 'src',
-    'wipe_row',
+    'source', 'src'
 ]
 
 
@@ -171,59 +170,6 @@ def source(filepath: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  
     return clip
 
 
-def edgefixer(clip: vs.VideoNode,
-              left: int | list[int] | None = None,
-              right: int | list[int] | None = None,
-              top: int | list[int] | None = None,
-              bottom: int | list[int] | None = None,
-              radius: list[int] | None = None,
-              full_range: bool = False) -> vs.VideoNode:
-    """
-    Fix the issues with over- and undershoot for `ContinuityFixer <https://github.com/MonoS/VS-ContinuityFixer>`_.
-
-    This also adds what are in my opinion "more sane" ways of handling the parameters and given values.
-
-    ...If possible, you should be using bbmod instead, though.
-
-    Alias for this function is ``lvsfunc.ef``.
-
-    .. warning::
-        This function may be rewritten in the future, and functionality may change!
-
-    Dependencies:
-
-    * `vs-ContinuityFixer <https://github.com/MonoS/VS-ContinuityFixer>`_
-
-    :param clip:            Clip to process.
-    :param left:            Number of pixels to fix on the left (Default: None).
-    :param right:           Number of pixels to fix on the right (Default: None).
-    :param top:             Number of pixels to fix on the top (Default: None).
-    :param bottom:          Number of pixels to fix on the bottom (Default: None).
-    :param radius:          Radius for edgefixing (Default: None).
-    :param full_range:      Does not run the expression over the clip to fix over/undershoot (Default: False).
-
-    :return:                Clip with fixed edges.
-    """
-    warnings.warn("edgefixer: This function's functionality will change in a future version, "
-                  "and will likely be renamed. Please make sure to update your scripts once it does.",
-                  FutureWarning)
-
-    assert check_variable(clip, "edgefixer")
-
-    if left is None:
-        left = 0
-    if right is None:
-        right = left
-    if top is None:
-        top = left
-    if bottom is None:
-        bottom = top
-
-    ef = core.cf.ContinuityFixer(clip, left, top, right, bottom, radius)
-    limit: vs.VideoNode = ef if full_range else core.std.Limiter(ef, 16.0, [235, 240])
-    return limit
-
-
 def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.VideoNode:
     """
     Forcibly adds pixel values to a clip.
@@ -231,46 +177,28 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
     Can be used to fix green tints in Crunchyroll sources, for example.
     Only use this if you know what you're doing!
 
-    This function accepts a single integer or a list of integers.
-    Values passed should mimic those of an 8bit clip.
-    If your clip is not 8bit, they will be scaled accordingly.
-
-    If you only pass 1 value, it will copied to every plane.
-    If you pass 2, the 2nd one will be copied over to the 3rd.
-    Don't pass more than three.
+    This function accepts a single int8 or a list of int8 values.
 
     :param clip:            Clip to process.
     :param values:          Value added to every pixel, scales accordingly to your clip's depth (Default: 16).
 
     :return:                Clip with pixel values added.
 
-    :raises ValueError:     Too many values are supplied.
-    :raises ValueError:     Any value in ``values`` are above 255.
+    :raises IndexError:     Any value in ``values`` are above 255.
     """
-    val: tuple[int, int, int]
-
     assert check_variable(clip, "shift_tint")
 
-    if isinstance(values, int):
-        val = (values, values, values)
-    elif len(values) == 2:
-        val = (values[0], values[1], values[1])
-    elif len(values) == 3:
-        val = (values[0], values[1], values[2])
-    else:
-        raise ValueError("shift_tint: 'Too many values supplied!'")
+    val = normalize_seq(values)
 
     if any(v > 255 or v < -255 for v in val):
-        raise ValueError("shift_tint: 'Every value in \"values\" must be below 255!'")
+        raise CustomIndexError('Every value in "values" must be an 8 bit number!', shift_tint)
 
-    cdepth = get_depth(clip)
-    cv = [scale_value(v, 8, cdepth) for v in val] if cdepth != 8 else list(val)
-
-    return core.akarin.Expr(clip, expr=[f'x {cv[0]} +', f'x {cv[1]} +', f'x {cv[2]} +'])
+    return ExprOp.ADD.combine(clip, suffix=[scale_8bit(clip, v) for v in val])
 
 
-def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
-               threshold: float = 0.25, threshold_range: int | None = None) -> vs.VideoNode:
+def limit_dark(
+    clip: vs.VideoNode, filtered: vs.VideoNode, thr: float = 0.25, thr_lower: float | None = None
+) -> vs.VideoNode:
     """
     Replace frames in a clip with a filtered clip when the frame's luminosity exceeds the threshold.
 
@@ -288,55 +216,19 @@ def limit_dark(clip: vs.VideoNode, filtered: vs.VideoNode,
 
     :raises ValueError:         ``threshold_range`` is a higher value than ``threshold``.
     """
-    def _diff(n: int, f: vs.VideoFrame, clip: vs.VideoNode,
-              filtered: vs.VideoNode, threshold: float,
-              threshold_range: int | None) -> vs.VideoNode:
-        psa = get_prop(f, "PlaneStatsAverage", float)
-        if threshold_range:
-            return filtered if threshold_range <= psa <= threshold else clip
-        else:
-            return clip if psa > threshold else filtered
+    if thr_lower is None:
+        def _diff(n: int, f: vs.VideoFrame) -> vs.VideoNode:
+            return clip if f[0][0, 0] > thr else filtered  # type: ignore
+    else:
+        def _diff(n: int, f: vs.VideoFrame) -> vs.VideoNode:
+            return filtered if thr_lower <= f[0][0, 0] <= thr else clip  # type: ignore
 
-    if threshold_range and threshold_range > threshold:
-        raise ValueError(f"limit_dark: '\"threshold_range\" ({threshold_range}) must be "
-                         f"a lower value than \"threshold\" ({threshold})!'")
+    if thr_lower is not None and thr_lower > thr:
+        raise CustomValueError('"thr_lower" must be a lower value than "thr"!', limit_dark, (thr_lower, thr))
 
-    avg = core.std.PlaneStats(clip)
-    return core.std.FrameEval(clip, partial(_diff, clip=clip, filtered=filtered,
-                                            threshold=threshold, threshold_range=threshold_range), avg)
+    avg = clip.std.BlankClip(1, 1, vs.GRAYS).std.CopyFrameProps(clip.std.PlaneStats())
 
-
-def wipe_row(clip: vs.VideoNode,
-             ref: vs.VideoNode | None = None,
-             pos: Position | tuple[int, int] = (1, 1),
-             size: Size | tuple[int, int] | None = None,
-             show_mask: bool = False
-             ) -> vs.VideoNode:
-    """
-    Wipe a row or column with a blank clip.
-
-    You can also give it a different clip to replace a row with.
-
-    :param clip:            Clip to process.
-    :param secondary:       Clip to replace wiped rows with (Default: None).
-    :param width:           Width of row (Default: 1).
-    :param height:          Height of row (Default: 1).
-    :param offset_x:        X-offset of row (Default: 0).
-    :param offset_y:        Y-offset of row (Default: 0).
-
-    :return:                Clip with given rows or columns wiped.
-    """
-    assert check_variable(clip, "wipe_row")
-
-    ref = ref or core.std.BlankClip(clip)
-
-    if size is None:
-        size = (clip.width-2, clip.height-2)
-    sqmask = BoundingBox(pos, size).get_mask(clip)
-
-    if show_mask:
-        return sqmask
-    return core.std.MaskedMerge(clip, ref, sqmask)
+    return clip.std.FrameEval(_diff, avg.akarin.Expr('x.PlaneStatsAverage'))
 
 
 def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
@@ -390,66 +282,59 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
         except ModuleNotFoundError as e:
             raise DependencyNotFoundError(overlay_sign, e, reason="fade_length > 0")
 
-    assert check_variable(clip, "overlay_sign")
+    assert check_variable(clip, overlay_sign)
 
-    ov_type = type(overlay)
+    is_string = isinstance(overlay, str)
     clip_fam = clip.format.color_family
 
-    # TODO: This can probably be done better
-    if not isinstance(overlay, (vs.VideoNode, str)):
-        raise ValueError("overlay_sign: '`overlay` must be a VideoNode object or a string path!'")
-    elif isinstance(overlay, str):
-        overlay = core.imwri.Read(overlay, alpha=True)
+    if is_string:
+        overlay = core.imwri.Read(overlay, alpha=True)  # type: ignore
 
-    if (clip.width != overlay.width) or (clip.height != overlay.height):
-        raise ValueError("overlay_sign: 'Your overlay clip must have the same dimensions as your input clip!'")
+    if not isinstance(overlay, vs.VideoNode):
+        raise CustomValueError('`overlay` must be a VideoNode object or a string path!', overlay_sign)
+
+    assert check_variable(overlay, overlay_sign)
+
+    if (clip.width, clip.height) != (overlay.width, overlay.height):
+        raise CustomValueError('Your overlay clip must have the same dimensions as your input clip!', overlay_sign)
 
     if isinstance(frame_ranges, list) and len(frame_ranges) > 1:
-        warnings.warn("overlay_sign: 'Only one range is currently supported! "
-                      "Grabbing the first item in list.'")
+        warnings.warn("overlay_sign: 'Only one range is currently supported! Grabbing the first item in list.'")
         frame_ranges = frame_ranges[0]
+
+    if overlay.format.color_family is not clip_fam:
+        if clip_fam is vs.RGB:
+            overlay = Catrom.resample(overlay, clip.format.id, matrix_in=matrix)
+        else:
+            overlay = Catrom.resample(overlay, clip.format.id, matrix)
 
     overlay = overlay[0] * clip.num_frames
 
-    if matrix is None:
-        matrix = get_prop(clip.get_frame(0), "_Matrix", int)
-
-    if matrix == 2:
-        raise InvalidMatrixError("overlay_sign")
-
-    if overlay.format.color_family is not clip_fam:  # type:ignore[union-attr]
-        if clip_fam is vs.RGB:
-            overlay = Catrom().resample(overlay, clip.format.id, matrix_in=matrix)
-        else:
-            overlay = Catrom().resample(overlay, clip.format.id, matrix)
-
     try:
-        mask = core.std.PropToClip(overlay)
+        mask = overlay.std.PropToClip('_Alpha')
     except vs.Error:
-        if ov_type is str:
-            raise ValueError("overlay_sign: 'Please make sure your image has an alpha channel!'")
-        else:
-            raise TypeError("overlay_sign: 'Please make sure you loaded your sign in using imwri.Read!'")
+        if is_string:
+            raise CustomValueError('Please make sure your image has an alpha channel!', overlay_sign)
 
-    merge = core.std.MaskedMerge(clip, overlay, depth(mask, get_depth(overlay)).std.Limiter())
+        raise CustomTypeError('Please make sure you loaded your sign in using imwri.Read!', overlay_sign)
+
+    merge = clip.std.MaskedMerge(overlay, depth(mask, get_depth(overlay)).std.Limiter())
 
     if not frame_ranges:
         return merge
 
     if fade_length > 0:
         if isinstance(frame_ranges, int):
-            return crossfade(clip[:frame_ranges+fade_length], merge[frame_ranges:], fade_length)
-        else:
-            start, end = normalize_ranges(clip, frame_ranges)[0]
-            merge = crossfade(clip[:start+fade_length], merge[start:], fade_length)
-            return crossfade(merge[:end], clip[end-fade_length:], fade_length)
-    else:
-        return replace_ranges(clip, merge, frame_ranges)
+            return crossfade(clip[:frame_ranges + fade_length], merge[frame_ranges:], fade_length)
+
+        start, end = normalize_ranges(clip, frame_ranges)[0]
+
+        merge = crossfade(clip[:start + fade_length], merge[start:], fade_length)
+
+        return crossfade(merge[:end], clip[end - fade_length:], fade_length)
+
+    return replace_ranges(clip, merge, frame_ranges)
 
 
 # Aliases
-ef = edgefixer
 src = source
-
-# TODO: Write function that only masks px of a certain color/threshold of colors.
-#       Think the magic wand tool in various image-editing programs.

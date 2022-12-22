@@ -56,9 +56,7 @@ Want to contribute to lvsfunc? Check out the `how to contribute <contribute>` se
 
     submodules/comparison
     submodules/deblock
-    submodules/dehardsub
     submodules/exceptions
-    submodules/mask
     submodules/misc
     submodules/render
     submodules/types
