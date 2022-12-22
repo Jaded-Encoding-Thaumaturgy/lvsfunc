@@ -543,6 +543,7 @@ def diff(*clips: vs.VideoNode,
          return_ranges: Literal[True] = True,
          exclusion_ranges: Sequence[int | tuple[int, int]] | None = ...,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
+         msg: str = ...,
          **namedclips: vs.VideoNode) -> tuple[vs.VideoNode, list[tuple[int, int]]]:
     ...
 
@@ -555,6 +556,7 @@ def diff(*clips: vs.VideoNode,
          return_ranges: Literal[False],
          exclusion_ranges: Sequence[int | tuple[int, int]] | None = ...,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
+         msg: str = ...,
          **namedclips: vs.VideoNode) -> vs.VideoNode:
     ...
 
@@ -566,6 +568,7 @@ def diff(*clips: vs.VideoNode,
          return_ranges: bool = False,
          exclusion_ranges: Sequence[int | tuple[int, int]] | None = None,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a, b: core.std.MakeDiff(a, b),
+         msg: str = "Diffing clips...",
          **namedclips: vs.VideoNode) -> vs.VideoNode | tuple[vs.VideoNode, list[tuple[int, int]]]:
     """
     Create a standard :py:class:`lvsfunc.comparison.Stack` between frames from two clips that have differences.
@@ -598,6 +601,8 @@ def diff(*clips: vs.VideoNode,
     :param return_ranges:       Return a list of ranges in addition to the comparison clip.
     :param exclusion_ranges:    Excludes a list of frame ranges from difference checking output (but not processing).
     :param diff_func:           Function for calculating diff in PlaneStatsMin/Max mode.
+    :param msg:                 Message for the progress bar. Defaults to "Diffing clips...".
+                                Useful if you're using `diff` for some other process.
 
     :return:                    Either an interleaved clip of the differences between the two clips
                                 or a stack of both input clips on top of MakeDiff clip.
@@ -649,7 +654,7 @@ def diff(*clips: vs.VideoNode,
             if get_prop(f, 'PlaneStatsDiff', float) > thr:
                 frames.append(n)
 
-        clip_async_render(ps, progress="Diffing clips...", callback=_cb)
+        clip_async_render(ps, progress=msg, callback=_cb)
         diff_clip = core.std.MakeDiff(a, b)
     else:
         diff_clip = diff_func(a, b).std.PlaneStats()
@@ -662,7 +667,7 @@ def diff(*clips: vs.VideoNode,
             if get_prop(f, 'PlaneStatsMin', typ) <= thr or get_prop(f, 'PlaneStatsMax', typ) >= 255 - thr > thr:
                 frames.append(n)
 
-        clip_async_render(diff_clip, progress="Diffing clips...", callback=_cb)
+        clip_async_render(diff_clip, progress=msg, callback=_cb)
 
     if not frames:
         raise StopIteration("diff: No differences found!")
