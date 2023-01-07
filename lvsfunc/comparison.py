@@ -549,6 +549,7 @@ def diff(*clips: vs.VideoNode,
          height: int = 288,
          interleave: bool = False,
          return_ranges: bool = False,
+         also_check_avg: bool = False,
          exclusion_ranges: Sequence[int | tuple[int, int]] | None = None,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a, b: core.std.MakeDiff(a, b),
          msg: str = "Diffing clips...",
@@ -582,6 +583,7 @@ def diff(*clips: vs.VideoNode,
                                 (using :py:class:`lvsfunc.comparison.Interleave`).
                                 This will not return a diff clip
     :param return_ranges:       Return a list of ranges in addition to the comparison clip.
+    :param also_check_avg:      If using Max/Min, also check average against a safe hardcoded value. Slower.
     :param exclusion_ranges:    Excludes a list of frame ranges from difference checking output (but not processing).
     :param diff_func:           Function for calculating diff in PlaneStatsMin/Max mode.
     :param msg:                 Message for the progress bar. Defaults to "Diffing clips...".
@@ -645,10 +647,20 @@ def diff(*clips: vs.VideoNode,
         assert diff_clip.format
 
         typ = float if diff_clip.format.sample_type == vs.FLOAT else int
-
-        def _cb(n: int, f: vs.VideoFrame) -> None:
-            if get_prop(f, 'PlaneStatsMin', typ) <= thr or get_prop(f, 'PlaneStatsMax', typ) >= 255 - thr > thr:
-                frames.append(n)
+        if also_check_avg:
+            ps = core.std.PlaneStats(a, b)
+            def transfer_property(n, f):
+                fout = f[1].copy()
+                fout.props['PlaneStatsDiff'] = f[0].props['PlaneStatsDiff']
+                return fout
+            diff_clip = core.std.ModifyFrame(clip=ps, clips=[ps, diff_clip], selector=transfer_property)
+            def _cb(n: int, f: vs.VideoFrame) -> None:
+                if get_prop(f, 'PlaneStatsMin', typ) <= thr or get_prop(f, 'PlaneStatsMax', typ) >= 255 - thr > thr or get_prop(f, 'PlaneStatsDiff', float) > 0.03:
+                    frames.append(n)
+        else:
+            def _cb(n: int, f: vs.VideoFrame) -> None:
+                if get_prop(f, 'PlaneStatsMin', typ) <= thr or get_prop(f, 'PlaneStatsMax', typ) >= 255 - thr > thr:
+                    frames.append(n)
 
         clip_async_render(diff_clip, progress=msg, callback=_cb)
 
