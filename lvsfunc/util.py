@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import colorsys
 import random
+import re
 from functools import partial
 from typing import Any
 
 from vskernels import Catrom, Kernel, KernelT
-from vstools import Matrix, check_variable, core, get_prop, vs
+from vstools import CustomValueError, FrameRangesN, Matrix, check_variable, core, get_prop, vs
 
 __all__ = [
     'colored_clips',
@@ -14,6 +15,7 @@ __all__ = [
     'load_bookmarks',
     'match_clip',
     'truncate_string',
+    'convert_rfs',
 ]
 
 
@@ -163,3 +165,41 @@ def truncate_string(str_in: str, max_length: int, suffix: str = "...") -> str:
         return str_in[:max_length - len(suffix)] + suffix
 
     return str_in
+
+
+def convert_rfs(rfs_string: str) -> FrameRangesN:
+    """
+    A utility function to convert `ReplaceFramesSimple`-styled ranges to `replace_ranges`-styled ranges.
+
+    This function accepts the RFS ranges as a string only. This is in line with how RFS handles them.
+    The string will be validated before it's passed on. As with all framerange-related functions,
+    the more ranges you have, the slower the function will become.
+
+    This function works with both '[x y]' and 'x' styles of frame numbering.
+    If no frames could be found, it will simply return an empty list.
+
+    :param rfs_string:      A string representing frame ranges, as you would for ReplaceFramesSimple.
+
+    :return:                A FrameRangesN list containing frame ranges as accepted by `replace_ranges`.
+                            If no frames are found, it will simply return an empty list.
+
+    :raises ValueError:     Invalid input string is passed.
+    """
+    rfs_string = str(rfs_string).strip()
+
+    if not set(rfs_string).issubset('0123456789[] '):
+        raise CustomValueError('Invalid characters were found in the input string.', convert_rfs)
+
+    matches = re.findall(r'\[(\s*?\d+\s\d+\s*?)\]|(\d+)', rfs_string)
+    ranges = FrameRangesN()
+
+    if not matches:
+        return ranges
+
+    for match in [next(y for y in x if y) for x in matches]:
+        try:
+            ranges += [int(match)]
+        except ValueError:
+            ranges += [tuple(int(x) for x in str(match).strip().split(' '))]  # type:ignore[list-item]
+
+    return ranges

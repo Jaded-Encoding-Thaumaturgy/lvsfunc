@@ -2,7 +2,7 @@ import os
 import subprocess
 import sys
 
-import pkg_resources
+import pkg_resources  # type:ignore[import]
 
 
 class InstallationException(Exception):
