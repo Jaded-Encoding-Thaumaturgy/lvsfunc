@@ -11,8 +11,8 @@ from typing import Any, Callable, Iterable, Iterator, Literal, Sequence, TypeVar
 
 from vskernels import Catrom
 from vstools import (CustomError, CustomNotImplementedError, CustomTypeError, CustomValueError, DependencyNotFoundError,
-                     Direction, FormatsMismatchError, InvalidColorFamilyError, InvalidSubsamplingError,
-                     LengthMismatchError, Matrix, VariableFormatError, check_variable, check_variable_format,
+                     Direction, FormatsMismatchError, InvalidColorFamilyError, LengthMismatchError, Matrix,
+                     UnsupportedSubsamplingError, VariableFormatError, check_variable, check_variable_format,
                      check_variable_resolution, core, depth, get_prop, get_subsampling, get_w)
 from vstools import split as split_planes
 from vstools import vs
@@ -268,7 +268,7 @@ class Tile(Comparer):
         array_count = sum(map(sum, self.arrangement))  # type:ignore[arg-type]
 
         LengthMismatchError.check(self.__class__, array_count, self.num_clips,
-                                  "Specified arrangement has an invalid number of clips!")
+                                  message="Specified arrangement has an invalid number of clips!")
 
     def _compare(self) -> vs.VideoNode:
         clips = self._marked_clips()
@@ -510,7 +510,7 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
 
         return Stack([y_plane, subsampled_planes], direction=direction).clip
     else:
-        raise InvalidSubsamplingError(stack_planes)
+        raise UnsupportedSubsamplingError(stack_planes)
 
 
 @overload

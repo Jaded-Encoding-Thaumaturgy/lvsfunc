@@ -48,7 +48,7 @@ def finish_frame(outfile: BinaryIO | None, timecodes: TextIO | None, ctx: Render
     :param ctx:       Rendering context.
     """
     if timecodes:
-        timecodes.write(f"{round(ctx.timecodes[ctx.frames_rendered]*1000):d}\n")
+        timecodes.write(f"{round(ctx.timecodes[ctx.frames_rendered] * 1000):d}\n")
     if outfile is None:
         return
 
@@ -56,7 +56,8 @@ def finish_frame(outfile: BinaryIO | None, timecodes: TextIO | None, ctx: Render
 
     outfile.write("FRAME\n".encode("utf-8"))
 
-    f._writelines(outfile.write)
+    for chunk in f.readchunks():
+        outfile.write(chunk)
 
 
 def clip_async_render(clip: vs.VideoNode,

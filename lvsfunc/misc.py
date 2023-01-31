@@ -3,7 +3,7 @@ from __future__ import annotations
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Sequence, cast
 
 from vsexprtools import ExprOp
 from vskernels import Catrom, KernelT
@@ -217,7 +217,7 @@ def limit_dark(
     """
     if thr_lower is None:
         def _diff(n: int, f: vs.VideoFrame) -> vs.VideoNode:
-            return clip if f[0][0, 0] > thr else filtered  # type: ignore
+            return clip if f[0][0, 0] > thr else filtered
     else:
         def _diff(n: int, f: vs.VideoFrame) -> vs.VideoNode:
             return filtered if thr_lower <= f[0][0, 0] <= thr else clip  # type: ignore
@@ -287,10 +287,12 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     clip_fam = clip.format.color_family
 
     if is_string:
-        overlay = core.imwri.Read(overlay, alpha=True)  # type: ignore
+        overlay = core.imwri.Read(overlay, alpha=True)
 
     if not isinstance(overlay, vs.VideoNode):
         raise CustomValueError('`overlay` must be a VideoNode object or a string path!', overlay_sign)
+
+    overlay = cast(vs.VideoNode, overlay)
 
     assert check_variable(overlay, overlay_sign)
 
