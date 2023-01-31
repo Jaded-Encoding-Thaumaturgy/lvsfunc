@@ -11,9 +11,9 @@ from typing import Any, Callable, Iterable, Iterator, Literal, Sequence, TypeVar
 
 from vskernels import Catrom
 from vstools import (CustomError, CustomNotImplementedError, CustomTypeError, CustomValueError, DependencyNotFoundError,
-                     Direction, FormatsMismatchError, InvalidColorFamilyError, LengthMismatchError, Matrix,
-                     VariableFormatError, check_variable, check_variable_format, check_variable_resolution, core, depth,
-                     get_prop, get_subsampling, get_w)
+                     Direction, FormatsMismatchError, InvalidColorFamilyError, InvalidSubsamplingError,
+                     LengthMismatchError, Matrix, VariableFormatError, check_variable, check_variable_format,
+                     check_variable_resolution, core, depth, get_prop, get_subsampling, get_w)
 from vstools import split as split_planes
 from vstools import vs
 
@@ -486,7 +486,6 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
     :raises VariableFormatError:        Clip is of a variable format.
     :raises VariableResolutionError:    Clip is of a variable resolution.
     :raises InvalidColorFamilyError:    Clip is not YUV or RGB.
-    :raises TypeError:                  Clip is of an unexpected color family.
     :raises TypeError:                  Clip returns an unexpected subsampling.
     """
     assert check_variable(clip, stack_planes)
@@ -499,8 +498,6 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
         planes: dict[str, vs.VideoNode] = {'Y': yuv_planes[0], 'U': yuv_planes[1], 'V': yuv_planes[2]}
     elif clip.format.color_family == vs.ColorFamily.RGB:
         planes = {'R': yuv_planes[0], 'G': yuv_planes[1], 'B': yuv_planes[2]}
-    else:
-        raise CustomTypeError(f"Unexpected color family: \"{clip.format.color_family.name}\"!", stack_planes)
 
     direction: Direction = Direction.HORIZONTAL if not stack_vertical else Direction.VERTICAL
 
@@ -513,7 +510,7 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
 
         return Stack([y_plane, subsampled_planes], direction=direction).clip
     else:
-        raise CustomTypeError(f"Unexpected subsampling \"{get_subsampling(clip)}\"!", stack_planes)
+        raise InvalidSubsamplingError(stack_planes)
 
 
 @overload

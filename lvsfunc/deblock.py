@@ -5,9 +5,10 @@ from pathlib import Path
 from typing import Any, Callable, Literal, Sequence, SupportsFloat, cast
 
 from vskernels import Catrom, Kernel, KernelT, Point
-from vstools import (CustomTypeError, CustomValueError, DependencyNotFoundError, DitherType, FrameRangeN, FrameRangesN,
-                     InvalidColorFamilyError, LengthMismatchError, Matrix, UnsupportedVideoFormatError, check_variable,
-                     core, depth, get_depth, get_nvidia_version, get_prop, replace_ranges, vs)
+from vstools import (CustomValueError, DependencyNotFoundError, DitherType, FrameRangeN, FrameRangesN,
+                     InvalidColorFamilyError, LengthMismatchError, Matrix, NotFoundEnumValue,
+                     UnsupportedVideoFormatError, check_variable, core, depth, get_depth, get_nvidia_version, get_prop,
+                     replace_ranges, vs)
 
 __all__ = [
     'autodb_dpir',
@@ -233,7 +234,7 @@ def dpir(
     :return:                        Deblocked or denoised clip in either the given clip's format or YUV444PS.
 
     :raises DependencyNotFoundError: Dependencies are missing.
-    :raises TypeError:              Invalid ``mode`` is given.
+    :raises NotFoundEnumValue:      Invalid ``mode`` is given.
     :raises InvalidVideoFormatError: ``strength`` is a VideoNode, but not GRAY8 or GRAYS.
     :raises LengthMismatchError:    ``strength`` is a VideoNode, but of a different length than the input clip.
     :raises TypeError:              ``strength`` is not a :py:attr:`typing.SupportsFloat` or VideoNode.
@@ -255,7 +256,7 @@ def dpir(
     match mode.lower():
         case 'deblock': model = DPIRModel.drunet_deblocking_grayscale if is_gray else DPIRModel.drunet_deblocking_color
         case 'denoise': model = DPIRModel.drunet_color if not is_gray else DPIRModel.drunet_gray
-        case _: raise CustomTypeError(f"\"{mode}\" is not a valid mode!", dpir)
+        case _: raise NotFoundEnumValue(f"\"{mode}\" is not a valid mode!", dpir)
 
     def _get_strength_clip(clip: vs.VideoNode, strength: SupportsFloat) -> vs.VideoNode:
         return clip.std.BlankClip(format=vs.GRAYS, color=float(strength) / 255, keep=True)

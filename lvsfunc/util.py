@@ -7,7 +7,7 @@ from functools import partial
 from typing import Any
 
 from vskernels import Catrom, Kernel, KernelT
-from vstools import CustomValueError, FrameRangesN, Matrix, check_variable, core, get_prop, vs
+from vstools import CustomIndexError, CustomValueError, FrameRangesN, Matrix, check_variable, core, get_prop, vs
 
 __all__ = [
     'colored_clips',
@@ -98,7 +98,7 @@ def colored_clips(amount: int,
     :raises ValueError:     ``max_hue`` is not between 0–360.
     """
     if amount < 2:
-        raise CustomValueError("`amount` must be at least 2!", colored_clips)
+        raise CustomIndexError("`amount` must be at least 2!", colored_clips)
     if not (0 < max_hue <= 360):
         raise CustomValueError("`max_hue` must be greater than 0 and less than 360 degrees!", colored_clips)
 
