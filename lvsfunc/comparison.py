@@ -67,11 +67,11 @@ class Comparer(ABC):
                  label_alignment: int = 7
                  ) -> None:
         if len(clips) < 2:
-            raise CustomValueError("Compare functions must be used on at least 2 clips!", Comparer)
+            raise CustomValueError("Compare functions must be used on at least 2 clips!", self.__class__)
         if label_alignment not in list(range(1, 10)):
-            raise CustomValueError("`label_alignment` must be an integer from 1 to 9!", Comparer)
+            raise CustomValueError("`label_alignment` must be an integer from 1 to 9!", self.__class__)
         if not isinstance(clips, (dict, Sequence)):
-            raise CustomTypeError(f"Unexpected type {type(clips)} for `clips` argument!", Comparer)
+            raise CustomTypeError(f"Unexpected type {type(clips)} for `clips` argument!", self.__class__)
 
         self.clips = list(clips.values()) if isinstance(clips, dict) else list(clips)
         self.names = list(clips.keys()) if isinstance(clips, dict) else None
@@ -99,7 +99,7 @@ class Comparer(ABC):
 
     @abstractmethod
     def _compare(self) -> vs.VideoNode:
-        raise CustomNotImplementedError("This function or method has not been implemented yet!", Comparer._compare)
+        raise CustomNotImplementedError("This function or method has not been implemented yet!", self.__class__)
 
     @property
     def clip(self) -> vs.VideoNode:
@@ -147,11 +147,11 @@ class Stack(Comparer):
     def _compare(self) -> vs.VideoNode:
         if self.direction == Direction.HORIZONTAL:
             if not self.height:
-                raise CustomValueError("StackHorizontal requires that all clips be the same height!", Stack)
+                raise CustomValueError("StackHorizontal requires that all clips be the same height!", self.__class__)
             return core.std.StackHorizontal(self._marked_clips())
 
         if not self.width:
-            raise CustomValueError("StackVertical requires that all clips be the same width!", Stack)
+            raise CustomValueError("StackVertical requires that all clips be the same width!", self.__class__)
         return core.std.StackVertical(self._marked_clips())
 
 
@@ -250,14 +250,14 @@ class Tile(Comparer):
         super().__init__(clips, label_alignment=label_alignment)
 
         if not self.width or not self.height:
-            raise CustomValueError("All clip widths and heights must be the same!", Tile)
+            raise CustomValueError("All clip widths and heights must be the same!", self.__class__)
 
         if arrangement is None:
             self.arrangement = self._auto_arrangement()
         else:
             is_one_dim = len(arrangement) < 2 or all(len(row) == 1 for row in arrangement)
             if is_one_dim:
-                raise CustomValueError("Use Stack instead if the array is one dimensional!", Tile)
+                raise CustomValueError("Use Stack instead if the array is one dimensional!", self.__class__)
             self.arrangement = arrangement
 
         self.blank_clip = core.std.BlankClip(clip=self.clips[0], keep=1)
@@ -267,7 +267,7 @@ class Tile(Comparer):
 
         array_count = sum(map(sum, self.arrangement))  # type:ignore[arg-type]
 
-        LengthMismatchError.check(Tile, array_count, self.num_clips,
+        LengthMismatchError.check(self.__class__, array_count, self.num_clips,
                                   "Specified arrangement has an invalid number of clips!")
 
     def _compare(self) -> vs.VideoNode:
@@ -325,7 +325,7 @@ class Split(Stack):
     def _smart_crop(self) -> None:  # has to alter self.clips to send clips to _marked_clips() in Stack's _compare()
         """Crops self.clips in place accounting for odd resolutions."""
         if not self.width or not self.height:
-            raise CustomValueError("All clips must have same width and height!", Split)
+            raise CustomValueError("All clips must have same width and height!", self.__class__)
 
         breaks_subsampling = ((self.direction == Direction.HORIZONTAL and (((self.width // self.num_clips) % 2)
                                                                            or ((self.width % self.num_clips) % 2)))
@@ -336,7 +336,7 @@ class Split(Stack):
 
         if breaks_subsampling and is_subsampled:
             raise CustomValueError("Resulting cropped width or height violates subsampling rules! "
-                                   "Consider resampling to YUV444 or RGB before attempting to crop!", Split._smart_crop)
+                                   "Consider resampling to YUV444 or RGB before attempting to crop!", self.__class__)
 
         match self.direction:
             case Direction.HORIZONTAL:
