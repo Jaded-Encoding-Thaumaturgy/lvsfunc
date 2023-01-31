@@ -755,12 +755,12 @@ def get_current_environment() -> Environment:
 
 class Local:
     def __getattr__(self, key: str) -> Any: ...
-    
+
     # Even though object does have set/del methods, typecheckers will treat them differently
     # when they are not explicit; for example by raising a member not found warning.
 
     def __setattr__(self, key: str, value: Any) -> None: ...
-    
+
     def __delattr__(self, key: str) -> None: ...
 
 
@@ -953,7 +953,7 @@ class RawFrame:
     def __exit__(
         self, exc_type: Union[Type[BaseException], None],
         exc_value: Union[BaseException, None],
-        traceback: Union[TracebackType, None], /,
+        traceback: Union[TracebackType, None],
     ) -> Union[bool, None]: ...
 
     def __getitem__(self, index: int) -> memoryview: ...
@@ -986,7 +986,7 @@ class AudioFrame(RawFrame):
 
     def __getitem__(self, index: int) -> audio_view: ...
 
-    
+
 # implementation: adg
 
 class _Plugin_adg_Core_Bound(Plugin):
@@ -999,7 +999,7 @@ class _Plugin_adg_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: akarin
 
 class _Plugin_akarin_Core_Bound(Plugin):
@@ -1027,7 +1027,7 @@ class _Plugin_akarin_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: assrender
 
 class _Plugin_assrender_Core_Bound(Plugin):
@@ -1044,7 +1044,7 @@ class _Plugin_assrender_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: average
 
 class _Plugin_average_Core_Bound(Plugin):
@@ -1059,7 +1059,7 @@ class _Plugin_average_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: avs
 
 class _Plugin_avs_Core_Bound(Plugin):
@@ -1068,7 +1068,7 @@ class _Plugin_avs_Core_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: bas
 
 class _Plugin_bas_Core_Bound(Plugin):
@@ -1077,7 +1077,7 @@ class _Plugin_bas_Core_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: bilateral
 
 class _Plugin_bilateral_Core_Bound(Plugin):
@@ -1092,7 +1092,7 @@ class _Plugin_bilateral_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: bilateralgpu
 
 class _Plugin_bilateralgpu_Core_Bound(Plugin):
@@ -1105,7 +1105,7 @@ class _Plugin_bilateralgpu_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: bm3d
 
 class _Plugin_bm3d_Core_Bound(Plugin):
@@ -1130,7 +1130,7 @@ class _Plugin_bm3d_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: bm3dcpu
 
 class _Plugin_bm3dcpu_Core_Bound(Plugin):
@@ -1147,7 +1147,7 @@ class _Plugin_bm3dcpu_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: bm3dcuda
 
 class _Plugin_bm3dcuda_Core_Bound(Plugin):
@@ -1164,7 +1164,7 @@ class _Plugin_bm3dcuda_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: bm3dcuda_rtc
 
 class _Plugin_bm3dcuda_rtc_Core_Bound(Plugin):
@@ -1181,7 +1181,7 @@ class _Plugin_bm3dcuda_rtc_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: box
 
 class _Plugin_box_Core_Bound(Plugin):
@@ -1197,7 +1197,7 @@ class _Plugin_box_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: bs
 
 class _Plugin_bs_Core_Bound(Plugin):
@@ -1207,7 +1207,7 @@ class _Plugin_bs_Core_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: butteraugli
 
 class _Plugin_butteraugli_Core_Bound(Plugin):
@@ -1220,7 +1220,7 @@ class _Plugin_butteraugli_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: caffe
 
 class _Plugin_caffe_Core_Bound(Plugin):
@@ -1233,7 +1233,7 @@ class _Plugin_caffe_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: cas
 
 class _Plugin_cas_Core_Bound(Plugin):
@@ -1246,7 +1246,7 @@ class _Plugin_cas_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: ccd
 
 class _Plugin_ccd_Core_Bound(Plugin):
@@ -1259,7 +1259,7 @@ class _Plugin_ccd_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: cf
 
 class _Plugin_cf_Core_Bound(Plugin):
@@ -1272,7 +1272,7 @@ class _Plugin_cf_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: chkdr
 
 class _Plugin_chkdr_Core_Bound(Plugin):
@@ -1285,7 +1285,7 @@ class _Plugin_chkdr_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: comb
 
 class _Plugin_comb_Core_Bound(Plugin):
@@ -1300,7 +1300,7 @@ class _Plugin_comb_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: ctmf
 
 class _Plugin_ctmf_Core_Bound(Plugin):
@@ -1313,7 +1313,7 @@ class _Plugin_ctmf_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: d2v
 
 class _Plugin_d2v_Core_Bound(Plugin):
@@ -1327,7 +1327,7 @@ class _Plugin_d2v_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: dct
 
 class _Plugin_dct_Core_Bound(Plugin):
@@ -1340,7 +1340,7 @@ class _Plugin_dct_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: dctf
 
 class _Plugin_dctf_Core_Bound(Plugin):
@@ -1353,7 +1353,7 @@ class _Plugin_dctf_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: deblock
 
 class _Plugin_deblock_Core_Bound(Plugin):
@@ -1366,7 +1366,7 @@ class _Plugin_deblock_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: descale
 
 class _Plugin_descale_Core_Bound(Plugin):
@@ -1391,7 +1391,7 @@ class _Plugin_descale_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: descale_getnative
 
 class _Plugin_descale_getnative_Core_Bound(Plugin):
@@ -1412,7 +1412,7 @@ class _Plugin_descale_getnative_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: dfttest
 
 class _Plugin_dfttest_Core_Bound(Plugin):
@@ -1425,7 +1425,7 @@ class _Plugin_dfttest_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: dfttest2_avx2
 
 class _Plugin_dfttest2_avx2_Core_Bound(Plugin):
@@ -1440,7 +1440,7 @@ class _Plugin_dfttest2_avx2_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: dfttest2_cpu
 
 class _Plugin_dfttest2_cpu_Core_Bound(Plugin):
@@ -1455,7 +1455,7 @@ class _Plugin_dfttest2_cpu_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: dfttest2_cuda
 
 class _Plugin_dfttest2_cuda_Core_Bound(Plugin):
@@ -1471,7 +1471,7 @@ class _Plugin_dfttest2_cuda_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: dfttest2_nvrtc
 
 class _Plugin_dfttest2_nvrtc_Core_Bound(Plugin):
@@ -1487,7 +1487,7 @@ class _Plugin_dfttest2_nvrtc_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: dgdecodenv
 
 class _Plugin_dgdecodenv_Core_Bound(Plugin):
@@ -1496,7 +1496,7 @@ class _Plugin_dgdecodenv_Core_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: dpid
 
 class _Plugin_dpid_Core_Bound(Plugin):
@@ -1511,7 +1511,7 @@ class _Plugin_dpid_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: eedi2
 
 class _Plugin_eedi2_Core_Bound(Plugin):
@@ -1524,7 +1524,7 @@ class _Plugin_eedi2_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: eedi2cuda
 
 class _Plugin_eedi2cuda_Core_Bound(Plugin):
@@ -1542,7 +1542,7 @@ class _Plugin_eedi2cuda_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: eedi3m
 
 class _Plugin_eedi3m_Core_Bound(Plugin):
@@ -1557,7 +1557,7 @@ class _Plugin_eedi3m_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: f3kdb
 
 class _Plugin_f3kdb_Core_Bound(Plugin):
@@ -1570,7 +1570,7 @@ class _Plugin_f3kdb_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: ffms2
 
 class _Plugin_ffms2_Core_Bound(Plugin):
@@ -1583,7 +1583,7 @@ class _Plugin_ffms2_Core_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: fft3dfilter
 
 class _Plugin_fft3dfilter_Core_Bound(Plugin):
@@ -1596,7 +1596,7 @@ class _Plugin_fft3dfilter_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: fh
 
 class _Plugin_fh_Core_Bound(Plugin):
@@ -1611,7 +1611,7 @@ class _Plugin_fh_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: flux
 
 class _Plugin_flux_Core_Bound(Plugin):
@@ -1626,7 +1626,7 @@ class _Plugin_flux_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: fmtc
 
 class _Plugin_fmtc_Core_Bound(Plugin):
@@ -1655,7 +1655,7 @@ class _Plugin_fmtc_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: focus
 
 class _Plugin_focus_Core_Bound(Plugin):
@@ -1670,7 +1670,7 @@ class _Plugin_focus_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: focus2
 
 class _Plugin_focus2_Core_Bound(Plugin):
@@ -1683,7 +1683,7 @@ class _Plugin_focus2_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: ftf
 
 class _Plugin_ftf_Core_Bound(Plugin):
@@ -1696,7 +1696,7 @@ class _Plugin_ftf_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: grad
 
 class _Plugin_grad_Core_Bound(Plugin):
@@ -1709,7 +1709,7 @@ class _Plugin_grad_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: grain
 
 class _Plugin_grain_Core_Bound(Plugin):
@@ -1722,7 +1722,7 @@ class _Plugin_grain_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: hist
 
 class _Plugin_hist_Core_Bound(Plugin):
@@ -1743,7 +1743,7 @@ class _Plugin_hist_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: hqdn3d
 
 class _Plugin_hqdn3d_Core_Bound(Plugin):
@@ -1756,7 +1756,7 @@ class _Plugin_hqdn3d_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: iccc
 
 class _Plugin_iccc_Core_Bound(Plugin):
@@ -1771,7 +1771,7 @@ class _Plugin_iccc_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: imwri
 
 class _Plugin_imwri_Core_Bound(Plugin):
@@ -1785,7 +1785,7 @@ class _Plugin_imwri_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: knlm
 
 class _Plugin_knlm_Core_Bound(Plugin):
@@ -1798,7 +1798,7 @@ class _Plugin_knlm_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: libp2p
 
 class _Plugin_libp2p_Core_Bound(Plugin):
@@ -1813,7 +1813,7 @@ class _Plugin_libp2p_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: lsmas
 
 class _Plugin_lsmas_Core_Bound(Plugin):
@@ -1824,7 +1824,7 @@ class _Plugin_lsmas_Core_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: median
 
 class _Plugin_median_Core_Bound(Plugin):
@@ -1841,7 +1841,7 @@ class _Plugin_median_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: minsrp
 
 class _Plugin_minsrp_Core_Bound(Plugin):
@@ -1854,7 +1854,7 @@ class _Plugin_minsrp_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: misc
 
 class _Plugin_misc_Core_Bound(Plugin):
@@ -1871,7 +1871,7 @@ class _Plugin_misc_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: morpho
 
 class _Plugin_morpho_Core_Bound(Plugin):
@@ -1894,7 +1894,7 @@ class _Plugin_morpho_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: mpeg2stinx
 
 class _Plugin_mpeg2stinx_Core_Bound(Plugin):
@@ -1915,7 +1915,7 @@ class _Plugin_mpeg2stinx_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: mpls
 
 class _Plugin_mpls_Core_Bound(Plugin):
@@ -1924,7 +1924,7 @@ class _Plugin_mpls_Core_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: mv
 
 class _Plugin_mv_Core_Bound(Plugin):
@@ -1973,7 +1973,7 @@ class _Plugin_mv_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: mvsf
 
 class _Plugin_mvsf_Core_Bound(Plugin):
@@ -2058,7 +2058,7 @@ class _Plugin_mvsf_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: ncnn
 
 class _Plugin_ncnn_Core_Bound(Plugin):
@@ -2072,7 +2072,7 @@ class _Plugin_ncnn_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: neo_f3kdb
 
 class _Plugin_neo_f3kdb_Core_Bound(Plugin):
@@ -2085,7 +2085,7 @@ class _Plugin_neo_f3kdb_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: nnedi3
 
 class _Plugin_nnedi3_Core_Bound(Plugin):
@@ -2098,7 +2098,7 @@ class _Plugin_nnedi3_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: nnedi3cl
 
 class _Plugin_nnedi3cl_Core_Bound(Plugin):
@@ -2111,7 +2111,7 @@ class _Plugin_nnedi3cl_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: noise
 
 class _Plugin_noise_Core_Bound(Plugin):
@@ -2124,7 +2124,7 @@ class _Plugin_noise_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: ort
 
 class _Plugin_ort_Core_Bound(Plugin):
@@ -2138,7 +2138,7 @@ class _Plugin_ort_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: ov
 
 class _Plugin_ov_Core_Bound(Plugin):
@@ -2153,7 +2153,7 @@ class _Plugin_ov_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: placebo
 
 class _Plugin_placebo_Core_Bound(Plugin):
@@ -2172,7 +2172,7 @@ class _Plugin_placebo_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: psm
 
 class _Plugin_psm_Core_Bound(Plugin):
@@ -2187,7 +2187,7 @@ class _Plugin_psm_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: rdvs
 
 class _Plugin_rdvs_Core_Bound(Plugin):
@@ -2204,7 +2204,7 @@ class _Plugin_rdvs_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: reduceflicker
 
 class _Plugin_reduceflicker_Core_Bound(Plugin):
@@ -2217,7 +2217,7 @@ class _Plugin_reduceflicker_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: resize
 
 class _Plugin_resize_Core_Bound(Plugin):
@@ -2244,7 +2244,7 @@ class _Plugin_resize_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: retinex
 
 class _Plugin_retinex_Core_Bound(Plugin):
@@ -2259,7 +2259,7 @@ class _Plugin_retinex_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: rf
 
 class _Plugin_rf_Core_Bound(Plugin):
@@ -2272,7 +2272,7 @@ class _Plugin_rf_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: sangnom
 
 class _Plugin_sangnom_Core_Bound(Plugin):
@@ -2285,7 +2285,7 @@ class _Plugin_sangnom_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: scd
 
 class _Plugin_scd_Core_Bound(Plugin):
@@ -2300,7 +2300,7 @@ class _Plugin_scd_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: scrawl
 
 class _Plugin_scrawl_Core_Bound(Plugin):
@@ -2321,7 +2321,7 @@ class _Plugin_scrawl_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: scxvid
 
 class _Plugin_scxvid_Core_Bound(Plugin):
@@ -2334,7 +2334,7 @@ class _Plugin_scxvid_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: std
 
 class _Plugin_std_Core_Bound(Plugin):
@@ -2502,7 +2502,7 @@ class _Plugin_std_AudioNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: surfaceblur
 
 class _Plugin_surfaceblur_Core_Bound(Plugin):
@@ -2515,7 +2515,7 @@ class _Plugin_surfaceblur_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: svp1
 
 class _Plugin_svp1_Core_Bound(Plugin):
@@ -2530,7 +2530,7 @@ class _Plugin_svp1_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: svp2
 
 class _Plugin_svp2_Core_Bound(Plugin):
@@ -2543,7 +2543,7 @@ class _Plugin_svp2_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: tcanny
 
 class _Plugin_tcanny_Core_Bound(Plugin):
@@ -2556,7 +2556,7 @@ class _Plugin_tcanny_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: tdm
 
 class _Plugin_tdm_Core_Bound(Plugin):
@@ -2571,7 +2571,7 @@ class _Plugin_tdm_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: tedgemask
 
 class _Plugin_tedgemask_Core_Bound(Plugin):
@@ -2584,7 +2584,7 @@ class _Plugin_tedgemask_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: text
 
 class _Plugin_text_Core_Bound(Plugin):
@@ -2605,7 +2605,7 @@ class _Plugin_text_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: tivtc
 
 class _Plugin_tivtc_Core_Bound(Plugin):
@@ -2620,7 +2620,7 @@ class _Plugin_tivtc_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: tmap
 
 class _Plugin_tmap_Core_Bound(Plugin):
@@ -2633,7 +2633,7 @@ class _Plugin_tmap_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: tonemap
 
 class _Plugin_tonemap_Core_Bound(Plugin):
@@ -2650,7 +2650,7 @@ class _Plugin_tonemap_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: trt
 
 class _Plugin_trt_Core_Bound(Plugin):
@@ -2665,7 +2665,7 @@ class _Plugin_trt_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: ttmpsm
 
 class _Plugin_ttmpsm_Core_Bound(Plugin):
@@ -2678,7 +2678,7 @@ class _Plugin_ttmpsm_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: vcfreq
 
 class _Plugin_vcfreq_Core_Bound(Plugin):
@@ -2697,7 +2697,7 @@ class _Plugin_vcfreq_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: vcmod
 
 class _Plugin_vcmod_Core_Bound(Plugin):
@@ -2728,7 +2728,7 @@ class _Plugin_vcmod_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: vcmove
 
 class _Plugin_vcmove_Core_Bound(Plugin):
@@ -2747,7 +2747,7 @@ class _Plugin_vcmove_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: vfx
 
 class _Plugin_vfx_Core_Bound(Plugin):
@@ -2804,7 +2804,7 @@ class _Plugin_vfx_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: vivtc
 
 class _Plugin_vivtc_Core_Bound(Plugin):
@@ -2819,7 +2819,7 @@ class _Plugin_vivtc_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: vmaf
 
 class _Plugin_vmaf_Core_Bound(Plugin):
@@ -2836,7 +2836,7 @@ class _Plugin_vmaf_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: vscope
 
 class _Plugin_vscope_Core_Bound(Plugin):
@@ -2849,7 +2849,7 @@ class _Plugin_vscope_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: vsf
 
 class _Plugin_vsf_Core_Bound(Plugin):
@@ -2864,7 +2864,7 @@ class _Plugin_vsf_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: vsfm
 
 class _Plugin_vsfm_Core_Bound(Plugin):
@@ -2879,7 +2879,7 @@ class _Plugin_vsfm_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: waifu2x
 
 class _Plugin_waifu2x_Core_Bound(Plugin):
@@ -2894,7 +2894,7 @@ class _Plugin_waifu2x_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: warp
 
 class _Plugin_warp_Core_Bound(Plugin):
@@ -2913,7 +2913,7 @@ class _Plugin_warp_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: warpsf
 
 class _Plugin_warpsf_Core_Bound(Plugin):
@@ -2930,7 +2930,7 @@ class _Plugin_warpsf_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: wnnm
 
 class _Plugin_wnnm_Core_Bound(Plugin):
@@ -2948,7 +2948,7 @@ class _Plugin_wnnm_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: wwxd
 
 class _Plugin_wwxd_Core_Bound(Plugin):
@@ -2961,7 +2961,7 @@ class _Plugin_wwxd_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: xyvsf
 
 class _Plugin_xyvsf_Core_Bound(Plugin):
@@ -2976,7 +2976,7 @@ class _Plugin_xyvsf_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: yadifmod
 
 class _Plugin_yadifmod_Core_Bound(Plugin):
@@ -2989,7 +2989,7 @@ class _Plugin_yadifmod_VideoNode_Bound(Plugin):
 
 # end implementation
 
-    
+
 # implementation: znedi3
 
 class _Plugin_znedi3_Core_Bound(Plugin):
@@ -3043,20 +3043,20 @@ class RawNode:
         def _dependencies(self): ...
 
     @overload
-    def __eq__(self: 'SelfRawNode', other: 'SelfRawNode', /) -> bool: ...  # type: ignore[misc]
+    def __eq__(self: 'SelfRawNode', other: 'SelfRawNode') -> bool: ...  # type: ignore[misc]
 
     @overload
-    def __eq__(self, other: Any, /) -> Literal[False]: ...
+    def __eq__(self, other: Any) -> Literal[False]: ...
 
-    def __add__(self: 'SelfRawNode', other: 'SelfRawNode', /) -> 'SelfRawNode': ...
+    def __add__(self: 'SelfRawNode', other: 'SelfRawNode') -> 'SelfRawNode': ...
 
-    def __radd__(self: 'SelfRawNode', other: 'SelfRawNode', /) -> 'SelfRawNode': ...
+    def __radd__(self: 'SelfRawNode', other: 'SelfRawNode') -> 'SelfRawNode': ...
 
     def __mul__(self: 'SelfRawNode', other: int) -> 'SelfRawNode': ...
 
     def __rmul__(self: 'SelfRawNode', other: int) -> 'SelfRawNode': ...
 
-    def __getitem__(self: 'SelfRawNode', index: Union[int, slice], /) -> 'SelfRawNode': ...
+    def __getitem__(self: 'SelfRawNode', index: Union[int, slice]) -> 'SelfRawNode': ...
 
     def __len__(self) -> int: ...
 
