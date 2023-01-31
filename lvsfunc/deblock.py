@@ -5,13 +5,13 @@ from pathlib import Path
 from typing import Any, Callable, Literal, Sequence, SupportsFloat, cast
 
 from vskernels import Catrom, Kernel, KernelT, Point
-from vstools import (
-    DependencyNotFoundError, DitherType, FrameRangeN, FrameRangesN, Matrix, check_variable, core, depth, get_depth,
-    get_nvidia_version, get_prop, replace_ranges, vs
-)
+from vstools import (CustomTypeError, CustomValueError, DependencyNotFoundError, DitherType, FrameRangeN, FrameRangesN,
+                     InvalidColorFamilyError, LengthMismatchError, Matrix, UnsupportedVideoFormatError, check_variable,
+                     core, depth, get_depth, get_nvidia_version, get_prop, replace_ranges, vs)
 
 __all__ = [
-    'autodb_dpir', 'dpir'
+    'autodb_dpir',
+    'dpir',
 ]
 
 
@@ -110,8 +110,10 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
         return out
 
     if len(strs) != len(thrs):
-        raise ValueError('autodb_dpir: You must pass an equal amount of values to '
-                         f'strength {len(strs)} and thrs {len(thrs)}!')
+        raise CustomValueError(
+            f"You must pass an equal amount of values to strength {len(strs)} and thrs {len(thrs)}!",
+            autodb_dpir, f"{len(strs)} != {len(thrs)}"
+        )
 
     if edgemasker is None:
         edgemasker = core.std.Prewitt
@@ -232,8 +234,8 @@ def dpir(
 
     :raises DependencyNotFoundError: Dependencies are missing.
     :raises TypeError:              Invalid ``mode`` is given.
-    :raises ValueError:             ``strength`` is a VideoNode, but not GRAY8 or GRAYS.
-    :raises ValueError:             ``strength`` is a VideoNode, but of a different length than the input clip.
+    :raises InvalidVideoFormatError: ``strength`` is a VideoNode, but not GRAY8 or GRAYS.
+    :raises LengthMismatchError:    ``strength`` is a VideoNode, but of a different length than the input clip.
     :raises TypeError:              ``strength`` is not a :py:attr:`typing.SupportsFloat` or VideoNode.
     """
     try:
@@ -253,7 +255,7 @@ def dpir(
     match mode.lower():
         case 'deblock': model = DPIRModel.drunet_deblocking_grayscale if is_gray else DPIRModel.drunet_deblocking_color
         case 'denoise': model = DPIRModel.drunet_color if not is_gray else DPIRModel.drunet_gray
-        case _: raise TypeError(f"dpir: '\"{mode}\" is not a valid mode!'")
+        case _: raise CustomTypeError(f"\"{mode}\" is not a valid mode!", dpir)
 
     def _get_strength_clip(clip: vs.VideoNode, strength: SupportsFloat) -> vs.VideoNode:
         return clip.std.BlankClip(format=vs.GRAYS, color=float(strength) / 255, keep=True)
@@ -261,23 +263,22 @@ def dpir(
     if isinstance(strength, vs.VideoNode):
         assert (fmt := strength.format)
 
-        if fmt.color_family != vs.GRAY:
-            raise ValueError("dpir: '`strength` must be a GRAY clip!'")
+        InvalidColorFamilyError.check(fmt, vs.GRAY, dpir, "`strength` must be of {correct} color family, not {wrong}!")
 
         if fmt.id == vs.GRAY8:
             strength = strength.akarin.Expr('x 255 /', vs.GRAYS)
         elif fmt.id != vs.GRAYS:
-            raise ValueError("dpir: '`strength` must be GRAY8 or GRAYS!'")
+            raise UnsupportedVideoFormatError("`strength` must be GRAY8 or GRAYS!", dpir)
 
         if strength.width != clip.width or strength.height != clip.height:
             strength = kernel.scale(strength, clip.width, clip.height)
 
         if strength.num_frames != clip.num_frames:
-            raise ValueError("dpir: '`strength` must be of the same length as \"clip\"'")
+            raise LengthMismatchError(dpir, "`strength` must be of the same length as \"clip\"")
     elif isinstance(strength, SupportsFloat):
         strength = float(strength)
     else:
-        raise TypeError("dpir: '`strength` must be a float or a GRAYS clip'")
+        raise UnsupportedVideoFormatError("`strength` must be a float or a GRAYS clip", dpir)
 
     if not is_rgb:
         if matrix is None:

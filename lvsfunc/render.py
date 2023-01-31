@@ -5,7 +5,7 @@ from functools import partial
 from threading import Condition
 from typing import BinaryIO, Callable, TextIO
 
-from vstools import InvalidColorFamilyError, core, get_prop, get_render_progress, vs
+from vstools import CustomValueError, InvalidColorFamilyError, core, get_prop, get_render_progress, vs
 
 from .types import SceneChangeMode
 
@@ -144,7 +144,7 @@ def clip_async_render(clip: vs.VideoNode,
 
     if outfile:
         if clip.format is None:
-            raise ValueError("clip_async_render: 'Cannot render a variable format clip to y4m!'")
+            raise CustomValueError("Cannot render a variable format clip to y4m!", clip_async_render)
 
         InvalidColorFamilyError.check(
             clip, (vs.YUV, vs.GRAY), clip_async_render,
@@ -161,7 +161,8 @@ def clip_async_render(clip: vs.VideoNode,
                 case (2, 2): y4mformat = "410"
                 case (2, 0): y4mformat = "411"
                 case (0, 1): y4mformat = "440"
-                case _: raise ValueError("clip_async_render: 'What have you done?'")
+                case _: raise CustomValueError("What have you done?", clip_async_render,
+                                               (clip.format.subsampling_w, clip.format.subsampling_h))
 
         y4mformat = f"{y4mformat}p{clip.format.bits_per_sample}" if clip.format.bits_per_sample > 8 else y4mformat
 
@@ -210,7 +211,7 @@ def find_scene_changes(clip: vs.VideoNode, mode: SceneChangeMode = SceneChangeMo
 
     :return:                List of scene changes.
 
-    :raises ValueError:     Invalid ``mode`` gets passed.
+    :raises ValueError:     Invalid ``mode`` was passed.
     """
     frames = []
     clip = clip.resize.Bilinear(640, 360, format=vs.YUV420P8)
@@ -234,7 +235,7 @@ def find_scene_changes(clip: vs.VideoNode, mode: SceneChangeMode = SceneChangeMo
             case SceneChangeMode.WWXD_SCXVID_INTERSECTION:
                 if get_prop(f, "Scenechange", int) == 1 and get_prop(f, "_SceneChangePrev", int) == 1:
                     frames.append(n)
-            case _: raise ValueError("find_scene_changes: 'Invalid `mode` passed!'")
+            case _: raise CustomValueError("Invalid `mode` passed!", find_scene_changes)
 
     clip_async_render(clip, progress="Detecting scene changes...", callback=_cb)
 
