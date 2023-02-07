@@ -13,7 +13,8 @@ from vskernels import Catrom
 from vstools import (CustomError, CustomNotImplementedError, CustomTypeError, CustomValueError, DependencyNotFoundError,
                      Direction, FormatsMismatchError, InvalidColorFamilyError, LengthMismatchError, Matrix,
                      UnsupportedSubsamplingError, VariableFormatError, check_variable, check_variable_format,
-                     check_variable_resolution, core, depth, get_prop, get_subsampling, get_w, clip_async_render)
+                     check_variable_resolution, core, depth, get_prop, get_subsampling, get_w, clip_async_render,
+                     Sentinel)
 from vstools import split as split_planes
 from vstools import vs
 
@@ -623,15 +624,13 @@ def diff(*clips: vs.VideoNode,
 
     LengthMismatchError.check(diff, a.num_frames, b.num_frames)
 
-    frames = []
     if thr <= 1:
         ps = core.std.PlaneStats(a, b)
 
-        def _cb(n: int, f: vs.VideoFrame) -> None:
-            if get_prop(f, 'PlaneStatsDiff', float) > thr:
-                frames.append(n)
+        frames_render = clip_async_render(
+            ps, None, msg, lambda n, f: Sentinel.check(n, get_prop(f, 'PlaneStatsDiff', float) > thr)
+        )
 
-        clip_async_render(ps, progress=msg, callback=_cb)
         diff_clip = core.std.MakeDiff(a, b)
     else:
         diff_clip = diff_func(a, b).std.PlaneStats()
@@ -640,11 +639,13 @@ def diff(*clips: vs.VideoNode,
 
         typ = float if diff_clip.format.sample_type == vs.FLOAT else int
 
-        def _cb(n: int, f: vs.VideoFrame) -> None:
-            if get_prop(f, 'PlaneStatsMin', typ) <= thr or get_prop(f, 'PlaneStatsMax', typ) >= 255 - thr > thr:
-                frames.append(n)
+        frames_render = clip_async_render(
+            diff_clip, None, msg, lambda n, f: Sentinel.check(
+                n, get_prop(f, 'PlaneStatsMin', typ) <= thr or get_prop(f, 'PlaneStatsMax', typ) >= 255 - thr > thr
+            )
+        )
 
-        clip_async_render(diff_clip, progress=msg, callback=_cb)
+    frames = list(Sentinel.filter(frames_render))
 
     if not frames:
         raise CustomError[StopIteration]('No differences found!', diff)
