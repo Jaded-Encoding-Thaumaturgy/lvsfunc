@@ -13,14 +13,12 @@ from vskernels import Catrom
 from vstools import (CustomError, CustomNotImplementedError, CustomTypeError, CustomValueError, DependencyNotFoundError,
                      Direction, FormatsMismatchError, InvalidColorFamilyError, LengthMismatchError, Matrix,
                      UnsupportedSubsamplingError, VariableFormatError, check_variable, check_variable_format,
-                     check_variable_resolution, core, depth, get_prop, get_subsampling, get_w)
+                     check_variable_resolution, core, depth, get_prop, get_subsampling, get_w, clip_async_render)
 from vstools import split as split_planes
 from vstools import vs
 
 from .exceptions import ClipsAndNamedClipsError
 from .misc import source
-from .render import clip_async_render
-from .types import x265_me_map
 from .util import truncate_string
 
 __all__ = [
@@ -38,6 +36,10 @@ __all__ = [
 ]
 
 T = TypeVar('T')
+
+x265_me_map = [
+    "dia", "hex", "umh", "star", "sea", "full"
+]
 
 
 class Comparer(ABC):

@@ -58,8 +58,6 @@ Want to contribute to lvsfunc? Check out the `how to contribute <contribute>` se
     submodules/deblock
     submodules/exceptions
     submodules/misc
-    submodules/render
-    submodules/types
     submodules/util
 
 
