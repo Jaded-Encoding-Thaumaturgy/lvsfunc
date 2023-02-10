@@ -1,6 +1,5 @@
 VapourSynth>=60
 vstools>=1.6.9
 vskernels>=2.2.3
-vsexprtools>=1.2.8
 vsparsedvd>=0.1.0
 pymediainfo~=6.0.1

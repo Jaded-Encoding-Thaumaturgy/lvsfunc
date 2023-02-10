@@ -5,7 +5,6 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Sequence, cast
 
-from vsexprtools import ExprOp
 from vskernels import Catrom, KernelT
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
 from vstools import (MISSING, CustomIndexError, CustomValueError, DependencyNotFoundError, FileType,
@@ -185,6 +184,11 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
 
     :raises IndexError:     Any value in ``values`` are above 255.
     """
+    try:
+        from vsexprtools import ExprOp
+    except ModuleNotFoundError as e:
+        raise DependencyNotFoundError(shift_tint, e)
+
     assert check_variable(clip, "shift_tint")
 
     val = normalize_seq(values)

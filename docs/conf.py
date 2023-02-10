@@ -78,8 +78,7 @@ autodoc_mock_imports = [
     "vapoursynth",
     "vstools",
     "vskernels",
-    "vsparsedvd",
-    "vsexprtools"
+    "vsparsedvd"
 ]
 
 # -- Extension configuration -------------------------------------------------
