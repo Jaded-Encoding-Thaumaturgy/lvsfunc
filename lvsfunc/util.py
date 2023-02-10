@@ -7,7 +7,9 @@ from functools import partial
 from typing import Any
 
 from vskernels import Catrom, Kernel, KernelT
-from vstools import CustomIndexError, CustomValueError, FrameRangesN, Matrix, check_variable, core, get_prop, vs
+from vstools import (
+    CustomIndexError, CustomValueError, FrameRangeN, FrameRangesN, Matrix, check_variable, core, get_prop, vs
+)
 
 __all__ = [
     'colored_clips',
@@ -191,7 +193,7 @@ def convert_rfs(rfs_string: str) -> FrameRangesN:
         raise CustomValueError('Invalid characters were found in the input string.', convert_rfs)
 
     matches = re.findall(r'\[(\s*?\d+\s\d+\s*?)\]|(\d+)', rfs_string)
-    ranges = FrameRangesN()
+    ranges = list[FrameRangeN]()
 
     if not matches:
         return ranges
