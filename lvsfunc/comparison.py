@@ -547,8 +547,7 @@ def diff(*clips: vs.VideoNode,
          height: int = 288,
          interleave: bool = False,
          return_ranges: bool = False,
-         also_check_avg: bool = False,
-         also_check_avg_thr: float | None = None,
+         avg_thr: float | Literal[True] = True,
          exclusion_ranges: Sequence[int | tuple[int, int]] | None = None,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a, b: core.std.MakeDiff(a, b),
          msg: str = "Diffing clips...",
@@ -607,12 +606,10 @@ def diff(*clips: vs.VideoNode,
         raise CustomValueError("Must pass exactly 2 `clips` or `namedclips`!", diff)
 
     if not thr < 128:
-        raise CustomValueError(f"`thr` must be below 128!", diff)
+        raise CustomValueError("`thr` must be below 128!", diff)
 
-    if also_check_avg_thr == None and thr > 1:
-        also_check_avg_thr = (128 - thr) * 0.000046875 + 0.0105
-        also_check_avg_thr = max(0.012, also_check_avg_thr)
-        # derived experimentally. the goal is to not create false positives for a given thr
+    if avg_thr is True:
+        avg_thr = max(0.012, (128 - thr) * 0.000046875 + 0.0105) if thr > 1 else 0.0
 
     if clips and not all([c.format for c in clips]):
         raise VariableFormatError(diff)
@@ -647,7 +644,7 @@ def diff(*clips: vs.VideoNode,
         assert diff_clip.format
 
         typ = float if diff_clip.format.sample_type == vs.FLOAT else int
-        if also_check_avg:
+        if avg_thr > 0.0:
             ps = core.std.PlaneStats(a, b)
 
             def transfer_property(n, f):
@@ -660,7 +657,7 @@ def diff(*clips: vs.VideoNode,
             frames_render = clip_async_render(
                 diff_clip, None, msg, lambda n, f: Sentinel.check(
                     n, get_prop(f, 'PlaneStatsMin', typ) <= thr or get_prop(f, 'PlaneStatsMax', typ) >= 255 - thr > thr
-                    or get_prop(f, 'PlaneStatsDiff', float) > also_check_avg_thr
+                    or get_prop(f, 'PlaneStatsDiff', float) > avg_thr
                 )
             )
         else:
