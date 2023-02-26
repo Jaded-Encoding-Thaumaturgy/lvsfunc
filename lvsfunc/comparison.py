@@ -605,8 +605,8 @@ def diff(*clips: vs.VideoNode,
     if (clips and len(clips) != 2) or (namedclips and len(namedclips) != 2):
         raise CustomValueError("Must pass exactly 2 `clips` or `namedclips`!", diff)
 
-    if not thr < 128:
-        raise CustomValueError("`thr` must be below 128!", diff)
+    if 0 < thr < 128:
+        raise CustomValueError("`thr` must be between [0, 128]!", diff, thr)
 
     if avg_thr is True:
         avg_thr = max(0.012, (128 - thr) * 0.000046875 + 0.0105) if thr > 1 else 0.0
