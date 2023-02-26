@@ -14,7 +14,7 @@ from vstools import (CustomError, CustomNotImplementedError, CustomTypeError, Cu
                      Direction, FormatsMismatchError, InvalidColorFamilyError, LengthMismatchError, Matrix,
                      UnsupportedSubsamplingError, VariableFormatError, check_variable, check_variable_format,
                      check_variable_resolution, core, depth, get_prop, get_subsampling, get_w, clip_async_render,
-                     Sentinel)
+                     Sentinel, merge_clip_props)
 from vstools import split as split_planes
 from vstools import vs
 
@@ -630,42 +630,29 @@ def diff(*clips: vs.VideoNode,
 
     LengthMismatchError.check(diff, a.num_frames, b.num_frames)
 
+    callbacks = []
+
     if thr <= 1:
-        ps = core.std.PlaneStats(a, b)
+        callbacks.append(lambda f: get_prop(f, 'PlaneStatsDiff', float) > thr)
 
-        frames_render = clip_async_render(
-            ps, None, msg, lambda n, f: Sentinel.check(n, get_prop(f, 'PlaneStatsDiff', float) > thr)
-        )
-
-        diff_clip = core.std.MakeDiff(a, b)
+        diff_clip = merge_clip_props(a.std.MakeDiff(b), a.std.PlaneStats(b))
     else:
         diff_clip = diff_func(a, b).std.PlaneStats()
 
-        assert diff_clip.format
+        typ = float if diff_clip.format and diff_clip.format.sample_type == vs.FLOAT else int
 
-        typ = float if diff_clip.format.sample_type == vs.FLOAT else int
+        callbacks.append(
+            lambda f: get_prop(f, 'PlaneStatsMin', typ) <= thr or get_prop(f, 'PlaneStatsMax', typ) >= 255 - thr > thr
+        )
+
         if avg_thr > 0.0:
-            ps = core.std.PlaneStats(a, b)
+            diff_clip = merge_clip_props(diff_clip, a.std.PlaneStats(b, None, 'PAVG'))
 
-            def transfer_property(n, f):
-                fout = f[1].copy()
-                fout.props['PlaneStatsDiff'] = f[0].props['PlaneStatsDiff']
-                return fout
+            callbacks.append(lambda f: get_prop(f, 'PAVGDiff', float) > avg_thr)
 
-            diff_clip = core.std.ModifyFrame(clip=ps, clips=[ps, diff_clip], selector=transfer_property)
-
-            frames_render = clip_async_render(
-                diff_clip, None, msg, lambda n, f: Sentinel.check(
-                    n, get_prop(f, 'PlaneStatsMin', typ) <= thr or get_prop(f, 'PlaneStatsMax', typ) >= 255 - thr > thr
-                    or get_prop(f, 'PlaneStatsDiff', float) > avg_thr
-                )
-            )
-        else:
-            frames_render = clip_async_render(
-                diff_clip, None, msg, lambda n, f: Sentinel.check(
-                    n, get_prop(f, 'PlaneStatsMin', typ) <= thr or get_prop(f, 'PlaneStatsMax', typ) >= 255 - thr > thr
-                )
-            )
+    frames_render = clip_async_render(
+        diff_clip, None, msg, lambda n, f: Sentinel.check(n, any(cb(f) for cb in callbacks))
+    )
 
     frames = list(Sentinel.filter(frames_render))
 
