@@ -522,6 +522,7 @@ def diff(*clips: vs.VideoNode,
          height: int = ...,
          interleave: bool = ...,
          return_ranges: Literal[True] = True,
+         avg_thr: float | Literal[True] = True,
          exclusion_ranges: Sequence[int | tuple[int, int]] | None = ...,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
          msg: str = ...,
@@ -535,6 +536,7 @@ def diff(*clips: vs.VideoNode,
          height: int = ...,
          interleave: bool = ...,
          return_ranges: Literal[False],
+         avg_thr: float | Literal[True] = True,
          exclusion_ranges: Sequence[int | tuple[int, int]] | None = ...,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
          msg: str = ...,
@@ -581,8 +583,8 @@ def diff(*clips: vs.VideoNode,
                                 (using :py:class:`lvsfunc.comparison.Interleave`).
                                 This will not return a diff clip
     :param return_ranges:       Return a list of ranges in addition to the comparison clip.
-    :param also_check_avg:      If using Max/Min, also check average diff.
-    :param also_check_avg_thr:  Threshold of additional average diff check.
+    :param avg_thr:             Threshold of additional average diff check.
+                                True to automatically calculate based on thr.
     :param exclusion_ranges:    Excludes a list of frame ranges from difference checking output (but not processing).
     :param diff_func:           Function for calculating diff in PlaneStatsMin/Max mode.
     :param msg:                 Message for the progress bar. Defaults to "Diffing clips...".
