@@ -14,7 +14,7 @@ from vstools import (CustomError, CustomNotImplementedError, CustomTypeError, Cu
                      Direction, FormatsMismatchError, InvalidColorFamilyError, LengthMismatchError, Matrix,
                      UnsupportedSubsamplingError, VariableFormatError, check_variable, check_variable_format,
                      check_variable_resolution, core, depth, get_prop, get_subsampling, get_w, clip_async_render,
-                     Sentinel)
+                     Sentinel, merge_clip_props)
 from vstools import split as split_planes
 from vstools import vs
 
@@ -522,6 +522,7 @@ def diff(*clips: vs.VideoNode,
          height: int = ...,
          interleave: bool = ...,
          return_ranges: Literal[True] = True,
+         avg_thr: float | Literal[True] = True,
          exclusion_ranges: Sequence[int | tuple[int, int]] | None = ...,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
          msg: str = ...,
@@ -535,6 +536,7 @@ def diff(*clips: vs.VideoNode,
          height: int = ...,
          interleave: bool = ...,
          return_ranges: Literal[False],
+         avg_thr: float | Literal[True] = True,
          exclusion_ranges: Sequence[int | tuple[int, int]] | None = ...,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
          msg: str = ...,
@@ -547,6 +549,7 @@ def diff(*clips: vs.VideoNode,
          height: int = 288,
          interleave: bool = False,
          return_ranges: bool = False,
+         avg_thr: float | Literal[True] = True,
          exclusion_ranges: Sequence[int | tuple[int, int]] | None = None,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a, b: core.std.MakeDiff(a, b),
          msg: str = "Diffing clips...",
@@ -580,6 +583,8 @@ def diff(*clips: vs.VideoNode,
                                 (using :py:class:`lvsfunc.comparison.Interleave`).
                                 This will not return a diff clip
     :param return_ranges:       Return a list of ranges in addition to the comparison clip.
+    :param avg_thr:             Threshold of additional average diff check.
+                                True to automatically calculate based on thr.
     :param exclusion_ranges:    Excludes a list of frame ranges from difference checking output (but not processing).
     :param diff_func:           Function for calculating diff in PlaneStatsMin/Max mode.
     :param msg:                 Message for the progress bar. Defaults to "Diffing clips...".
@@ -602,8 +607,11 @@ def diff(*clips: vs.VideoNode,
     if (clips and len(clips) != 2) or (namedclips and len(namedclips) != 2):
         raise CustomValueError("Must pass exactly 2 `clips` or `namedclips`!", diff)
 
-    if not 1 <= thr < 128:
-        raise CustomValueError(f"`thr` must be between 1 and 128, not {thr}!", diff)
+    if abs(thr) < 128:
+        raise CustomValueError("`thr` must be between [-128, 128]!", diff, thr)
+
+    if avg_thr is True:
+        avg_thr = max(0.012, (128 - thr) * 0.000046875 + 0.0105) if thr > 1 else 0.0
 
     if clips and not all([c.format for c in clips]):
         raise VariableFormatError(diff)
@@ -624,26 +632,29 @@ def diff(*clips: vs.VideoNode,
 
     LengthMismatchError.check(diff, a.num_frames, b.num_frames)
 
+    callbacks = []
+
     if thr <= 1:
-        ps = core.std.PlaneStats(a, b)
+        callbacks.append(lambda f: get_prop(f, 'PlaneStatsDiff', float) > thr)
 
-        frames_render = clip_async_render(
-            ps, None, msg, lambda n, f: Sentinel.check(n, get_prop(f, 'PlaneStatsDiff', float) > thr)
-        )
-
-        diff_clip = core.std.MakeDiff(a, b)
+        diff_clip = merge_clip_props(a.std.MakeDiff(b), a.std.PlaneStats(b))
     else:
         diff_clip = diff_func(a, b).std.PlaneStats()
 
-        assert diff_clip.format
+        typ = float if diff_clip.format and diff_clip.format.sample_type == vs.FLOAT else int
 
-        typ = float if diff_clip.format.sample_type == vs.FLOAT else int
-
-        frames_render = clip_async_render(
-            diff_clip, None, msg, lambda n, f: Sentinel.check(
-                n, get_prop(f, 'PlaneStatsMin', typ) <= thr or get_prop(f, 'PlaneStatsMax', typ) >= 255 - thr > thr
-            )
+        callbacks.append(
+            lambda f: get_prop(f, 'PlaneStatsMin', typ) <= thr or get_prop(f, 'PlaneStatsMax', typ) >= 255 - thr > thr
         )
+
+        if avg_thr > 0.0:
+            diff_clip = merge_clip_props(diff_clip, a.std.PlaneStats(b, None, 'PAVG'))
+
+            callbacks.append(lambda f: get_prop(f, 'PAVGDiff', float) > avg_thr)
+
+    frames_render = clip_async_render(
+        diff_clip, None, msg, lambda n, f: Sentinel.check(n, any(cb(f) for cb in callbacks))
+    )
 
     frames = list(Sentinel.filter(frames_render))
 
