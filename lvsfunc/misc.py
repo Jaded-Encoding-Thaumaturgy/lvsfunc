@@ -3,16 +3,14 @@ from __future__ import annotations
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Sequence, cast
 
-from vsexprtools import ExprOp
 from vskernels import Catrom, KernelT
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
-from vstools import (
-    MISSING, CustomIndexError, CustomTypeError, CustomValueError, DependencyNotFoundError, FileType, FrameRangeN,
-    FrameRangesN, IndexingType, Matrix, check_perms, check_variable, core, depth, get_depth, normalize_ranges,
-    normalize_seq, replace_ranges, scale_8bit, vs
-)
+from vstools import (MISSING, CustomIndexError, CustomValueError, DependencyNotFoundError, FileType,
+                     FileTypeMismatchError, FramePropError, FrameRangeN, FrameRangesN, IndexingType, Matrix,
+                     ResolutionsMismatchError, check_perms, check_variable, core, depth, get_depth, normalize_ranges,
+                     normalize_seq, replace_ranges, scale_8bit, vs)
 
 from .util import match_clip
 
@@ -20,7 +18,7 @@ __all__ = [
     'limit_dark',
     'overlay_sign',
     'shift_tint',
-    'source', 'src'
+    'source', 'src',
 ]
 
 
@@ -83,7 +81,7 @@ def source(filepath: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  
     :return:                    VapourSynth clip representing the input file.
 
     :raises ValueError:         Something other than a path is passed to ``filepath``.
-    :raises CustomValueError:   Something other than a video or image file is passed to ``filepath``.
+    :raises FileTypeMismatchError: Something other than a video or image file is passed to ``filepath``.
     """
     if filepath is MISSING:  # type: ignore
         return partial(  # type: ignore
@@ -115,7 +113,7 @@ def source(filepath: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  
                 file = FileType.parse(newpath)
 
     if not file or not _check_file_type(FileType(file.file_type)):
-        raise CustomValueError('File isn\'t a video!', source)
+        raise FileTypeMismatchError('File isn\'t a video or image file!', source)
 
     props = dict[str, Any]()
     debug_props = dict[str, Any]()
@@ -186,6 +184,11 @@ def shift_tint(clip: vs.VideoNode, values: int | Sequence[int] = 16) -> vs.Video
 
     :raises IndexError:     Any value in ``values`` are above 255.
     """
+    try:
+        from vsexprtools import ExprOp
+    except ModuleNotFoundError as e:
+        raise DependencyNotFoundError(shift_tint, e)
+
     assert check_variable(clip, "shift_tint")
 
     val = normalize_seq(values)
@@ -218,13 +221,13 @@ def limit_dark(
     """
     if thr_lower is None:
         def _diff(n: int, f: vs.VideoFrame) -> vs.VideoNode:
-            return clip if f[0][0, 0] > thr else filtered  # type: ignore
+            return clip if f[0][0, 0] > thr else filtered
     else:
         def _diff(n: int, f: vs.VideoFrame) -> vs.VideoNode:
             return filtered if thr_lower <= f[0][0, 0] <= thr else clip  # type: ignore
 
     if thr_lower is not None and thr_lower > thr:
-        raise CustomValueError('"thr_lower" must be a lower value than "thr"!', limit_dark, (thr_lower, thr))
+        raise CustomValueError("\"thr_lower\" must be a lower value than \"thr\"!", limit_dark, (thr_lower, thr))
 
     avg = clip.std.BlankClip(1, 1, vs.GRAYS).std.CopyFrameProps(clip.std.PlaneStats())
 
@@ -248,7 +251,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
 
     :param clip:                    Clip to process.
     :param overlay:                 Sign or logo to overlay. Must be the png loaded in
-                                    through :py:func:`core.vapoursnth.imwri.Read` or a path string to the image file,
+                                    through :py:func:`core.vapoursynth.imwri.Read` or a path string to the image file,
                                     and **MUST** be the same dimensions as the ``clip`` to process.
     :param frame_ranges:            Frame ranges or starting frame to apply the overlay to.
                                     See :py:attr:`vstools.FrameRange` for more info.
@@ -269,12 +272,12 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     :return:                        Clip with a logo or sign overlaid on top for the given frame ranges,
                                     either with or without a fade.
 
-    :raises DependencyNotFoundError: Dependencies are missing.
+    :raises DependencyNotFoundError: `fade_length` > 0 and dependencies are missing.
     :raises ValueError:             ``overlay`` is not a VideoNode or a path.
-    :raises ValueError:             The overlay clip is not of the same dimensions as the input clip.
+    :raises ResolutionsMismatchError:   The overlay clip is not of the same dimensions as the input clip.
     :raises InvalidMatrixError:     ``Matrix`` is an invalid value.
-    :raises ValueError:             Overlay does not have an alpha channel.
-    :raises TypeError:              Overlay clip was not loaded in using :py:func:`vapoursynth.core.imwri.Read`.
+    :raises FramePropError:         Overlay does not have an alpha channel.
+    :raises FramePropError:         Overlay clip was not loaded in using :py:func:`vapoursynth.core.imwri.Read`.
     """
     if fade_length > 0:
         try:
@@ -288,15 +291,16 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     clip_fam = clip.format.color_family
 
     if is_string:
-        overlay = core.imwri.Read(overlay, alpha=True)  # type: ignore
+        overlay = core.imwri.Read(overlay, alpha=True)
 
     if not isinstance(overlay, vs.VideoNode):
         raise CustomValueError('`overlay` must be a VideoNode object or a string path!', overlay_sign)
 
+    overlay = cast(vs.VideoNode, overlay)
+
     assert check_variable(overlay, overlay_sign)
 
-    if (clip.width, clip.height) != (overlay.width, overlay.height):
-        raise CustomValueError('Your overlay clip must have the same dimensions as your input clip!', overlay_sign)
+    ResolutionsMismatchError.check(overlay_sign, clip, overlay)
 
     if isinstance(frame_ranges, list) and len(frame_ranges) > 1:
         warnings.warn("overlay_sign: 'Only one range is currently supported! Grabbing the first item in list.'")
@@ -314,9 +318,9 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
         mask = overlay.std.PropToClip('_Alpha')
     except vs.Error:
         if is_string:
-            raise CustomValueError('Please make sure your image has an alpha channel!', overlay_sign)
+            raise FramePropError(overlay_sign, "Your image must have an alpha channel (transparency)!")
 
-        raise CustomTypeError('Please make sure you loaded your sign in using imwri.Read!', overlay_sign)
+        raise FramePropError(overlay_sign, "You must load in the sign using `imwri.Read`!")
 
     merge = clip.std.MaskedMerge(overlay, depth(mask, get_depth(overlay)).std.Limiter())
 

@@ -1,9 +1,4 @@
 VapourSynth>=60
-vstools>=1.6.9
-vskernels>=2.2.3
-vsexprtools>=1.2.8
-vsrgtools>=1.3.4
-vsmasktools>=0.7.0
-vsscale>=1.4.0
+vstools>=2.0.0
+vskernels>=2.3.0
 vsparsedvd>=0.1.0
-pymediainfo~=6.0.1

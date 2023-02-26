@@ -9,11 +9,11 @@ Don't tell louis this exists though, else I'm a dead man.
 """
 from __future__ import annotations
 
-from vskernels import Point, Bicubic
+from vskernels import Bicubic, Point
 from vstools import check_variable_resolution, mod_x, vs
 
 __all__ = [
-    'minecraftify'
+    'minecraftify',
 ]
 
 
@@ -23,11 +23,13 @@ def minecraftify(clip: vs.VideoNode, div: float = 64.0, mod: int | None = None) 
 
     Idea from Meme-Maji's Kobayashi memery (love you Vardë).
 
-    :param clip:     Clip to process.
+    :param clip:    Clip to process.
     :param div:     How much to divide the clip's resolution with.
     :param mod:     Force the downscaled clip to be MOD# compliant.
 
     :return:        A Minecraft.
+
+    :raises VariableResolutionError:    Clip is of a variable resolution.
     """
     check_variable_resolution(clip, minecraftify)
 

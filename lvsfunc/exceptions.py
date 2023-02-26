@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from vstools import CustomValueError, FuncExceptT
+from vstools import CustomTypeError, FuncExceptT
 
 __all__ = [
-    'ClipsAndNamedClipsError'
+    'ClipsAndNamedClipsError',
 ]
 
 
-class ClipsAndNamedClipsError(CustomValueError):
+class ClipsAndNamedClipsError(CustomTypeError):
     """Raised when both positional clips and named clips are given."""
 
     def __init__(

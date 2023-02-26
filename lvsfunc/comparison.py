@@ -10,39 +10,37 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Literal, Sequence, TypeVar, overload
 
 from vskernels import Catrom
-from vstools import (
-    CustomValueError, DependencyNotFoundError, Direction, FormatsMismatchError, InvalidColorFamilyError, Matrix,
-    VariableFormatError, check_variable, check_variable_format, check_variable_resolution, core, depth, get_prop,
-    get_subsampling, get_w
-)
+from vstools import (CustomError, CustomNotImplementedError, CustomTypeError, CustomValueError, DependencyNotFoundError,
+                     Direction, FormatsMismatchError, InvalidColorFamilyError, LengthMismatchError, Matrix,
+                     UnsupportedSubsamplingError, VariableFormatError, check_variable, check_variable_format,
+                     check_variable_resolution, core, depth, get_prop, get_subsampling, get_w, clip_async_render,
+                     Sentinel)
 from vstools import split as split_planes
 from vstools import vs
 
 from .exceptions import ClipsAndNamedClipsError
 from .misc import source
-from .render import clip_async_render
-from .types import x265_me_map
 from .util import truncate_string
 
 __all__ = [
     'compare', 'comp',
     'Comparer',
     'diff',
-    'Interleave',
-    'interleave',
+    'Interleave', 'interleave',
     'source_mediainfo', 'srcm',
-    'Split',
-    'split',
+    'Split', 'split',
     'stack_compare', 'scomp',
-    'stack_horizontal',
+    'stack_horizontal', 'stack_vertical',
     'stack_planes',
-    'stack_vertical',
     'Stack',
-    'Tile',
-    'tile',
+    'Tile', 'tile',
 ]
 
 T = TypeVar('T')
+
+x265_me_map = [
+    "dia", "hex", "umh", "star", "sea", "full"
+]
 
 
 class Comparer(ABC):
@@ -72,11 +70,11 @@ class Comparer(ABC):
                  label_alignment: int = 7
                  ) -> None:
         if len(clips) < 2:
-            raise ValueError("Comparer: Compare functions must be used on at least 2 clips!")
+            raise CustomValueError("Compare functions must be used on at least 2 clips!", self.__class__)
         if label_alignment not in list(range(1, 10)):
-            raise ValueError("Comparer: `label_alignment` must be an integer from 1 to 9!")
+            raise CustomValueError("`label_alignment` must be an integer from 1 to 9!", self.__class__)
         if not isinstance(clips, (dict, Sequence)):
-            raise TypeError(f"Comparer: Unexpected type {type(clips)} for `clips` argument!")
+            raise CustomTypeError(f"Unexpected type {type(clips)} for `clips` argument!", self.__class__)
 
         self.clips = list(clips.values()) if isinstance(clips, dict) else list(clips)
         self.names = list(clips.keys()) if isinstance(clips, dict) else None
@@ -104,7 +102,7 @@ class Comparer(ABC):
 
     @abstractmethod
     def _compare(self) -> vs.VideoNode:
-        raise NotImplementedError
+        raise CustomNotImplementedError("This function or method has not been implemented yet!", self.__class__)
 
     @property
     def clip(self) -> vs.VideoNode:
@@ -152,11 +150,11 @@ class Stack(Comparer):
     def _compare(self) -> vs.VideoNode:
         if self.direction == Direction.HORIZONTAL:
             if not self.height:
-                raise ValueError("Stack: StackHorizontal requires that all clips be the same height!")
+                raise CustomValueError("StackHorizontal requires that all clips be the same height!", self.__class__)
             return core.std.StackHorizontal(self._marked_clips())
 
         if not self.width:
-            raise ValueError("Stack: StackVertical requires that all clips be the same width!")
+            raise CustomValueError("StackVertical requires that all clips be the same width!", self.__class__)
         return core.std.StackVertical(self._marked_clips())
 
 
@@ -255,14 +253,14 @@ class Tile(Comparer):
         super().__init__(clips, label_alignment=label_alignment)
 
         if not self.width or not self.height:
-            raise ValueError("Tile: All clip widths and heights must be the same!")
+            raise CustomValueError("All clip widths and heights must be the same!", self.__class__)
 
         if arrangement is None:
             self.arrangement = self._auto_arrangement()
         else:
             is_one_dim = len(arrangement) < 2 or all(len(row) == 1 for row in arrangement)
             if is_one_dim:
-                raise ValueError("Tile: Use Stack instead if the array is one dimensional!")
+                raise CustomValueError("Use Stack instead if the array is one dimensional!", self.__class__)
             self.arrangement = arrangement
 
         self.blank_clip = core.std.BlankClip(clip=self.clips[0], keep=1)
@@ -272,8 +270,8 @@ class Tile(Comparer):
 
         array_count = sum(map(sum, self.arrangement))  # type:ignore[arg-type]
 
-        if array_count != self.num_clips:
-            raise ValueError('Tile: Specified arrangement has an invalid number of clips!')
+        LengthMismatchError.check(self.__class__, array_count, self.num_clips,
+                                  message="Specified arrangement has an invalid number of clips!")
 
     def _compare(self) -> vs.VideoNode:
         clips = self._marked_clips()
@@ -330,7 +328,7 @@ class Split(Stack):
     def _smart_crop(self) -> None:  # has to alter self.clips to send clips to _marked_clips() in Stack's _compare()
         """Crops self.clips in place accounting for odd resolutions."""
         if not self.width or not self.height:
-            raise ValueError("Split: All clips must have same width and height!")
+            raise CustomValueError("All clips must have same width and height!", self.__class__)
 
         breaks_subsampling = ((self.direction == Direction.HORIZONTAL and (((self.width // self.num_clips) % 2)
                                                                            or ((self.width % self.num_clips) % 2)))
@@ -340,8 +338,8 @@ class Split(Stack):
         is_subsampled = not all(get_subsampling(clip) in ('444', None) for clip in self.clips)
 
         if breaks_subsampling and is_subsampled:
-            raise ValueError("Split: Resulting cropped width or height violates subsampling rules! "
-                             "Consider resampling to YUV444 or RGB before attempting to crop!")
+            raise CustomValueError("Resulting cropped width or height violates subsampling rules! "
+                                   "Consider resampling to YUV444 or RGB before attempting to crop!", self.__class__)
 
         match self.direction:
             case Direction.HORIZONTAL:
@@ -384,40 +382,41 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     Alias for this function is ``lvsfunc.comp``.
 
-    :param clip_a:          Clip to compare.
-    :param clip_b:          Second clip to compare.
-    :param frames:          List of frames to compare (Default: ``None``).
-    :param rand_total:      Number of random frames to pick (Default: ``None``).
-    :param force_resample:  Forcibly resamples the clip to RGB24 (Default: ``True``).
-    :param print_frame:     Print frame numbers (Default: ``True``).
-    :param mismatch:        Allow for clips with different formats and dimensions to be compared (Default: ``False``).
+    :param clip_a:                      Clip to compare.
+    :param clip_b:                      Second clip to compare.
+    :param frames:                      List of frames to compare (Default: ``None``).
+    :param rand_total:                  Number of random frames to pick (Default: ``None``).
+    :param force_resample:              Forcibly resamples the clip to RGB24 (Default: ``True``).
+    :param print_frame:                 Print frame numbers (Default: ``True``).
+    :param mismatch:                    Allow for clips with different formats and dimensions
+                                        to be compared (Default: ``False``).
 
-    :return:                Interleaved clip containing specified frames from `clip_a` and `clip_b`.
+    :return:                            Interleaved clip containing specified frames from `clip_a` and `clip_b`.
 
-    :raises ValueError:     More comparisons requested than frames available.
-    :raises FormatsMismatchError:
-                            Format of given clips don't match.
+    :raises VariableResolutionError:    One of the given clips is of a variable resolution.
+    :raises ValueError:                 More comparisons requested than frames available.
+    :raises VariableFormatError:        `mismatch` is False and one of the given clips is of a variable resolution.
+    :raises FormatsMismatchError:       `mismatch` is False and format of given clips don't match.
     """
     def _resample(clip: vs.VideoNode) -> vs.VideoNode:
         # Resampling to 8 bit and RGB to properly display how it appears on your screen
-        return core.resize.Bicubic(clip, format=vs.RGB24, matrix_in=Matrix.from_video(clip),
-                                   dither_type='error_diffusion')
+        return Catrom.resample(clip, vs.RGB24, None, Matrix.from_video(clip), dither_type="error_diffusion")
 
-    check_variable_resolution(clip_a, "compare")
-    check_variable_resolution(clip_b, "compare")
+    check_variable_resolution(clip_a, compare)
+    check_variable_resolution(clip_b, compare)
 
     # Error handling
     if frames and len(frames) > clip_a.num_frames:
-        raise ValueError("compare: 'More comparisons requested than frames available!'")
+        raise CustomValueError("More comparisons requested than frames available!", compare,
+                               reason=f"{len(frames)} > {clip_a.num_frames}")
 
     if force_resample:
         clip_a, clip_b = _resample(clip_a), _resample(clip_b)
     elif mismatch is False:
-        assert check_variable_format(clip_a, "compare")
-        assert check_variable_format(clip_b, "compare")
+        assert check_variable_format(clip_a, compare)
+        assert check_variable_format(clip_b, compare)
 
-        if clip_a.format.id != clip_b.format.id:
-            raise FormatsMismatchError("compare")
+        FormatsMismatchError.check(compare, clip_a, clip_b)
 
     if print_frame:
         clip_a = clip_a.text.Text("Clip A").text.FrameNum(alignment=9)
@@ -453,7 +452,7 @@ def stack_compare(*clips: vs.VideoNode,
     :raises ValueError:     More or less than 2 clips are given.
     """
     if len(clips) != 2:
-        raise ValueError(f"stack_compare: You must pass at least two clips, not {len(clips)}.")
+        raise CustomValueError("You must pass at least two clips", stack_compare, f"{len(clips)} < 2")
 
     clipa, clipb = clips
 
@@ -487,8 +486,9 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
 
     :return:                            Clip with stacked planes.
 
+    :raises VariableFormatError:        Clip is of a variable format.
+    :raises VariableResolutionError:    Clip is of a variable resolution.
     :raises InvalidColorFamilyError:    Clip is not YUV or RGB.
-    :raises TypeError:                  Clip is of an unexpected color family.
     :raises TypeError:                  Clip returns an unexpected subsampling.
     """
     assert check_variable(clip, stack_planes)
@@ -501,8 +501,6 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
         planes: dict[str, vs.VideoNode] = {'Y': yuv_planes[0], 'U': yuv_planes[1], 'V': yuv_planes[2]}
     elif clip.format.color_family == vs.ColorFamily.RGB:
         planes = {'R': yuv_planes[0], 'G': yuv_planes[1], 'B': yuv_planes[2]}
-    else:
-        raise TypeError(f"stack_planes: Unexpected color family: {clip.format.color_family.name}!")
 
     direction: Direction = Direction.HORIZONTAL if not stack_vertical else Direction.VERTICAL
 
@@ -515,7 +513,7 @@ def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.Vide
 
         return Stack([y_plane, subsampled_planes], direction=direction).clip
     else:
-        raise TypeError(f"stack_planes: Unexpected subsampling {get_subsampling(clip)}!")
+        raise UnsupportedSubsamplingError(stack_planes)
 
 
 @overload
@@ -595,12 +593,11 @@ def diff(*clips: vs.VideoNode,
                                 or a stack of both input clips on top of MakeDiff clip.
                                 Furthermore, the function will print the ranges of all the diffs found.
 
-    :raises ClipsAndNamedClipsError:
-                                Both positional and named clips are given.
+    :raises ClipsAndNamedClipsError: Both positional and named clips are given.
     :raises ValueError:         More or less than two clips are given.
     :raises ValueError:         ``thr`` is 128 or higher.
-    :raises VariableFormatError:
-                                One of the clips is of a variable format.
+    :raises VariableFormatError: One of the clips is of a variable format.
+    :raises LengthMismatchError: The given clips are of different lengths.
     :raises StopIteration:      No differences are found.
     """
     if clips and namedclips:
@@ -611,11 +608,11 @@ def diff(*clips: vs.VideoNode,
 
     if not thr < 128:
         raise CustomValueError(f"`thr` must be below 128!", diff)
-    
+
     if also_check_avg_thr == None and thr > 1:
         also_check_avg_thr = (128 - thr) * 0.000046875 + 0.0105
         also_check_avg_thr = max(0.012, also_check_avg_thr)
-        #derived experimentally. the goal is to not create false positives for a given thr
+        # derived experimentally. the goal is to not create false positives for a given thr
 
     if clips and not all([c.format for c in clips]):
         raise VariableFormatError(diff)
@@ -634,19 +631,15 @@ def diff(*clips: vs.VideoNode,
         nc = list(namedclips.values())
         a, b = depth(nc[0], 8), depth(nc[1], 8)
 
-    if a.num_frames != b.num_frames:
-        raise CustomValueError(f"Length of first clip ({a.num_frames} frames) does not match "
-                               f"length of second clip ({b.num_frames} frames)!", diff)
+    LengthMismatchError.check(diff, a.num_frames, b.num_frames)
 
-    frames = []
     if thr <= 1:
         ps = core.std.PlaneStats(a, b)
 
-        def _cb(n: int, f: vs.VideoFrame) -> None:
-            if get_prop(f, 'PlaneStatsDiff', float) > thr:
-                frames.append(n)
+        frames_render = clip_async_render(
+            ps, None, msg, lambda n, f: Sentinel.check(n, get_prop(f, 'PlaneStatsDiff', float) > thr)
+        )
 
-        clip_async_render(ps, progress=msg, callback=_cb)
         diff_clip = core.std.MakeDiff(a, b)
     else:
         diff_clip = diff_func(a, b).std.PlaneStats()
@@ -656,23 +649,31 @@ def diff(*clips: vs.VideoNode,
         typ = float if diff_clip.format.sample_type == vs.FLOAT else int
         if also_check_avg:
             ps = core.std.PlaneStats(a, b)
+
             def transfer_property(n, f):
                 fout = f[1].copy()
                 fout.props['PlaneStatsDiff'] = f[0].props['PlaneStatsDiff']
                 return fout
-            diff_clip = core.std.ModifyFrame(clip=ps, clips=[ps, diff_clip], selector=transfer_property)
-            def _cb(n: int, f: vs.VideoFrame) -> None:
-                if get_prop(f, 'PlaneStatsMin', typ) <= thr or get_prop(f, 'PlaneStatsMax', typ) >= 255 - thr > thr or get_prop(f, 'PlaneStatsDiff', float) > also_check_avg_thr:
-                    frames.append(n)
-        else:
-            def _cb(n: int, f: vs.VideoFrame) -> None:
-                if get_prop(f, 'PlaneStatsMin', typ) <= thr or get_prop(f, 'PlaneStatsMax', typ) >= 255 - thr > thr:
-                    frames.append(n)
 
-        clip_async_render(diff_clip, progress=msg, callback=_cb)
+            diff_clip = core.std.ModifyFrame(clip=ps, clips=[ps, diff_clip], selector=transfer_property)
+
+            frames_render = clip_async_render(
+                diff_clip, None, msg, lambda n, f: Sentinel.check(
+                    n, get_prop(f, 'PlaneStatsMin', typ) <= thr or get_prop(f, 'PlaneStatsMax', typ) >= 255 - thr > thr
+                    or get_prop(f, 'PlaneStatsDiff', float) > also_check_avg_thr
+                )
+            )
+        else:
+            frames_render = clip_async_render(
+                diff_clip, None, msg, lambda n, f: Sentinel.check(
+                    n, get_prop(f, 'PlaneStatsMin', typ) <= thr or get_prop(f, 'PlaneStatsMax', typ) >= 255 - thr > thr
+                )
+            )
+
+    frames = list(Sentinel.filter(frames_render))
 
     if not frames:
-        raise StopIteration("diff: No differences found!")
+        raise CustomError[StopIteration]('No differences found!', diff)
 
     frames.sort()
 
@@ -722,8 +723,7 @@ def interleave(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode
 
     :return:            An interleaved clip of all the `clips`/`namedclips` specified.
 
-    :raises ClipsAndNamedClipsError:
-                        Both positional and named clips are given.
+    :raises ClipsAndNamedClipsError:    Both positional and named clips are given.
     """
     if clips and namedclips:
         raise ClipsAndNamedClipsError(interleave)
@@ -744,8 +744,7 @@ def split(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     :return:            A clip with the same dimensions as any one of the input clips.
                         with all `clips`/`namedclips` represented as individual vertical slices.
 
-    :raises ClipsAndNamedClipsError:
-                        Both positional and named clips are given.
+    :raises ClipsAndNamedClipsError:    Both positional and named clips are given.
     """
     if clips and namedclips:
         raise ClipsAndNamedClipsError(split)
@@ -762,8 +761,7 @@ def stack_horizontal(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.Vid
 
     :return:            A horizontal stack of the `clips`/`namedclips`.
 
-    :raises ClipsAndNamedClipsError:
-                        Both positional and named clips are given.
+    :raises ClipsAndNamedClipsError:    Both positional and named clips are given.
     """
     if clips and namedclips:
         raise ClipsAndNamedClipsError(stack_horizontal)
@@ -780,8 +778,7 @@ def stack_vertical(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.Video
 
     :return:            A vertical stack of the `clips`/`namedclips`.
 
-    :raises ClipsAndNamedClipsError:
-                        Both positional and named clips are given.
+    :raises ClipsAndNamedClipsError:    Both positional and named clips are given.
     """
     if clips and namedclips:
         raise ClipsAndNamedClipsError(stack_vertical)
@@ -803,8 +800,7 @@ def tile(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
     :return:            A clip with all input `clips`/`namedclips` automatically tiled most optimally
                         into a rectangular arrrangement.
 
-    :raises ClipsAndNamedClipsError:
-                        Both positional and named clips are given.
+    :raises ClipsAndNamedClipsError:    Both positional and named clips are given.
     """
     if clips and namedclips:
         raise ClipsAndNamedClipsError(tile)
@@ -834,8 +830,7 @@ def source_mediainfo(filepath: str, print_mediainfo: bool = False,
                                 about the sources you're comping.
     :param source_kwargs:       Keyword arguments passed to :py:func:`misc.source`.
 
-    :raises DependencyNotFoundError:
-                                Dependencies are missing.
+    :raises DependencyNotFoundError: Dependencies are missing.
 
     :return:                    Clip with MediaInfo properties added.
     """
