@@ -9,6 +9,7 @@ Comparison and analysis functions and wrappers.
 .. autosummary::
 
     lvsfunc.comparison.compare
+    lvsfunc.comparison.comparison_shots
     lvsfunc.comparison.diff
     lvsfunc.comparison.interleave
     lvsfunc.comparison.source_mediainfo

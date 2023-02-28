@@ -7,14 +7,18 @@ import warnings
 from abc import ABC, abstractmethod
 from itertools import groupby, zip_longest
 from pathlib import Path
-from typing import Any, Callable, Iterable, Iterator, Literal, Sequence, TypeVar, overload
+from typing import (Any, Callable, Iterable, Iterator, Literal, Sequence,
+                    TypeVar, overload)
 
-from vskernels import Catrom
-from vstools import (CustomError, CustomNotImplementedError, CustomTypeError, CustomValueError, DependencyNotFoundError,
-                     Direction, FormatsMismatchError, InvalidColorFamilyError, LengthMismatchError, Matrix,
-                     UnsupportedSubsamplingError, VariableFormatError, check_variable, check_variable_format,
-                     check_variable_resolution, core, depth, get_prop, get_subsampling, get_w, clip_async_render,
-                     Sentinel, merge_clip_props)
+from vskernels import Catrom, Kernel, KernelT, Point
+from vstools import (CustomError, CustomNotImplementedError, CustomTypeError,
+                     CustomValueError, DependencyNotFoundError, Direction,
+                     FormatsMismatchError, InvalidColorFamilyError,
+                     LengthMismatchError, Matrix, Sentinel,
+                     UnsupportedSubsamplingError, VariableFormatError,
+                     check_variable, check_variable_format,
+                     check_variable_resolution, clip_async_render, core, depth,
+                     get_prop, get_subsampling, get_w, merge_clip_props)
 from vstools import split as split_planes
 from vstools import vs
 
@@ -25,6 +29,7 @@ from .util import truncate_string
 __all__ = [
     'compare', 'comp',
     'Comparer',
+    'comparison_shots',
     'diff',
     'Interleave', 'interleave',
     'source_mediainfo', 'srcm',
@@ -947,7 +952,59 @@ def source_mediainfo(filepath: str, print_mediainfo: bool = False,
     return clip
 
 
+def comparison_shots(*clips: vs.VideoNode,
+                     left: int = 0, right: int = 0, top: int = 0, bottom: int = 0,
+                     height: int | None = None, kernel: KernelT = Point,
+                     **namedclips: vs.VideoNode) -> vs.VideoNode:
+    """
+    Convenience function that crops all the given clips, optionally upscales them,
+    and stacks them to allow the user to see multiple filters side-by-side.
+
+    This is intended more so to create comparisons to use in guides, papers,
+    maybe an example to stick in a cheeky comment somewhere. Current name pending™.
+    Alias for this function is ``lvsfunc.cshots``.
+
+    I suggest you get the crops using vspreview's built-in crop helper (found under `misc`).
+    You can then pass the left/right/top/bottom arguments to this function.
+    If the crops result in a very small image, you can upscale it using `height`.
+
+    :param clips:       Clips for comparison (order is kept left to right).
+    :param namedclips:  Keyword arguments of `name=clip` for all clips in the comparison.
+                        Clips will be labeled at the top left with their `name`.
+    :param left:        Left crop. Can't be negative.
+    :param right:       Right crop. Can't be negative.
+    :param top:         Top crop. Can't be negative.
+    :param bottom:      Bottom crop. Can't be negative.
+    :param height:      Height to upscale the clips to. If `None`, do not upscale. Default: None.
+    :param kernel:      Kernel used for upscaling the clips if applicable. Default: Point.
+
+    :return:            A horizontal stack of the `clips`/`namedclips`, cropped and upscaled as specified.
+
+    :raises ClipsAndNamedClipsError:    Both positional and named clips are given.
+    """
+    if clips and namedclips:
+        raise ClipsAndNamedClipsError(comparison_shots)
+
+    kernel = Kernel.ensure_obj(kernel, comparison_shots)
+
+    if clips:
+        clips = tuple([c.std.Crop(left, right, top, bottom) for c in clips])
+    elif namedclips:
+        namedclips = {k: v.std.Crop(left, right, top, bottom) for k, v in namedclips.items()}
+
+    if height is None:
+        return Stack(clips if clips else namedclips, direction=Direction.HORIZONTAL).clip
+
+    if clips:
+        clips = tuple([kernel.scale(c, get_w(height), height) for c in clips])
+    elif namedclips:
+        namedclips = {k: kernel.scale(v, get_w(height), height) for k, v in namedclips.items()}
+
+    return Stack(clips if clips else namedclips, direction=Direction.HORIZONTAL).clip
+
+
 # Aliases
 comp = compare
 scomp = stack_compare
 srcm = source_mediainfo
+cshots = comparison_shots
