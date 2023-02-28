@@ -664,7 +664,7 @@ def diff(*clips: vs.VideoNode,
     frames = list(Sentinel.filter(frames_render))
 
     if not frames:
-        raise CustomError[StopIteration]('No differences found!', diff)
+        raise CustomError['StopIteration']('No differences found!', diff)  # type: ignore[index]
 
     frames.sort()
 
