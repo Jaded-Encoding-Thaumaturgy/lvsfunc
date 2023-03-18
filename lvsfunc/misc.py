@@ -5,12 +5,14 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Sequence, cast
 
+from vsexprtools import expr_func
 from vskernels import Catrom, KernelT
 from vsparsedvd import DGIndexNV, SPath  # type: ignore
-from vstools import (MISSING, CustomIndexError, CustomValueError, DependencyNotFoundError, FileType,
-                     FileTypeMismatchError, FramePropError, FrameRangeN, FrameRangesN, IndexingType, Matrix,
-                     ResolutionsMismatchError, check_perms, check_variable, core, depth, get_depth, normalize_ranges,
-                     normalize_seq, replace_ranges, scale_8bit, vs)
+from vstools import (
+    MISSING, CustomIndexError, CustomValueError, DependencyNotFoundError, FileType, FileTypeMismatchError,
+    FramePropError, FrameRangeN, FrameRangesN, IndexingType, Matrix, ResolutionsMismatchError, check_perms,
+    check_variable, core, depth, get_depth, normalize_ranges, normalize_seq, replace_ranges, scale_8bit, vs
+)
 
 from .util import match_clip
 
@@ -231,7 +233,7 @@ def limit_dark(
 
     avg = clip.std.BlankClip(1, 1, vs.GRAYS).std.CopyFrameProps(clip.std.PlaneStats())
 
-    return clip.std.FrameEval(_diff, avg.akarin.Expr('x.PlaneStatsAverage'))
+    return clip.std.FrameEval(_diff, expr_func(avg, 'x.PlaneStatsAverage'))
 
 
 def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,

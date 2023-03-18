@@ -4,6 +4,7 @@ from functools import partial
 from typing import Any, Callable, Literal, Sequence
 
 from vsdenoise import dpir
+from vsexprtools import expr_func
 from vskernels import Catrom, Kernel, KernelT
 from vstools import CustomValueError, Matrix, check_variable, core, get_prop, vs
 
@@ -138,7 +139,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     maxvalue = (1 << rgb.format.bits_per_sample) - 1  # type:ignore[union-attr]
     evref = edgemasker(rgb)
-    evref = core.akarin.Expr(evref, f"x {edgevalue} >= {maxvalue} x ?")
+    evref = expr_func(evref, f"x {edgevalue} >= {maxvalue} x ?")
     evref_rm = evref.std.Median().std.Convolution(matrix=[1, 2, 1, 2, 4, 2, 1, 2, 1])
 
     if return_mask:
