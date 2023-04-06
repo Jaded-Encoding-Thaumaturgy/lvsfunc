@@ -37,8 +37,10 @@ def custom_mask_clip(clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     if ref:
         FormatsRefClipMismatchError.check(custom_mask_clip, clip, ref)
 
-    LengthMismatchError.check(custom_mask_clip, len(imgs), len(ranges),
-                              message="`imgs` and `ranges` must be of the same length!")
+    LengthMismatchError.check(
+        custom_mask_clip, len(imgs), len(ranges),
+        message="`imgs` and `ranges` must be of the same length!"
+    )
 
     ref = ref or clip
     blank = ref.std.BlankClip(keep=True)
