@@ -3,7 +3,7 @@ from __future__ import annotations
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import Any, Sequence, cast
+from typing import Any, Literal, Sequence, cast
 
 from vsexprtools import expr_func
 from vskernels import Catrom, KernelT
@@ -27,7 +27,7 @@ __all__ = [
 def source(filepath: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  # type: ignore
            force_lsmas: bool = False, film_thr: float = 99.0,
            tail_lines: int = 4, kernel: KernelT = Catrom,
-           debug: bool = False, **index_args: Any) -> vs.VideoNode:
+           name: str | Literal[False] = False, debug: bool = False, **index_args: Any) -> vs.VideoNode:
     """
     Index and load video clips for use in VapourSynth automatically.
 
@@ -77,6 +77,9 @@ def source(filepath: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  
     :param kernel:              py:class:`vskernels.Kernel` object used for converting the `clip` to match `ref`.
                                 This can also be the string name of the kernel
                                 (Default: py:class:`vskernels.Catrom`).
+    :param name:                Set a name for the clip. Adds a frameproperty to the clip that can be read
+                                by `vspreview`. Useful when indexing videos for comparisons or similar
+                                (Default: False, don't give the clip a name).
     :param debug:               Return debug information as frame properties. Default: False.
     :param kwargs:              Optional arguments passed to the indexing filter.
 
@@ -88,7 +91,7 @@ def source(filepath: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  
     if filepath is MISSING:  # type: ignore
         return partial(  # type: ignore
             source, ref=ref, force_lsmas=force_lsmas, film_thr=film_thr,
-            tail_lines=tail_lines, kernel=kernel, debug=debug, **index_args
+            tail_lines=tail_lines, kernel=kernel, name=name, debug=debug, **index_args
         )
 
     clip = None
@@ -154,10 +157,14 @@ def source(filepath: str | Path = MISSING, /, ref: vs.VideoNode | None = None,  
     if clip is None:
         return source(
             filepath, ref=ref, force_lsmas=True, film_thr=film_thr,
-            tail_lines=tail_lines, kernel=kernel, debug=debug, **index_args
+            tail_lines=tail_lines, kernel=kernel, name=name, debug=debug,
+            **index_args
         )
 
     props |= dict(idx_filepath=str(filepath))
+
+    if name:
+        props |= dict(Name=name)
 
     if debug:
         props |= debug_props
