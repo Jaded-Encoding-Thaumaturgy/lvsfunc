@@ -18,7 +18,7 @@ from vstools import (CustomError, CustomNotImplementedError, CustomTypeError,
                      UnsupportedSubsamplingError, VariableFormatError,
                      check_variable, check_variable_format,
                      check_variable_resolution, clip_async_render, core, depth,
-                     get_prop, get_subsampling, get_w, merge_clip_props)
+                     get_prop, get_subsampling, get_w, merge_clip_props, mod2)
 from vstools import split as split_planes
 from vstools import vs
 
@@ -975,7 +975,9 @@ def comparison_shots(*clips: vs.VideoNode,
     :param right:       Right crop. Can't be negative.
     :param top:         Top crop. Can't be negative.
     :param bottom:      Bottom crop. Can't be negative.
-    :param height:      Height to upscale the clips to. If `None`, do not upscale. Default: None.
+    :param height:      Height to upscale the clips to. If `None`, do not upscale.
+                        If equal to or lesser than 10, multiply the height by the given amount.
+                        Default: None.
     :param kernel:      Kernel used for upscaling the clips if applicable. Default: Point.
 
     :return:            A horizontal stack of the `clips`/`namedclips`, cropped and upscaled as specified.
@@ -994,6 +996,8 @@ def comparison_shots(*clips: vs.VideoNode,
 
     if height is None:
         return Stack(clips if clips else namedclips, direction=Direction.HORIZONTAL).clip
+    elif height <= 10:
+        height = mod2(clips[0].height * height)
 
     if clips:
         clips = tuple([kernel.scale(c, get_w(height), height) for c in clips])
