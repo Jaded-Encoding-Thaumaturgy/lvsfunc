@@ -40,7 +40,7 @@ Usage Instructions
 
 .. code-block:: python
 
-    src = lvf.source("C:/PATH/TO/VIDEO.mkv")
+    comp = lvf.comp(clipa, clipb)
 
 .. important::
 

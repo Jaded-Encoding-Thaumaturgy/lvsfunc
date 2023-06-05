@@ -44,7 +44,7 @@ and writing the function name behind it.
 
     import lvsfunc as lvf
 
-    clip = lvf.source("PATH/TO/YOUR/VIDEO")
+    comp = lvf.comp(clipa, clipb)
 
 lvsfunc exposes every function in the global scope,
 but also exposes every sub-module individually.

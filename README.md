@@ -42,7 +42,6 @@ After installation, functions can be loaded and used as follows:
 ```py
 import lvsfunc as lvf
 
-src = lvf.misc.source(...)
 aa = lvf.aa.clamp_aa(...)
 comp = lvf.comparison.compare(...)
 ...

@@ -2,49 +2,29 @@ from __future__ import annotations
 
 import math
 import random
-import re
-import warnings
 from abc import ABC, abstractmethod
 from itertools import groupby, zip_longest
-from pathlib import Path
-from typing import (Any, Callable, Iterable, Iterator, Literal, Sequence,
-                    TypeVar, overload)
+from typing import Callable, Iterable, Iterator, Literal, Sequence, overload
 
 from vskernels import Catrom, Kernel, KernelT, Point
-from vstools import (CustomError, CustomNotImplementedError, CustomTypeError,
-                     CustomValueError, DependencyNotFoundError, Direction,
-                     FormatsMismatchError, InvalidColorFamilyError,
-                     LengthMismatchError, Matrix, Sentinel,
-                     UnsupportedSubsamplingError, VariableFormatError,
-                     check_variable, check_variable_format,
-                     check_variable_resolution, clip_async_render, core, depth,
-                     get_prop, get_subsampling, get_w, merge_clip_props, mod2)
-from vstools import split as split_planes
-from vstools import vs
+from vstools import (
+    CustomError, CustomNotImplementedError, CustomTypeError, CustomValueError, Direction, FormatsMismatchError,
+    LengthMismatchError, Matrix, Sentinel, T, VariableFormatError, check_variable_format, check_variable_resolution,
+    clip_async_render, core, depth, get_prop, get_subsampling, get_w, merge_clip_props, mod2, vs
+)
 
 from .exceptions import ClipsAndNamedClipsError
-from .misc import source
-from .util import truncate_string
 
 __all__ = [
-    'compare', 'comp',
+    'compare',
     'Comparer',
     'comparison_shots',
     'diff',
-    'Interleave', 'interleave',
-    'source_mediainfo', 'srcm',
-    'Split', 'split',
-    'stack_compare', 'scomp',
-    'stack_horizontal', 'stack_vertical',
-    'stack_planes',
+    'Interleave',
+    'Split',
+    'stack_compare',
     'Stack',
-    'Tile', 'tile',
-]
-
-T = TypeVar('T')
-
-x265_me_map = [
-    "dia", "hex", "umh", "star", "sea", "full"
+    'Tile',
 ]
 
 
@@ -68,16 +48,15 @@ class Comparer(ABC):
     :raises ValueError:         Unexpected type passed to `clips`.
     """
 
-    def __init__(self,
-                 clips: dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
-                 /,
-                 *,
-                 label_alignment: int = 7
-                 ) -> None:
+    def __init__(
+        self, clips: dict[str, vs.VideoNode] | Sequence[vs.VideoNode], /, *, label_alignment: int = 7
+    ) -> None:
         if len(clips) < 2:
             raise CustomValueError("Compare functions must be used on at least 2 clips!", self.__class__)
+
         if label_alignment not in list(range(1, 10)):
             raise CustomValueError("`label_alignment` must be an integer from 1 to 9!", self.__class__)
+
         if not isinstance(clips, (dict, Sequence)):
             raise CustomTypeError(f"Unexpected type {type(clips)} for `clips` argument!", self.__class__)
 
@@ -161,6 +140,18 @@ class Stack(Comparer):
         if not self.width:
             raise CustomValueError("StackVertical requires that all clips be the same width!", self.__class__)
         return core.std.StackVertical(self._marked_clips())
+
+    @classmethod
+    def stack(cls, *clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
+        if clips and namedclips:
+            raise ClipsAndNamedClipsError(cls.stack)
+        return cls(clips if clips else namedclips).clip
+
+    @classmethod
+    def stack_vertical(cls, *clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
+        if clips and namedclips:
+            raise ClipsAndNamedClipsError(cls.stack)
+        return cls(clips if clips else namedclips, direction=Direction.VERTICAL).clip
 
 
 class Interleave(Comparer):
@@ -370,6 +361,12 @@ class Split(Stack):
 
                     self.clips[key] = clip.std.Crop(top=top_crop, bottom=bottom_crop)
 
+    @classmethod
+    def stack(cls, *clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
+        if clips and namedclips:
+            raise ClipsAndNamedClipsError(cls.stack)
+        return cls(clips if clips else namedclips, label_alignment=2).clip
+
 
 def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
             frames: list[int] | None = None,
@@ -435,6 +432,7 @@ def compare(clip_a: vs.VideoNode, clip_b: vs.VideoNode,
 
     frames_a = core.std.Splice([clip_a[f] for f in frames]).std.AssumeFPS(fpsnum=1, fpsden=1)
     frames_b = core.std.Splice([clip_b[f] for f in frames]).std.AssumeFPS(fpsnum=1, fpsden=1)
+
     return core.std.Interleave([frames_a, frames_b], mismatch=mismatch)
 
 
@@ -464,61 +462,23 @@ def stack_compare(*clips: vs.VideoNode,
     if not height:
         height = 288
     elif height > clipa.height / 2:
-        warnings.warn(f"stack_compare: 'Given 'height' ({height}) is bigger than clipa's height {clipa.height}!' "
-                      "Will be using clipa's height instead.")
+        import warnings
+        warnings.warn(
+            f"stack_compare: 'Given 'height' ({height}) is bigger than clipa's height {clipa.height}!' "
+            "Will be using clipa's height instead."
+        )
         height = int(clipa.height / 2)
 
     scaled_width = get_w(height, mod=1)
 
-    diff = core.std.MakeDiff(clipa=clipa, clipb=clipb)
-    diff = Catrom().scale(diff, scaled_width * 2, height * 2).text.FrameNum(8)
-    resized = [Catrom().scale(clipa, scaled_width, height).text.Text('Clip A', 3),
-               Catrom().scale(clipb, scaled_width, height).text.Text('Clip B', 1)]
+    diff = Catrom.scale(clipa.std.MakeDiff(clipb), scaled_width * 2, height * 2).text.FrameNum(8)
+
+    resized = [
+        Catrom.scale(clipa, scaled_width, height).text.Text('Clip A', 3),
+        Catrom.scale(clipb, scaled_width, height).text.Text('Clip B', 1)
+    ]
 
     return Stack([Stack(resized).clip, diff], direction=Direction.VERTICAL).clip
-
-
-def stack_planes(clip: vs.VideoNode, /, stack_vertical: bool = False) -> vs.VideoNode:
-    """
-    Stacks the planes of a clip.
-
-    For 4:2:0 subsampled clips, the two half-sized planes will be stacked in the opposite direction specified
-    (vertical by default),
-    then stacked with the full-sized plane in the direction specified (horizontal by default).
-
-    :param clip:                        Clip to process (must be in YUV or RGB planar format).
-    :param stack_vertical:              Stack the planes vertically (Default: ``False``).
-
-    :return:                            Clip with stacked planes.
-
-    :raises VariableFormatError:        Clip is of a variable format.
-    :raises VariableResolutionError:    Clip is of a variable resolution.
-    :raises InvalidColorFamilyError:    Clip is not YUV or RGB.
-    :raises TypeError:                  Clip returns an unexpected subsampling.
-    """
-    assert check_variable(clip, stack_planes)
-
-    InvalidColorFamilyError.check(clip, (vs.YUV, vs.RGB), stack_planes)
-
-    yuv_planes = split_planes(clip)
-
-    if clip.format.color_family == vs.ColorFamily.YUV:
-        planes: dict[str, vs.VideoNode] = {'Y': yuv_planes[0], 'U': yuv_planes[1], 'V': yuv_planes[2]}
-    elif clip.format.color_family == vs.ColorFamily.RGB:
-        planes = {'R': yuv_planes[0], 'G': yuv_planes[1], 'B': yuv_planes[2]}
-
-    direction: Direction = Direction.HORIZONTAL if not stack_vertical else Direction.VERTICAL
-
-    if get_subsampling(clip) in ('444', None):
-        return Stack(planes, direction=direction).clip
-    elif get_subsampling(clip) == '420':
-        subsample_direction: Direction = Direction.HORIZONTAL if stack_vertical else Direction.VERTICAL
-        y_plane = planes.pop('Y').text.Text(text='Y')
-        subsampled_planes = Stack(planes, direction=subsample_direction).clip
-
-        return Stack([y_plane, subsampled_planes], direction=direction).clip
-    else:
-        raise UnsupportedSubsamplingError(stack_planes)
 
 
 @overload
@@ -704,254 +664,6 @@ def diff(*clips: vs.VideoNode,
         return comparison
 
 
-def interleave(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
-    """
-    Small convenience function for interleaving clips.
-
-    :param clips:       Clips for comparison (order is kept).
-    :param namedclips:  Keyword arguments of `name=clip` for all clips in the comparison.
-                        Clips will be labeled at the top left with their `name`.
-
-    :return:            An interleaved clip of all the `clips`/`namedclips` specified.
-
-    :raises ClipsAndNamedClipsError:    Both positional and named clips are given.
-    """
-    if clips and namedclips:
-        raise ClipsAndNamedClipsError(interleave)
-    return Interleave(clips if clips else namedclips).clip
-
-
-def split(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
-    """
-    Small convenience function for splitting clips along the x-axis and then stacking.
-
-    Accounts for odd-resolution clips by giving overflow columns to the last clip specified.
-    All clips must have the same dimensions (width and height).
-
-    :param clips:       Clips for comparison (order is kept left to right).
-    :param namedclips:  Keyword arguments of `name=clip` for all clips in the comparison.
-                        Clips will be labeled at the bottom with their `name`.
-
-    :return:            A clip with the same dimensions as any one of the input clips.
-                        with all `clips`/`namedclips` represented as individual vertical slices.
-
-    :raises ClipsAndNamedClipsError:    Both positional and named clips are given.
-    """
-    if clips and namedclips:
-        raise ClipsAndNamedClipsError(split)
-    return Split(clips if clips else namedclips, label_alignment=2).clip
-
-
-def stack_horizontal(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
-    """
-    Small convenience function for stacking clips horizontally.
-
-    :param clips:       Clips for comparison (order is kept left to right).
-    :param namedclips:  Keyword arguments of `name=clip` for all clips in the comparison.
-                        Clips will be labeled at the top left with their `name`.
-
-    :return:            A horizontal stack of the `clips`/`namedclips`.
-
-    :raises ClipsAndNamedClipsError:    Both positional and named clips are given.
-    """
-    if clips and namedclips:
-        raise ClipsAndNamedClipsError(stack_horizontal)
-    return Stack(clips if clips else namedclips).clip
-
-
-def stack_vertical(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
-    """
-    Small convenience function for stacking clips vertically.
-
-    :param clips:       Clips for comparison (order is kept top to bottom).
-    :param namedclips:  Keyword arguments of `name=clip` for all clips in the comparison.
-                        Clips will be labeled at the top left with their `name`.
-
-    :return:            A vertical stack of the `clips`/`namedclips`.
-
-    :raises ClipsAndNamedClipsError:    Both positional and named clips are given.
-    """
-    if clips and namedclips:
-        raise ClipsAndNamedClipsError(stack_vertical)
-    return Stack(clips if clips else namedclips, direction=Direction.VERTICAL).clip
-
-
-def tile(*clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
-    """
-    Small convenience function for tiling clips in a rectangular pattern.
-
-    All clips must have the same dimensions (width and height).
-    If 3 clips are given, a 2x2 square with one blank slot will be returned.
-    If 6 clips are given, a 3x2 rectangle will be returned.
-
-    :param clips:       Clips for comparison.
-    :param namedclips:  Keyword arguments of `name=clip` for all clips in the comparison.
-                        Clips will be labeled at the top left with their `name`.
-
-    :return:            A clip with all input `clips`/`namedclips` automatically tiled most optimally
-                        into a rectangular arrrangement.
-
-    :raises ClipsAndNamedClipsError:    Both positional and named clips are given.
-    """
-    if clips and namedclips:
-        raise ClipsAndNamedClipsError(tile)
-    return Tile(clips if clips else namedclips).clip
-
-
-def source_mediainfo(filepath: str, print_mediainfo: bool = False,
-                     print_props: bool = False, **source_kwargs: Any) -> vs.VideoNode:
-    """
-    Wrap ``source`` and add MediaInfo to the clip as frameprops.
-
-    This works exactly like :py:func:`misc.source`,
-    except it further gathers information pertaining to the source file.
-    This function is meant to be used for comparisons between multiple encodes.
-
-    Alias for this function is ``lvsfunc.srcm``.
-
-    Dependencies:
-        * `pymediainfo`
-
-    :param filepath:            Path to input file.
-    :param print_mediainfo:     Print MediaInfo to stdout.
-                                This includes general, video, and audio information.
-                                Only the first track found is printed.
-    :param print_props:         Print the properties added by this function on the output clip.
-                                This is meant for comping where you want to share additional information
-                                about the sources you're comping.
-    :param source_kwargs:       Keyword arguments passed to :py:func:`misc.source`.
-
-    :raises DependencyNotFoundError: Dependencies are missing.
-
-    :return:                    Clip with MediaInfo properties added.
-    """
-    try:
-        from pymediainfo import MediaInfo  # type:ignore
-    except ModuleNotFoundError as e:
-        raise DependencyNotFoundError(source_mediainfo, e)
-
-    from pprint import pformat, pprint
-
-    # TODO: Rewrie this. It's pretty inefficient atm and has no caching.
-
-    prop_dict: dict[str, Any] = dict()
-    encset_dict: dict[str, str] = {}
-    sorted_encset: dict[str, str] = {}
-
-    filename = Path(filepath).stem
-    prop_dict.update({"filename": truncate_string(filename, 64)})
-    fallback = "Unknown"
-
-    clip = source(filepath, **source_kwargs)
-
-    stream_idx = source_kwargs.get("stream_index") or 0
-
-    mi = MediaInfo.parse(filepath)
-    gtrack = mi.general_tracks[0].to_data()
-    vtrack = mi.video_tracks[stream_idx].to_data()
-
-    # Try to obtain the grouptag to save as the output name for vspreview comping, else fall back on filename.
-    # This may not be entirely accurate, but I gotta try something!
-    if "_lossless" in filename:
-        filename = "Filtered lossless"
-
-    group = re.match(r"\[[a-zA-Z\-\u4e00-\u9fff一-]+\]", filename)
-
-    if group:
-        group = group.group(0)  # type:ignore
-
-    if print_mediainfo:
-        pprint(gtrack, sort_dicts=False, width=120, compact=True)
-        pprint(vtrack, sort_dicts=False, width=120, compact=True)
-
-    stream_size = vtrack.get("other_stream_size")
-
-    if stream_size:
-        stream_size = stream_size[-1]
-
-    prop_dict.update({
-        # Basic information
-        "encode_date": f"{gtrack.get('encoded_date', gtrack.get('file_last_modification_date', fallback)):.23}",
-        "total_filesize": gtrack.get("other_file_size", [fallback])[-1],
-        "v_filesize": stream_size or fallback,
-        # Format/writing information
-        "v_bitdepth": vtrack.get("bit_depth", fallback),
-        "v_codec": f"{vtrack.get('format', gtrack.get('video_format_list', fallback))}"
-                   + (f" ({vtrack['format_profile']})" if vtrack.get("format_profile") else ""),
-        "v_writing_library": truncate_string(vtrack.get("writing_library", fallback), 40),
-        "v_subsampling": vtrack.get("other_chroma_subsampling", [fallback])[-1],
-    })
-
-    if vtrack.get("muxing_mode") and vtrack.get("muxing_mode") == "Header stripping":
-        warnings.warn(f"Warning! {filename}'s muxing mode was set to \"Header stripping\"! Very little information "
-                      "could be gathered from the MediaInfo!", ImportWarning)
-
-    if vtrack.get("encoding_settings"):
-        # Separating useful and extra encoding settings from the long string of settings.
-        split_settings = str(vtrack.get("encoding_settings")).split(" / ")
-        aqmode: str = fallback
-
-        # TODO: Add more codecs' most useful settings
-        collected_settings: set[str] = {
-            # x265
-            "aq-bias-strength", "aq-mode", "aq-strength", "bframes", "crf", "cutree", "no-cutree", "me",
-            "no-sao", "open-gop", "psy-rd", "psy-rdoq", "qcomp", "rd", "ref", "sao", "subme", "deblock",
-            "bitrate", "vbv_maxrate", "vbv_bufsize", "no-sao-non-deblock", "sao-non-deblock",
-            "no-strong-intra-smoothing", "strong-intra-smoothing", "rc-lookahead", "merange", "zones",
-            # x264 (incl. dupes, but set will dedupe it)
-            "mbtree", "no-mbtree", "aq", "rc", "ratetol",
-        }
-
-        for x in split_settings:
-            split = x.strip().split("=")
-
-            if not collected_settings.intersection(set(split)):
-                continue
-
-            match split[0]:
-                case "cutree" | "no-cutree":
-                    split = ["cutree", str(split[0] == "cutree")]
-                case "mbtree":
-                    split = ["mbtree", str(int(split[1]) == 1)]
-                case "sao" | "no-sao":
-                    split = ["sao", str(split[0] == "sao")]
-                case "sao-non-deblock" | "no-sao-non-deblock":
-                    split = ["sao-non-deblock", str(split[0] == "sao-non-deblock")]
-                case "strong-intra-smoothing" | "no-strong-intra-smoothing":
-                    split = ["strong-intra-smoothing", str(split[0] == "strong-intra-smoothing")]
-                case "me":
-                    if vtrack.get("format") == "HEVC":
-                        split[1] = x265_me_map[int(split[1])]
-                case "aq-mode":
-                    aqmode = split[1]
-                    continue
-                case "aq-strength": split = ["aq", f"{aqmode}:{split[1]}"]
-
-            encset_dict |= {f"v_enc_settings_{split[0].replace('-', '_')}": split[1]}
-
-        sorted_encset = dict(sorted(encset_dict.items()))
-
-    if print_props:
-        print_dict = prop_dict
-
-        if vtrack.get("encoding_settings"):
-            print_dict |= {"v_encode_settings": {
-                str(k).replace("v_enc_settings_", ""): v for k, v in sorted_encset.items()
-            }}
-
-        sort = pformat(print_dict, sort_dicts=False, width=100, compact=True, indent=0)[1:-1]
-        sort = sort.replace(": {", ": {\n    ").replace("'}", "'\n}").replace("                 ", "")
-
-        clip = clip.text.Text(sort).text.FrameNum(8) \
-            .text.FrameProps(["_PictType", "_Matrix", "_Transfer", "_Primaries"], 9)
-
-    prop_dict.update(encset_dict)
-    prop_dict.update({"Name": group or filename})
-    clip = clip.std.SetFrameProps(**prop_dict)
-
-    return clip
-
-
 def comparison_shots(*clips: vs.VideoNode,
                      left: int = 0, right: int = 0, top: int = 0, bottom: int = 0,
                      height: int | None = None, kernel: KernelT = Point,
@@ -1005,10 +717,3 @@ def comparison_shots(*clips: vs.VideoNode,
         namedclips = {k: kernel.scale(v, get_w(height), height) for k, v in namedclips.items()}
 
     return Stack(clips if clips else namedclips, direction=Direction.HORIZONTAL).clip
-
-
-# Aliases
-comp = compare
-scomp = stack_compare
-srcm = source_mediainfo
-cshots = comparison_shots

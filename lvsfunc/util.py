@@ -3,7 +3,6 @@ from __future__ import annotations
 import colorsys
 import random
 import re
-from functools import partial
 from typing import Any
 
 from vskernels import Catrom, Kernel, KernelT
@@ -13,66 +12,15 @@ from vstools import (
 
 __all__ = [
     'colored_clips',
-    'frames_since_bookmark',
-    'load_bookmarks',
     'match_clip',
-    'truncate_string',
     'convert_rfs',
 ]
 
 
-def load_bookmarks(bookmark_path: str) -> list[int]:
+def colored_clips(
+    amount: int, max_hue: int = 300, rand: bool = True, seed: Any | None = None, **kwargs: Any
+) -> list[vs.VideoNode]:
     """
-    Load VSEdit bookmarks.
-
-    load_bookmarks(os.path.basename(__file__)+".bookmarks")
-    will load the VSEdit bookmarks for the current Vapoursynth script.
-
-    :param bookmark_path:  Path to bookmarks file.
-
-    :return:               A list of bookmarked frames.
-    """
-    with open(bookmark_path) as f:
-        bookmarks = [int(i) for i in f.read().split(", ")]
-
-        if bookmarks[0] != 0:
-            bookmarks.insert(0, 0)
-
-    return bookmarks
-
-
-def frames_since_bookmark(clip: vs.VideoNode, bookmarks: list[int]) -> vs.VideoNode:
-    """
-    Display frames since last bookmark to create easily reusable scenefiltering.
-
-    Can be used in tandem with :py:func:`lvsfunc.misc.load_bookmarks` to import VSEdit bookmarks.
-
-    :param clip:        Clip to process.
-    :param bookmarks:   A list of bookmarks.
-
-    :return:            Clip with bookmarked frames.
-    """
-    def _frames_since_bookmark(n: int, clip: vs.VideoNode, bookmarks: list[int]) -> vs.VideoNode:
-        for i, bookmark in enumerate(bookmarks):
-            frames_since = n - bookmark
-
-            if frames_since >= 0 and i + 1 >= len(bookmarks):
-                result = frames_since
-            elif frames_since >= 0 and n - bookmarks[i + 1] < 0:
-                result = frames_since
-                break
-
-        return core.text.Text(clip, str(result))
-    return core.std.FrameEval(clip, partial(_frames_since_bookmark, clip=clip, bookmarks=bookmarks))
-
-
-def colored_clips(amount: int,
-                  max_hue: int = 300,
-                  rand: bool = True,
-                  seed: bytearray | bytes | float | str | None = None,
-                  **kwargs: Any
-                  ) -> list[vs.VideoNode]:
-    r"""
     Return a list of BlankClips with unique colors in sequential or random order.
 
     The colors will be evenly spaced by hue in the HSL colorspace.
@@ -159,14 +107,6 @@ def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
         )
 
     return clip.std.AssumeFPS(fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
-
-
-def truncate_string(str_in: str, max_length: int, suffix: str = "...") -> str:
-    """Truncate a string if it surpasses a certain length."""
-    if len(str_in) > max_length:
-        return str_in[:max_length - len(suffix)] + suffix
-
-    return str_in
 
 
 def convert_rfs(rfs_string: str) -> FrameRangesN:

@@ -9,8 +9,7 @@ from vskernels import Catrom, Kernel, KernelT
 from vstools import CustomValueError, Matrix, check_variable, core, get_prop, vs
 
 __all__ = [
-    'autodb_dpir',
-    'dpir'
+    'autodb_dpir'
 ]
 
 
@@ -24,7 +23,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
                 return_mask: bool = False,
                 write_props: bool = False,
                 **vsdpir_args: Any) -> vs.VideoNode:
-    r"""
+    """
     Rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
 
     This function checks for differences between a frame and an edgemask with some processing done on it,
@@ -74,7 +73,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     :return:                Deblocked clip with different strengths applied based on the given parameters.
 
-    :raises ValueError:     Unequal number of ``strength``\s and ``thr``\s passed.
+    :raises ValueError:     Unequal number of ``strength``s and ``thr``s passed.
     """
     assert check_variable(clip, "autodb_dpir")
 
