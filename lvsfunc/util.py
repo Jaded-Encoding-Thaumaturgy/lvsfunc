@@ -5,14 +5,10 @@ import random
 import re
 from typing import Any
 
-from vskernels import Catrom, Kernel, KernelT
-from vstools import (
-    CustomIndexError, CustomValueError, FrameRangeN, FrameRangesN, Matrix, check_variable, core, get_prop, vs
-)
+from vstools import CustomIndexError, CustomValueError, FrameRangeN, FrameRangesN, core, vs
 
 __all__ = [
     'colored_clips',
-    'match_clip',
     'convert_rfs',
 ]
 
@@ -64,49 +60,6 @@ def colored_clips(
         shuffle(rgb_color_list)
 
     return [core.std.BlankClip(color=color, **blank_clip_args) for color in rgb_color_list]
-
-
-def match_clip(clip: vs.VideoNode, ref: vs.VideoNode,
-               dimensions: bool = True, vformat: bool = True,
-               matrices: bool = True, length: bool = False,
-               kernel: KernelT = Catrom) -> vs.VideoNode:
-    """
-    Try matching the given clip's format with the reference clip's.
-
-    :param clip:        Clip to process.
-    :param ref:         Reference clip.
-    :param dimensions:  Match video dimensions (Default: True).
-    :param vformat:     Match video formats (Default: True).
-    :param matrices:    Match matrix/transfer/primaries (Default: True).
-    :param length:      Match clip length (Default: False).
-    :param kernel:      py:class:`vskernels.Kernel` object used for the format conversion.
-                        This can also be the string name of the kernel
-                        (Default: py:class:`vskernels.Catrom`).
-
-    :return:            Clip that matches the ref clip in format.
-    """
-    assert check_variable(clip, "match_clip")
-    assert check_variable(ref, "match_clip")
-
-    kernel = Kernel.ensure_obj(kernel)
-
-    clip = clip * ref.num_frames if length else clip
-    clip = kernel.scale(clip, ref.width, ref.height) if dimensions else clip
-
-    if vformat:
-        assert ref.format
-        clip = kernel.resample(clip, format=ref.format, matrix=Matrix.from_video(ref))
-
-    if matrices:
-        ref_frame = ref.get_frame(0)
-
-        clip = clip.std.SetFrameProps(
-            _Matrix=get_prop(ref_frame, '_Matrix', int),
-            _Transfer=get_prop(ref_frame, '_Transfer', int),
-            _Primaries=get_prop(ref_frame, '_Primaries', int)
-        )
-
-    return clip.std.AssumeFPS(fpsnum=ref.fps.numerator, fpsden=ref.fps.denominator)
 
 
 def convert_rfs(rfs_string: str) -> FrameRangesN:
