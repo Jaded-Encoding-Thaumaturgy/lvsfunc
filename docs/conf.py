@@ -77,8 +77,7 @@ autosummary_generate = True
 autodoc_mock_imports = [
     "vapoursynth",
     "vstools",
-    "vskernels",
-    "vsparsedvd"
+    "vskernels"
 ]
 
 # -- Extension configuration -------------------------------------------------
