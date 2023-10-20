@@ -1,3 +1,3 @@
-VapourSynth>=60
+VapourSynth>=64
 vstools>=2.0.5
 vskernels>=2.3.2
