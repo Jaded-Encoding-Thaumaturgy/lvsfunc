@@ -1,3 +1,9 @@
 VapourSynth>=64
-vstools>=2.0.5
-vskernels>=2.3.2
+vstools>=2.3.0
+vsaa>=1.8.2
+vsdehalo>=1.7.2
+vsdeinterlace>=0.5.1
+vsexprtools>=1.4.6
+vskernels>=2.4.1
+vsmasktools>=1.1.2
+vsrgtools>=1.5.1
