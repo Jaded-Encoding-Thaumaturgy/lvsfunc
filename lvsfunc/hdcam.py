@@ -41,7 +41,7 @@ def hdcam_dering(
 
     :return:            Deringed clip.
     """
-    func = FunctionUtil(clip, hdcam_dering, 0, (vs.YUV, vs.GRAY), 32)
+    func = FunctionUtil(clip, hdcam_dering, 0, (vs.YUV, vs.GRAY), 16)
 
     kernel = Kernel.ensure_obj(kernel, func.func)
     upscaler = Scaler.ensure_obj(upscaler, func.func)
