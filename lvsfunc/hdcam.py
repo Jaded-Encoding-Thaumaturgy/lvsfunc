@@ -108,3 +108,21 @@ def hdcam_dering(
     deringed = nag2.std.MaskedMerge(nag2, Bilinear.scale(ring, clip.width, clip.height))
 
     return func.return_clip(deringed)
+
+
+# TODO: Chroma reconstruction presets. HDCAM chroma tends to get really
+#       screwed up because of the 422/420 => 311 => 422/420 (=> 420) conversion.
+
+# TODO: descale wrapper to handle the horizontal upscale from HDCAM
+#       *and* perform a vertical descale to the original native res if possible.
+
+
+# List of HDCAM productions, kept for no reason other than for people to grab sources to test these funcs on.
+hdcam_productions: list[str] = [
+    "Hayate no Gotoku",
+    "Zettai Karen Children (presumed)",
+    "One Piece",
+    "Heartcatch! Precure",
+    "Joshiraku (presumed)",
+    "Kyousougiga (presumed)",
+]
