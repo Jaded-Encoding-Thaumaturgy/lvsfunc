@@ -6,7 +6,7 @@
     <a href="https://pypi.org/project/lvsfunc/"><img alt="PyPI" src="https://img.shields.io/pypi/v/lvsfunc"></a>
     <a href="https://github.com/Irrational-Encoding-Wizardry/lvsfunc/commits/master"><img alt="GitHub commits since tagged version" src="https://img.shields.io/github/commits-since/Irrational-Encoding-Wizardry/lvsfunc/latest"></a>
     <a href="https://github.com/Irrational-Encoding-Wizardry/lvsfunc/blob/master/LICENSE"><img alt="PyPI - License" src="https://img.shields.io/pypi/l/lvsfunc"></a>
-    <a href="https://discord.gg/qxTxVJGtst"><img alt="Discord" src="https://img.shields.io/discord/856381934052704266?label=discord"></a>
+    <a href="https://discord.gg/XTpc6Fa9eB"><img alt="Discord" src="https://img.shields.io/discord/856381934052704266?label=discord"></a>
     <img alt="downloads" src="https://static.pepy.tech/personalized-badge/lvsfunc?period=total&units=international_system&left_color=grey&right_color=blue&left_text=downloads">
 </p>
 
@@ -16,7 +16,7 @@ Full information on how every function/wrapper works,
 as well as a list of dependencies and links,
 can be found in the [documentation](https://lvsfunc.encode.moe/en/latest/).
 For further support,
-drop by `#lvsfunc` in the [IEW Discord server](https://discord.gg/qxTxVJGtst).
+drop by `#encoding` in the [JET Discord server](https://discord.gg/XTpc6Fa9eB).
 
 ## How to install
 
@@ -42,7 +42,7 @@ After installation, functions can be loaded and used as follows:
 ```py
 import lvsfunc as lvf
 
-aa = lvf.aa.clamp_aa(...)
+aa = lvf.deblock.autodb_dpir(...)
 comp = lvf.comparison.compare(...)
 ...
 ```
