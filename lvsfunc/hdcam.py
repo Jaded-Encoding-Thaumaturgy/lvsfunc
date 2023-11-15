@@ -1,10 +1,12 @@
+from typing import Callable
 from warnings import warn
 
 from vsaa import Nnedi3
 from vsdehalo import base_dehalo_mask
 from vsdeinterlace import vinverse
 from vsexprtools import ExprOp, expr_func
-from vskernels import Bilinear, Catrom, Gaussian, Kernel, KernelT, Lanczos, Scaler, ScalerT
+from vskernels import (Bilinear, Catrom, Gaussian, Kernel, KernelT, Lanczos,
+                       Scaler, ScalerT)
 from vsmasktools import Kirsch, MagDirection, retinex
 from vsrgtools import BlurMatrix, RemoveGrainMode, limit_filter
 from vstools import ConvMode, CustomValueError, FunctionUtil, plane, vs
@@ -16,14 +18,16 @@ __all__: list[str] = [
 
 warn(
     "lvsfunc.hdcam: These are all experimental functions! "
-    "Please report any issues you find in the #lvsfunc channel in the IEW discord!"
+    "Please report any issues you find in the #lvsfunc channel in the JET discord!"
 )
 
 
 def hdcam_dering(
     clip: vs.VideoNode,
-    kernel: KernelT = Lanczos(taps=5),
-    upscaler: ScalerT = Nnedi3
+    kernel: KernelT = Lanczos(taps=4),
+    upscaler: ScalerT = Nnedi3,
+    limiter: bool | Callable[[vs.VideoNode, vs.VideoNode, vs.VideoNode], vs.VideoNode] = True,
+    show_mask: bool = False
 ) -> vs.VideoNode:
     """
     Experimental deringing function for HDCAM material.
@@ -34,12 +38,15 @@ def hdcam_dering(
     Originally written by setsugennoao for Hayate no Gotoku S1.
 
     :param clip:        Clip to process.
-    :param kernel:      Kernel used for descaling.
-                        Defaults to Lanczos 5-tap.
-    :param upscaler:    Primary scaler used for re-upscaling. This should ideally not be too sharp.
-                        Defaults to Nnedi3.
+    :param kernel:      Kernel used for descaling. Defaults to Lanczos 4-tap.
+    :param upscaler:    Primary scaler used for re-upscaling. This should ideally not be too sharp,
+                        so you shouldn't use Waifu2x or FSRCNNX with this. Defaults to Nnedi3.
+    :param limiter:     Whether to limit the clip or not. If a callable is passed, it will run that instead.
+                        The callable must accept a src, a filtered clip, and a ref clip.
+                        Defaults to True.
+    :param show_mask:   Return the mask. Defaults to False.
 
-    :return:            Deringed clip.
+    :return:            Deringed clip or the mask if show_mask=True.
     """
     func = FunctionUtil(clip, hdcam_dering, 0, (vs.YUV, vs.GRAY), 16)
 
@@ -58,7 +65,7 @@ def hdcam_dering(
 
     ring0 = expr_func(kirsch, 'x 2 * 65535 >= x 0 ?')
     ring1 = expr_func(kirsch, 'x 2 * 65535 >= 0 x ?')
-    ring2 = ring0.resize.Bilinear(clip.width, clip.height)
+    ring2 = Bilinear.scale(ring0, clip.width, clip.height)
 
     ring = RemoveGrainMode.BOB_TOP_CLOSE(RemoveGrainMode.BOB_BOTTOM_INTER(ring1))
     ring = ring.std.Transpose()
@@ -70,11 +77,11 @@ def hdcam_dering(
         ring, kirsch.std.Maximum().std.Maximum().std.Maximum()
     ], 'y 2 * 65535 >= x 0 ?').std.Maximum()
 
-    nag0 = vinverse(clip_y, 6.0, 255, 0.25, ConvMode.HORIZONTAL)
-    nag1 = vinverse(clip_y, 5.0, 255, 0.2, ConvMode.HORIZONTAL)
+    nag0 = vinverse(descaled_y, 6.0, 255, 0.25, ConvMode.HORIZONTAL)
+    nag1 = vinverse(descaled_y, 5.0, 255, 0.2, ConvMode.HORIZONTAL)
     nag = nag0.std.MaskedMerge(nag1, ring)
 
-    gauss = BlurMatrix.gauss(0.35)
+    gauss = BlurMatrix.GAUSS(0.35)
     nag = gauss(nag, 0, ConvMode.HORIZONTAL, passes=2)
 
     nag1 = upscaler.scale(nag, clip.width, clip.height)
@@ -104,8 +111,19 @@ def hdcam_dering(
 
     nag1 = clip_y.std.Merge(nag, 0.5).std.MaskedMerge(nag, de_mask)
 
-    deringed = limit_filter(nag, nag1, clip_y)
-    deringed = nag2.std.MaskedMerge(nag2, Bilinear.scale(ring, clip.width, clip.height))
+    if callable(limiter):
+        deringed= limiter(nag, nag1, clip_y)
+    elif limiter:
+        deringed = limit_filter(nag, nag1, clip_y)
+    else:
+        deringed = nag
+
+    ring = upscaler.scale(ring, clip.width, clip.height)
+
+    if show_mask:
+        return ring
+
+    deringed = deringed.std.MaskedMerge(nag2, ring)
 
     return func.return_clip(deringed)
 
