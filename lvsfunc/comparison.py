@@ -491,6 +491,7 @@ def diff(*clips: vs.VideoNode,
          exclusion_ranges: Sequence[int | tuple[int, int]] | None = ...,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
          msg: str = ...,
+         plane: int = ...,
          **namedclips: vs.VideoNode) -> tuple[vs.VideoNode, list[tuple[int, int]]]:
     ...
 
@@ -505,6 +506,7 @@ def diff(*clips: vs.VideoNode,
          exclusion_ranges: Sequence[int | tuple[int, int]] | None = ...,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
          msg: str = ...,
+         plane: int = ...,
          **namedclips: vs.VideoNode) -> vs.VideoNode:
     ...
 
@@ -518,6 +520,7 @@ def diff(*clips: vs.VideoNode,
          exclusion_ranges: Sequence[int | tuple[int, int]] | None = None,
          diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a, b: core.std.MakeDiff(a, b),
          msg: str = "Diffing clips...",
+         plane: int = 0,
          **namedclips: vs.VideoNode) -> vs.VideoNode | tuple[vs.VideoNode, list[tuple[int, int]]]:
     """
     Create a standard :py:class:`lvsfunc.comparison.Stack` between frames from two clips that have differences.
@@ -554,6 +557,7 @@ def diff(*clips: vs.VideoNode,
     :param diff_func:           Function for calculating diff in PlaneStatsMin/Max mode.
     :param msg:                 Message for the progress bar. Defaults to "Diffing clips...".
                                 Useful if you're using `diff` for some other process.
+    :param plane:               Plane to diff. Defaults to luma.
 
     :return:                    Either an interleaved clip of the differences between the two clips
                                 or a stack of both input clips on top of MakeDiff clip.
@@ -566,6 +570,8 @@ def diff(*clips: vs.VideoNode,
     :raises LengthMismatchError: The given clips are of different lengths.
     :raises StopIteration:      No differences are found.
     """
+    from vstools import plane as vst_plane
+
     if clips and namedclips:
         raise ClipsAndNamedClipsError(diff)
 
@@ -574,7 +580,6 @@ def diff(*clips: vs.VideoNode,
 
     if abs(thr) > 128:
         raise CustomValueError("`thr` must be between [-128, 128]!", diff, thr)
-
     if avg_thr is True:
         avg_thr = max(0.012, (128 - thr) * 0.000046875 + 0.0105) if thr > 1 else 0.0
 
@@ -590,10 +595,13 @@ def diff(*clips: vs.VideoNode,
             yield groupl[0][1], groupl[-1][1]
 
     if clips:
-        a, b = depth(clips[0], 8), depth(clips[1], 8)
+        a, b = depth(vst_plane(clips[0], plane), 8), depth(vst_plane(clips[1], plane), 8)
     elif namedclips:
         nc = list(namedclips.values())
-        a, b = depth(nc[0], 8), depth(nc[1], 8)
+        a, b = depth(vst_plane(nc[0], plane), 8), depth(vst_plane(nc[1], plane), 8)
+
+    assert isinstance(a, vs.VideoNode)
+    assert isinstance(b, vs.VideoNode)
 
     LengthMismatchError.check(diff, a.num_frames, b.num_frames)
 
