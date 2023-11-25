@@ -24,7 +24,7 @@ warn(
 
 def hdcam_dering(
     clip: vs.VideoNode,
-    kernel: KernelT = Lanczos(taps=4),
+    kernel: KernelT | vs.VideoNode = Lanczos(taps=4),
     upscaler: ScalerT = Nnedi3,
     limiter: bool | Callable[[vs.VideoNode, vs.VideoNode, vs.VideoNode], vs.VideoNode] = True,
     show_mask: bool = False
@@ -39,6 +39,7 @@ def hdcam_dering(
 
     :param clip:        Clip to process.
     :param kernel:      Kernel used for descaling. Defaults to Lanczos 4-tap.
+                        Optionally, if a VideoNode is passed, it will replace the descaled clip with that.
     :param upscaler:    Primary scaler used for re-upscaling. This should ideally not be too sharp,
                         so you shouldn't use Waifu2x or FSRCNNX with this. Defaults to Nnedi3.
     :param limiter:     Whether to limit the clip or not. If a callable is passed, it will run that instead.
@@ -46,11 +47,13 @@ def hdcam_dering(
                         Defaults to True.
     :param show_mask:   Return the mask. Defaults to False.
 
-    :return:            Deringed clip or the mask if show_mask=True.
+    :return:            Deringed clip or the ringing mask if show_mask=True.
     """
     func = FunctionUtil(clip, hdcam_dering, 0, (vs.YUV, vs.GRAY), 16)
 
-    kernel = Kernel.ensure_obj(kernel, func.func)
+    if not isinstance(kernel, vs.VideoNode):
+        kernel = Kernel.ensure_obj(kernel, func.func)
+
     upscaler = Scaler.ensure_obj(upscaler, func.func)
 
     if (clip.width, clip.height) != (1920, 1080):
@@ -58,7 +61,13 @@ def hdcam_dering(
 
     clip_y = plane(func.work_clip, 0)
 
-    descaled_y = kernel.descale(clip_y, 1440, clip.height)
+    if isinstance(kernel, vs.VideoNode):
+        descaled_y = plane(kernel, 0)
+    elif isinstance(kernel, Kernel):
+        descaled_y = kernel.descale(clip_y, 1440, clip.height)
+    else:
+        raise CustomValueError(f"Could not determine how to handle the given kernel, \"{kernel=}\"!", hdcam_dering)
+
     ret_y = retinex(descaled_y)
 
     kirsch = Kirsch(MagDirection.E | MagDirection.W).edgemask(ret_y)
