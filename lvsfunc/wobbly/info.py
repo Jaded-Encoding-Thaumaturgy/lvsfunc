@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import Any, Callable
 
@@ -33,6 +33,7 @@ class WobblyMeta:
     """An optional field for external wobbly file authoring functions, such as lvsfunc/vsdeinterlace's."""
 
 
+@dataclass
 class WobblyVideo:
     """A class containing information about the clip used inside of wobbly."""
 
@@ -145,7 +146,7 @@ class Section:
     framenum: int
     """The first frame number of a section."""
 
-    presets: list[SectionPreset] = []  # ! TODO: fix typing
+    presets: list[SectionPreset] = field(default_factory=lambda: [])
     """A list of presets applied to the section of a clip."""
 
 

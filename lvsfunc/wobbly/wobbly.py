@@ -4,15 +4,20 @@ import json
 from dataclasses import dataclass
 from fractions import Fraction
 from math import ceil
-from typing import Any, cast
+from typing import Any
 
 from stgpytools import (MISSING, CustomIndexError, CustomNotImplementedError,
                         CustomTypeError, CustomValueError,
-                        DependencyNotFoundError, FileNotExistsError,
-                        MismatchRefError, SPath, SPathLike)
+                        DependencyNotFoundError, FileNotExistsError, SPath,
+                        SPathLike)
 from vsdeinterlace import fix_telecined_fades
+from vsexprtools import ExprOp
+from vsmasktools import Morpho
+from vsrgtools import gauss_blur
 from vstools import (FieldBased, FieldBasedT, FunctionUtil, Keyframes,
-                     Timecodes, replace_ranges, vs)
+                     Timecodes, UnsupportedFieldBasedError, core, plane,
+                     replace_ranges, vs)
+from vsdenoise import prefilter_to_full_range
 
 from .exceptions import InvalidCycleError, InvalidMatchError
 from .info import (FreezeFrame, InterlacedFade, OrphanField, Section,
@@ -42,16 +47,16 @@ class WobblyParsed:
     combed_frames: set[int]
     """A set of combed frames. Frames with interlaced fades will be excluded."""
 
-    orphan_frames: set[OrphanField]
+    orphan_frames: list[OrphanField]
     """A set of OrphanField objects representing an orphan."""
 
     decimations: set[int]
     """A set of frames to decimate."""
 
-    sections: set[Section]
+    sections: list[Section]
     """A set of Section objects representing the scenes of a video."""
 
-    interlaced_fades: set[InterlacedFade]
+    interlaced_fades: list[InterlacedFade]
     """A set of InterlacedFade objects representing frames marked as interlaced fades."""
 
     freeze_frames: list[FreezeFrame]
@@ -98,9 +103,20 @@ class WobblyParsed:
         self.vfm_params = VfmParams(**dict(self._get_val("vfm parameters", {})))
         self.vdecimate_params = VDecParams(**dict(self._get_val("vdecimate parameters", {})))
 
+        if self.vdecimate_params.cycle != 5:
+            raise InvalidCycleError("Wobbly currently only supports a cycle of 5!", self._func)
+
+        self.field_order = FieldBased.from_param(self.vfm_params.order + 1, self._func)
+
+        if not self.field_order.is_inter:
+            raise UnsupportedFieldBasedError("Your source may not be Progressive!", self._func)
+
         self.matches = self._get_val("matches", [])
         self.combed_frames = self._get_val("combed frames", set())
         self.decimated_frames = self._get_val("decimated frames", set())
+
+        if not bool(len(illegal_chars := set(self.matches) - {*Match.__args__})):  # type:ignore[attr-defined]
+            raise InvalidMatchError(f"Illegal characters found in matches: {tuple(illegal_chars)}", self._func)
 
         self._get_sections()
         self._get_interlaced_fades()
@@ -110,23 +126,12 @@ class WobblyParsed:
         # Further sanitizing where necessary.
         self._remove_ifades_from_combed()
 
-    def __post_init__(self) -> None:
-        if self.vdecimate_params.cycle != 5:
-            raise InvalidCycleError("Wobbly currently only supports a cycle of 5!", self._func)
-
-        self.field_order = FieldBased.from_param(self.field_order, self._func)
-
-        if not self.field_order.is_inter:
-            self.field_order = FieldBased.from_param(int(self.vfm_params.order) + 1, self._func)
-
-        if bool(len(illegal_chars := set(self.matches) - {*Match.__args__})):  # type:ignore[attr-defined]
-            raise InvalidMatchError(f"Illegal characters found in matches: {tuple(illegal_chars)}", self._func)
-
     def apply(
         self,
         clip: vs.VideoNode | None = None,
-        ref: vs.VideoNode | None = None,
+        tff: FieldBasedT = None,
         orphan_handling: bool | OrphanMatch | list[OrphanMatch] = False,
+        mask_orphans: bool = False,
         **qtgmc_kwargs: Any
     ) -> vs.VideoNode:
         """
@@ -135,11 +140,17 @@ class WobblyParsed:
         :param clip:                Clip to process. If None, index the `input_file` file as defined
                                     in the original Wobbly file, using the same indexer Wobbly used.
                                     Default: None.
-        :param ref:                 ...?
+        :param tff:                 Top-Field-First. If None, obtain this from the parsed wobbly file.
+                                    If it can't obtain it from that, it will try to obtain it from the VideoNode.
+                                    Default: None.
         :param orphan_handling:     Deinterlace orphan fields. This may restore motion that is otherwise lost,
                                     at the heavy cost of speed and potential deinterlacing artifacting.
                                     If an OrphanMatch or a list of OrphanMatch is passed instead, it will only
                                     handle orphan fields that were matched to the selected matches.
+                                    Default: False.
+        :param mask_orphans:        Mask orphan fields get get deinterlaced. This may miss some combing,
+                                    so make sure to check! Setting this to `True` will also make the
+                                    `_orphan_mask` attribute available.
                                     Default: False.
         :param qtgmc_kwargs:        Keyword arguments to pass on to QTGMC.
 
@@ -150,24 +161,19 @@ class WobblyParsed:
 
         func = FunctionUtil(clip, self.apply, None, vs.YUV)
 
-        wclip = cast(vs.VideoNode, func.work_clip)  # why is this causing typing issues...?
-        ref = ref or wclip
-
-        MismatchRefError.check(self.apply, wclip, ref)
-
-        wclip = FieldBased.from_param(self.field_order, self.apply).apply(wclip)
-        ref = FieldBased.from_param(self.field_order, self.apply).apply(ref)
+        wclip = FieldBased.from_param(tff or self.field_order, self.apply).apply(func.work_clip)
 
         if orphan_handling:
-            OrphanMatches = list(OrphanMatch.__args__)  # type:ignore[attr-defined]
+            OrphanMatches = OrphanMatch.__args__  # type:ignore[attr-defined]
 
             if isinstance(orphan_handling, bool):
                 orphan_handling = OrphanMatches
-            elif orphan_handling in OrphanMatches:
-                orphan_handling = [orphan_handling]  # type:ignore[list-item]
+            # ! TODO: Find a better way to do this.
+            elif all(m in ("b", "n", "p", "u") for m in list(orphan_handling)):
+                orphan_handling = list(orphan_handling)  # type:ignore[list-item]
             else:
                 raise CustomTypeError(
-                    f"Expected types: {(type(x) for x in (bool, OrphanMatch))}, "
+                    f"Expected type: (bool, ['b', 'n', 'p', 'u']), "
                     f"not {type(orphan_handling)}!", self.apply
                 )
 
@@ -189,18 +195,20 @@ class WobblyParsed:
                 if orphan.match in orphan_handling:
                     matches_to_process[orphan.framenum] = "c"
 
-        wclip = wclip.fh.FieldHint(None, FieldBased.from_video(wclip).is_tff, matches_to_process)
+        if matches_to_process:
+            wclip = self._apply_fieldmatches(wclip, matches_to_process)
 
         if self.freeze_frames:
             wclip = self._apply_freezeframes(wclip)
 
-        wclip = self._mark_framerates(wclip)
+        if self.decimated_frames:
+            wclip = self._mark_framerates(wclip)
 
         if self.interlaced_fades:
             wclip = self._apply_interlaced_fades(wclip)
 
         if orphan_handling:
-            wclip = self._deinterlace_orphans(wclip, orphans_to_process, **qtgmc_kwargs)
+            wclip = self._deinterlace_orphans(wclip, orphans_to_process, mask_orphans, **qtgmc_kwargs)
 
         if self.combed_frames:
             wclip = self._apply_combed_markers(wclip)
@@ -219,14 +227,15 @@ class WobblyParsed:
         return val
 
     def _get_sections(self) -> None:
-        self.sections = set(
-            Section(section) for section in dict(self._get_val("sections", {"start": 0, "presets": []}))
+        self.sections = list(
+            Section(section.get("start", 0), section.get("presets", []))
+            for section in self._get_val("sections", [{}])
         )
 
     def _get_interlaced_fades(self) -> None:
-        self.interlaced_fades = set(
+        self.interlaced_fades = list(
             InterlacedFade(ifade.get("frame"), ifade.get("field_difference"))
-            for ifade in dict(self._get_val("interlaced fades", {}))
+            for ifade in self._get_val("interlaced fades", [{}])
         )
 
     def _get_freeze_frames(self) -> None:
@@ -234,19 +243,28 @@ class WobblyParsed:
         self.freeze_frames = [FreezeFrame(*freezes) for freezes in zip(*self._get_val("frozen frames", []))]
 
     def _get_orphan_frames(self) -> None:
-        orphan_frames = list[OrphanField]()
+        self.orphan_frames = list[OrphanField]()
 
         try:
             for i in self._get_val("orphan frames", []):
-                orphan_frames += [OrphanField(i, self.matches[i])]
+                self.orphan_frames += [OrphanField(i, self.matches[i])]
         except IndexError as e:
             raise CustomIndexError(" ".join([str(e), f"(frame: {i})"]), self._func)
-
-        self.orphan_frames = set(orphan_frames)
 
     def _remove_ifades_from_combed(self) -> None:
         if self.interlaced_fades:
             self.combed_frames = self.combed_frames - set(i.framenum for i in self.interlaced_fades)
+
+    def _apply_fieldmatches(self, clip: vs.VideoNode, matches: list[str]) -> vs.VideoNode:
+        clip = clip.fh.FieldHint(None, self.field_order, "".join(matches))
+
+        match_clips = dict[str, vs.VideoNode]()
+
+        for match in set(matches):
+            match_clips |= {match: clip.std.SetFrameProps(wobbly_match=match)}
+
+        return clip.std.FrameEval(lambda n: match_clips.get(matches[n]))
+
 
     def _mark_framerates(self, clip: vs.VideoNode) -> vs.VideoNode:
         """Mark the framerates per cycle."""
@@ -268,7 +286,8 @@ class WobblyParsed:
             [
                 j for j in range(i * self.vdecimate_params.cycle, (i + 1) * self.vdecimate_params.cycle)
                 if j in self.decimations
-            ] for i in range(0, ceil((max(self.decimations) + 1) / self.vdecimate_params.cycle))
+            ]
+            for i in range(0, ceil((max(self.decimated_frames) + 1) / self.vdecimate_params.cycle))
         ]
 
         n_split_decimations = len(split_decimations)
@@ -307,31 +326,78 @@ class WobblyParsed:
 
         return replace_ranges(clip, ftf, [f.framenum for f in self.interlaced_fades])
 
-    def _deinterlace_orphans(self, clip: vs.VideoNode, orphans: list[OrphanField], **kwargs: Any) -> vs.VideoNode:
+    def _deinterlace_orphans(
+        self, clip: vs.VideoNode,
+        orphans: list[OrphanField],
+        mask_orphans: bool = False,
+        **kwargs: Any
+    ) -> vs.VideoNode:
         try:
             from havsfunc import QTGMC  # type:ignore[import]
         except ModuleNotFoundError:
             raise DependencyNotFoundError(self.apply, "havsfunc")
 
+        n_frames = [o.framenum for o in orphans if o.match == "n"]
+        b_frames = [o.framenum for o in orphans if o.match == "b"]
+
         # ! TODO: Figure out how to better deinterlace orphans, hopefully remove QTGMC dep one day.
         # This is almost entirely copied from old code. I need to run tests at some point.
         field_order = FieldBased.from_video(clip)
+
+        kwargs.pop("TFF", None)
 
         qtgmc_kwargs: dict[str, Any] = dict(
             TR0=2, TR1=2, TR2=2, Sharpness=0, Lossless=1, InputType=0,
             Rep0=3, Rep1=3, Rep2=2, SourceMatch=3, EdiMode='EEDI3+NNEDI3', EdiQual=2,
             Sbb=3, SubPel=4, SubPelInterp=2, opencl=False, RefineMotion=True,
             Preset='Placebo', MatchPreset='Placebo', MatchPreset2='Placebo'
-        ) | kwargs | dict(FPSDivisor=1, TFF=field_order.is_tff)
+        ) | kwargs | dict(FPSDivisor=1)
 
-        deint_n = QTGMC(clip[1:] + clip[-1], **qtgmc_kwargs)[field_order.field::2]
-        deint_b = QTGMC(clip, **qtgmc_kwargs)[field_order.field::2]
+        deint_n = QTGMC(clip, TFF=field_order.is_tff, **qtgmc_kwargs)[not field_order.field::2]
+        deint_b = QTGMC(clip, TFF=field_order.is_tff, **qtgmc_kwargs)[field_order.field::2]
+
+        # ! TODO: improve this. It seems to work surprisingly well, but it's not perfect.
+        if mask_orphans and all(hasattr(core, plugin) for plugin in ("motionmask", "comb")):
+            base_clip = plane(clip, 0)
+            base_clip = prefilter_to_full_range(base_clip, 4.5)
+
+            comb_mask = base_clip.comb.CombMask(6, 4)
+
+            n_motion_clip = replace_ranges(base_clip, base_clip[1:] + base_clip[-1], [n - 1 for n in n_frames])
+            b_motion_clip = replace_ranges(base_clip, base_clip[0] + base_clip[:-1], [n - 1 for n in n_frames])
+
+            motionmask_args = (None, 1, 1, 255)
+            deint_mask_n = n_motion_clip.motionmask.MotionMask(*motionmask_args)
+            deint_mask_n_off = base_clip.motionmask.MotionMask(*motionmask_args)
+            deint_mask_b = base_clip.motionmask.MotionMask(*motionmask_args)
+            deint_mask_b_off = b_motion_clip.motionmask.MotionMask(*motionmask_args)
+
+            deint_mask_n = ExprOp.MAX(comb_mask, deint_mask_n, deint_mask_n_off)
+            deint_mask_b = ExprOp.MAX(comb_mask, deint_mask_b, deint_mask_b_off)
+
+            deint_mask = deint_mask_n.std.BlankClip(keep=True)
+            deint_mask = replace_ranges(deint_mask, deint_mask_n, n_frames)
+            deint_mask =  replace_ranges(deint_mask, deint_mask_b, b_frames)
+
+            deint_mask = Morpho.closing(deint_mask, 3)
+            deint_mask = Morpho.inpand(deint_mask, 1)
+            deint_mask = Morpho.expand(deint_mask, 14)
+            deint_mask = Morpho.closing(deint_mask, 4)
+            deint_mask = deint_mask.std.Binarize().std.Limiter()
+            deint_mask = gauss_blur(deint_mask, 1.5)
+
+            self._orphan_mask = deint_mask
+
+            deint_n = clip.std.MaskedMerge(deint_n, deint_mask)
+            deint_b = clip.std.MaskedMerge(deint_b, deint_mask)
 
         deint_n = deint_n.std.SetFrameProps(wobbly_orphan_deinterlace="n")
-        deint_b = deint_n.std.SetFrameProps(wobbly_orphan_deinterlace="b")
+        deint_b = deint_b.std.SetFrameProps(wobbly_orphan_deinterlace="b")
 
-        out = replace_ranges(clip, deint_n, [o.framenum for o in orphans if o.match == "n"])
-        out = replace_ranges(out, deint_b, [o.framenum for o in orphans if o.match == "b"])
+        # ! TODO: Compare the previous frame and 3 frames previous (because animated on twos) to check for similarity.
+        # If we can be smart about copying over frames, we can avoid an unnecessary deinterlacing step.
+        out = replace_ranges(clip, deint_n, n_frames)
+        out = replace_ranges(out, deint_b, b_frames)
 
         return out
 

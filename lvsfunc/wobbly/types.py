@@ -13,5 +13,5 @@ Match: TypeAlias = Literal['b'] | Literal['c'] | Literal['n'] | Literal['p'] | L
 OrphanMatch: TypeAlias = Literal['b'] | Literal['n'] | Literal['p'] | Literal['u']
 """Valid matches to be considered orphans.."""
 
-SectionPreset: Callable[[vs.VideoNode], vs.VideoNode]
+SectionPreset = Callable[[vs.VideoNode], vs.VideoNode]
 """A callable preset applied to a section."""
