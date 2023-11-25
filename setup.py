@@ -28,9 +28,9 @@ setuptools.setup(
     },
     install_requires=install_requires,
     project_urls={
-        "Source Code": 'https://github.com/Irrational-Encoding-Wizardry/lvsfunc',
+        "Source Code": 'https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc',
         "Documentation": 'https://lvsfunc.encode.moe/en/latest/',
-        "Contact": 'https://discord.gg/qxTxVJGtst',
+        "Contact": 'https://discord.gg/XTpc6Fa9eB',
     },
     classifiers=[
         "Natural Language :: English",
