@@ -19,7 +19,7 @@ __all__: list[str] = [
 def _warn_hdcam() -> None:
     warn(
         "lvsfunc.hdcam: These are all experimental functions! "
-        "Please report any issues you find in the #lvsfunc channel in the JET discord!"
+        "Please report any issues you find in the #dev channel in the JET discord!"
     )
 
 

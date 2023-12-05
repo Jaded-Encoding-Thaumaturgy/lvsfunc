@@ -16,7 +16,7 @@ Full information on how every function/wrapper works,
 as well as a list of dependencies and links,
 can be found in the [documentation](https://lvsfunc.encode.moe/en/latest/).
 For further support,
-drop by `#encoding` in the [JET Discord server](https://discord.gg/XTpc6Fa9eB).
+drop by `#dev` in the [JET Discord server](https://discord.gg/XTpc6Fa9eB).
 
 ## How to install
 
@@ -51,5 +51,10 @@ comp = lvf.comparison.compare(...)
 
 Anything **MAY** change at any time.
 The public API **SHOULD NOT** be considered stable.
-If you use lvsfunc in any of your projects,
-consider hardcoding a version requirement.
+
+Many functions in this package are considered **EXPERIMENTAL**,
+and are likely to require either full testing,
+or may be moved to a different _Jaded Encoding Thaumaturgy_ package after some time.
+
+If you use _lvsfunc_ in any of your projects,
+please consider hardcoding a version requirement.
