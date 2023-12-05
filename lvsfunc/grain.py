@@ -1,7 +1,6 @@
-from tempfile import NamedTemporaryFile
 from warnings import warn
 
-from stgpytools import CustomImportError, DependencyNotFoundError, MismatchRefError, SPath
+from stgpytools import CustomImportError, DependencyNotFoundError, MismatchRefError, get_script_path
 from vstools import Keyframes, find_prop_rfs, merge_clip_props, vs
 
 
@@ -63,14 +62,7 @@ def dynamic_scene_adaptive_grain(
 
         ref = grain_bright
 
-    if keyframes is None:
-        with NamedTemporaryFile(delete=False) as tmp:
-            tmp_file = SPath(tmp.name)
-
-        if tmp_file.exists():
-            keyframes = Keyframes.from_file(tmp_file)
-        else:
-            keyframes = Keyframes.from_clip(ref)
+    keyframes = keyframes or Keyframes.unique(ref, get_script_path().stem)
 
     ref = SceneAverageStats(ref, keyframes, "SceneStatsGrain")
 
