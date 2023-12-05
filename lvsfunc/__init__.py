@@ -9,11 +9,12 @@
 
 # flake8: noqa
 
-from . import comparison, deblock, exceptions, grain, hdcam, misc, util
+from . import comparison, deblock, exceptions, grain, hdcam, misc, presets, util
 from .comparison import *
 from .deblock import *
 from .exceptions import *
 from .grain import *
 from .hdcam import *
 from .misc import *
+from .presets import *
 from .util import *
