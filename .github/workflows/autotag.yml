@@ -4,7 +4,7 @@ on:
         branches:
             - master
         paths:
-            - vstools/_metadata.py
+            - lvsfunc/_metadata.py
 
 jobs:
     new_version:
@@ -15,7 +15,7 @@ jobs:
 
             - name: Get version number
               run: |
-                  echo "CURR_VER=v$(python -c "import runpy;runpy.run_path('vstools/_metadata.py', None, '__github__')")" >> $GITHUB_ENV
+                  echo "CURR_VER=v$(python -c "import runpy;runpy.run_path('lvsfunc/_metadata.py', None, '__github__')")" >> $GITHUB_ENV
             - name: Check if version exists
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
