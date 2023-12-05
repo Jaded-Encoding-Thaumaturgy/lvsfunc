@@ -1,5 +1,3 @@
-from warnings import warn
-
 from stgpytools import CustomImportError, DependencyNotFoundError, MismatchRefError, get_script_path
 from vstools import Keyframes, find_prop_rfs, merge_clip_props, vs
 
