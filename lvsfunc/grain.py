@@ -10,9 +10,9 @@ __all__: list[str] = [
 
 
 def dynamic_scene_adaptive_grain(
+    clip: vs.VideoNode,
     grain_dark: vs.VideoNode,
     grain_bright: vs.VideoNode,
-    ref: vs.VideoNode | None = None,
     keyframes: Keyframes | None = None,
     thr: float = 0.55,
 ) -> vs.VideoNode:
@@ -28,16 +28,14 @@ def dynamic_scene_adaptive_grain(
 
     This function is intended for graining, but it can theoretically be used for other purposes.
 
+    :param clip:            The clip used for metric gathering. It will be used for both keyframe generation
+                            (if no keyframes are passed) as well as collecting scene averages.
     :param grain_dark:      The clip with graining applied for dark scenes.
     :param grain_bright:    The clip with graining applied for bright scenes.
-    :param ref:             An optional reference clip. It's highly advised you pass one, as this clip will be used
-                            for keyframe generation if necessary, as well as for collecting scene averages.
-                            If None, it will use `grain_bright` as a ref clip. Default: None
     :param keyframes:       A keyframes object. This is used to pick frames to get the stats from.
-                            If None is passed, it will create a temporary file in the TEMPDIR
-                            and generate keyframes using the `ref` clip.
+                            If None is passed, it will generate keyframes for you using `clip`.
                             Default: None.
-    :param thr:             Threshold used to decide which clip to pick.
+    :param thr:             Threshold used to decide which grained clip to pick.
                             Lower values will result in more scenes being replaced with `grain_bright`,
                             and vice versa for `grain_dark`. Default: 0.55.
 
@@ -57,19 +55,14 @@ def dynamic_scene_adaptive_grain(
     elif thr >= 1:
         return grain_bright
 
-    if ref is None:
-        warn("dynamic_scene_adaptive_grain: \"It's highly advised you pass a ref clip!\"")
+    keyframes = keyframes or Keyframes.unique(clip, get_script_path().stem)
 
-        ref = grain_bright
-
-    keyframes = keyframes or Keyframes.unique(ref, get_script_path().stem)
-
-    ref = SceneAverageStats(ref, keyframes, "SceneStatsGrain")
+    sas = SceneAverageStats(clip, keyframes, "SceneStatsGrain")
 
     grain = find_prop_rfs(
         grain_dark.std.SetFrameProps(SceneGrain="dark"),
         grain_bright.std.SetFrameProps(SceneGrain="bright"),
-        "SceneStatsGrainAverage", ">=", thr, ref
+        "SceneStatsGrainAverage", ">=", thr, sas
     )
 
-    return merge_clip_props(grain, ref)
+    return merge_clip_props(grain, sas)
