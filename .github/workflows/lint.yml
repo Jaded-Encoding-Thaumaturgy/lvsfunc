@@ -1,34 +1,31 @@
 name: lint
 
-on:
-  push:
-    paths:
-      - "**.py"
-  pull_request:
-    branches:
-      - master
-    paths:
-      - "**.py"
+on: [push, pull_request]
 
 jobs:
-  windows:
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        versions:
-          - 64
-        python-version:
-          - "3.11"
+    windows:
+        runs-on: windows-latest
+        strategy:
+            matrix:
+                versions:
+                    - 65
+                python-version:
+                    - "3.11"
 
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          pip install vapoursynth-portable==${{ matrix.versions }}
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
+        steps:
+            - uses: actions/checkout@v2
+            - name: Set up Python ${{ matrix.python-version }}
+              uses: actions/setup-python@v2
+              with:
+                  python-version: ${{ matrix.python-version }}
+            - name: Install dependencies
+              run: |
+                  python3 -m pip install --upgrade pip
+                  pip install vapoursynth-portable==${{ matrix.versions }}
+                  pip install -r requirements.txt
+                  pip install -r requirements-dev.txt
+            - name: Running flake8
+              run: flake8 vstools
+            - name: Running mypy
+              if: steps.dependencies.outcome == 'success'
+              run: mypy vstools
