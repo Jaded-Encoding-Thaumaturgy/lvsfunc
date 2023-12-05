@@ -55,7 +55,7 @@ def dynamic_scene_adaptive_grain(
 
     keyframes = keyframes or Keyframes.unique(clip, get_script_path().stem)
 
-    sas = SceneAverageStats(clip, keyframes, "SceneStatsGrain")
+    sas = SceneAverageStats.from_clip(clip, keyframes, "SceneStatsGrain")
 
     grain = find_prop_rfs(
         grain_dark.std.SetFrameProps(SceneGrain="dark"),
