@@ -16,10 +16,11 @@ __all__: list[str] = [
 ]
 
 
-warn(
-    "lvsfunc.hdcam: These are all experimental functions! "
-    "Please report any issues you find in the #lvsfunc channel in the JET discord!"
-)
+def _warn_hdcam() -> None:
+    warn(
+        "lvsfunc.hdcam: These are all experimental functions! "
+        "Please report any issues you find in the #lvsfunc channel in the JET discord!"
+    )
 
 
 def hdcam_dering(
@@ -49,6 +50,8 @@ def hdcam_dering(
 
     :return:            Deringed clip or the ringing mask if show_mask=True.
     """
+    _warn_hdcam()
+
     func = FunctionUtil(clip, hdcam_dering, 0, (vs.YUV, vs.GRAY), 16)
 
     if not isinstance(kernel, vs.VideoNode):
@@ -121,7 +124,7 @@ def hdcam_dering(
     nag1 = clip_y.std.Merge(nag, 0.5).std.MaskedMerge(nag, de_mask)
 
     if callable(limiter):
-        deringed= limiter(nag, nag1, clip_y)
+        deringed = limiter(nag, nag1, clip_y)
     elif limiter:
         deringed = limit_filter(nag, nag1, clip_y)
     else:
