@@ -239,8 +239,7 @@ class WobblyParsed:
         )
 
     def _get_freeze_frames(self) -> None:
-        #! TODO: Test this.
-        self.freeze_frames = [FreezeFrame(*freezes) for freezes in zip(*self._get_val("frozen frames", []))]
+        self.freeze_frames = [FreezeFrame(*tuple(freezes[0])) for freezes in zip(self._get_val("frozen frames", ()))]
 
     def _get_orphan_frames(self) -> None:
         self.orphan_frames = list[OrphanField]()
