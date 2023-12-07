@@ -8,3 +8,4 @@ vskernels>=2.4.1
 vsmasktools>=1.1.2
 vsrgtools>=1.5.1
 stgpytools>=1.0.4
+stgfunc @ git+https://github.com/Jaded-Encoding-Thaumaturgy/stgfunc.git@main

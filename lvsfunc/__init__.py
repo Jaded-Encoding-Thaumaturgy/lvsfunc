@@ -4,16 +4,18 @@
     If you spot any issues, please do not hesitate to send in a Pull Request
     or reach out to me on Discord (LightArrowsEXE#0476)!
 
-    For further support, drop by `#lvsfunc` in the `IEW Discord server <https://discord.gg/qxTxVJGtst>`_.
+    For further support, drop by `#dev` in the `IEW Discord server <https://discord.gg/qxTxVJGtst>`_.
 """
 
 # flake8: noqa
 
-from . import comparison, deblock, exceptions, hdcam, misc, util, wobbly
+from . import comparison, deblock, exceptions, grain, hdcam, misc, presets, util, wobbly
 from .comparison import *
 from .deblock import *
 from .exceptions import *
+from .grain import *
 from .hdcam import *
 from .misc import *
+from .presets import *
 from .util import *
 from .wobbly import *
