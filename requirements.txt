@@ -7,4 +7,4 @@ vsexprtools>=1.4.6
 vskernels>=2.4.1
 vsmasktools>=1.1.2
 vsrgtools>=1.5.1
-stgfunc @ git+https://github.com/Jaded-Encoding-Thaumaturgy/stgfunc.git@main
+stgfunc>=3.1.0
