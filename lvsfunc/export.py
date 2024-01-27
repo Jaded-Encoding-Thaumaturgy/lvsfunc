@@ -85,7 +85,7 @@ def export_png(
     if show_clip:
         return clip
 
-    frames = get_random_frames(clip, frames, dur, func)
+    frames = get_random_frames(clip, dur, frames, func)
     proc_clip = core.std.Splice([clip[f] for f in frames])
 
     matrix = Matrix.from_param_or_video(matrix, proc_clip)
@@ -117,21 +117,25 @@ def _render(clip: vs.VideoNode, filename: str, func: FuncExceptT) -> list[SPath]
 
 
 def get_random_frames(
-    clip: vs.VideoNode, frames: list[int] | int | float = [],
-    dur: float = 5.0, func_except: FuncExceptT | None = None
+    clip: vs.VideoNode, dur: float = 5.0,
+    _frames: list[int] | int | float = [],
+    func_except: FuncExceptT | None = None
 ) -> list[int]:
     """
-    Get a list of frames to grab per range of frames, indicated by `dur`.
+    Get a list of random frames to grab per range of frames, indicated by `dur`.
 
-    If a list of frames is already passed, that will be treated as an early exit.
+    If a list of frames is already passed, this function will perform an early exit.
+    This function is primarily useful for other functions that may call this function,
+    and should generally not be used by regular users.
 
     :param clip:        Clip to get the random frames from.
-    :param frames:      An optional list of frames to gather. Acts primarily as an early exit for other functions.
-                        If an int or float is passed, it will be turned into a list and truncated if necessary.
-                        Default: empty list.
     :param dur:         The amount of seconds for the ranges. A value of 10.0 equals 10 seconds.
                         If no frames are passed, it will grab a random frame every `dur` seconds.
                         Default: 5.0 seconds.
+    :param _frames:     An optional list of frames to gather. Acts primarily as an early exit for other functions.
+                        If an int or float is passed, it will be turned into a list and truncated if necessary.
+                        This parameter should generally be ignored by regular users.
+                        Default: Empty list.
     :param func_except: Function returned for custom error handling.
 
     :return:            A list of random frame numbers.
@@ -139,21 +143,21 @@ def get_random_frames(
 
     func = func_except or get_random_frames
 
-    if isinstance(frames, (int, float)):
-        frames = [int(frames)]
-    elif not isinstance(frames, list):
-        raise CustomTypeError(f"\"frames\" must be a \"{type(list)}\", not \"{type(frames)}\"!", func)
+    if isinstance(_frames, (int, float)):
+        _frames = [int(_frames)]
+    elif not isinstance(_frames, list):
+        raise CustomTypeError(f"\"frames\" must be a \"{type(list)}\", not \"{type(_frames)}\"!", func)
 
-    if frames:
-        return frames
+    if _frames:
+        return _frames
 
     start_frame = 0
 
     while start_frame < clip.num_frames:
         end_frame = min(start_frame + ceil(clip.fps * dur), clip.num_frames)
 
-        frames.append(randint(start_frame, end_frame - 1))
+        _frames.append(randint(start_frame, end_frame - 1))
 
         start_frame = end_frame
 
-    return frames
+    return _frames
