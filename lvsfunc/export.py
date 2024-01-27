@@ -30,38 +30,42 @@ def export_png(
     """
     Export a VideoNode (either passed as-is or obtained from a (list of) paths) to a PNG image.
 
-    This is mainly useful for collection datasets. If you want a consistent list of random frames,
+    This is mainly useful for exporting datasets. If you want a consistent list of random frames,
     for example for lq vs. hq training, it's recommended you run `get_random_frames` first
-    and pass those results to two calls of `export_png`.
+    and pass those results to two different calls for `export_png`.
 
-    This function will use the `vsfpng` plugin if it's found.
-    You can download it here: `<https://github.com/Mikewando/vsfpng>`
+    Example usage:
+
+    .. code-block:: python
+
+        >>> frames = get_random_frames(hq_clip)
+        >>> export_png(hq_clip, frames, "lq/%d.png)
+        >>> export_png(lq_clip, frames, "hq/%d.png)
+
+    This function will use the `vsfpng` plugin if it has been installed.
+    You can download it here: `<https://github.com/Mikewando/vsfpng>`_.
 
     :param src:         The clip(s) to process.
-                        If a VideoNode is passed, it will be simply use that.
                         If a path or a list of paths is passed, it will index them
                         and create one VideoNode out of them.
-    :param frames:      A list of frames to export. If None or an empty list is passed,
+    :param frames:      A list of frames to export. If an empty list is passed,
                         picks a random frame for every `dur` seconds the clip lasts.
-                        Default: empty list.
-    :param filename:    The output filename. Must have \"%d\" in it.
-                        The string will be formatted. `num` is the frame number.
+                        Default: Empty list.
+    :param filename:    The output filename. Must include a \"%d\", as the string will be formatted.
                         The suffix will automatically be changed to `.png`.
-                        Default: %d.png
+                        Default: "%d.png"
     :param dur:         The amount of seconds for the random frame ranges. A value of 10 equals 10 seconds.
                         If no frames are passed, it will grab a random frame every `dur` seconds.
                         Default: 5.0 seconds.
     :param luma_only:   Only process the luma of a clip. This may yield better results
-                        since the chroma from consumer-grade video is typically very poor quality,
-                        and may interfere with certain training methods more than it helps.
-                        Default: False.
-    :param matrix:      Matrix of the input clip. If None, will try to get it from the clip.
+                        since the chroma from consumer-grade video is typically of very poor quality,
+                        and may interfere with certain training methods more than help.
+                        Only useful if passing source paths. Default: False.
+    :param matrix:      Matrix of the input clip. If None, will try to get it from the input clip.
                         Default: None.
-    :param kernel:      The Kernel used to resample the image to RGB if necessary.
-                        Default: Lanczos (3 taps).
+    :param kernel:      The Kernel used to resample the image to RGB if necessary. Default: Lanczos (3 taps).
     :param show_clip:   Return the clip early to check if it's a valid clip.
-                        This is strictly used for previewing.
-                        Default: False.
+                        This is strictly useful for previewing. Default: False.
     :param func_except: Function returned for custom error handling.
 
     :return:            List of SPath objects pointing to every image exported.
