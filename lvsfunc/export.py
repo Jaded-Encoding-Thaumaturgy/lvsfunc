@@ -6,10 +6,9 @@ from typing import cast
 
 from vskernels import Kernel, KernelT, Lanczos
 from vssource import source
-from vstools import (CustomTypeError, CustomValueError,
-                     DependencyNotFoundError, FieldBased, FuncExceptT, Matrix,
-                     MatrixT, SPath, SPathLike, clip_async_render, core, get_y,
-                     vs)
+from vstools import (CustomTypeError, CustomValueError, FieldBased,
+                     FuncExceptT, Matrix, MatrixT, SPath, SPathLike,
+                     clip_async_render, core, get_y, vs)
 
 __all__: list[str] = [
     "export_png",
@@ -34,6 +33,9 @@ def export_png(
     This is mainly useful for collection datasets. If you want a consistent list of random frames,
     for example for lq vs. hq training, it's recommended you run `get_random_frames` first
     and pass those results to two calls of `export_png`.
+
+    This function will use the `vsfpng` plugin if it's found.
+    You can download it here: `<https://github.com/Mikewando/vsfpng>`
 
     :param src:         The clip(s) to process.
                         If a VideoNode is passed, it will be simply use that.
@@ -66,9 +68,6 @@ def export_png(
     """
 
     func = func_except or export_png
-
-    if not hasattr(core, "fpng"):
-        raise DependencyNotFoundError(func, "vsfpng `<https://github.com/Mikewando/vsfpng>`_")
 
     if r"%d" not in filename:
         raise CustomValueError(r"Your filename MUST have \"%d\" in it!", func)
@@ -105,7 +104,10 @@ def _render(clip: vs.VideoNode, filename: str, func: FuncExceptT) -> list[SPath]
     out_filename = parent / SPath(filename).with_suffix(".png")
     out_filename.parent.mkdir(parents=True, exist_ok=True)
 
-    clip = clip.fpng.Write(filename=out_filename)
+    if hasattr(core, "fpng"):
+        clip = clip.fpng.Write(filename=out_filename)
+    else:
+        clip = clip.imwri.Write(filename=out_filename)
 
     def _return_framenum(iter: int, _: vs.VideoFrame) -> str:
         # Looks like `format` acts strange with this string. Oh well.
