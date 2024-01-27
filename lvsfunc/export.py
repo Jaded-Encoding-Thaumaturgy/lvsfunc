@@ -2,7 +2,7 @@ from datetime import datetime
 from math import ceil
 from pathlib import Path
 from random import randint
-from typing import cast
+from typing import cast, Any
 
 from vskernels import Kernel, KernelT, Lanczos
 from vssource import source
@@ -25,7 +25,8 @@ def export_png(
     matrix: MatrixT | None = None,
     kernel: KernelT = Lanczos(3),
     show_clip: bool = False,
-    func_except: FuncExceptT | None = None
+    func_except: FuncExceptT | None = None,
+    **kwargs: Any
 ) -> list[SPath] | vs.VideoNode:
     """
     Export a VideoNode (either passed as-is or obtained from a (list of) paths) to a PNG image.
@@ -44,6 +45,7 @@ def export_png(
 
     This function will use the `vsfpng` plugin if it has been installed.
     You can download it here: `<https://github.com/Mikewando/vsfpng>`_.
+    If it can't find it, this function will fall back to `imwri.Write`.
 
     :param src:         The clip(s) to process.
                         If a path or a list of paths is passed, it will index them
@@ -67,6 +69,7 @@ def export_png(
     :param show_clip:   Return the clip early to check if it's a valid clip.
                         This is strictly useful for previewing. Default: False.
     :param func_except: Function returned for custom error handling.
+    :param kwargs:      Keyword arguments to pass on to the png writer (vsfpng or imwri).
 
     :return:            List of SPath objects pointing to every image exported.
     """
@@ -97,10 +100,10 @@ def export_png(
 
     proc_clip = kernel.resample(get_y(proc_clip) if luma_only else proc_clip, vs.RGB24, matrix_in=matrix)
 
-    return _render(proc_clip, filename, func)
+    return _render(proc_clip, filename, func, **kwargs)
 
 
-def _render(clip: vs.VideoNode, filename: str, func: FuncExceptT) -> list[SPath]:
+def _render(clip: vs.VideoNode, filename: str, func: FuncExceptT, **kwargs: Any) -> list[SPath]:
     if callable(func):
         func = func.__name__
 
@@ -109,9 +112,9 @@ def _render(clip: vs.VideoNode, filename: str, func: FuncExceptT) -> list[SPath]
     out_filename.parent.mkdir(parents=True, exist_ok=True)
 
     if hasattr(core, "fpng"):
-        clip = clip.fpng.Write(filename=out_filename)
+        clip = clip.fpng.Write(filename=out_filename, **kwargs)
     else:
-        clip = clip.imwri.Write(filename=out_filename)
+        clip = clip.imwri.Write(filename=out_filename, **kwargs)
 
     def _return_framenum(iter: int, _: vs.VideoFrame) -> str:
         # Looks like `format` acts strange with this string. Oh well.
