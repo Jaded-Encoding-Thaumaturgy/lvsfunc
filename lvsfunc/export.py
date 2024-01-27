@@ -107,7 +107,7 @@ def _render(clip: vs.VideoNode, filename: str, func: FuncExceptT, **kwargs: Any)
     if callable(func):
         func = func.__name__
 
-    parent = SPath(f"bin/{datetime.now().strftime('%Y-%m-%d/%H_%M_%S_%f')}"[:-3])
+    parent = SPath(f"bin/{datetime.now().strftime('%Y-%m-%d %H_%M_%S_%f')}"[:-3])
     out_filename = parent / SPath(filename).with_suffix(".png")
     out_filename.parent.mkdir(parents=True, exist_ok=True)
 
