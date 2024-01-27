@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from fractions import Fraction
 from math import ceil
 from typing import Any
@@ -35,38 +35,38 @@ class WobblyParsed:
     meta: WobblyMeta
     """Meta information about Wobbly."""
 
-    field_order: FieldBasedT
-    """The field order represented as a FieldBased object."""
-
-    matches: list[str]
-    """
-    The field matches. See this webpage for more information:
-    <http://underpop.online.fr/f/ffmpeg/help/p_002fc_002fn_002fu_002fb-meaning.htm.gz>
-    """
-
-    combed_frames: set[int]
-    """A set of combed frames. Frames with interlaced fades will be excluded."""
-
-    orphan_frames: list[OrphanField]
-    """A set of OrphanField objects representing an orphan."""
-
-    decimations: set[int]
-    """A set of frames to decimate."""
-
-    sections: list[Section]
-    """A set of Section objects representing the scenes of a video."""
-
-    interlaced_fades: list[InterlacedFade]
-    """A set of InterlacedFade objects representing frames marked as interlaced fades."""
-
-    freeze_frames: list[FreezeFrame]
-    """A list of FreezeFrame objects representing ranges to freeze, and which frames to replace them with."""
-
     vfm_params: VfmParams
     """An object containing all the vivtc.VFM parameters passed through wibbly."""
 
     vdecimate_params: VDecParams
     """An object containing all the vivtc.VDecimate parameters passed through wibbly."""
+
+    field_order: FieldBasedT
+    """The field order represented as a FieldBased object."""
+
+    matches: list[str] = field(default_factory=list)
+    """
+    The field matches. See this webpage for more information:
+    `<http://underpop.online.fr/f/ffmpeg/help/p_002fc_002fn_002fu_002fb-meaning.htm.gz>`_
+    """
+
+    combed_frames: set[int] = field(default_factory=set)
+    """A set of combed frames. Frames with interlaced fades will be excluded."""
+
+    orphan_frames: list[OrphanField] = field(default_factory=list)
+    """A set of OrphanField objects representing an orphan."""
+
+    decimations: set[int] = field(default_factory=set)
+    """A set of frames to decimate."""
+
+    sections: list[Section] = field(default_factory=list)
+    """A set of Section objects representing the scenes of a video."""
+
+    interlaced_fades: list[InterlacedFade] = field(default_factory=list)
+    """A set of InterlacedFade objects representing frames marked as interlaced fades."""
+
+    freeze_frames: list[FreezeFrame] = field(default_factory=list)
+    """A list of FreezeFrame objects representing ranges to freeze, and which frames to replace them with."""
 
     def __init__(self, wobbly_path: SPathLike) -> None:
         """
@@ -113,7 +113,7 @@ class WobblyParsed:
 
         self.matches = self._get_val("matches", [])
         self.combed_frames = self._get_val("combed frames", set())
-        self.decimated_frames = self._get_val("decimated frames", set())
+        self.decimations = self._get_val("decimated frames", set())
 
         if not bool(len(illegal_chars := set(self.matches) - {*Match.__args__})):  # type:ignore[attr-defined]
             raise InvalidMatchError(f"Illegal characters found in matches: {tuple(illegal_chars)}", self._func)
@@ -201,7 +201,7 @@ class WobblyParsed:
         if self.freeze_frames:
             wclip = self._apply_freezeframes(wclip)
 
-        if self.decimated_frames:
+        if self.decimations:
             wclip = self._mark_framerates(wclip)
 
         if self.interlaced_fades:
@@ -213,8 +213,8 @@ class WobblyParsed:
         if self.combed_frames:
             wclip = self._apply_combed_markers(wclip)
 
-        if self.decimated_frames:
-            wclip = wclip.std.DeleteFrames(self.decimated_frames)
+        if self.decimations:
+            wclip = wclip.std.DeleteFrames(self.decimations)
 
         wclip = FieldBased.PROGRESSIVE.apply(wclip)
 
@@ -252,7 +252,7 @@ class WobblyParsed:
 
     def _remove_ifades_from_combed(self) -> None:
         if self.interlaced_fades:
-            self.combed_frames = self.combed_frames - set(i.framenum for i in self.interlaced_fades)
+            self.combed_frames = set(self.combed_frames) - set(i.framenum for i in self.interlaced_fades)
 
     def _apply_fieldmatches(self, clip: vs.VideoNode, matches: list[str]) -> vs.VideoNode:
         clip = clip.fh.FieldHint(None, self.field_order, "".join(matches))
@@ -285,8 +285,7 @@ class WobblyParsed:
             [
                 j for j in range(i * self.vdecimate_params.cycle, (i + 1) * self.vdecimate_params.cycle)
                 if j in self.decimations
-            ]
-            for i in range(0, ceil((max(self.decimated_frames) + 1) / self.vdecimate_params.cycle))
+            ] for i in range(0, ceil((max(self.decimations) + 1) / self.vdecimate_params.cycle))
         ]
 
         n_split_decimations = len(split_decimations)
