@@ -18,7 +18,7 @@ __all__: list[str] = [
 
 def export_png(
     src: SPathLike | list[SPathLike] | vs.VideoNode,
-    frames: list[int] = [],
+    frames: list[int] | None = None,
     filename: str = "%d.png",
     dur: float = 5.0,
     luma_only: bool = False,
@@ -50,9 +50,9 @@ def export_png(
     :param src:         The clip(s) to process.
                         If a path or a list of paths is passed, it will index them
                         and create one VideoNode out of them.
-    :param frames:      A list of frames to export. If an empty list is passed,
+    :param frames:      A list of frames to export. If None or an empty list is passed,
                         picks a random frame for every `dur` seconds the clip lasts.
-                        Default: Empty list.
+                        Default: None.
     :param filename:    The output filename. Must include a \"%d\", as the string will be formatted.
                         The suffix will automatically be changed to `.png`.
                         Default: "%d.png"
@@ -125,7 +125,7 @@ def _render(clip: vs.VideoNode, filename: str, func: FuncExceptT, **kwargs: Any)
 
 def get_random_frames(
     clip: vs.VideoNode, dur: float = 5.0,
-    _frames: list[int] | int | float = [],
+    _frames: list[int] | int | float | None = None,
     func_except: FuncExceptT | None = None
 ) -> list[int]:
     """
@@ -142,7 +142,7 @@ def get_random_frames(
     :param _frames:     An optional list of frames to gather. Acts primarily as an early exit for other functions.
                         If an int or float is passed, it will be turned into a list and truncated if necessary.
                         This parameter should generally be ignored by regular users.
-                        Default: Empty list.
+                        Default: None.
     :param func_except: Function returned for custom error handling.
 
     :return:            A list of random frame numbers.
@@ -150,7 +150,9 @@ def get_random_frames(
 
     func = func_except or get_random_frames
 
-    if isinstance(_frames, (int, float)):
+    if _frames is None:
+        _frames = list[int]()
+    elif isinstance(_frames, (int, float)):
         _frames = [int(_frames)]
     elif not isinstance(_frames, list):
         raise CustomTypeError(f"\"frames\" must be a \"{type(list)}\", not \"{type(_frames)}\"!", func)
