@@ -18,7 +18,7 @@ __all__: list[str] = [
 
 def export_png(
     src: SPathLike | list[SPathLike] | vs.VideoNode,
-    frames: list[int] | None = None,
+    frames: list[int] | int | None = None,
     filename: str = "%d.png",
     dur: float = 5.0,
     luma_only: bool = False,
@@ -125,7 +125,7 @@ def _render(clip: vs.VideoNode, filename: str, func: FuncExceptT, **kwargs: Any)
 
 def get_random_frames(
     clip: vs.VideoNode, dur: float = 5.0,
-    _frames: list[int] | int | float | None = None,
+    _frames: list[int] | int | None = None,
     func_except: FuncExceptT | None = None
 ) -> list[int]:
     """
@@ -155,7 +155,7 @@ def get_random_frames(
     elif isinstance(_frames, (int, float)):
         _frames = [int(_frames)]
     elif not isinstance(_frames, list):
-        raise CustomTypeError(f"\"frames\" must be a \"{type(list)}\", not \"{type(_frames)}\"!", func)
+        raise CustomTypeError(f"\"_frames\" must be a list or int, not \"{type(_frames).__name__}\"!", func)
 
     if _frames:
         return _frames
