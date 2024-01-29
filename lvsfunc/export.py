@@ -19,7 +19,7 @@ __all__: list[str] = [
 def export_png(
     src: SPathLike | list[SPathLike] | vs.VideoNode,
     frames: list[int] | int | None = None,
-    filename: str = "%d.png",
+    filename: str = f"bin/{datetime.now().strftime('%Y-%m-%d %H_%M_%S_%f')[:-3]}/%d.png",
     dur: float = 5.0,
     luma_only: bool = False,
     matrix: MatrixT | None = None,
@@ -55,7 +55,8 @@ def export_png(
                         Default: None.
     :param filename:    The output filename. Must include a \"%d\", as the string will be formatted.
                         The suffix will automatically be changed to `.png`.
-                        Default: "%d.png"
+                        Default: Output in a "bin" directory, with a subdirectory of the current datetime.
+                        Filename is "%d.png", where the `%d` gets replaced with the frmae number.
     :param dur:         The amount of seconds for the random frame ranges. A value of 10 equals 10 seconds.
                         If no frames are passed, it will grab a random frame every `dur` seconds.
                         Default: 5.0 seconds.
@@ -107,8 +108,7 @@ def _render(clip: vs.VideoNode, filename: str, func: FuncExceptT, **kwargs: Any)
     if callable(func):
         func = func.__name__
 
-    parent = SPath(f"bin/{datetime.now().strftime('%Y-%m-%d %H_%M_%S_%f')}"[:-3])
-    out_filename = parent / SPath(filename).with_suffix(".png")
+    out_filename = SPath(filename).with_suffix(".png")
     out_filename.parent.mkdir(parents=True, exist_ok=True)
 
     if hasattr(core, "fpng"):
@@ -120,7 +120,7 @@ def _render(clip: vs.VideoNode, filename: str, func: FuncExceptT, **kwargs: Any)
         # Looks like `format` acts strange with this string. Oh well.
         return SPath(out_filename.to_str().replace(r"%d", str(iter)))
 
-    return clip_async_render(clip, None, f"{func}: Dumping pngs to \"{parent}\"...", _return_framenum)
+    return clip_async_render(clip, None, f"{func}: Dumping pngs to \"{out_filename.parent}\"...", _return_framenum)
 
 
 def get_random_frames(
