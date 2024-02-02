@@ -1,97 +1,70 @@
-from datetime import datetime
 from math import ceil
-from pathlib import Path
 from random import randint
-from typing import cast, Any
+from typing import Any
 
 from vskernels import Kernel, KernelT, Lanczos
-from vssource import source
-from vstools import (CustomTypeError, CustomValueError, FieldBased,
-                     FuncExceptT, Matrix, MatrixT, SPath, SPathLike,
-                     clip_async_render, core, get_y, vs)
+from vstools import (CustomTypeError, FieldBased, SPathLike,
+                     FuncExceptT, Matrix, MatrixT, SPath,
+                     clip_async_render, core, vs)
 
 __all__: list[str] = [
-    "export_png",
+    "export_frames",
     "get_random_frames"
 ]
 
 
-def export_png(
-    src: SPathLike | list[SPathLike] | vs.VideoNode,
+def export_frames(
+    clip: vs.VideoNode,
     frames: list[int] | int | None = None,
-    filename: str = f"bin/{datetime.now().strftime('%Y-%m-%d %H_%M_%S_%f')[:-3]}/%d.png",
+    filename: SPathLike = SPath("bin/%d.png"),
     dur: float = 5.0,
-    luma_only: bool = False,
     matrix: MatrixT | None = None,
     kernel: KernelT = Lanczos(3),
-    show_clip: bool = False,
     func_except: FuncExceptT | None = None,
     **kwargs: Any
-) -> list[SPath] | vs.VideoNode:
+) -> list[SPath]:
     """
-    Export a VideoNode (either passed as-is or obtained from a (list of) paths) to a PNG image.
+    Export random or specific frames from a VideoNode as a PNG image.
 
-    This is mainly useful for exporting datasets. If you want a consistent list of random frames,
-    for example for lq vs. hq training, it's recommended you run `get_random_frames` first
-    and pass those results to two different calls for `export_png`.
+    If you want to export the same frames from multiple clips, for example for lq vs. hq training,
+    it's recommended you run `get_random_frames` first and pass the results to two different `export_frames` calls.
 
     Example usage:
 
     .. code-block:: python
 
+        # Export the same frames from two clips to create a dataset for model training
         >>> frames = get_random_frames(hq_clip)
-        >>> export_png(hq_clip, frames, "lq/%d.png)
-        >>> export_png(lq_clip, frames, "hq/%d.png)
+        >>> ...
+        >>> export_frames(hq_clip, frames, "lq/%d.png)
+        >>> export_frames(lq_clip, frames, "hq/%d.png)
 
     This function will use the `vsfpng` plugin if it has been installed.
     You can download it here: `<https://github.com/Mikewando/vsfpng>`_.
     If it can't find it, this function will fall back to `imwri.Write`.
 
-    :param src:         The clip(s) to process.
-                        If a path or a list of paths is passed, it will index them
-                        and create one VideoNode out of them.
+    :param clip:        The clip to process.
     :param frames:      A list of frames to export. If None or an empty list is passed,
                         picks a random frame for every `dur` seconds the clip lasts.
                         Default: None.
-    :param filename:    The output filename. Must include a \"%d\", as the string will be formatted.
-                        The suffix will automatically be changed to `.png`.
-                        Default: Output in a "bin" directory, with a subdirectory of the current datetime.
-                        Filename is "%d.png", where the `%d` gets replaced with the frmae number.
+    :param filename:    The output filename. The suffix will automatically be changed to `.png`.
+                        "%d" will be subsituted with the frame number. The filename will ALWAYS have a frame number!
+                        Default: Output in a "bin" directory, The frame number will be appended if necessary.
     :param dur:         The amount of seconds for the random frame ranges. A value of 10 equals 10 seconds.
                         If no frames are passed, it will grab a random frame every `dur` seconds.
                         Default: 5.0 seconds.
-    :param luma_only:   Only process the luma of a clip. This may yield better results
-                        since the chroma from consumer-grade video is typically of very poor quality,
-                        and may interfere with certain training methods more than help.
-                        Only useful if passing source paths. Default: False.
-    :param matrix:      Matrix of the input clip. If None, will try to get it from the input clip.
-                        Default: None.
+    :param matrix:      Matrix of the input clip. If None, will try to get it from the input clip. Default: None.
     :param kernel:      The Kernel used to resample the image to RGB if necessary. Default: Lanczos (3 taps).
-    :param show_clip:   Return the clip early to check if it's a valid clip.
-                        This is strictly useful for previewing. Default: False.
     :param func_except: Function returned for custom error handling.
+                        This should only be set by VS package developers.
     :param kwargs:      Keyword arguments to pass on to the png writer (vsfpng or imwri).
 
-    :return:            List of SPath objects pointing to every image exported.
+    :return:            List of SPath objects pointing to every exported image.
     """
 
-    func = func_except or export_png
-
-    if r"%d" not in filename:
-        raise CustomValueError(r"Your filename MUST have \"%d\" in it!", func)
-
-    if isinstance(src, (str, Path, SPath)):
-        src = [src]
-
-    if isinstance(src, vs.VideoNode):
-        clip = cast(vs.VideoNode, src)
-    elif isinstance(src, list):
-        clip = core.std.Splice([source(SPath(s), matrix=matrix) for s in src], mismatch=True)
+    func = func_except or export_frames
 
     clip = FieldBased.PROGRESSIVE.apply(clip)
-
-    if show_clip:
-        return clip
 
     frames = get_random_frames(clip, dur, frames, func)
     proc_clip = core.std.Splice([clip[f] for f in frames])
@@ -99,14 +72,18 @@ def export_png(
     matrix = Matrix.from_param_or_video(matrix, proc_clip)
     kernel = Kernel.ensure_obj(kernel, func)
 
-    proc_clip = kernel.resample(get_y(proc_clip) if luma_only else proc_clip, vs.RGB24, matrix_in=matrix)
+    proc_clip = kernel.resample(proc_clip, vs.RGB24, matrix_in=matrix)
 
     return _render(proc_clip, filename, func, **kwargs)
 
 
-def _render(clip: vs.VideoNode, filename: str, func: FuncExceptT, **kwargs: Any) -> list[SPath]:
+def _render(clip: vs.VideoNode, filename: SPathLike, func: FuncExceptT, **kwargs: Any) -> list[SPath]:
     if callable(func):
         func = func.__name__
+
+    if r"%d" not in str(filename):
+        sfilename = SPath(filename)
+        filename = f"{sfilename.stem}_%d{sfilename.suffix}"
 
     out_filename = SPath(filename).with_suffix(".png")
     out_filename.parent.mkdir(parents=True, exist_ok=True)
@@ -144,6 +121,7 @@ def get_random_frames(
                         This parameter should generally be ignored by regular users.
                         Default: None.
     :param func_except: Function returned for custom error handling.
+                        This should only be set by VS package developers.
 
     :return:            A list of random frame numbers.
     """
