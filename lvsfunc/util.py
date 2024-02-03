@@ -7,12 +7,12 @@ from typing import Any
 
 from vstools import (CustomIndexError, CustomValueError, FrameRangeN,
                      FrameRangesN, KwargsT, check_variable_resolution, core,
-                     get_w, vs)
+                     get_h, get_w, vs)
 
 __all__ = [
     'colored_clips',
     'convert_rfs',
-    'match_centers_formula',
+    'get_match_centers_scaling',
 ]
 
 
@@ -103,39 +103,41 @@ def convert_rfs(rfs_string: str) -> FrameRangesN:
     return ranges
 
 
-def match_centers_formula(
-    clip: vs.VideoNode, target_width: int | None = None, target_height: int = 720
+def get_match_centers_scaling(
+    clip: vs.VideoNode, target_width: int | None = None, target_height: int | None = 720
 ) -> KwargsT:
     """
-    Convenience function to help calculate the native resolution for sources that used
-    the "match centers" sample grid when upsampling, as opposed to the more common "match edges".
+    Convenience function to calculate the native resolution for sources that were upsampled
+    using the "match centers" model as opposed to the more common "match edges" models.
 
-    Match edges will align the outermost pixel's edges in the target image to the source image's.
-    Match center will instead align the *centers* of the outermost pixels.
+    While match edges will align the edges of the outermost pixels in the target image,
+    match centers will instead align the *centers* of the outermost pixels.
 
-    Illustrative example where we upscale a 3x1 image to 9x1:
+    Here's a visual example for a 3x1 image upsampled to 9x1:
 
-        Match edges:
-
-    +-----------+-----------+-----------+
-    |     .     |     .     |     .     |
-    +-----------+-----------+-----------+
-    ↕                                   ↕
-    +---+---+---+---+---+---+---+---+---+
-    | . | . | . | . | . | . | . | . | . |
-    +---+---+---+---+---+---+---+---+---+
-
-        Match centers:
+        * Match edges:
 
     +-----------+-----------+-----------+
     |     .     |     .     |     .     |
     +-----------+-----------+-----------+
-      ↕                               ↕
+    ↓                                   ↓
     +---+---+---+---+---+---+---+---+---+
     | . | . | . | . | . | . | . | . | . |
     +---+---+---+---+---+---+---+---+---+
 
-    The formula for calculating this so we can use this during descaling is simple:
+        * Match centers:
+
+    +-----------+-----------+-----------+
+    |     .     |     .     |     .     |
+    +-----------+-----------+-----------+
+      ↓                               ↓
+    +---+---+---+---+---+---+---+---+---+
+    | . | . | . | . | . | . | . | . | . |
+    +---+---+---+---+---+---+---+---+---+
+
+    For a more detailed explanation, refer to this page: `<https://entropymine.com/imageworsener/matching/>`.
+
+    The formula for calculating values we can use during desampling is simple:
 
     * width: clip.width * (target_width - 1) / (clip.width - 1)
     * height: clip.height * (target_height - 1) / (clip.height - 1)
@@ -146,37 +148,42 @@ def match_centers_formula(
 
         >>> from vodesfunc import DescaleTarget
         >>> ...
-        >>> dimensions = match_centers_formula(src, 1280, 720)
-        >>> DescaleTarget(kernel=Catrom, upscaler=Waifu2x, downscaler=Hermite(linear=True), **dimensions)
+        >>> native_res = get_match_centers_scaling(src, 1280, 720)
+        >>> rescaled = DescaleTarget(kernel=Catrom, upscaler=Waifu2x, downscaler=Hermite(linear=True), **native_res)
 
-    This is strictly meant to be passed to `vodesfunc.DescaleTarget` as kwargs.
+    The output is meant to be passed to `vodesfunc.DescaleTarget` as keyword arguments,
+    but it may also apply to other functions that require similar parameters.
 
-    For more information, see this blog post: `<https://entropymine.com/imageworsener/matching/`>_
-
-    :param clip:            Clip to obtain the source dimensions from.
+    :param clip:            The clip to base the calculations on.
     :param target_width:    Target width for the descale. This should probably be equal to the base width.
-                            If None, auto-calculate from target height.
+                            If not provided, this value is calculated using the `target_height`.
                             Default: None.
     :param target_height:   Target height for the descale. This should probably be equal to the base height.
+                            If not provided, this value is calculated using the `target_width`.
                             Default: 720.
 
-    :return:                A dictionary containing keys that can be passed to `vodesfunc.DescaleTarget`.
-                            This dictionary contains the following values: {width, height, base_width, base_height}
+    :return:                A dictionary with the keys, {width, height, base_width, base_height},
+                            which can be passed directly to `vodesfunc.DescaleTarget` or similar functions.
     """
 
-    check_variable_resolution(clip, match_centers_formula)
+    if target_width is None and target_height is None:
+        raise CustomValueError("Either `target_width` or `target_height` must be provided.", get_match_centers_scaling)
 
-    if not float(target_height).is_integer():
-        raise CustomValueError("\"target_height\" must be an integer!", match_centers_formula)
+    check_variable_resolution(clip, get_match_centers_scaling)
 
-    if target_width is None:
+    if target_height is None:
+        target_height = get_h(target_width, clip, 1)
+
+        if not float(target_height).is_integer():
+            raise CustomValueError("`target_height` must be an integer.", get_match_centers_scaling)
+
+    elif target_width is None:
         target_width = get_w(target_height, clip, 1)
 
-    if not float(target_width).is_integer():
-        raise CustomValueError("\"target_width\" must be an integer!", match_centers_formula)
+        if not float(target_width).is_integer():
+            raise CustomValueError("`target_width` must be an integer.", get_match_centers_scaling)
 
-    return KwargsT(
-        width=clip.width * (target_width - 1) / (clip.width - 1),
-        height=clip.height * (target_height - 1) / (clip.height - 1),
-        base_width=target_width, base_height=target_height,
-    )
+    width = clip.width * (target_width - 1) / (clip.width - 1)
+    height = clip.height * (target_height - 1) / (clip.height - 1)
+
+    return KwargsT(width=width, height=height, base_width=target_width, base_height=target_height)
