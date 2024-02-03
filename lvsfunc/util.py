@@ -5,11 +5,14 @@ import random
 import re
 from typing import Any
 
-from vstools import CustomIndexError, CustomValueError, FrameRangeN, FrameRangesN, core, vs
+from vstools import (CustomIndexError, CustomValueError, FrameRangeN,
+                     FrameRangesN, KwargsT, check_variable_resolution, core,
+                     get_w, vs)
 
 __all__ = [
     'colored_clips',
     'convert_rfs',
+    'match_centers_formula',
 ]
 
 
@@ -98,3 +101,55 @@ def convert_rfs(rfs_string: str) -> FrameRangesN:
             ranges += [tuple(int(x) for x in str(match).strip().split(' '))]  # type:ignore[list-item]
 
     return ranges
+
+
+def match_centers_formula(
+    clip: vs.VideoNode, target_width: int | None = None, target_height: int = 720
+) -> KwargsT:
+    """
+    Convenience function to help calculate the native resolution for sources
+    that used the "match centers" sample grid when upsampling.
+
+    The calculation is simple:
+
+    * width: clip.width * (target_width - 1) / (clip.width - 1)
+    * height: clip.height * (target_height - 1) / (clip.height - 1)
+
+    Example usage:
+
+    .. code-block:: python
+
+        >>> from vodesfunc import DescaleTarget
+        >>> ...
+        >>> dimensions = match_centers_formula(src, 1280, 720)
+        >>> DescaleTarget(kernel=Catrom, upscaler=Waifu2x, downscaler=Hermite(linear=True), **dimensions)
+
+    This is strictly meant to be passed to `vodesfunc.DescaleTarget` as kwargs.
+
+    :param clip:            Clip to obtain the source dimensions from.
+    :param target_width:    Target width for the descale. This should probably be equal to the base width.
+                            If None, auto-calculate from target height.
+                            Default: None.
+    :param target_height:   Target height for the descale. This should probably be equal to the base height.
+                            Default: 720.
+
+    :return:                A dictionary containing keys that can be passed to `vodesfunc.DescaleTarget`.
+                            This dictionary contains the following values: {width, height, base_width, base_height}
+    """
+
+    check_variable_resolution(clip, match_centers_formula)
+
+    if not float(target_height).is_integer():
+        raise CustomValueError("\"target_height\" must be an integer!", match_centers_formula)
+
+    if target_width is None:
+        target_width = get_w(target_height, clip, 1)
+
+    if not float(target_width).is_integer():
+        raise CustomValueError("\"target_width\" must be an integer!", match_centers_formula)
+
+    return KwargsT(
+        width=clip.width * (target_width - 1) / (clip.width - 1),
+        height=clip.height * (target_height - 1) / (clip.height - 1),
+        base_width=target_width, base_height=target_height,
+    )
