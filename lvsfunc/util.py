@@ -107,10 +107,35 @@ def match_centers_formula(
     clip: vs.VideoNode, target_width: int | None = None, target_height: int = 720
 ) -> KwargsT:
     """
-    Convenience function to help calculate the native resolution for sources
-    that used the "match centers" sample grid when upsampling.
+    Convenience function to help calculate the native resolution for sources that used
+    the "match centers" sample grid when upsampling, as opposed to the more common "match edges".
 
-    The calculation is simple:
+    Match edges will align the outermost pixel's edges in the target image to the source image's.
+    Match center will instead align the *centers* of the outermost pixels.
+
+    Illustrative example where we upscale a 3x1 image to 9x1:
+
+        Match edges:
+
+    +-----------+-----------+-----------+
+    |     .     |     .     |     .     |
+    +-----------+-----------+-----------+
+    ↕                                   ↕
+    +---+---+---+---+---+---+---+---+---+
+    | . | . | . | . | . | . | . | . | . |
+    +---+---+---+---+---+---+---+---+---+
+
+        Match centers:
+
+    +-----------+-----------+-----------+
+    |     .     |     .     |     .     |
+    +-----------+-----------+-----------+
+      ↕                               ↕
+    +---+---+---+---+---+---+---+---+---+
+    | . | . | . | . | . | . | . | . | . |
+    +---+---+---+---+---+---+---+---+---+
+
+    The formula for calculating this so we can use this during descaling is simple:
 
     * width: clip.width * (target_width - 1) / (clip.width - 1)
     * height: clip.height * (target_height - 1) / (clip.height - 1)
@@ -125,6 +150,8 @@ def match_centers_formula(
         >>> DescaleTarget(kernel=Catrom, upscaler=Waifu2x, downscaler=Hermite(linear=True), **dimensions)
 
     This is strictly meant to be passed to `vodesfunc.DescaleTarget` as kwargs.
+
+    For more information, see this blog post: `<https://entropymine.com/imageworsener/matching/`>_
 
     :param clip:            Clip to obtain the source dimensions from.
     :param target_width:    Target width for the descale. This should probably be equal to the base width.
