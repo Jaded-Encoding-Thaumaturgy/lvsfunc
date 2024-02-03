@@ -6,8 +6,8 @@ import re
 from typing import Any
 
 from vstools import (CustomIndexError, CustomValueError, FrameRangeN,
-                     FrameRangesN, KwargsT, check_variable_resolution, core,
-                     get_h, get_w, vs)
+                     FrameRangesN, FuncExceptT, KwargsT,
+                     check_variable_resolution, core, get_h, get_w, vs)
 
 __all__ = [
     'colored_clips',
@@ -104,7 +104,10 @@ def convert_rfs(rfs_string: str) -> FrameRangesN:
 
 
 def get_match_centers_scaling(
-    clip: vs.VideoNode, target_width: int | None = None, target_height: int | None = 720
+    clip: vs.VideoNode,
+    target_width: int | None = None,
+    target_height: int | None = 720,
+    func_except: FuncExceptT | None = None
 ) -> KwargsT:
     """
     Convenience function to calculate the native resolution for sources that were upsampled
@@ -161,27 +164,31 @@ def get_match_centers_scaling(
     :param target_height:   Target height for the descale. This should probably be equal to the base height.
                             If not provided, this value is calculated using the `target_width`.
                             Default: 720.
+    :param func_except:     Function returned for custom error handling.
+                            This should only be set by VS package developers.
 
     :return:                A dictionary with the keys, {width, height, base_width, base_height},
                             which can be passed directly to `vodesfunc.DescaleTarget` or similar functions.
     """
 
-    if target_width is None and target_height is None:
-        raise CustomValueError("Either `target_width` or `target_height` must be provided.", get_match_centers_scaling)
+    func = func_except or get_match_centers_scaling
 
-    check_variable_resolution(clip, get_match_centers_scaling)
+    if target_width is None and target_height is None:
+        raise CustomValueError("Either `target_width` or `target_height` must be a positive integer.", func)
+
+    if target_width is not None and (not isinstance(target_width, int) or target_width <= 0):
+        raise CustomValueError("`target_width` must be a positive integer or None.", func)
+
+    if target_height is not None and (not isinstance(target_height, int) or target_height <= 0):
+        raise CustomValueError("`target_height` must be a positive integer or None.", func)
+
+    check_variable_resolution(clip, func)
 
     if target_height is None:
         target_height = get_h(target_width, clip, 1)
 
-        if not float(target_height).is_integer():
-            raise CustomValueError("`target_height` must be an integer.", get_match_centers_scaling)
-
     elif target_width is None:
         target_width = get_w(target_height, clip, 1)
-
-        if not float(target_width).is_integer():
-            raise CustomValueError("`target_width` must be an integer.", get_match_centers_scaling)
 
     width = clip.width * (target_width - 1) / (clip.width - 1)
     height = clip.height * (target_height - 1) / (clip.height - 1)
