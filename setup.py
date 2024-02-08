@@ -21,7 +21,8 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     packages=[
-        package_name
+        package_name,
+        f"{package_name}.ncs"
     ],
     package_data={
         package_name: ['py.typed'],
