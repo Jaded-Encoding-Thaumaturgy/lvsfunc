@@ -22,14 +22,14 @@ class BaseNcEnum(Enum):
 
     .. code-block:: python
 
-        >>>class CardcaptorSakuraNCs(BaseNcEnum):
-        >>>    NCOP1v1 = "BDMV/Cardcaptor Sakura Blu-ray BOX/CC_SAKURA_BD_BOX_DISC7/BDMV/STREAM/00004.m2ts"
-        >>>    NCOP1v2 = "BDMV/Cardcaptor Sakura Blu-ray BOX/CC_SAKURA_BD_BOX_DISC7/BDMV/STREAM/00005.m2ts"
-        >>>    NCOP2 = "BDMV/Cardcaptor Sakura Blu-ray BOX/CC_SAKURA_BD_BOX_DISC7/BDMV/STREAM/00006.m2ts"
-        >>>    NCOP3 = "BDMV/Cardcaptor Sakura Blu-ray BOX/CC_SAKURA_BD_BOX_DISC11/BDMV/STREAM/00003.m2ts"
-        >>>    NCED1 = "BDMV/Cardcaptor Sakura Blu-ray BOX/CC_SAKURA_BD_BOX_DISC7/BDMV/STREAM/00011.m2ts"
-        >>>    NCED2 = "BDMV/Cardcaptor Sakura Blu-ray BOX/CC_SAKURA_BD_BOX_DISC7/BDMV/STREAM/00012.m2ts"
-        >>>    NCED3 = "BDMV/Cardcaptor Sakura Blu-ray BOX/CC_SAKURA_BD_BOX_DISC11/BDMV/STREAM/00004.m2ts"
+        >>> class CardcaptorSakuraNCs(BaseNcEnum):
+        >>>     NCOP1v1 = "BDMV/Cardcaptor Sakura Blu-ray BOX/CC_SAKURA_BD_BOX_DISC7/BDMV/STREAM/00004.m2ts"
+        >>>     NCOP1v2 = "BDMV/Cardcaptor Sakura Blu-ray BOX/CC_SAKURA_BD_BOX_DISC7/BDMV/STREAM/00005.m2ts"
+        >>>     NCOP2 = "BDMV/Cardcaptor Sakura Blu-ray BOX/CC_SAKURA_BD_BOX_DISC7/BDMV/STREAM/00006.m2ts"
+        >>>     NCOP3 = "BDMV/Cardcaptor Sakura Blu-ray BOX/CC_SAKURA_BD_BOX_DISC11/BDMV/STREAM/00003.m2ts"
+        >>>     NCED1 = "BDMV/Cardcaptor Sakura Blu-ray BOX/CC_SAKURA_BD_BOX_DISC7/BDMV/STREAM/00011.m2ts"
+        >>>     NCED2 = "BDMV/Cardcaptor Sakura Blu-ray BOX/CC_SAKURA_BD_BOX_DISC7/BDMV/STREAM/00012.m2ts"
+        >>>     NCED3 = "BDMV/Cardcaptor Sakura Blu-ray BOX/CC_SAKURA_BD_BOX_DISC11/BDMV/STREAM/00004.m2ts"
 
     You should then also create a mapping of episode ranges and NCs.
     This base class comes with a NONE for cases where an episode has no NCOP/NCED.
@@ -134,6 +134,54 @@ class BaseNcEnum(Enum):
                 return result
 
         raise CustomKeyError(f"Could not find matching NCs for \"{episode_number}\"!", func)
+
+    @classmethod
+    def from_filename(
+        cls: Type[NCs], filename: str,
+        nc_map: dict[tuple[int, int], tuple[NCs, NCs]],
+        func_except: FuncExceptT | None = None
+    ) -> tuple[NCs, NCs]:
+        """
+        Get a tuple of NcEnum's from a filename.
+
+        See the BaseNcEnum class docstring for examples of expected values.
+
+        The filename is presumed to be split up using _'s. For example: `CCS_01.py`.
+
+        Example usage:
+
+        .. code-block:: python
+
+            # Using the script's filename directly.
+            >>> NcEnum.from_filename(__file__)
+
+        :param filename:            The episode number, preferably as an int or string.
+                                    Having "NC" in the filename will ALWAYS return (NCs.None, NCs.None)!
+                                    If this value can not be found in the given map, an error will be thrown.
+        :param nc_map:              A mapping of all the NCs and their episode ranges.
+                                    See the BaseNcEnum class docstring for examples.
+        :param func_except:         Function returned for custom error handling.
+                                    This should only be set by VS package developers.
+
+        :return:                    A tuple of the matching NCs based on the map.
+        """
+
+        func = func_except or cls.from_filename
+
+        if not isinstance(filename, str):
+            raise CustomValueError(f"You must pass a string, not a \"{type(filename)}\"!", func)
+
+        ep_name = SPath(filename).stem.split("_")[-1]
+
+        if "nc" in ep_name.lower():
+            return (cls.NONE, cls.NONE)  # type:ignore[return-value]
+
+        result = dict(nc_map).get(ep_name, False)  # type:ignore[call-overload]  # wtf?
+
+        if result:
+            return result  # type:ignore[no-any-return]
+
+        raise CustomKeyError(f"Could not find matching NCs for \"{ep_name}\"!", func)
 
     @staticmethod
     def __get_ncs_from_any(
