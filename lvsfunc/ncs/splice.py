@@ -41,6 +41,9 @@ def splice_nc(
     if nc is None:
         return clip
 
+    import warnings
+    warnings.warn("lvsfunc.splice_nc: This function is still experimental! Please be careful when using it!")
+
     if not hasattr(core, "vmaf"):
         raise DependencyNotFoundError(
             splice_nc, "VapourSynth-VMAF `<https://github.com/HomeOfVapourSynthEvolution/VapourSynth-VMAF>`_"
