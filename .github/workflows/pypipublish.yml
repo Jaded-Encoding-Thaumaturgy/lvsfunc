@@ -8,6 +8,11 @@ jobs:
     package_build:
         name: Build and push to PyPI
         runs-on: ubuntu-latest
+        environment:
+            name: pypi
+            url: https://pypi.org/p/lvsfunc
+        permissions:
+            id-token: write
         steps:
             - uses: actions/checkout@v2
 
@@ -37,8 +42,5 @@ jobs:
             - name: Die on failure
               if: steps.wheel.outcome != 'success' && steps.sdist.outcome != 'success'
               run: exit 1
-            - name: Publish to PyPI
-              uses: pypa/gh-action-pypi-publish@master
-              with:
-                  user: __token__
-                  password: ${{ secrets.PYPI_TOKEN }}
+            - name: Publish package distributions to PyPI
+              uses: pypa/gh-action-pypi-publish@release/v1
