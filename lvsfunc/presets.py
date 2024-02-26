@@ -6,12 +6,15 @@ __all__: list[str] = [
 
 
 MVLightPreset = MVToolsPreset(
-    block_size=16, overlap=8, range_conversion=3.5,
-    sad_mode=(SADMode.ADAPTIVE_SPATIAL_MIXED, SADMode.ADAPTIVE_SATD_MIXED),
-    search=SearchMode.DIAMOND, motion=MotionMode.HIGH_SAD,
+    block_size=16, overlap=8,
+    range_conversion=4.5,
+    sad_mode=SADMode.SPATIAL.same_recalc,
+    search=SearchMode.DIAMOND,
+    motion=MotionMode.HIGH_SAD,
     prefilter=Prefilter.DFTTEST(
-        slocation=[(0.0, 1.0), (0.4, 3.2), (0.45, 40.0), (1.0, 48.0)],
-        ssystem=1, planes=0
-    )
+        sloc=[(0.0, 1.0), (0.4, 2.4), (0.45, 32.0), (1.0, 64.0)],
+        ssystem=1, planes=None
+    ),
+    planes=None
 )
 """Light's MVTools preset."""
