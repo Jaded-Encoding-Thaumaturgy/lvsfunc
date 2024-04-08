@@ -239,7 +239,7 @@ def get_packet_sizes(
                             If None, tries to read the `idx_filepath` property from `clip`.
                             Will throw an error if it can't find either.
     :param out_file:        Output file for packet sizes. If set, the results wll be written to that file,
-                            and also read from that file in subsequence calls. This saves us from having to
+                            and also read from that file in subsequent calls. This saves us from having to
                             call ffprobe every time you refresh the preview.
     :param func_except:     Function returned for custom error handling.
                             This should only be set by VS package developers.
@@ -275,10 +275,11 @@ def _get_frames(sfile: SPath, func: FuncExceptT) -> list[int]:
     if not shutil.which("ffprobe"):
         raise DependencyNotFoundError(func, "ffprobe", "Could not find {package}! Make sure it's in your PATH!")
 
-    proc = sp.Popen([
-        "ffprobe", "-hide_banner", "-show_frames", "-show_streams", "-threads", str(core.num_threads),
-        "-loglevel", "quiet", "-print_format", "json", "-select_streams", "v:0",
-        sfile
+    proc = sp.Popen(
+        [
+            "ffprobe", "-hide_banner", "-show_frames", "-show_streams", "-threads", str(core.num_threads),
+            "-loglevel", "quiet", "-print_format", "json", "-select_streams", "v:0",
+            sfile
         ],
         stdout=sp.PIPE
     )
@@ -315,7 +316,7 @@ def get_file_from_path_or_clip(
 
     try:
         file = get_prop(clip, "idx_filepath", str, func=func)
-    except:
+    except:  # flake8: noqa
         raise CustomTypeError("Could not find the prop, \"idx_filepath\"!", func)
 
     if not (sfile := SPath(file)).exists():
