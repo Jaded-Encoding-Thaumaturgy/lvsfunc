@@ -14,15 +14,16 @@ from typing import Any
 
 from stgpytools import DependencyNotFoundError, FileWasNotFoundError
 from vstools import (CustomIndexError, CustomTypeError, CustomValueError,
-                     FrameRangeN, FrameRangesN, FuncExceptT, KwargsT, SPath,
-                     SPathLike, check_variable_resolution, core, get_h,
-                     get_prop, get_w, vs)
+                     FrameRangeN, FrameRangesN, FuncExceptT, Keyframes,
+                     KwargsT, SPath, SPathLike, check_variable_resolution,
+                     core, get_h, get_prop, get_w, vs)
 
 __all__ = [
     'colored_clips',
     'convert_rfs',
     'get_match_centers_scaling',
     'get_packet_sizes',
+    'get_packet_scene_stats',
     'get_file_from_path_or_clip',
 ]
 
@@ -207,16 +208,10 @@ def get_match_centers_scaling(
     return KwargsT(width=width, height=height, base_width=target_width, base_height=target_height)
 
 
-def _set_sizes_props(n: int, clip: vs.VideoNode, pkt_sizes: list[int]) -> vs.VideoNode:
-    if (pkt_size := pkt_sizes[n]) < 0:
-        warnings.warn(f"Frame {n} bitrate could not be determined!")
-
-    return clip.std.SetFrameProp("pkt_size", pkt_size)
-
-
 def get_packet_sizes(
     clip: vs.VideoNode, filepath: SPathLike | None = None,
-    out_file: SPathLike | None = None, func_except: FuncExceptT | None = None
+    out_file: SPathLike | None = None, keyframes: Keyframes | None = None,
+    func_except: FuncExceptT | None = None
 ) -> vs.VideoNode:
     """
     A simple function to read and add frame packet sizes as frame props.
@@ -230,6 +225,9 @@ def get_packet_sizes(
     If `out_file` is set, the results will be written to a file. If you want to access
     just the packet sizes for speed purposes, it's recommended to read that file instead.
 
+    If a Keyframes object is passed, additional scene-based frame props will be added.
+    These are the min, max, and average packet sizes of a scene based on these Keyframes.
+
     Dependencies:
 
     * `ffprobe <https://ffmpeg.org/download.html>`_
@@ -241,34 +239,78 @@ def get_packet_sizes(
     :param out_file:        Output file for packet sizes. If set, the results wll be written to that file,
                             and also read from that file in subsequent calls. This saves us from having to
                             call ffprobe every time you refresh the preview.
+    :param keyframes:       A Keyframes object to signify scenes. If set, scene-based metrics will
+                            be calculated and added as frame props alongside the `pkt_size` frame prop.
     :param func_except:     Function returned for custom error handling.
                             This should only be set by VS package developers.
 
-    :return:                Input clip with `pkt_size` frame props added.
+    :return:                Input clip with `pkt_size` frame props added, with optionally
+                            scene-based packet stats frame props added on top.
     """
 
     func = func_except or get_packet_sizes
 
     if out_file is not None and SPath(out_file).exists():
-        return _packets_from_out_file(clip, SPath(out_file))
+        with open(out_file, "r+") as f:
+            pkt_sizes = [int(pkt) for pkt in f.readlines()]
+    else:
+        sfile = get_file_from_path_or_clip(clip, filepath, func)
+        pkt_sizes = _get_frames(sfile, func)
 
-    sfile = get_file_from_path_or_clip(clip, filepath, func)
-    pkt_sizes = _get_frames(sfile, func)
-
-    if out_file is not None and (sout := SPath(out_file)):
+    if out_file is not None and not (sout := SPath(out_file)).exists():
         print(f"Writing packet sizes to \"{sout.absolute()}\"...")
 
         sout.parent.mkdir(parents=True, exist_ok=True)
         sout.write_text("\n".join([str(pkt) for pkt in pkt_sizes]), "utf-8", newline="\n")
 
-    return clip.std.FrameEval(partial(_set_sizes_props, clip=clip, pkt_sizes=pkt_sizes))
+    def _set_sizes_props(n: int, clip: vs.VideoNode, pkt_sizes: list[int]) -> vs.VideoNode:
+        if (pkt_size := pkt_sizes[n]) < 0:
+            warnings.warn(f"Frame {n} bitrate could not be determined!")
+
+        return clip.std.SetFrameProp("pkt_size", pkt_size)
+
+    pkts = clip.std.FrameEval(partial(_set_sizes_props, clip=clip, pkt_sizes=pkt_sizes))
+
+    if not keyframes:
+        return pkts
+
+    def _set_scene_stats(n: int, clip: vs.VideoNode, stats: list[dict[str, int]]) -> vs.VideoNode:
+        return clip.std.SetFrameProps(**stats[n])
+
+    stats = get_packet_scene_stats(keyframes, pkt_sizes)
+
+    return pkts.std.FrameEval(partial(_set_scene_stats, clip=pkts, stats=stats))
 
 
-def _packets_from_out_file(clip: vs.VideoNode, file: SPath) -> vs.VideoNode:
-    with open(file, "r+") as f:
-        pkts = [int(pkt) for pkt in f.readlines()]
+def get_packet_scene_stats(keyframes: Keyframes, packet_sizes: list[int]) -> list[dict[str, int]]:
+    """
+    Get basic scene-based stats from packet sizes and keyframes.
 
-    return clip.std.FrameEval(partial(_set_sizes_props, clip=clip, pkt_sizes=pkts))
+    :param keyframes:       Keyframes object. This is used to determine where scenes start and end.
+    :param packet_sizes:    Individual sizes for every frame.
+
+    :return:                list of dictionaries containing scene-based packet size stats.
+    """
+
+    stats = list[dict[str, int]]()
+
+    for start, end in zip(keyframes, keyframes[1:]):
+        pkt_scenes = packet_sizes[start:end]
+
+        total_pkt_size = sum(pkt_scenes)
+
+        avg_pkt_size = int(total_pkt_size / (len(pkt_scenes) or 1))
+        max_pkt_size = max(pkt_scenes)
+        min_pkt_size = min(pkt_scenes)
+
+        for _ in pkt_scenes:
+            stats += [dict(
+                pkt_scene_avg_size=avg_pkt_size,
+                pkt_scene_max_size=max_pkt_size,
+                pkt_scene_min_size=min_pkt_size
+            )]
+
+    return stats
 
 
 def _get_frames(sfile: SPath, func: FuncExceptT) -> list[int]:
