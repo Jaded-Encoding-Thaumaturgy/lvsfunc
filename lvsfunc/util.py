@@ -248,11 +248,13 @@ def get_packet_sizes(
         raise DependencyNotFoundError(func, "ffprobe", "Could not find {package}! Make sure it's in your PATH!")
 
     # Largely taken from bitrate-viewer.
-    proc = sp.Popen([
-        "ffprobe", "-hide_banner", "-show_frames", "-show_streams", "-threads", str(core.num_threads),
-        "-loglevel", "quiet", "-print_format", "json", "-select_streams", "v:0",
-        sfilepath
-        ], stdout=sp.PIPE
+    proc = sp.Popen(
+        [
+            "ffprobe", "-hide_banner", "-show_frames", "-show_streams", "-threads", str(core.num_threads),
+            "-loglevel", "quiet", "-print_format", "json", "-select_streams", "v:0",
+            sfilepath
+        ],
+        stdout=sp.PIPE
     )
 
     with NamedTemporaryFile("a+", delete=False) as tempfile:
