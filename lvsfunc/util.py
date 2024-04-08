@@ -1,18 +1,27 @@
 from __future__ import annotations
 
 import colorsys
+import io
+import json
 import random
 import re
+import shutil
+import subprocess as sp
+from functools import partial
+from tempfile import NamedTemporaryFile
 from typing import Any
 
-from vstools import (CustomIndexError, CustomValueError, FrameRangeN,
-                     FrameRangesN, FuncExceptT, KwargsT,
-                     check_variable_resolution, core, get_h, get_w, vs)
+from stgpytools import DependencyNotFoundError, FileWasNotFoundError
+from vstools import (CustomIndexError, CustomTypeError, CustomValueError,
+                     FrameRangeN, FrameRangesN, FuncExceptT, KwargsT, SPath,
+                     SPathLike, check_variable_resolution, clip_async_render,
+                     core, get_h, get_prop, get_w, vs)
 
 __all__ = [
     'colored_clips',
     'convert_rfs',
     'get_match_centers_scaling',
+    'get_packet_sizes',
 ]
 
 
@@ -194,3 +203,89 @@ def get_match_centers_scaling(
     height = clip.height * (target_height - 1) / (clip.height - 1)
 
     return KwargsT(width=width, height=height, base_width=target_width, base_height=target_height)
+
+
+def get_packet_sizes(
+    clip: vs.VideoNode, filepath: SPathLike | None = None,
+    func_except: FuncExceptT | None = None
+) -> vs.VideoNode:
+    """
+    A simple function to read and add frame packet sizes as frame props.
+
+    The property added is called `pkt_size`, and is an integer.
+
+    "Packet sizes" are the size of individual frames. These can be used to calculate
+    the average bitrate of a clip or a scene, and to process certain frames differently
+    depending on bitrates.
+
+    NOTE: Make sure to run this before doing any splicing or trimming on your clip!
+
+    Dependencies:
+
+    * `ffprobe <https://ffmpeg.org/download.html>`_
+
+    :param clip:            Clip to add the properties to.
+    :param filepath:        The path to the original file that was indexed.
+                            If None, tries to read the `idx_filepath` property from `clip`.
+                            Will throw an error if it can't find either.
+    :param func_except:     Function returned for custom error handling.
+                            This should only be set by VS package developers.
+
+    :return:                Input clip with `pkt_size` frameprops added.
+    """
+
+    func = func_except or get_packet_sizes
+
+    if filepath is None:
+        filepath = get_prop(clip, "idx_filepath", str, func=func)
+
+    sfilepath = SPath(filepath)
+
+    if not sfilepath.exists():
+        raise FileWasNotFoundError("Could not find the file, \"{sfilepath}\"!", func)
+
+    if not shutil.which("ffprobe"):
+        raise DependencyNotFoundError(func, "ffprobe", "Could not find {package}! Make sure it's in your PATH!")
+
+    # Largely taken from bitrate-viewer.
+    proc = sp.Popen([
+        "ffprobe", "-hide_banner", "-show_frames", "-show_streams", "-threads", str(core.num_threads),
+        "-loglevel", "quiet", "-print_format", "json", "-select_streams", "v:0",
+        sfilepath
+        ], stdout=sp.PIPE
+    )
+
+    with NamedTemporaryFile("a+", delete=False) as tempfile:
+        stempfile = SPath(tempfile.name)
+
+        assert proc.stdout
+
+        for line in io.TextIOWrapper(proc.stdout, "utf-8"):
+            tempfile.write(line)
+
+    with open(stempfile) as f:
+        data = dict(json.load(f))
+
+    frames = data.get("frames", [])
+
+    if not frames:
+        raise CustomValueError(f"No frames found in file, \"{sfilepath}\"! Your file may be corrupted!", func)
+
+    def _return_pkt_frame(iter: int, _: vs.VideoFrame) -> int:
+        if not (pkt := dict(frames[iter]).get("pkt_size", False)):
+            raise CustomValueError(f"\"pkt_size\" data missing for frame {iter} in file, \"{sfilepath}\"!", func)
+
+        try:
+            return int(pkt)
+        except (TypeError, ValueError):
+            raise CustomTypeError(f"Error casting \"{pkt}\" --> int for frame {iter} in file, \"{sfilepath}\"!", func)
+
+    def _set_sizes_props(n: int, clip: vs.VideoNode) -> vs.VideoNode:
+        return clip.std.SetFrameProp("pkt_size", pkt_sizes[n])
+
+    # TODO: Add some kind of caching or something.
+    pkt_sizes: list[int] = clip_async_render(
+        clip, None, "Finding packet sizes...", _return_pkt_frame
+    )
+
+    return core.std.FrameEval(clip, partial(_set_sizes_props, clip=clip))
