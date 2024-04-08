@@ -316,7 +316,7 @@ def get_file_from_path_or_clip(
 
     try:
         file = get_prop(clip, "idx_filepath", str, func=func)
-    except:  # flake8: noqa
+    except Exception:
         raise CustomTypeError("Could not find the prop, \"idx_filepath\"!", func)
 
     if not (sfile := SPath(file)).exists():
