@@ -7,6 +7,7 @@ import random
 import re
 import shutil
 import subprocess as sp
+import warnings
 from functools import partial
 from tempfile import NamedTemporaryFile
 from typing import Any
@@ -14,14 +15,15 @@ from typing import Any
 from stgpytools import DependencyNotFoundError, FileWasNotFoundError
 from vstools import (CustomIndexError, CustomTypeError, CustomValueError,
                      FrameRangeN, FrameRangesN, FuncExceptT, KwargsT, SPath,
-                     SPathLike, check_variable_resolution, clip_async_render,
-                     core, get_h, get_prop, get_w, vs)
+                     SPathLike, check_variable_resolution, core, get_h,
+                     get_prop, get_w, vs)
 
 __all__ = [
     'colored_clips',
     'convert_rfs',
     'get_match_centers_scaling',
     'get_packet_sizes',
+    'get_file_from_path_or_clip',
 ]
 
 
@@ -205,20 +207,28 @@ def get_match_centers_scaling(
     return KwargsT(width=width, height=height, base_width=target_width, base_height=target_height)
 
 
+def _set_sizes_props(n: int, clip: vs.VideoNode, pkt_sizes: list[int]) -> vs.VideoNode:
+    if (pkt_size := pkt_sizes[n]) < 0:
+        warnings.warn(f"Frame {n} bitrate could not be determined!")
+
+    return clip.std.SetFrameProp("pkt_size", pkt_size)
+
+
 def get_packet_sizes(
     clip: vs.VideoNode, filepath: SPathLike | None = None,
-    func_except: FuncExceptT | None = None
+    out_file: SPathLike | None = None, func_except: FuncExceptT | None = None
 ) -> vs.VideoNode:
     """
     A simple function to read and add frame packet sizes as frame props.
 
-    The property added is called `pkt_size`, and is an integer.
+    NOTE: Make sure to run this before doing any splicing or trimming on your clip!
 
     "Packet sizes" are the size of individual frames. These can be used to calculate
     the average bitrate of a clip or a scene, and to process certain frames differently
     depending on bitrates.
 
-    NOTE: Make sure to run this before doing any splicing or trimming on your clip!
+    If `out_file` is set, the results will be written to a file. If you want to access
+    just the packet sizes for speed purposes, it's recommended to read that file instead.
 
     Dependencies:
 
@@ -228,31 +238,47 @@ def get_packet_sizes(
     :param filepath:        The path to the original file that was indexed.
                             If None, tries to read the `idx_filepath` property from `clip`.
                             Will throw an error if it can't find either.
+    :param out_file:        Output file for packet sizes. If set, the results wll be written to that file,
+                            and also read from that file in subsequence calls. This saves us from having to
+                            call ffprobe every time you refresh the preview.
     :param func_except:     Function returned for custom error handling.
                             This should only be set by VS package developers.
 
-    :return:                Input clip with `pkt_size` frameprops added.
+    :return:                Input clip with `pkt_size` frame props added.
     """
 
     func = func_except or get_packet_sizes
 
-    if filepath is None:
-        filepath = get_prop(clip, "idx_filepath", str, func=func)
+    if out_file is not None and SPath(out_file).exists():
+        return _packets_from_out_file(clip, SPath(out_file))
 
-    sfilepath = SPath(filepath)
+    sfile = get_file_from_path_or_clip(clip, filepath, func)
+    pkt_sizes = _get_frames(sfile, func)
 
-    if not sfilepath.exists():
-        raise FileWasNotFoundError("Could not find the file, \"{sfilepath}\"!", func)
+    if out_file is not None and (sout := SPath(out_file)):
+        print(f"Writing packet sizes to \"{sout.absolute()}\"...")
 
+        sout.parent.mkdir(parents=True, exist_ok=True)
+        sout.write_text("\n".join([str(pkt) for pkt in pkt_sizes]), "utf-8", newline="\n")
+
+    return clip.std.FrameEval(partial(_set_sizes_props, clip=clip, pkt_sizes=pkt_sizes))
+
+
+def _packets_from_out_file(clip: vs.VideoNode, file: SPath) -> vs.VideoNode:
+    with open(file, "r+") as f:
+        pkts = [int(pkt) for pkt in f.readlines()]
+
+    return clip.std.FrameEval(partial(_set_sizes_props, clip=clip, pkt_sizes=pkts))
+
+
+def _get_frames(sfile: SPath, func: FuncExceptT) -> list[int]:
     if not shutil.which("ffprobe"):
         raise DependencyNotFoundError(func, "ffprobe", "Could not find {package}! Make sure it's in your PATH!")
 
-    # Largely taken from bitrate-viewer.
-    proc = sp.Popen(
-        [
-            "ffprobe", "-hide_banner", "-show_frames", "-show_streams", "-threads", str(core.num_threads),
-            "-loglevel", "quiet", "-print_format", "json", "-select_streams", "v:0",
-            sfilepath
+    proc = sp.Popen([
+        "ffprobe", "-hide_banner", "-show_frames", "-show_streams", "-threads", str(core.num_threads),
+        "-loglevel", "quiet", "-print_format", "json", "-select_streams", "v:0",
+        sfile
         ],
         stdout=sp.PIPE
     )
@@ -268,26 +294,31 @@ def get_packet_sizes(
     with open(stempfile) as f:
         data = dict(json.load(f))
 
-    frames = data.get("frames", [])
+    frames = data.get("frames", {})
 
     if not frames:
-        raise CustomValueError(f"No frames found in file, \"{sfilepath}\"! Your file may be corrupted!", func)
+        raise CustomValueError(f"No frames found in file, \"{sfile}\"! Your file may be corrupted!", func)
 
-    def _return_pkt_frame(iter: int, _: vs.VideoFrame) -> int:
-        if not (pkt := dict(frames[iter]).get("pkt_size", False)):
-            raise CustomValueError(f"\"pkt_size\" data missing for frame {iter} in file, \"{sfilepath}\"!", func)
+    return [int(dict(frame).get("pkt_size", -1)) for frame in frames]
 
-        try:
-            return int(pkt)
-        except (TypeError, ValueError):
-            raise CustomTypeError(f"Error casting \"{pkt}\" --> int for frame {iter} in file, \"{sfilepath}\"!", func)
 
-    def _set_sizes_props(n: int, clip: vs.VideoNode) -> vs.VideoNode:
-        return clip.std.SetFrameProp("pkt_size", pkt_sizes[n])
+def get_file_from_path_or_clip(
+    clip: vs.VideoNode, file: SPathLike | None, func: FuncExceptT | None = None
+) -> SPath:
+    func = func or get_file_from_path_or_clip
 
-    # TODO: Add some kind of caching or something.
-    pkt_sizes: list[int] = clip_async_render(
-        clip, None, "Finding packet sizes...", _return_pkt_frame
-    )
+    if file and not isinstance(file, vs.VideoNode):
+        if not (sfile := SPath(file)).exists():
+            raise FileWasNotFoundError(f"Could not find the file, \"{sfile}\"!", func)
 
-    return core.std.FrameEval(clip, partial(_set_sizes_props, clip=clip))
+        return sfile
+
+    try:
+        file = get_prop(clip, "idx_filepath", str, func=func)
+    except:
+        raise CustomTypeError("Could not find the prop, \"idx_filepath\"!", func)
+
+    if not (sfile := SPath(file)).exists():
+        raise FileWasNotFoundError(f"Could not find the file, \"{sfile}\"!", func)
+
+    return sfile
