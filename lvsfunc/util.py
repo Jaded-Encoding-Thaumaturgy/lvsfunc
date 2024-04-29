@@ -294,21 +294,26 @@ def get_packet_scene_stats(keyframes: Keyframes, packet_sizes: list[int]) -> lis
 
     stats = list[dict[str, int]]()
 
-    for start, end in zip(keyframes, keyframes[1:]):
-        pkt_scenes = packet_sizes[start:end]
+    no_stats_backup = (0.0, 0.0)
 
-        total_pkt_size = sum(pkt_scenes)
+    try:
+        for start, end in zip(keyframes, keyframes[1:]):
+            pkt_scenes = packet_sizes[start:end]
 
-        avg_pkt_size = int(total_pkt_size / (len(pkt_scenes) or 1))
-        max_pkt_size = max(pkt_scenes)
-        min_pkt_size = min(pkt_scenes)
+            total_pkt_size = sum(pkt_scenes)
 
-        for _ in pkt_scenes:
-            stats += [dict(
-                pkt_scene_avg_size=avg_pkt_size,
-                pkt_scene_max_size=max_pkt_size,
-                pkt_scene_min_size=min_pkt_size
-            )]
+            avg_pkt_size = int(total_pkt_size / (len(pkt_scenes) or 1))
+            max_pkt_size = max(pkt_scenes or no_stats_backup)
+            min_pkt_size = min(pkt_scenes or no_stats_backup)
+
+            for _ in pkt_scenes:
+                stats += [dict(
+                    pkt_scene_avg_size=avg_pkt_size,
+                    pkt_scene_max_size=max_pkt_size,
+                    pkt_scene_min_size=min_pkt_size
+                )]
+    except ValueError as e:
+        raise CustomValueError("Some kind of error occurred!", get_packet_scene_stats, str(e))
 
     return stats
 
