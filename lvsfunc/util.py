@@ -278,6 +278,8 @@ def get_packet_sizes(
         try:
             return clip.std.SetFrameProps(**stats[n])
         except Exception:
+            warnings.warn(f"{func}: \"Could not find stats for a section... (Frame: {n})\"")
+
             return clip.std.SetFrameProps(
                 pkt_scene_avg_size=-1,
                 pkt_scene_max_size=-1,
