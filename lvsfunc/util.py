@@ -275,7 +275,14 @@ def get_packet_sizes(
         return pkts
 
     def _set_scene_stats(n: int, clip: vs.VideoNode, stats: list[dict[str, int]]) -> vs.VideoNode:
-        return clip.std.SetFrameProps(**stats[n])
+        try:
+            return clip.std.SetFrameProps(**stats[n])
+        except Exception:
+            return clip.std.SetFrameProps(
+                pkt_scene_avg_size=-1,
+                pkt_scene_max_size=-1,
+                pkt_scene_min_size=-1
+            )
 
     stats = get_packet_scene_stats(keyframes, pkt_sizes)
 
