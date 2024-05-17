@@ -1,4 +1,4 @@
-VapourSynth>=64
+VapourSynth>=68
 vstools>=2.3.0
 vsaa>=1.8.2
 vsdehalo>=1.7.2
