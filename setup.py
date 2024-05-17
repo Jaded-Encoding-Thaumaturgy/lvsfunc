@@ -46,7 +46,7 @@ setuptools.setup(
         "Topic :: Multimedia :: Video",
         "Topic :: Multimedia :: Video :: Display",
     ],
-    python_requires='>=3.11',
+    python_requires='>=3.12',
     command_options={
         "build_sphinx": {
             "project": ("setup.py", package_name),
