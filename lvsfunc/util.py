@@ -328,7 +328,7 @@ def get_packet_sizes(
     return pkts.std.FrameEval(partial(_set_scene_stats, clip=pkts, stats=stats))
 
 
-def get_packet_scene_stats(keyframes: Keyframes, packet_sizes: list[int]) -> list[dict[str, int]]:
+def get_packet_scene_stats(keyframes: Keyframes, packet_sizes: list[int]) -> list[dict[str, float]]:
     """
     Get basic scene-based stats from packet sizes and keyframes.
 
@@ -338,7 +338,7 @@ def get_packet_scene_stats(keyframes: Keyframes, packet_sizes: list[int]) -> lis
     :return:                list of dictionaries containing scene-based packet size stats.
     """
 
-    stats = list[dict[str, int]]()
+    stats = list[dict[str, float]]()
 
     no_stats_backup = (0.0, 0.0)
 
@@ -348,7 +348,7 @@ def get_packet_scene_stats(keyframes: Keyframes, packet_sizes: list[int]) -> lis
 
             total_pkt_size = sum(pkt_scenes)
 
-            avg_pkt_size = int(total_pkt_size / (len(pkt_scenes) or 1))
+            avg_pkt_size = total_pkt_size / (len(pkt_scenes) or 1)
             max_pkt_size = max(pkt_scenes or no_stats_backup)
             min_pkt_size = min(pkt_scenes or no_stats_backup)
 
