@@ -246,16 +246,17 @@ def get_packet_sizes(
     """
     A simple function to read and add frame packet sizes as frame props.
 
+    "Packet sizes" are the size of individual frames. These can be used to calculate the average bitrate of a clip
+    or a scene, and to process certain frames differently depending on how much bitrate is allocated to specific
+    sections.
 
-    "Packet sizes" are the size of individual frames. These can be used to calculate
-    the average bitrate of a clip or a scene, and to process certain frames differently
-    depending on bitrates.
+    If `out_file` is set, the results will be written to a file. This file will be read in subsequent calls to save
+    time. This is useful when you're working with a large clip and you don't want to call ffprobe every time you
+    refresh the preview.
 
-    If `out_file` is set, the results will be written to a file. If you want to access
-    just the packet sizes for speed purposes, it's recommended to read that file instead.
+    If a Keyframes object is passed, additional scene-based frame props will be added. These are the min, max, and
+    average packet sizes of a scene based on these Keyframes.
 
-    If a Keyframes object is passed, additional scene-based frame props will be added.
-    These are the min, max, and average packet sizes of a scene based on these Keyframes.
     If a non-zero `offset` is set, the function will trim or duplicate the list of packet sizes to match. This
     should be the same value as your trim at the start of the clip. Make sure your Keyframes object also matches
     the trimmed clip.
@@ -264,28 +265,29 @@ def get_packet_sizes(
 
     * `ffprobe <https://ffmpeg.org/download.html>`_
 
-    :param clip:            Clip to add the properties to.
-    :param filepath:        The path to the original file that was indexed.
-                            If None, tries to read the `idx_filepath` property from `clip`.
-                            Will throw an error if it can't find either.
-    :param out_file:        Output file for packet sizes. If set, the results wll be written to that file,
-                            and also read from that file in subsequent calls. This saves us from having to
-                            call ffprobe every time you refresh the preview.
-    :param keyframes:       A Keyframes object to signify scenes. If set, scene-based metrics will
-                            be calculated and added as frame props alongside the `pkt_size` frame prop.
-    :param func_except:     Function returned for custom error handling.
-                            This should only be set by VS package developers.
-
-    :return:                Input clip with `pkt_size` frame props added, with optionally
-                            scene-based packet stats frame props added on top.
-    :param offset:                  Offset to trim or duplicate the list of packet sizes.
-                                    This is useful when you're working with a trimmed clip.
-                                    Should be the same value as your trim at the start of the clip.
+    :param clip:                    Clip to add the properties to.
+    :param filepath:                The path to the original file that was indexed.
+                                    If None, tries to read the `idx_filepath` property from `clip`.
+                                    Will throw an error if it can't find either.
+    :param out_file:                Output file for packet sizes. If set, the results will be written to that file,
+                                    and also read from that file in subsequent calls. This saves us from having to
+                                    call ffprobe every time you refresh the preview.
+    :param keyframes:               A Keyframes object to identify scene changes. If set, scene-based metrics will
+                                    be calculated and added as frame props alongside the `pkt_size` frame prop.
+    :param offset:                  Offset to trim or duplicate the list of packet sizes. This is useful when you're
+                                    working with a trimmed clip. Should be the same value as your trim at the start
+                                    of the clip. Negative values will duplicate the first frame's packet size instead.
                                     Default: 0 frames.
     :param return_packet_sizes:     If set to True, the function will return the packet sizes as a list of integers.
                                     To get the scene-based stats, you will need to pass this list to the
                                     `get_packet_scene_stats` function along with a Keyframes object.
                                     Default: False.
+    :param func_except:             Function returned for custom error handling.
+                                    This should only be set by VS package developers.
+
+    :return:                        Input clip with `pkt_size` frame props added, with optionally scene-based packet
+                                    stats frame props added on top. if `return_packet_sizes` is set to True, it will
+                                    return the packet sizes as a list of integers instead.
     """
 
     func = func_except or get_packet_sizes
