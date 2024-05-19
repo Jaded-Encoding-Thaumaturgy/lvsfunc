@@ -313,18 +313,19 @@ def get_packet_sizes(
 
     def _set_sizes_props(n: int, clip: vs.VideoNode, pkt_sizes: list[int]) -> vs.VideoNode:
         if (pkt_size := pkt_sizes[n]) < 0:
-            warnings.warn(f"Frame {n} bitrate could not be determined!")
+            warnings.warn(f"{func}: \"Frame {n} bitrate could not be determined!\"")
 
-        return clip.std.SetFrameProp("pkt_size", pkt_size)
-
-    pkts = clip.std.FrameEval(partial(_set_sizes_props, clip=clip, pkt_sizes=pkt_sizes))
+        return clip.std.SetFrameProps(pkt_size=pkt_size)
 
     if not keyframes:
-        return pkts
+        return clip.std.FrameEval(partial(_set_sizes_props, clip=clip, pkt_sizes=pkt_sizes))
 
     def _set_scene_stats(n: int, clip: vs.VideoNode, stats: list[dict[str, int]]) -> vs.VideoNode:
+        if (pkt_size := pkt_sizes[n]) < 0:
+            warnings.warn(f"{func}: \"Frame {n} bitrate could not be determined!\"")
+
         try:
-            return clip.std.SetFrameProps(**stats[n])
+            return clip.std.SetFrameProps(pkt_size=pkt_size, **stats[n])
         except Exception:
             warnings.warn(f"{func}: \"Could not find stats for a section... (Frame: {n})\"")
 
@@ -336,7 +337,7 @@ def get_packet_sizes(
 
     stats = get_packet_scene_stats(keyframes, pkt_sizes)
 
-    return pkts.std.FrameEval(partial(_set_scene_stats, clip=pkts, stats=stats))
+    return clip.std.FrameEval(partial(_set_scene_stats, clip=clip, stats=stats))
 
 
 def get_packet_scene_stats(keyframes: Keyframes, packet_sizes: list[int]) -> list[dict[str, float]]:
