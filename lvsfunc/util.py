@@ -257,9 +257,8 @@ def get_packet_sizes(
     If a Keyframes object is passed, additional scene-based frame props will be added. These are the min, max, and
     average packet sizes of a scene based on these Keyframes.
 
-    If a non-zero `offset` is set, the function will trim or duplicate the list of packet sizes to match. This
-    should be the same value as your trim at the start of the clip. Make sure your Keyframes object also matches
-    the trimmed clip.
+    If a non-zero `offset` is set, the function will trim the list of packet sizes to match. Negative values will
+    instead set the packet sizes for the first `offset` frames to -1. This is intended to be used with trimmed clips.
 
     Dependencies:
 
@@ -269,6 +268,7 @@ def get_packet_sizes(
     :param filepath:                The path to the original file that was indexed.
                                     If None, tries to read the `idx_filepath` property from `clip`.
                                     Will throw an error if it can't find either.
+                                    This parameter is ignored if `out_file` is set and a file can be read.
     :param out_file:                Output file for packet sizes. If set, the results will be written to that file,
                                     and also read from that file in subsequent calls. This saves us from having to
                                     call ffprobe every time you refresh the preview.
@@ -276,8 +276,8 @@ def get_packet_sizes(
                                     be calculated and added as frame props alongside the `pkt_size` frame prop.
     :param offset:                  Offset to trim or duplicate the list of packet sizes. This is useful when you're
                                     working with a trimmed clip. Should be the same value as your trim at the start
-                                    of the clip. Negative values will duplicate the first frame's packet size instead.
-                                    Default: 0 frames.
+                                    of the clip. Negative values will set the packet sizes for the first `offset`
+                                    frames to -1 instead.
     :param return_packet_sizes:     If set to True, the function will return the packet sizes as a list of integers.
                                     To get the scene-based stats, you will need to pass this list to the
                                     `get_packet_scene_stats` function along with a Keyframes object.
@@ -306,7 +306,7 @@ def get_packet_sizes(
         sout.write_text("\n".join([str(pkt) for pkt in pkt_sizes]), "utf-8", newline="\n")
 
     if offset < 0:
-        pkt_sizes = [pkt_sizes[0]] * -offset + pkt_sizes
+        pkt_sizes = [-1] * -offset + pkt_sizes
     elif offset > 0:
         pkt_sizes = pkt_sizes[offset:]
 
