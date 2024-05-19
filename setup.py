@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import setuptools
+import setuptools  # type:ignore[import-untyped]
 from pathlib import Path
 
 long_description = Path("README.md").read_text()
@@ -21,7 +21,8 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     packages=[
-        package_name
+        package_name,
+        f"{package_name}.packets",
     ],
     package_data={
         package_name: ['py.typed'],
