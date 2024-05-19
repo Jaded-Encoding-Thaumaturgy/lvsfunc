@@ -10,7 +10,7 @@ import subprocess as sp
 import warnings
 from functools import partial
 from tempfile import NamedTemporaryFile
-from typing import Any
+from typing import overload, Any
 
 from stgpytools import DependencyNotFoundError, FileWasNotFoundError
 from vstools import (CustomIndexError, CustomTypeError, CustomValueError,
@@ -208,11 +208,41 @@ def get_match_centers_scaling(
     return KwargsT(width=width, height=height, base_width=target_width, base_height=target_height)
 
 
+@overload
 def get_packet_sizes(
-    clip: vs.VideoNode, filepath: SPathLike | None = None,
-    out_file: SPathLike | None = None, keyframes: Keyframes | None = None,
+    clip: vs.VideoNode,
+    filepath: SPathLike | None = None,
+    out_file: SPathLike | None = None,
+    keyframes: Keyframes | None = None,
+    offset: int = 0,
+    return_packet_sizes: bool = False,
     func_except: FuncExceptT | None = None
 ) -> vs.VideoNode:
+    ...
+
+
+@overload
+def get_packet_sizes(
+    clip: vs.VideoNode,
+    filepath: SPathLike | None = None,
+    out_file: SPathLike | None = None,
+    keyframes: Keyframes | None = None,
+    offset: int = 0,
+    return_packet_sizes: bool = True,
+    func_except: FuncExceptT | None = None
+) -> list[int]:
+    ...
+
+
+def get_packet_sizes(
+    clip: vs.VideoNode,
+    filepath: SPathLike | None = None,
+    out_file: SPathLike | None = None,
+    keyframes: Keyframes | None = None,
+    offset: int = 0,
+    return_packet_sizes: bool = False,
+    func_except: FuncExceptT | None = None
+) -> vs.VideoNode | list[int]:
     """
     A simple function to read and add frame packet sizes as frame props.
 
@@ -246,6 +276,10 @@ def get_packet_sizes(
 
     :return:                Input clip with `pkt_size` frame props added, with optionally
                             scene-based packet stats frame props added on top.
+    :param return_packet_sizes:     If set to True, the function will return the packet sizes as a list of integers.
+                                    To get the scene-based stats, you will need to pass this list to the
+                                    `get_packet_scene_stats` function along with a Keyframes object.
+                                    Default: False.
     """
 
     func = func_except or get_packet_sizes
@@ -262,6 +296,9 @@ def get_packet_sizes(
 
         sout.parent.mkdir(parents=True, exist_ok=True)
         sout.write_text("\n".join([str(pkt) for pkt in pkt_sizes]), "utf-8", newline="\n")
+
+    if return_packet_sizes:
+        return pkt_sizes
 
     def _set_sizes_props(n: int, clip: vs.VideoNode, pkt_sizes: list[int]) -> vs.VideoNode:
         if (pkt_size := pkt_sizes[n]) < 0:
