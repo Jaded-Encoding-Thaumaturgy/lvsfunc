@@ -246,7 +246,6 @@ def get_packet_sizes(
     """
     A simple function to read and add frame packet sizes as frame props.
 
-    NOTE: Make sure to run this before doing any splicing or trimming on your clip!
 
     "Packet sizes" are the size of individual frames. These can be used to calculate
     the average bitrate of a clip or a scene, and to process certain frames differently
@@ -257,6 +256,9 @@ def get_packet_sizes(
 
     If a Keyframes object is passed, additional scene-based frame props will be added.
     These are the min, max, and average packet sizes of a scene based on these Keyframes.
+    If a non-zero `offset` is set, the function will trim or duplicate the list of packet sizes to match. This
+    should be the same value as your trim at the start of the clip. Make sure your Keyframes object also matches
+    the trimmed clip.
 
     Dependencies:
 
@@ -276,6 +278,10 @@ def get_packet_sizes(
 
     :return:                Input clip with `pkt_size` frame props added, with optionally
                             scene-based packet stats frame props added on top.
+    :param offset:                  Offset to trim or duplicate the list of packet sizes.
+                                    This is useful when you're working with a trimmed clip.
+                                    Should be the same value as your trim at the start of the clip.
+                                    Default: 0 frames.
     :param return_packet_sizes:     If set to True, the function will return the packet sizes as a list of integers.
                                     To get the scene-based stats, you will need to pass this list to the
                                     `get_packet_scene_stats` function along with a Keyframes object.
@@ -296,6 +302,11 @@ def get_packet_sizes(
 
         sout.parent.mkdir(parents=True, exist_ok=True)
         sout.write_text("\n".join([str(pkt) for pkt in pkt_sizes]), "utf-8", newline="\n")
+
+    if offset < 0:
+        pkt_sizes = [pkt_sizes[0]] * -offset + pkt_sizes
+    elif offset > 0:
+        pkt_sizes = pkt_sizes[offset:]
 
     if return_packet_sizes:
         return pkt_sizes
