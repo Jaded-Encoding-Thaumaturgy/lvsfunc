@@ -11,7 +11,7 @@ from stgpytools import DependencyNotFoundError
 from vstools import (CustomValueError, FuncExceptT, Keyframes, SPath,
                      SPathLike, core, vs)
 
-from ..util import get_file_from_path_or_clip
+from ..util import get_file_from_clip
 
 __all__ = [
     'get_packet_sizes',
@@ -107,8 +107,8 @@ def get_packet_sizes(
         with open(out_file, "r+") as f:
             pkt_sizes = [int(pkt) for pkt in f.readlines()]
     else:
-        pkt_sizes = _get_frames(sfile, func)
-        sfile = get_file_from_path_or_clip(clip, src_file, func)
+        sfile = get_file_from_clip(clip, src_file, func_except=func)
+        pkt_sizes = _get_frames(sfile, func)  # type:ignore[arg-type]
 
     if out_file is not None and not (sout := SPath(out_file)).exists():
         print(f"Writing packet sizes to \"{sout.absolute()}\"...")
