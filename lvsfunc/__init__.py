@@ -18,5 +18,6 @@ from .export import *
 from .grain import *
 from .hdcam import *
 from .misc import *
+from .packets import *
 from .presets import *
 from .util import *
