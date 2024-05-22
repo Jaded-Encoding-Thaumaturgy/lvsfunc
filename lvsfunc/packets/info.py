@@ -22,7 +22,7 @@ __all__ = [
 @overload
 def get_packet_sizes(
     clip: vs.VideoNode,
-    filepath: SPathLike | None = None,
+    src_file: SPathLike | None = None,
     out_file: SPathLike | None = None,
     keyframes: Keyframes | None = None,
     offset: int = 0,
@@ -35,7 +35,7 @@ def get_packet_sizes(
 @overload
 def get_packet_sizes(  # type:ignore[misc]
     clip: vs.VideoNode,
-    filepath: SPathLike | None = None,
+    src_file: SPathLike | None = None,
     out_file: SPathLike | None = None,
     keyframes: Keyframes | None = None,
     offset: int = 0,
@@ -47,7 +47,7 @@ def get_packet_sizes(  # type:ignore[misc]
 
 def get_packet_sizes(
     clip: vs.VideoNode,
-    filepath: SPathLike | None = None,
+    src_file: SPathLike | None = None,
     out_file: SPathLike | None = None,
     keyframes: Keyframes | None = None,
     offset: int = 0,
@@ -76,7 +76,7 @@ def get_packet_sizes(
     * `ffprobe <https://ffmpeg.org/download.html>`_
 
     :param clip:                    Clip to add the properties to.
-    :param filepath:                The path to the original file that was indexed.
+    :param src_file:                The path to the original file that was indexed.
                                     If None, tries to read the `idx_filepath` property from `clip`.
                                     Will throw an error if it can't find either.
                                     This parameter is ignored if `out_file` is set and a file can be read.
@@ -107,8 +107,8 @@ def get_packet_sizes(
         with open(out_file, "r+") as f:
             pkt_sizes = [int(pkt) for pkt in f.readlines()]
     else:
-        sfile = get_file_from_path_or_clip(clip, filepath, func)
         pkt_sizes = _get_frames(sfile, func)
+        sfile = get_file_from_path_or_clip(clip, src_file, func)
 
     if out_file is not None and not (sout := SPath(out_file)).exists():
         print(f"Writing packet sizes to \"{sout.absolute()}\"...")
