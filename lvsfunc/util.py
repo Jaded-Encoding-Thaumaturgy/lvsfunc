@@ -3,19 +3,19 @@ from __future__ import annotations
 import colorsys
 import random
 import re
-from typing import Any
+from typing import Any, Literal
 
-from stgpytools import FileWasNotFoundError
-from vstools import (CustomIndexError, CustomTypeError, CustomValueError,
-                     FrameRangeN, FrameRangesN, FuncExceptT, KwargsT, SPath,
-                     SPathLike, check_variable_resolution, core, get_h,
-                     get_prop, get_w, vs)
+from stgpytools import MISSING, FileWasNotFoundError
+from vstools import (CustomIndexError, CustomValueError, FrameRangeN,
+                     FrameRangesN, FuncExceptT, KwargsT, SPath,
+                     check_variable_resolution, core, get_h, get_prop, get_w,
+                     vs)
 
 __all__ = [
     'colored_clips',
     'convert_rfs',
     'get_match_centers_scaling',
-    'get_file_from_path_or_clip',
+    'get_file_from_clip',
 ]
 
 
@@ -199,23 +199,34 @@ def get_match_centers_scaling(
     return KwargsT(width=width, height=height, base_width=target_width, base_height=target_height)
 
 
-def get_file_from_path_or_clip(
-    clip: vs.VideoNode, file: SPathLike | None, func: FuncExceptT | None = None
-) -> SPath:
-    func = func or get_file_from_path_or_clip
+def get_file_from_clip(
+    clip: vs.VideoNode, prop: str = "idx_filepath",
+    strict: bool = False, func_except: FuncExceptT | None = None
+) -> SPath | Literal[False]:
+    """
+    Helper function to get the file path from a clip.
 
-    if file and not isinstance(file, vs.VideoNode):
-        if not (sfile := SPath(file)).exists():
-            raise FileWasNotFoundError(f"Could not find the file, \"{sfile}\"!", func)
+    This function also checks to ensure the file exists,
+    and throws an error if it doesn't.
 
-        return sfile
+    :param clip:                    The clip to get the file path from.
+    :param prop:                    The property to get the file path from.
+                                    Default: "idx_filepath" (used by vs-source classes).
+    :param strict:                  If True, will raise an error if the `prop` is not found.
+                                    Default: False.
+    :param func_except:             Function returned for custom error handling.
+                                    This should only be set by VS package developers.
 
-    try:
-        file = get_prop(clip, "idx_filepath", str, func=func)
-    except Exception:
-        raise CustomTypeError("Could not find the prop, \"idx_filepath\"!", func)
+    :raises FileWasNotFoundError:   The file path was not found.
+    :raises FramePropError:         The property was not found in the clip.
+    """
 
-    if not (sfile := SPath(file)).exists():
-        raise FileWasNotFoundError(f"Could not find the file, \"{sfile}\"!", func)
+    func = func_except or get_file_from_clip
 
-    return sfile
+    if not (path := get_prop(clip, prop, str, func=func, default=MISSING if strict else False)):
+        return False
+
+    if not (spath := SPath(str(path))).exists():
+        raise FileWasNotFoundError("File not found!", func, spath.absolute())
+
+    return spath
