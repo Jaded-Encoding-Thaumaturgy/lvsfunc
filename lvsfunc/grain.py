@@ -13,6 +13,7 @@ def dynamic_scene_adaptive_grain(
     grain_bright: vs.VideoNode,
     keyframes: Keyframes | None = None,
     thr: float = 0.55,
+    key: str = "Grain",
 ) -> vs.VideoNode:
     """
     Dynamically swap between grained clips depending on the average luminosity of the scene.
@@ -36,6 +37,7 @@ def dynamic_scene_adaptive_grain(
     :param thr:             Threshold used to decide which grained clip to pick.
                             Lower values will result in more scenes being replaced with `grain_bright`,
                             and vice versa for `grain_dark`. Default: 0.55.
+    :param key:             The key for the property. Automatically capitalized. Default: "Grain".
 
     :return:                Clip with different types of graining applied based on the scene's luminosity.
     """
@@ -55,12 +57,14 @@ def dynamic_scene_adaptive_grain(
 
     keyframes = keyframes or Keyframes.unique(clip, get_script_path().stem)
 
-    sas = SceneAverageStats.from_clip(clip, keyframes, "SceneStatsGrain")
+    key = key.capitalize()
+
+    sas = SceneAverageStats.from_clip(clip, keyframes, f"SceneStats{key}")
 
     grain = find_prop_rfs(
         grain_dark.std.SetFrameProps(SceneGrain="dark"),
         grain_bright.std.SetFrameProps(SceneGrain="bright"),
-        "SceneStatsGrainAverage", ">=", thr, sas
+        f"SceneStats{key}Average", ">=", thr, sas
     )
 
     return merge_clip_props(grain, sas)
