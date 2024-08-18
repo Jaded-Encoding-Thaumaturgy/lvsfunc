@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Any, Callable, Literal
+from typing import Any, Callable
 
 from vstools import FuncExceptT, core
 
@@ -16,7 +16,7 @@ def check_installed_plugins(
     plugins: list[str] | dict[str, DEP_URL] = [],
     strict: bool = True,
     func_except: FuncExceptT | None = None
-) -> Literal[True] | list[str]:
+) -> list[str]:
     """
     Check if the given plugins are installed.
 
@@ -28,6 +28,9 @@ def check_installed_plugins(
 
         >>> check_installed_plugins({'descale': 'https://github.com/Jaded-Encoding-Thaumaturgy/vapoursynth-descale'})
 
+        >>> if check_installed_plugins(['resize', 'descale'], strict=False):
+        ...     print('Missing plugins!')
+
     :param plugins:         A list of plugins to check for. If a dict is passed,
                             the values are treated as URLs to download the plugin.
     :param strict:          If True, raises an error if any of the plugins are missing.
@@ -35,12 +38,11 @@ def check_installed_plugins(
     :param func_except:     Function returned for custom error handling.
                             This should only be set by VS package developers.
 
-    :return:                True if all plugins are installed if strict=False, else raises an error.
-                            If strict=False and plugins are missing, returns a list of missing plugins.
+    :return:                A list of all missing plugins if strict=False, else raises an error.
     """
 
     if not plugins:
-        return True
+        return list[str]()
 
     missing = [
         f"{plugin} ({plugins[plugin]})" if isinstance(plugins, dict) else plugin
@@ -48,10 +50,7 @@ def check_installed_plugins(
         if not hasattr(core, plugin)
     ]
 
-    if not missing:
-        return True
-
-    if not strict:
+    if not missing or not strict:
         return missing
 
     raise MissingPluginsError(func_except or check_installed_plugins, missing, reason=f"{strict=}")

@@ -1,6 +1,6 @@
 import importlib.util
 from functools import wraps
-from typing import Any, Callable, Literal
+from typing import Any, Callable
 
 from vstools import FuncExceptT
 
@@ -17,7 +17,7 @@ def check_installed_packages(
     packages: list[str] | dict[str, DEP_URL] = [],
     strict: bool = True,
     func_except: FuncExceptT | None = None
-) -> Literal[True] | list[str]:
+) -> list[str]:
     """
     Check if the given packages are installed.
 
@@ -29,6 +29,9 @@ def check_installed_packages(
 
         >>> check_installed_packages({'lvsfunc': 'pip install lvsfunc})
 
+        >>> if check_installed_packages(['lvsfunc', 'vstools'], strict=False):
+        ...     print('Missing packages!')
+
     :param packages:        A list of packages to check for. If a dict is passed,
                             the values are treated as either a URL or a pip command to download the package.
     :param strict:          If True, raises an error if any of the packages are missing.
@@ -36,12 +39,11 @@ def check_installed_packages(
     :param func_except:     Function returned for custom error handling.
                             This should only be set by VS package developers.
 
-    :return:                True if all packages are installed if strict=False, else raises an error.
-                            If strict=False and packages are missing, returns a list of missing packages.
+    :return:                A list of all missing packages if strict=False, else raises an error.
     """
 
     if not packages:
-        return True
+        return list[str]()
 
     packages_to_check, formatter = (
         (packages.keys(), lambda pkg: f"{pkg} ({packages[pkg]})")
@@ -52,10 +54,7 @@ def check_installed_packages(
         formatter(pkg) for pkg in packages_to_check if importlib.util.find_spec(pkg) is None
     ]
 
-    if not missing:
-        return True
-
-    if not strict:
+    if not missing or not strict:
         return missing
 
     raise MissingPackagesError(func_except or check_installed_packages, missing, reason=f"{strict=}")
