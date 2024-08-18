@@ -27,7 +27,7 @@ def check_installed_packages(
 
         >>> check_installed_packages(['lvsfunc', 'vstools'])
 
-        >>> check_installed_packages({'lvsfunc': 'pip install lvsfunc})
+        >>> check_installed_packages({'lvsfunc': 'pip install lvsfunc'})
 
         >>> if check_installed_packages(['lvsfunc', 'vstools'], strict=False):
         ...     print('Missing packages!')
@@ -75,11 +75,11 @@ def required_packages(
     .. code-block:: python
 
         >>> @required_packages(['lvsfunc', 'vstools'])
-        ... def func(clip: vs.VideoNode) -> vs.VideoNode:
+        >>> def func(clip: vs.VideoNode) -> vs.VideoNode:
         ...     return clip
 
-        >>> @required_packages({'lvsfunc': 'pip install lvsfunc})
-        ... def func(clip: vs.VideoNode) -> vs.VideoNode:
+        >>> @required_packages({'lvsfunc': 'pip install lvsfunc'})
+        >>> def func(clip: vs.VideoNode) -> vs.VideoNode:
         ...     return clip
 
     For more information, see :py:func:`check_installed_packages`.

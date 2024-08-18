@@ -71,11 +71,11 @@ def required_plugins(
     .. code-block:: python
 
         >>> @required_plugins(['resize', 'descale'])
-        ... def func(clip: vs.VideoNode) -> vs.VideoNode:
+        >>> def func(clip: vs.VideoNode) -> vs.VideoNode:
         ...     return clip
 
         >>> @required_plugins({'descale': 'https://github.com/Jaded-Encoding-Thaumaturgy/vapoursynth-descale'})
-        ... def func(clip: vs.VideoNode) -> vs.VideoNode:
+        >>> def func(clip: vs.VideoNode) -> vs.VideoNode:
         ...     return clip
 
     For more information, see :py:func:`check_installed_plugins`.
