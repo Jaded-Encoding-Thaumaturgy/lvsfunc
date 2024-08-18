@@ -48,14 +48,13 @@ def check_installed_packages(
     if isinstance(packages, str):
         packages = [packages]
 
-    packages_to_check, formatter = (
-        (packages.keys(), lambda pkg: f"{pkg} ({packages[pkg]})")
-        if isinstance(packages, dict) else (packages, lambda pkg: pkg)
-    )
+    missing = list[str]()
 
-    missing = [
-        formatter(pkg) for pkg in packages_to_check if importlib.util.find_spec(pkg) is None
-    ]
+    for pkg in (packages.keys() if isinstance(packages, dict) else packages):
+        try:
+            __import__(pkg)
+        except ImportError:
+            missing.append(f"{pkg} ({packages[pkg]})" if isinstance(packages, dict) else pkg)
 
     if not missing or not strict:
         return missing
