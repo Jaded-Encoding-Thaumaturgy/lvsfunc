@@ -93,7 +93,7 @@ def required_packages(
     def decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            check_installed_packages(plugins, True, func_except or required_packages)
+            check_installed_packages(plugins, True, func_except or func)
 
             return func(*args, **kwargs)
 

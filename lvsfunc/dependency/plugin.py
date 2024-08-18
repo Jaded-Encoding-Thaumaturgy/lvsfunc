@@ -89,7 +89,7 @@ def required_plugins(
     def decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            check_installed_plugins(plugins, True, func_except or required_plugins)
+            check_installed_plugins(plugins, True, func_except or func)
 
             return func(*args, **kwargs)
 
