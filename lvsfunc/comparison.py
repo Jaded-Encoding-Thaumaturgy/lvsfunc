@@ -7,11 +7,13 @@ from itertools import groupby, zip_longest
 from typing import Callable, Iterable, Iterator, Literal, Sequence, overload
 
 from vskernels import Catrom, Kernel, KernelT, Point
-from vstools import (
-    CustomError, CustomNotImplementedError, CustomTypeError, CustomValueError, Direction, FormatsMismatchError,
-    LengthMismatchError, Matrix, Sentinel, T, VariableFormatError, check_variable_format, check_variable_resolution,
-    clip_async_render, core, depth, get_prop, get_subsampling, get_w, merge_clip_props, mod2, vs
-)
+from vstools import (CustomError, CustomNotImplementedError, CustomTypeError,
+                     CustomValueError, Direction, FormatsMismatchError,
+                     LengthMismatchError, Matrix, Sentinel, T,
+                     VariableFormatError, check_variable_format,
+                     check_variable_resolution, clip_async_render, core, depth,
+                     get_prop, get_subsampling, get_w, merge_clip_props, mod2,
+                     vs)
 
 from .exceptions import ClipsAndNamedClipsError
 

@@ -80,11 +80,11 @@ from enum import IntEnum
 from fractions import Fraction
 from inspect import Signature
 from types import MappingProxyType, TracebackType
-from typing import (
-    TYPE_CHECKING, Any, BinaryIO, Callable, ContextManager, Dict, Generic, Iterator, Literal, MutableMapping,
-    NamedTuple, NoReturn, Optional, Protocol, Sequence, Tuple, Type, TypedDict, TypeVar, Union, overload,
-    runtime_checkable
-)
+from typing import (TYPE_CHECKING, Any, BinaryIO, Callable, ContextManager,
+                    Dict, Generic, Iterator, Literal, MutableMapping,
+                    NamedTuple, NoReturn, Optional, Protocol, Sequence, Tuple,
+                    Type, TypedDict, TypeVar, Union, overload,
+                    runtime_checkable)
 
 __all__ = [
     # Versioning

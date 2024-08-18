@@ -3,9 +3,8 @@ from random import randint
 from typing import Any
 
 from vskernels import Kernel, KernelT, Lanczos
-from vstools import (CustomTypeError, FieldBased, SPathLike,
-                     FuncExceptT, Matrix, MatrixT, SPath,
-                     clip_async_render, core, vs)
+from vstools import (CustomTypeError, FieldBased, FuncExceptT, Matrix, MatrixT,
+                     SPath, SPathLike, clip_async_render, core, vs)
 
 __all__: list[str] = [
     "export_frames",

@@ -3,7 +3,7 @@ from __future__ import annotations
 import colorsys
 import random
 import re
-from typing import overload, Any, Literal
+from typing import Any, Literal, overload
 
 from stgpytools import MISSING, FileWasNotFoundError, SPathLike
 from vstools import (CustomIndexError, CustomValueError, FrameRangeN,
