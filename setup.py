@@ -23,6 +23,7 @@ setuptools.setup(
     packages=[
         package_name,
         f"{package_name}.packets",
+        f"{package_name}.dependency",
     ],
     package_data={
         package_name: ['py.typed'],
