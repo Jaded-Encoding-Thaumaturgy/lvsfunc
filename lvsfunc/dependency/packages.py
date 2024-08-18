@@ -63,7 +63,6 @@ def check_installed_packages(
 
 def required_packages(
     plugins: list[str] | dict[str, DEP_URL] = [],
-    strict: bool = True,
     func_except: FuncExceptT | None = None
 ) -> Callable[[F], F]:
     """
@@ -85,8 +84,6 @@ def required_packages(
 
     :param packages:        A list of packages to check for. If a dict is passed,
                             the values are treated as either a URL or a pip command to download the package.
-    :param strict:          If True, raises an error if any of the packages are missing.
-                            Default: True.
     :param func_except:     Function returned for custom error handling.
                             This should only be set by VS package developers.
     """
@@ -94,7 +91,7 @@ def required_packages(
     def decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            check_installed_packages(plugins, strict, func_except or required_packages)
+            check_installed_packages(plugins, True, func_except or required_packages)
 
             return func(*args, **kwargs)
 
