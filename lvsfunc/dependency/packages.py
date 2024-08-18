@@ -64,11 +64,11 @@ def check_installed_packages(
 
 
 def required_packages(
-    plugins: list[str] | dict[str, DEP_URL] = [],
+    packages: list[str] | dict[str, DEP_URL] = [],
     func_except: FuncExceptT | None = None
 ) -> Callable[[F], F]:
     """
-    Decorator to ensure that specified plugins are installed.
+    Decorator to ensure that specified packages are installed.
 
     Example usage:
 
@@ -93,7 +93,7 @@ def required_packages(
     def decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            check_installed_packages(plugins, True, func_except or func)
+            check_installed_packages(packages, True, func_except or func)
 
             return func(*args, **kwargs)
 
