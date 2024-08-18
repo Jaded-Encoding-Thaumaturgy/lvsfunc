@@ -6,8 +6,11 @@
 *.glsl
 *.pyc
 *.vpy
-/tests/dependencies/*
-/tests/output/*
 build/
 dist/
 venv/
+
+# Test files
+*test*.py
+/*test*/*
+/*test*/**/*
