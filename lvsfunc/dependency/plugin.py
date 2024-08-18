@@ -13,7 +13,7 @@ __all__: list[str] = [
 
 
 def check_installed_plugins(
-    plugins: list[str] | dict[str, DEP_URL] = [],
+    plugins: str | list[str] | dict[str, DEP_URL] = [],
     strict: bool = True,
     func_except: FuncExceptT | None = None
 ) -> list[str]:
@@ -43,6 +43,9 @@ def check_installed_plugins(
 
     if not plugins:
         return list[str]()
+
+    if isinstance(plugins, str):
+        plugins = [plugins]
 
     missing = [
         f"{plugin} ({plugins[plugin]})" if isinstance(plugins, dict) else plugin

@@ -14,7 +14,7 @@ __all__: list[str] = [
 
 
 def check_installed_packages(
-    packages: list[str] | dict[str, DEP_URL] = [],
+    packages: str | list[str] | dict[str, DEP_URL] = [],
     strict: bool = True,
     func_except: FuncExceptT | None = None
 ) -> list[str]:
@@ -44,6 +44,9 @@ def check_installed_packages(
 
     if not packages:
         return list[str]()
+
+    if isinstance(packages, str):
+        packages = [packages]
 
     packages_to_check, formatter = (
         (packages.keys(), lambda pkg: f"{pkg} ({packages[pkg]})")
