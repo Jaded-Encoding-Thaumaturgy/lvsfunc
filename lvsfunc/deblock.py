@@ -6,7 +6,8 @@ from typing import Any, Callable, Literal, Sequence
 from vsdenoise import dpir
 from vsexprtools import expr_func
 from vskernels import Catrom, Kernel, KernelT
-from vstools import CustomValueError, Matrix, check_variable, core, get_prop, vs
+from vstools import (CustomValueError, Matrix, check_variable, core, get_prop,
+                     vs)
 
 __all__ = [
     'autodb_dpir'

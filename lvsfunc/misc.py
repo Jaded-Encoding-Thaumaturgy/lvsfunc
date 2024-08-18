@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import cast
 
 from vskernels import Catrom
-from vstools import (
-    CustomValueError, DependencyNotFoundError, FramePropError, FrameRangeN, FrameRangesN, Matrix,
-    ResolutionsMismatchError, check_variable, core, depth, get_depth, normalize_ranges, replace_ranges, vs
-)
+from vstools import (CustomValueError, DependencyNotFoundError, FramePropError,
+                     FrameRangeN, FrameRangesN, Matrix,
+                     ResolutionsMismatchError, check_variable, core, depth,
+                     get_depth, normalize_ranges, replace_ranges, vs)
 
 __all__ = [
     'overlay_sign'

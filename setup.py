@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-import setuptools  # type:ignore[import-untyped]
 from pathlib import Path
+
+import setuptools  # type:ignore[import-untyped]
 
 long_description = Path("README.md").read_text()
 install_requires = Path("requirements.txt").read_text()
