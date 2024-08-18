@@ -31,11 +31,13 @@ class MissingPluginsError(CustomDependencyError):
 
     def __init__(
         self, func: FuncExceptT, plugins: str | list[str] | ImportError,
-        message: SupportsString = "Missing plugins '{plugins}'!",
+        message: SupportsString = "Missing plugins '{deps}'!",
         **kwargs: Any
     ) -> None:
         if isinstance(plugins, list) and len(plugins) == 1:
-            message = str(message).replace("plugins", "plugin")
+            if isinstance(message, str):
+                message = message.replace("plugins", "plugin")
+
             plugins = plugins[0]
 
         super().__init__(func, plugins, message, **kwargs)
@@ -46,11 +48,13 @@ class MissingPackagesError(CustomDependencyError):
 
     def __init__(
         self, func: FuncExceptT, packages: str | list[str] | ImportError,
-        message: SupportsString = "Missing packages '{packages}'!",
+        message: SupportsString = "Missing packages '{deps}'!",
         **kwargs: Any
     ) -> None:
         if isinstance(packages, list) and len(packages) == 1:
-            message = str(message).replace("packages", "package")
+            if isinstance(message, str):
+                message = message.replace("packages", "package")
+
             packages = packages[0]
 
         super().__init__(func, packages, message, **kwargs)
