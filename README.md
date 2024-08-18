@@ -10,6 +10,18 @@
     <img alt="downloads" src="https://static.pepy.tech/personalized-badge/lvsfunc?period=total&units=international_system&left_color=grey&right_color=blue&left_text=downloads">
 </p>
 
+## ⚠️ **WARNING** ⚠️
+
+This package is intended to be
+a sort of testing grounds
+for functions I write.
+As such,
+you should NEVER rely on this package,
+and instead wait for the useful functions
+to get adopted into other [JET](https://github.com/Jaded-Encoding-Thaumaturgy) packages.
+
+----
+
 A collection of VapourSynth functions and wrappers
 written and/or modified by LightArrowsEXE.
 Full information on how every function/wrapper works,
