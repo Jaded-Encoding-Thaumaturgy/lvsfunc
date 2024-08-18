@@ -4,7 +4,7 @@ from vstools import CustomError, FuncExceptT, SupportsString
 
 __all__: list[str] = [
     'CustomDependencyError',
-    'MissingPluginsError',
+    'MissingPluginsError', 'MissingPluginFunctionsError',
     'MissingPackagesError'
 ]
 
@@ -41,6 +41,23 @@ class MissingPluginsError(CustomDependencyError):
             plugins = plugins[0]
 
         super().__init__(func, plugins, message, **kwargs)
+
+
+class MissingPluginFunctionsError(CustomDependencyError):
+    """Raised when a plugin is missing functions."""
+
+    def __init__(
+        self, func: FuncExceptT, plugin: str, functions: str | list[str],
+        message: SupportsString = "'{plugin}' plugin is missing functions '{deps}'!",
+        **kwargs: Any
+    ) -> None:
+        if isinstance(functions, list) and len(functions) == 1:
+            if isinstance(message, str):
+                message = message.replace("functions", "function")
+
+            functions = functions[0]
+
+        super().__init__(func, functions, message, plugin=plugin, **kwargs)
 
 
 class MissingPackagesError(CustomDependencyError):
