@@ -54,7 +54,7 @@ def check_installed_plugins(
     if not strict:
         return missing
 
-    raise MissingPluginsError(func_except or check_installed_plugins, missing)
+    raise MissingPluginsError(func_except or check_installed_plugins, missing, reason=f"{strict=}")
 
 
 def required_plugins(

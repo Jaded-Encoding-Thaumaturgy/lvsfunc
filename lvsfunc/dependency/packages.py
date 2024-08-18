@@ -58,7 +58,7 @@ def check_installed_packages(
     if not strict:
         return missing
 
-    raise MissingPackagesError(func_except or check_installed_packages, missing)
+    raise MissingPackagesError(func_except or check_installed_packages, missing, reason=f"{strict=}")
 
 
 def required_packages(
