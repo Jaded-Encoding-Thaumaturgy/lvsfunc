@@ -94,6 +94,7 @@ def required_packages(
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             check_installed_packages(packages, True, func_except or func)
+            func.required_packages = packages  # type:ignore
 
             return func(*args, **kwargs)
 

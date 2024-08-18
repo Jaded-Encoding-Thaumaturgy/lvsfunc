@@ -90,6 +90,7 @@ def required_plugins(
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             check_installed_plugins(plugins, True, func_except or func)
+            func.required_plugins = plugins  # type:ignore
 
             return func(*args, **kwargs)
 
