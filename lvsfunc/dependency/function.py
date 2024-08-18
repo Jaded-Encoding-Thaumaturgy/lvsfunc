@@ -70,6 +70,8 @@ def required_plugin_functions(
     """
     Decorator to ensure that the specified plugin has specific functions.
 
+    The plugin and list of functions will be stored in the function's `required_plugin_functions` attribute.
+
     Example usage:
 
     .. code-block:: python
@@ -77,6 +79,9 @@ def required_plugin_functions(
         >>> @required_plugin_functions('descale', ['Bicubic', 'Debicubic'])
         >>> def func(clip: vs.VideoNode) -> vs.VideoNode:
         ...     return clip
+
+        >>> print(func.required_plugin_functions)
+        ... ('descale', ['Bicubic', 'Debicubic'])
 
     For more information, see :py:func:`check_installed_plugin_functions`.
 

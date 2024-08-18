@@ -66,6 +66,8 @@ def required_plugins(
     """
     Decorator to ensure that specified plugins are installed.
 
+    The list of plugins will be stored in the function's `required_plugins` attribute.
+
     Example usage:
 
     .. code-block:: python
@@ -73,6 +75,9 @@ def required_plugins(
         >>> @required_plugins(['resize', 'descale'])
         >>> def func(clip: vs.VideoNode) -> vs.VideoNode:
         ...     return clip
+
+        >>> print(func.required_plugins)
+        ... ['resize', 'descale']
 
         >>> @required_plugins({'descale': 'https://github.com/Jaded-Encoding-Thaumaturgy/vapoursynth-descale'})
         >>> def func(clip: vs.VideoNode) -> vs.VideoNode:

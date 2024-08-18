@@ -68,6 +68,8 @@ def required_packages(
     """
     Decorator to ensure that specified packages are installed.
 
+    The list of packages will be stored in the function's `required_packages` attribute.
+
     Example usage:
 
     .. code-block:: python
@@ -75,6 +77,9 @@ def required_packages(
         >>> @required_packages(['lvsfunc', 'vstools'])
         >>> def func(clip: vs.VideoNode) -> vs.VideoNode:
         ...     return clip
+
+        >>> print(func.required_packages)
+        ... ['lvsfunc', 'vstools']
 
         >>> @required_packages({'lvsfunc': 'pip install lvsfunc'})
         >>> def func(clip: vs.VideoNode) -> vs.VideoNode:
