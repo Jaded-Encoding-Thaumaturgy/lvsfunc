@@ -1,0 +1,56 @@
+from typing import Any
+
+from vstools import CustomError, FuncExceptT, SupportsString
+
+__all__: list[str] = [
+    'CustomDependencyError',
+    'MissingPluginsError',
+    'MissingPackagesError'
+]
+
+
+class CustomDependencyError(CustomError, ImportError):
+    """Raised when there's a general dependency error."""
+
+    def __init__(
+        self, func: FuncExceptT, deps: str | list[str] | ImportError,
+        message: SupportsString = "Missing dependencies: '{deps}'!",
+        **kwargs: Any
+    ) -> None:
+        """
+        :param func:        Function this error was raised from.
+        :param deps:        Either the raised error or the names of the missing package.
+        :param message:     Custom error message.
+        """
+
+        super().__init__(message, func, deps=deps, **kwargs)
+
+
+class MissingPluginsError(CustomDependencyError):
+    """Raised when there's missing plugins."""
+
+    def __init__(
+        self, func: FuncExceptT, plugins: str | list[str] | ImportError,
+        message: SupportsString = "Missing plugins '{plugins}'!",
+        **kwargs: Any
+    ) -> None:
+        if isinstance(plugins, list) and len(plugins) == 1:
+            message = str(message).replace("plugins", "plugin")
+            plugins = plugins[0]
+
+        super().__init__(func, plugins, message, **kwargs)
+
+
+class MissingPackagesError(CustomDependencyError):
+    """Raised when there's missing packages."""
+
+    def __init__(
+        self, func: FuncExceptT, packages: str | list[str] | ImportError,
+        message: SupportsString = "Missing packages '{packages}'!",
+        **kwargs: Any
+    ) -> None:
+        if isinstance(packages, list) and len(packages) == 1:
+            message = str(message).replace("packages", "package")
+            packages = packages[0]
+
+        super().__init__(func, packages, message, **kwargs)
