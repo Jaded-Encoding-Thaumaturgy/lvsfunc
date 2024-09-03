@@ -4,12 +4,12 @@ from pathlib import Path
 
 import setuptools  # type:ignore[import-untyped]
 
-long_description = Path("README.md").read_text()
-install_requires = Path("requirements.txt").read_text()
+long_description = Path("README.md").read_text(encoding='utf-8')
+install_requires = Path("requirements.txt").read_text(encoding='utf-8')
 
 package_name = "lvsfunc"
 
-exec(Path(f'{package_name}/_metadata.py').read_text(), meta := dict[str, str]())
+exec(Path(f'{package_name}/_metadata.py').read_text(encoding='utf-8'), meta := dict[str, str]())
 
 setuptools.setup(
     name=package_name,
