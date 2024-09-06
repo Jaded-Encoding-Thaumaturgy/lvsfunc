@@ -10,6 +10,9 @@ build/
 dist/
 venv/
 
+# Common VS files
+/.vsjet/**/*
+
 # Test files
 *test*.py
 /*test*/*
