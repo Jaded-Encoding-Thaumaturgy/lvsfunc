@@ -9,8 +9,6 @@
 
 # flake8: noqa
 
-from . import (comparison, deblock, exceptions, export, grain, hdcam, misc,
-               presets, util)
 from .comparison import *
 from .deblock import *
 from .dependency import *
@@ -22,3 +20,4 @@ from .misc import *
 from .packets import *
 from .presets import *
 from .util import *
+from .random import *
