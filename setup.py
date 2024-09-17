@@ -25,6 +25,7 @@ setuptools.setup(
         package_name,
         f"{package_name}.packets",
         f"{package_name}.dependency",
+        f"{package_name}.hdcam",
     ],
     package_data={
         package_name: ['py.typed'],
