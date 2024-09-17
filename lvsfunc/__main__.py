@@ -40,8 +40,10 @@ def prompt_user() -> bool:
     prompt = input(f"Install/update {pkg} dependencies? [y/n]: ").lower().strip()
 
     match prompt:
-        case 'y' | 'yes': return True
-        case _: return False
+        case 'y' | 'yes':
+            return True
+        case _:
+            return False
 
 
 def main() -> None:
