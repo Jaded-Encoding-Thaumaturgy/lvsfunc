@@ -1,5 +1,4 @@
 from typing import Callable
-from warnings import warn
 
 from vsaa import Nnedi3
 from vsdehalo import base_dehalo_mask
@@ -11,16 +10,11 @@ from vsmasktools import Kirsch, MagDirection, retinex
 from vsrgtools import BlurMatrix, RemoveGrainMode, limit_filter
 from vstools import ConvMode, CustomValueError, FunctionUtil, plane, vs
 
+from .priv import _warn_hdcam
+
 __all__: list[str] = [
     "hdcam_dering"
 ]
-
-
-def _warn_hdcam() -> None:
-    warn(
-        "lvsfunc.hdcam: These are all experimental functions! "
-        "Please report any issues you find in the #dev channel in the JET discord!"
-    )
 
 
 def hdcam_dering(
@@ -50,6 +44,7 @@ def hdcam_dering(
 
     :return:            Deringed clip or the ringing mask if show_mask=True.
     """
+
     _warn_hdcam()
 
     func = FunctionUtil(clip, hdcam_dering, 0, (vs.YUV, vs.GRAY), 16)
@@ -138,21 +133,3 @@ def hdcam_dering(
     deringed = deringed.std.MaskedMerge(nag2, ring)
 
     return func.return_clip(deringed)
-
-
-# TODO: Chroma reconstruction presets. HDCAM chroma tends to get really
-#       screwed up because of the 422/420 => 311 => 422/420 (=> 420) conversion.
-
-# TODO: descale wrapper to handle the horizontal upscale from HDCAM
-#       *and* perform a vertical descale to the original native res if possible.
-
-
-# List of HDCAM productions, kept for no reason other than for people to grab sources to test these funcs on.
-hdcam_productions: list[str] = [
-    "Hayate no Gotoku",
-    "Zettai Karen Children (presumed)",
-    "One Piece",
-    "Heartcatch! Precure",
-    "Joshiraku (presumed)",
-    "Kyousougiga (presumed)",
-]
