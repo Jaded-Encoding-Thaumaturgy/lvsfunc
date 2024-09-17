@@ -23,7 +23,6 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     packages=[
         package_name,
-        f"{package_name}.packets",
         f"{package_name}.dependency",
     ],
     package_data={
