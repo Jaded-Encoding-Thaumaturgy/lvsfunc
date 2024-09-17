@@ -1,15 +1,98 @@
-from math import ceil
-from random import randint
+from __future__ import annotations
+
 from typing import Any
 
-from vskernels import Kernel, KernelT, Lanczos
-from vstools import (CustomTypeError, FieldBased, FuncExceptT, Matrix, MatrixT,
-                     SPath, SPathLike, clip_async_render, core, vs)
+from vskernels import KernelT, Lanczos
+from vstools import (CustomStrEnum, CustomTypeError, CustomValueError,
+                     FuncExceptT, FunctionUtil, MatrixT, SPath, SPathLike,
+                     clip_async_render, core, vs)
+
+from .random import get_random_frames
 
 __all__: list[str] = [
-    "export_frames",
-    "get_random_frames"
+    "ExportFrames", "export_frames",
 ]
+
+
+class ExportFrames(CustomStrEnum):
+    PNG: ExportFrames = 'png'  # type:ignore
+    JPEG: ExportFrames = 'jpeg'  # type:ignore
+    JPG: ExportFrames = 'jpg'  # type:ignore
+    WEBP: ExportFrames = 'webp'  # type:ignore
+    AVIF: ExportFrames = 'avif'  # type:ignore
+    BMP: ExportFrames = 'bmp'  # type:ignore
+    GIF: ExportFrames = 'gif'  # type:ignore
+    HEIC: ExportFrames = 'heic'  # type:ignore
+    JXL: ExportFrames = 'jxl'  # type:ignore
+    PPM: ExportFrames = 'ppm'  # type:ignore
+    PGM: ExportFrames = 'pgm'  # type:ignore
+    PBM: ExportFrames = 'pbm'  # type:ignore
+    PNM: ExportFrames = 'pnm'  # type:ignore
+    TGA: ExportFrames = 'tga'  # type:ignore
+    TIFF: ExportFrames = 'tiff'  # type:ignore
+
+    def __call__(
+        self, clip: vs.VideoNode,
+        filename: SPathLike = "bin/%d.png",
+        matrix: MatrixT | None = None,
+        func_except: FuncExceptT | None = None,
+        **kwargs: Any
+    ) -> list[SPath]:
+        """
+        Export all frames from a VideoNode as images.
+
+        If exporting the same frames from multiple clips (e.g., for lq vs. hq training),
+        it's recommended to use `get_random_frames` first to get a clip of random frames,
+        and pass that here instead.
+
+        If you're exporting to PNG, this function will use the `vsfpng` plugin if installed,
+        otherwise falling back to `imwri.Write`.
+
+        :param clip:            The input clip to process.
+        :param filename:        Output filename pattern. Must include "%d" for frame number substitution.
+        :param matrix:          Color matrix of the input clip. Attempts to detect if None.
+        :param func_except:     Function returned for custom error handling.
+                                This should only be set by VS package developers.
+        :param kwargs:          Additional arguments to pass to the underlying writer.
+
+        :return:                List of SPath objects pointing to exported images.
+        """
+
+        func = FunctionUtil(clip, func_except or self, None, vs.RGB, 8, matrix=matrix)
+
+        sfile = self._check_sfile(filename, func.func)
+
+        return self._render_frames(clip, sfile, **kwargs)
+
+    def _check_sfile(self, file: SPathLike, func: FuncExceptT) -> SPath:
+        """Validate the output file path."""
+
+        sfile = SPath(file)
+
+        if '%d' not in sfile.to_str():
+            raise CustomTypeError("Filename must include '%d' for frame number substitution!", func)
+
+        sfile.parent.mkdir(parents=True, exist_ok=True)
+
+        if sfile.parent.glob("*"):
+            input(
+                f'ExportFrames: Files found in \"{sfile.parent}\". They may be overwritten. '
+                'Press Enter to continue or Ctrl+C to abort...'
+            )
+
+        return sfile
+
+    def _render_frames(self, clip: vs.VideoNode, out_file: SPath, **kwargs: Any) -> list[SPath]:
+        """Render the frames to a PNG file using the vsfpng plugin, or fallback to imwri.Write."""
+
+        if self is ExportFrames.PNG and hasattr(core, "fpng"):
+            writer = clip.fpng.Write(out_file.to_str(), **kwargs)
+        else:
+            writer = clip.imwri.Write(self.value, out_file.to_str(), **kwargs)
+
+        clip_async_render(writer)
+
+        return list(out_file.parent.glob("*.png"))
 
 
 def export_frames(
@@ -23,127 +106,36 @@ def export_frames(
     **kwargs: Any
 ) -> list[SPath]:
     """
-    Export random or specific frames from a VideoNode as a PNG image.
+    Export random or specific frames from a VideoNode as PNG images.
 
-    If you want to export the same frames from multiple clips, for example for lq vs. hq training,
-    it's recommended you run `get_random_frames` first and pass the results to two different `export_frames` calls.
+    :param clip:        The input clip to process.
+    :param filename:    Output filename pattern. Must include "%d" for frame number substitution.
+    :param matrix:      Color matrix of the input clip. Attempts to detect if None.
+    :param kernel:      Resampling kernel for RGB conversion if necessary.
+    :param func_except: Custom error handling function (for package developers).
 
-    Example usage:
-
-    .. code-block:: python
-
-        # Export the same frames from two clips to create a dataset for model training
-        >>> frames = get_random_frames(hq_clip)
-        >>> ...
-        >>> export_frames(hq_clip, frames, "lq/%d.png)
-        >>> export_frames(lq_clip, frames, "hq/%d.png)
-
-    This function will use the `vsfpng` plugin if it has been installed.
-    You can download it here: `<https://github.com/Mikewando/vsfpng>`_.
-    If it can't find it, this function will fall back to `imwri.Write`.
-
-    :param clip:        The clip to process.
-    :param frames:      A list of frames to export. If None or an empty list is passed,
-                        picks a random frame for every `dur` seconds the clip lasts.
-                        Default: None.
-    :param filename:    The output filename. The suffix will automatically be changed to `.png`.
-                        "%d" will be subsituted with the frame number. The filename will ALWAYS have a frame number!
-                        Default: Output in a "bin" directory, The frame number will be appended if necessary.
-    :param dur:         The amount of seconds for the random frame ranges. A value of 10 equals 10 seconds.
-                        If no frames are passed, it will grab a random frame every `dur` seconds.
-                        Default: 5.0 seconds.
-    :param matrix:      Matrix of the input clip. If None, will try to get it from the input clip. Default: None.
-    :param kernel:      The Kernel used to resample the image to RGB if necessary. Default: Lanczos (3 taps).
-    :param func_except: Function returned for custom error handling.
-                        This should only be set by VS package developers.
-    :param kwargs:      Keyword arguments to pass on to the png writer (vsfpng or imwri).
-
-    :return:            List of SPath objects pointing to every exported image.
+    :return:            List of SPath objects pointing to exported images.
     """
+
+    import warnings
+
+    warnings.warn(
+        'export_frames: This function is deprecated and will be removed '
+        'in a future version. Use ExportFrames with get_random_frames instead!',
+        DeprecationWarning
+    )
 
     func = func_except or export_frames
 
-    clip = FieldBased.PROGRESSIVE.apply(clip)
-
-    frames = get_random_frames(clip, dur, frames, func)
-    proc_clip = core.std.Splice([clip[f] for f in frames])
-
-    matrix = Matrix.from_param_or_video(matrix, proc_clip)
-    kernel = Kernel.ensure_obj(kernel, func)
-
-    proc_clip = kernel.resample(proc_clip, vs.RGB24, matrix_in=matrix)
-
-    return _render(proc_clip, filename, func, **kwargs)
-
-
-def _render(clip: vs.VideoNode, filename: SPathLike, func: FuncExceptT, **kwargs: Any) -> list[SPath]:
-    if callable(func):
-        func = func.__name__
-
-    if r"%d" not in str(filename):
-        sfilename = SPath(filename)
-        filename = f"{sfilename.stem}_%d{sfilename.suffix}"
-
-    out_filename = SPath(filename).with_suffix(".png")
-    out_filename.parent.mkdir(parents=True, exist_ok=True)
-
-    if hasattr(core, "fpng"):
-        clip = clip.fpng.Write(filename=out_filename, **kwargs)
+    if frames is None:
+        frames_clip = get_random_frames(clip)
     else:
-        clip = clip.imwri.Write(filename=out_filename, **kwargs)
+        if isinstance(frames, int):
+            frames = [frames]
 
-    def _return_framenum(iter: int, _: vs.VideoFrame) -> str:
-        # Looks like `format` acts strange with this string. Oh well.
-        return SPath(out_filename.to_str().replace(r"%d", str(iter)))
+        try:
+            frames_clip = core.std.Splice([clip[f] for f in sorted(frames)])
+        except vs.Error:
+            raise CustomValueError("Invalid frame numbers provided!", func)
 
-    return clip_async_render(clip, None, f"{func}: Dumping pngs to \"{out_filename.parent}\"...", _return_framenum)
-
-
-def get_random_frames(
-    clip: vs.VideoNode, dur: float = 5.0,
-    _frames: list[int] | int | None = None,
-    func_except: FuncExceptT | None = None
-) -> list[int]:
-    """
-    Get a list of random frames to grab per range of frames, indicated by `dur`.
-
-    If a list of frames is already passed, this function will perform an early exit.
-    This function is primarily useful for other functions that may call this function,
-    and should generally not be used by regular users.
-
-    :param clip:        Clip to get the random frames from.
-    :param dur:         The amount of seconds for the ranges. A value of 10.0 equals 10 seconds.
-                        If no frames are passed, it will grab a random frame every `dur` seconds.
-                        Default: 5.0 seconds.
-    :param _frames:     An optional list of frames to gather. Acts primarily as an early exit for other functions.
-                        If an int or float is passed, it will be turned into a list and truncated if necessary.
-                        This parameter should generally be ignored by regular users.
-                        Default: None.
-    :param func_except: Function returned for custom error handling.
-                        This should only be set by VS package developers.
-
-    :return:            A list of random frame numbers.
-    """
-
-    func = func_except or get_random_frames
-
-    if _frames is None:
-        _frames = list[int]()
-    elif isinstance(_frames, (int, float)):
-        _frames = [int(_frames)]
-    elif not isinstance(_frames, list):
-        raise CustomTypeError(f"\"_frames\" must be a list or int, not \"{type(_frames).__name__}\"!", func)
-
-    if _frames:
-        return _frames
-
-    start_frame = 0
-
-    while start_frame < clip.num_frames:
-        end_frame = min(start_frame + ceil(clip.fps * dur), clip.num_frames)
-
-        _frames.append(randint(start_frame, end_frame - 1))
-
-        start_frame = end_frame
-
-    return _frames
+    return ExportFrames.PNG(frames_clip, filename, matrix, func, **kwargs)
