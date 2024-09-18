@@ -173,9 +173,9 @@ def npz_to_clip(file_paths: list[SPathLike] | SPathLike = []) -> vs.VideoNode:
     first_frame = np.load(file_paths[0], allow_pickle=True)[0]
     height, width = first_frame['Y'].shape
 
-    format = get_format_from_npz(first_frame)
+    fmt = get_format_from_npz(first_frame)
 
-    blank_clip = core.std.BlankClip(None, width, height, format, length=len(file_paths), keep=True)
+    blank_clip = core.std.BlankClip(None, width, height, fmt, length=len(file_paths), keep=True)
 
     def _read_frame(n: int, f: vs.VideoFrame) -> vs.VideoNode:
         loaded_frame = np.load(file_paths[n], allow_pickle=True)[0]
