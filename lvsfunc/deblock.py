@@ -76,16 +76,19 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     :raises ValueError:     Unequal number of ``strength``s and ``thr``s passed.
     """
+
     assert check_variable(clip, "autodb_dpir")
 
-    def _eval_db(n: int, f: Sequence[vs.VideoFrame],
-                 clip: vs.VideoNode, db_clips: Sequence[vs.VideoNode],
-                 nthrs: Sequence[tuple[float, float, float]]) -> vs.VideoNode:
-
+    def _eval_db(
+        n: int, f: Sequence[vs.VideoFrame],
+        clip: vs.VideoNode, db_clips: Sequence[vs.VideoNode],
+        nthrs: Sequence[tuple[float, float, float]]
+    ) -> vs.VideoNode:
         evref_diff, y_next_diff, y_prev_diff = [
             get_prop(f[i], prop, float)
             for i, prop in zip(range(3), ['EdgeValRefDiff', 'YNextDiff', 'YPrevDiff'])
         ]
+
         f_type = get_prop(f[0], '_PictType', bytes).decode('utf-8')
 
         if f_type == 'I':

@@ -1,10 +1,10 @@
 from functools import wraps
 from typing import Any, Callable
 
-from vstools import FuncExceptT, core
+from vstools import FuncExceptT, core, fallback
 
-from .plugin import check_installed_plugins
 from .exceptions import MissingPluginFunctionsError
+from .plugin import check_installed_plugins
 from .types import F
 
 __all__: list[str] = [
@@ -44,7 +44,7 @@ def check_installed_plugin_functions(
     if not functions:
         return list[str]()
 
-    func = func_except or check_installed_plugin_functions
+    func = fallback(func_except, check_installed_plugin_functions)
 
     check_installed_plugins(plugin, True, func)
 
@@ -94,7 +94,7 @@ def required_plugin_functions(
     def decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            check_installed_plugin_functions(plugin, functions, True, func_except or func)
+            check_installed_plugin_functions(plugin, functions, True, fallback(func_except, func))
             func.required_plugin_functions = (plugin, functions)  # type:ignore
 
             return func(*args, **kwargs)

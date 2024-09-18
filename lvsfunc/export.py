@@ -5,12 +5,12 @@ from typing import Any
 from vskernels import KernelT, Lanczos
 from vstools import (CustomStrEnum, CustomTypeError, CustomValueError,
                      FuncExceptT, FunctionUtil, MatrixT, SPath, SPathLike,
-                     clip_async_render, core, vs)
+                     clip_async_render, core, fallback, vs)
 
 from .random import get_random_frames
 
 __all__: list[str] = [
-    "ExportFrames", "export_frames",
+    'ExportFrames', 'export_frames',
 ]
 
 
@@ -58,7 +58,7 @@ class ExportFrames(CustomStrEnum):
         :return:                List of SPath objects pointing to exported images.
         """
 
-        func = FunctionUtil(clip, func_except or self, None, vs.RGB, 8, matrix=matrix)
+        func = FunctionUtil(clip, fallback(func_except, self), None, vs.RGB, 8, matrix=matrix)
 
         sfile = self._check_sfile(filename, func.func)
 
@@ -125,7 +125,7 @@ def export_frames(
         DeprecationWarning
     )
 
-    func = func_except or export_frames
+    func = fallback(func_except, export_frames)
 
     if frames is None:
         frames_clip = get_random_frames(clip)

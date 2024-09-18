@@ -1,7 +1,7 @@
 from functools import wraps
 from typing import Any, Callable
 
-from vstools import FuncExceptT
+from vstools import FuncExceptT, fallback
 
 from .exceptions import MissingPackagesError
 from .types import DEP_URL, F
@@ -58,7 +58,7 @@ def check_installed_packages(
     if not missing or not strict:
         return missing
 
-    raise MissingPackagesError(func_except or check_installed_packages, missing, reason=f"{strict=}")
+    raise MissingPackagesError(fallback(func_except, check_installed_packages), missing, reason=f"{strict=}")
 
 
 def required_packages(
@@ -96,7 +96,7 @@ def required_packages(
     def decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            check_installed_packages(packages, True, func_except or func)
+            check_installed_packages(packages, True, fallback(func_except, func))
             func.required_packages = packages  # type:ignore
 
             return func(*args, **kwargs)

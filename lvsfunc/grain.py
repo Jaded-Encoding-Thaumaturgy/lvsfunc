@@ -3,7 +3,7 @@ from stgpytools import (CustomImportError, DependencyNotFoundError,
 from vstools import Keyframes, find_prop_rfs, merge_clip_props, vs
 
 __all__: list[str] = [
-    "dynamic_scene_adaptive_grain"
+    'dynamic_scene_adaptive_grain'
 ]
 
 
@@ -41,6 +41,7 @@ def dynamic_scene_adaptive_grain(
 
     :return:                Clip with different types of graining applied based on the scene's luminosity.
     """
+
     try:
         from stgfunc import SceneAverageStats
     except ModuleNotFoundError:

@@ -9,7 +9,7 @@ from typing import overload
 
 from stgpytools import DependencyNotFoundError
 from vstools import (CustomValueError, FuncExceptT, Keyframes, SPath,
-                     SPathLike, core, vs)
+                     SPathLike, core, fallback, vs)
 
 from ..util import get_file_from_clip
 
@@ -101,7 +101,7 @@ def get_packet_sizes(
                                     return the packet sizes as a list of integers instead.
     """
 
-    func = func_except or get_packet_sizes
+    func = fallback(func_except, get_packet_sizes)
 
     if out_file is not None and SPath(out_file).exists():
         with open(out_file, "r+") as f:

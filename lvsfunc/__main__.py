@@ -37,6 +37,7 @@ pypi_deps = list[str]()
 
 def prompt_user() -> bool:
     """Prompt user to install/update dependencies."""
+
     prompt = input(f"Install/update {pkg} dependencies? [y/n]: ").lower().strip()
 
     match prompt:
@@ -48,6 +49,7 @@ def prompt_user() -> bool:
 
 def main() -> None:
     """Prompt user to install/update dependencies."""
+
     if not prompt_user():
         exit()
 
