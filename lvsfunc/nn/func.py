@@ -3,17 +3,18 @@ import warnings
 import numpy as np
 from vsexprtools import norm_expr
 from vstools import (CustomValueError, FuncExceptT, FunctionUtil, SPath,
-                     SPathLike, clip_async_render, core, fallback, vs)
+                     SPathLike, clip_async_render, core, fallback, get_depth,
+                     initialize_clip, vs)
 
-from .util import get_format_from_npz
+from .util import get_format_from_npy
 
 __all__: list[str] = [
-    'prepare_clip_for_npz', 'finalize_clip_from_npz',
-    'clip_to_npz', 'npz_to_clip',
+    'prepare_clip_for_npy', 'finalize_clip_from_npy',
+    'clip_to_npy', 'npy_to_clip',
 ]
 
 
-def prepare_clip_for_npz(clip: vs.VideoNode, func_except: FuncExceptT | None = None) -> vs.VideoNode:
+def prepare_clip_for_npy(clip: vs.VideoNode, func_except: FuncExceptT | None = None) -> vs.VideoNode:
     """
     Prepare a clip for exporting to numpy files.
 
@@ -27,10 +28,10 @@ def prepare_clip_for_npz(clip: vs.VideoNode, func_except: FuncExceptT | None = N
     :return:                The processed clip.
     """
 
-    return _process_clip_for_npz(clip, fallback(func_except, prepare_clip_for_npz), 'prepare')
+    return _process_clip_for_npy(clip, fallback(func_except, prepare_clip_for_npy), 'prepare')
 
 
-def finalize_clip_from_npz(clip: vs.VideoNode, func_except: FuncExceptT | None = None) -> vs.VideoNode:
+def finalize_clip_from_npy(clip: vs.VideoNode, func_except: FuncExceptT | None = None) -> vs.VideoNode:
     """
     Finalize a clip obtained from numpy files.
 
@@ -44,11 +45,11 @@ def finalize_clip_from_npz(clip: vs.VideoNode, func_except: FuncExceptT | None =
     :return:                The processed clip.
     """
 
-    return _process_clip_for_npz(clip, fallback(func_except, finalize_clip_from_npz), 'finalize')
+    return _process_clip_for_npy(clip, fallback(func_except, finalize_clip_from_npy), 'finalize')
 
 
-def _process_clip_for_npz(clip: vs.VideoNode, func_except: FuncExceptT | None, operation: str) -> vs.VideoNode:
-    func = FunctionUtil(clip, fallback(func_except, _process_clip_for_npz), None, (vs.GRAY, vs.YUV), 32)
+def _process_clip_for_npy(clip: vs.VideoNode, func_except: FuncExceptT | None, operation: str) -> vs.VideoNode:
+    func = FunctionUtil(clip, fallback(func_except, _process_clip_for_npy), None, (vs.GRAY, vs.YUV), 32)
 
     if not func.chroma_planes:
         return func.work_clip
@@ -56,7 +57,7 @@ def _process_clip_for_npz(clip: vs.VideoNode, func_except: FuncExceptT | None, o
     return norm_expr(func.work_clip, 'x 0.5 +' if operation == 'prepare' else 'x 0.5 -', func.chroma_planes)
 
 
-def clip_to_npz(src: vs.VideoNode, out_dir: SPathLike = 'bin/') -> list[SPath]:
+def clip_to_npy(src: vs.VideoNode, out_dir: SPathLike = 'bin/') -> list[SPath]:
     """
     Export frames from a VideoNode to numpy array files.
 
@@ -74,14 +75,14 @@ def clip_to_npz(src: vs.VideoNode, out_dir: SPathLike = 'bin/') -> list[SPath]:
     :raises RuntimeWarning:             If any frames failed to process.
     """
 
-    func = FunctionUtil(src, clip_to_npz, None, vs.YUV)
+    func = FunctionUtil(src, clip_to_npy, None, vs.YUV)
 
     proc_clip = func.work_clip
 
     out_dir = SPath(out_dir)
     out_dir.mkdir(511, True, True)
 
-    next_name = max((int(f.stem) for f in out_dir.glob('*.npz')), default=0) + 1
+    next_name = max((int(f.stem) for f in out_dir.glob('*.npy')), default=0) + 1
 
     if not (total_frames := len(proc_clip)):
         return []
@@ -113,7 +114,7 @@ def clip_to_npz(src: vs.VideoNode, out_dir: SPathLike = 'bin/') -> list[SPath]:
                 np.asarray(frame[2]) if frame.format.num_planes > 1 else None
             )], dtype=[('Y', object), ('U', object), ('V', object)])
 
-            filename = f'{next_name:05d}.npz'
+            filename = f'{next_name:05d}.npy'
             file_path = out_dir / filename
 
             np.save(file_path, frame_data, allow_pickle=True)
@@ -139,41 +140,51 @@ def clip_to_npz(src: vs.VideoNode, out_dir: SPathLike = 'bin/') -> list[SPath]:
 
     if failed_frames := [f for f in proc_frames if f is None]:
         warnings.warn(
-            f'export_frames_to_npz: {len(failed_frames)} frames failed to process ({failed_frames}).',
+            f'export_frames_to_npy: {len(failed_frames)} frames failed to process ({failed_frames}).',
             RuntimeWarning
         )
 
     return exported_files
 
 
-def npz_to_clip(file_paths: list[SPathLike] | SPathLike = []) -> vs.VideoNode:
+def npy_to_clip(
+    file_paths: list[SPathLike] | SPathLike = [],
+    ref: vs.VideoNode | None = None,
+    func_except: FuncExceptT | None = None
+) -> vs.VideoNode:
     """
     Read numpy files and convert them to a VapourSynth clip.
 
     :param file_paths:      The list of numpy files to convert to a clip.
-                            If a directory is provided, all .npz files in the directory will be used.
+                            If a directory is provided, all .npy files in the directory will be used.
                             If a single file is provided, it will be used instead.
+    :param ref:             A reference video clip to get props from.
+                            If None, props will be guessed.
+    :param func_except:     Function returned for custom error handling.
+                            This should only be set by VS package developers.
 
     :return:                The clip.
     """
+
+    func = fallback(func_except, npy_to_clip)
 
     if not isinstance(file_paths, list):
         file_paths = SPath(file_paths)
 
         if file_paths.is_dir():
-            file_paths = list(file_paths.glob("*.npz"))
+            file_paths = list(file_paths.glob("*.npy"))
         else:
             file_paths = [file_paths]
 
     if not file_paths:
-        raise CustomValueError("No files provided", npz_to_clip)
+        raise CustomValueError("No files provided", func)
 
     file_paths = sorted(file_paths, key=lambda x: int(x.stem))
 
     first_frame = np.load(file_paths[0], allow_pickle=True)[0]
     height, width = first_frame['Y'].shape
 
-    fmt = get_format_from_npz(first_frame)
+    fmt = get_format_from_npy(first_frame)
 
     blank_clip = core.std.BlankClip(None, width, height, fmt, length=len(file_paths), keep=True)
 
@@ -188,4 +199,9 @@ def npz_to_clip(file_paths: list[SPathLike] | SPathLike = []) -> vs.VideoNode:
 
         return fout
 
-    return blank_clip.std.ModifyFrame(blank_clip, _read_frame)
+    proc_clip = blank_clip.std.ModifyFrame(blank_clip, _read_frame)
+
+    if ref is not None:
+        return initialize_clip(proc_clip, ref)
+
+    return initialize_clip(proc_clip, get_depth(proc_clip), func=func)

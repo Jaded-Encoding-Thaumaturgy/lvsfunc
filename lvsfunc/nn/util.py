@@ -3,11 +3,11 @@ from vstools import (CustomRuntimeError, FuncExceptT, InvalidVideoFormatError,
                      core, depth, fallback, get_video_format, vs)
 
 __all__: list[str] = [
-    'get_format_from_npz',
+    'get_format_from_npy',
 ]
 
 
-def get_format_from_npz(frame_data: np.ndarray, func_except: FuncExceptT | None = None) -> vs.VideoFormat:
+def get_format_from_npy(frame_data: np.ndarray, func_except: FuncExceptT | None = None) -> vs.VideoFormat:
     """
     Guess the format based on heuristics from the numpy array data.
 
@@ -31,7 +31,7 @@ def get_format_from_npz(frame_data: np.ndarray, func_except: FuncExceptT | None 
     :return:                The guessed format.
     """
 
-    func = fallback(func_except, get_format_from_npz)
+    func = fallback(func_except, get_format_from_npy)
 
     y_data, u_data, v_data = frame_data['Y'], frame_data['U'], frame_data['V']
 
