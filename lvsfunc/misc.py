@@ -58,6 +58,7 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     :raises FramePropError:         Overlay does not have an alpha channel.
     :raises FramePropError:         Overlay clip was not loaded in using :py:func:`vapoursynth.core.imwri.Read`.
     """
+
     if fade_length > 0:
         try:
             from kagefunc import crossfade

@@ -7,7 +7,8 @@ from typing import Any
 
 from vstools import (CustomIndexError, CustomValueError, FrameRangeN,
                      FrameRangesN, FuncExceptT, KwargsT,
-                     check_variable_resolution, core, get_h, get_w, vs)
+                     check_variable_resolution, core, fallback, get_h, get_w,
+                     vs)
 
 __all__ = [
     'colored_clips',
@@ -46,6 +47,7 @@ def colored_clips(
     :raises ValueError:     ``amount`` is less than 2.
     :raises ValueError:     ``max_hue`` is not between 0–360.
     """
+
     if amount < 2:
         raise CustomIndexError("`amount` must be at least 2!", colored_clips)
     if not (0 < max_hue <= 360):
@@ -83,6 +85,7 @@ def convert_rfs(rfs_string: str) -> FrameRangesN:
 
     :raises ValueError:     Invalid input string is passed.
     """
+
     rfs_string = str(rfs_string).strip()
 
     if not set(rfs_string).issubset('0123456789[] '):
@@ -171,7 +174,7 @@ def get_match_centers_scaling(
                             which can be passed directly to `vodesfunc.DescaleTarget` or similar functions.
     """
 
-    func = func_except or get_match_centers_scaling
+    func = fallback(func_except, get_match_centers_scaling)
 
     if target_width is None and target_height is None:
         raise CustomValueError("Either `target_width` or `target_height` must be a positive integer.", func)

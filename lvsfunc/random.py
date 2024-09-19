@@ -1,9 +1,10 @@
-from vstools import core, vs
 from random import randint
 
+from vstools import core, vs
+
 __all__: list[str] = [
-    "get_random_frame_nums",
-    "get_random_frames"
+    'get_random_frame_nums',
+    'get_random_frames'
 ]
 
 

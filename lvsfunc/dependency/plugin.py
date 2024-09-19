@@ -1,7 +1,7 @@
 from functools import wraps
 from typing import Any, Callable
 
-from vstools import FuncExceptT, core
+from vstools import FuncExceptT, core, fallback
 
 from .exceptions import MissingPluginsError
 from .types import DEP_URL, F
@@ -56,7 +56,7 @@ def check_installed_plugins(
     if not missing or not strict:
         return missing
 
-    raise MissingPluginsError(func_except or check_installed_plugins, missing, reason=f"{strict=}")
+    raise MissingPluginsError(fallback(func_except, check_installed_plugins), missing, reason=f"{strict=}")
 
 
 def required_plugins(
@@ -94,7 +94,7 @@ def required_plugins(
     def decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            check_installed_plugins(plugins, True, func_except or func)
+            check_installed_plugins(plugins, True, fallback(func_except, func))
             func.required_plugins = plugins  # type:ignore
 
             return func(*args, **kwargs)

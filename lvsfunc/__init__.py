@@ -17,6 +17,7 @@ from .export import *
 from .grain import *
 from .hdcam import *
 from .misc import *
+from .nn import *
 from .presets import *
-from .util import *
 from .random import *
+from .util import *

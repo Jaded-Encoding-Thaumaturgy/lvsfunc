@@ -1,7 +1,7 @@
 from vsdenoise import MotionMode, MVToolsPreset, Prefilter, SADMode, SearchMode
 
 __all__: list[str] = [
-    "MVLightPreset",
+    'MVLightPreset',
 ]
 
 
