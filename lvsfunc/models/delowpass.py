@@ -99,8 +99,12 @@ class LHzDelowpass(BaseLHzDelowpass):
     """
     Light's Horizontal Delowpassing model.
 
-    These models should only be used on sources that feature horizontal lowpassing.
-    This is most common in R2J discs of anime, but may also happen in other sources.
+    These models should only be used on sources that feature horizontal lowpassing
+    where you have no clean source to use for delowpassing instead.
+    This will typically be R2J anime DVDs with R1s that don't align with it or don't exist.
+
+    DO NOT, UNDER ANY CIRCUMSTANCES, use this model because you're too lazy to delowpass manually!
+    Doing it manually is ALWAYS going to be safer and give you much better results!
 
     The models are named using the following formats:
 
