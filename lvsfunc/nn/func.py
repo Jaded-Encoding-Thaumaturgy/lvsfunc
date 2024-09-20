@@ -117,7 +117,7 @@ def clip_to_npy(src: vs.VideoNode, out_dir: SPathLike = 'bin/') -> list[SPath]:
             filename = f'{next_name:05d}.npy'
             file_path = out_dir / filename
 
-            np.save(file_path, frame_data, allow_pickle=True)
+            np.save(file_path, frame_data, allow_pickle=False)
 
             next_name += 1
 
@@ -181,7 +181,7 @@ def npy_to_clip(
 
     file_paths = sorted(file_paths, key=lambda x: int(x.stem))
 
-    first_frame = np.load(file_paths[0], allow_pickle=True)[0]
+    first_frame = np.load(file_paths[0], allow_pickle=False)[0]
     height, width = first_frame['Y'].shape
 
     fmt = get_format_from_npy(first_frame)
@@ -189,7 +189,7 @@ def npy_to_clip(
     blank_clip = core.std.BlankClip(None, width, height, fmt, length=len(file_paths), keep=True)
 
     def _read_frame(n: int, f: vs.VideoFrame) -> vs.VideoNode:
-        loaded_frame = np.load(file_paths[n], allow_pickle=True)[0]
+        loaded_frame = np.load(file_paths[n], allow_pickle=False)[0]
 
         fout = f.copy()
 
