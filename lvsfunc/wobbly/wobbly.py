@@ -10,7 +10,7 @@ from stgpytools import (MISSING, CustomIndexError, CustomNotImplementedError,
                         CustomTypeError, CustomValueError,
                         DependencyNotFoundError, FileNotExistsError, SPath,
                         SPathLike)
-from vsdeinterlace import fix_telecined_fades
+from vsdeinterlace import fix_interlaced_fades
 from vsexprtools import ExprOp
 from vsmasktools import Morpho
 from vsrgtools import gauss_blur
@@ -320,7 +320,7 @@ class WobblyParsed:
         # TODO: Check if other ftf works better and implement that
 
         clip = clip.std.SetFrameProps(wobbly_ftf=False)
-        ftf = fix_telecined_fades(clip, colors=0, planes=0).std.SetFrameProps(wobbly_ftf=True)
+        ftf = fix_interlaced_fades(clip, colors=0, planes=0).std.SetFrameProps(wobbly_ftf=True)
 
         return replace_ranges(clip, ftf, [f.framenum for f in self.interlaced_fades])
 
