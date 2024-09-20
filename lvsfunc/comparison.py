@@ -573,7 +573,8 @@ def diff(
     msg: str = ...,
     plane: int = ...,
     **namedclips: vs.VideoNode,
-) -> tuple[vs.VideoNode, list[tuple[int, int]]]: ...
+) -> tuple[vs.VideoNode, list[tuple[int, int]]]:
+    ...
 
 
 @overload
@@ -589,7 +590,8 @@ def diff(
     msg: str = ...,
     plane: int = ...,
     **namedclips: vs.VideoNode,
-) -> vs.VideoNode: ...
+) -> vs.VideoNode:
+    ...
 
 
 def diff(
