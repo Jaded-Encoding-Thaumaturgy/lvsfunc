@@ -25,10 +25,11 @@ setuptools.setup(
         package_name,
         f"{package_name}.dependency",
         f"{package_name}.hdcam",
+        f"{package_name}.models",
         f"{package_name}.nn",
     ],
     package_data={
-        package_name: ['py.typed'],
+        package_name: ['py.typed', 'models/shaders/*/*.onnx'],
     },
     install_requires=install_requires,
     project_urls={
