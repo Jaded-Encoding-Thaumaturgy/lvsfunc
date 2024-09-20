@@ -18,3 +18,7 @@ venv/
 /*test*/*
 /*test*/**/*
 /bin/*
+
+# Model-related files
+*.cache
+*.engine
