@@ -1,3 +1,4 @@
+from warnings import warn
 import importlib.resources as pkg_resources
 
 from stgpytools import FileWasNotFoundError, SPath
@@ -24,7 +25,14 @@ def _get_model_path(sub_dir: str, model_name: str, fp16: bool = True) -> SPath:
     if not fp16:
         return model_path
 
-    return model_path.with_name(model_path.stem.split('_fp32')[0] + '_fp16.onnx')
+    new_path = model_path.with_name(model_path.stem.split('_fp32')[0] + '_fp16.onnx')
+
+    if new_path.exists():
+        return new_path
+
+    warn(f'{model_name}: Could not find fp16 model! Returning fp32 model instead.')
+
+    return model_path
 
 
 # Paths to every model. Should always end with _fp32.onnx, we swap it out later if necessary.

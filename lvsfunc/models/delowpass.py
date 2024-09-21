@@ -51,6 +51,11 @@ class BaseLHzDelowpass(_BaseLHzDelowpass, GenericScaler):
         """
         Apply the delowpass model to the clip.
 
+        WARNING: These models are only for horizontal lowpassing!
+        They will also mess up any random high-frequency content in the image.
+        Practically speaking, this almost always means compression noise.
+        Make sure you properly preprocess your video before using these models!
+
         Example usage:
 
         .. code-block:: python
@@ -73,14 +78,16 @@ class BaseLHzDelowpass(_BaseLHzDelowpass, GenericScaler):
         except ImportError:
             raise DependencyNotFoundError("vsmlrt", self._func)
 
-        func = FunctionUtil(clip, self.__class__, kwargs.pop('planes', 0), vs.RGB, 32)
+        fp16 = kwargs.pop('fp16', False)
 
-        fp16 = kwargs.pop('fp16', func.bitdepth != 32)
+        model_path = _get_model_path('delowpass', str(self).split('(')[0], fp16)
+        fp16 = 'fp16' in model_path.stem
+
+        func = FunctionUtil(clip, self.__class__, kwargs.pop('planes', 0), vs.RGB, 16 if fp16 else 32)
+
         matrix = Matrix.from_param_or_video(kwargs.pop('matrix', None), clip)
 
         work_clip = Lanczos.resample(func.work_clip, vs.RGBS, matrix_in=matrix)
-
-        model_path = _get_model_path('delowpass', str(self).split('(')[0], fp16)
 
         if self.backend is None:
             self.backend = autoselect_backend(fp16=fp16)
