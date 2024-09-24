@@ -1,110 +1,20 @@
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import Any, Self
 
-from vskernels import Hermite, Lanczos
-from vsscale import GenericScaler, autoselect_backend
-from vstools import (DependencyNotFoundError, FunctionUtil, Matrix,
-                     inject_self, vs)
+from vstools import PlanesT, fallback, inject_self, vs
 
-from .base import _get_model_path
+from .base import Base1xModel
+from .np import ModelNumpyHandling
 
 __all__: list[str] = [
     "LHzDelowpass",
 ]
 
 
-class _BaseLHzDelowpass:
-    _model: ClassVar[int]
-    _func = "LHzDelowpass"
-
-
 @dataclass
-class BaseLHzDelowpass(_BaseLHzDelowpass, GenericScaler):
-    """Light's Horizontal Delowpassing models."""
-
-    backend: Any | None = None
+class _LHzDelowpass(Base1xModel, ModelNumpyHandling):
     """
-    vs-mlrt backend. Will attempt to autoselect the most suitable one with fp16=True if None.
-    In order of trt > cuda > directml > nncn > cpu.
-    """
-
-    tiles: int | tuple[int, int] | None = None
-    """
-    Splits up the frame into multiple tiles.
-    Helps if you're lacking in vram but models may behave differently.
-    """
-
-    tilesize: int | tuple[int, int] | None = None
-    """
-    Size of the tiles.
-    """
-
-    overlap: int | tuple[int, int] | None = None
-    """
-    Overlap between tiles.
-    """
-
-    _static_kernel_radius = 4
-
-    @inject_self
-    def apply(self, clip: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
-        """
-        Apply the delowpass model to the clip.
-
-        WARNING: These models are only for horizontal lowpassing!
-        They will also mess up any random high-frequency content in the image.
-        Practically speaking, this almost always means compression noise.
-        Make sure you properly preprocess your video before using these models!
-
-        Example usage:
-
-        .. code-block:: python
-
-            # Choosing a model and applying it to a clip.
-            >>> LHzDelowpass.DoubleTaps_4_4_15_15.apply(clip)
-
-        :param clip:        The clip to apply the delowpass model to.
-        :param kwargs:      Additional keyword arguments.
-
-        :return:            The delowpassed clip.
-
-        :raises DependencyNotFoundError:    If vsmlrt is not installed.
-        :raises FileWasNotFoundError:       If the model is not found.
-        :raises CustomValueError:           If the model is not a valid delowpass model.
-        """
-
-        try:
-            from vsmlrt import inference
-        except ImportError:
-            raise DependencyNotFoundError("vsmlrt", self._func)
-
-        fp16 = kwargs.pop('fp16', False)
-
-        model_path = _get_model_path('delowpass', str(self).split('(')[0], fp16)
-        fp16 = 'fp16' in model_path.stem
-
-        func = FunctionUtil(clip, self.__class__, kwargs.pop('planes', 0), vs.RGB, 16 if fp16 else 32)
-
-        matrix = Matrix.from_param_or_video(kwargs.pop('matrix', None), clip)
-
-        work_clip = Lanczos.resample(func.work_clip, vs.RGBS, matrix_in=matrix)
-
-        if self.backend is None:
-            self.backend = autoselect_backend(fp16=fp16)
-
-        delowpassed = inference(work_clip, model_path, self.overlap, self.tilesize, self.backend)
-        # TODO: Add horizontal-only masking logic here so we don't affect areas we shouldn't
-        delowpassed = self._finish_scale(delowpassed, work_clip, work_clip.width, work_clip.height)
-
-        if clip.format.color_family != vs.RGB:
-            delowpassed = Hermite(linear=True).resample(delowpassed, func.work_clip, matrix=matrix)
-
-        return func.return_clip(delowpassed)
-
-
-class LHzDelowpass(BaseLHzDelowpass):
-    """
-    Light's Horizontal Delowpassing model.
+    Light's Horizontal Delowpassing model to reconstruct high-frequency information.
 
     These models should only be used on sources that feature horizontal lowpassing
     where you have no clean source to use for delowpassing instead.
@@ -116,13 +26,10 @@ class LHzDelowpass(BaseLHzDelowpass):
     The models are named using the following formats:
 
         - For Single (lowpassed once) models:
-            `SingleTaps{taps1}_{blursize1 * 10}`
+            `SingleTaps{taps}_{blursize * 10}`
 
         - For Double (lowpassed twice) models:
             `DoubleTaps{taps1}_{taps2}_{blursize1 * 10}_{blursize2 * 10}`
-
-    Single lowpass models have negative model numbers,
-    and double lowpass models have positive model numbers.
 
     Each model is trained on different lowpassing values.
     As such, you may need to experiment to find the one that best suits your source.
@@ -130,14 +37,68 @@ class LHzDelowpass(BaseLHzDelowpass):
     Defaults to Double 4-taps (1.5, 1.5).
     """
 
-    _model = 0
+    def __str__(self):
+        return 'LHzDelowpass'
 
-    # Double models
-    class DoubleTaps_4_4_15_15(BaseLHzDelowpass):
+    @inject_self
+    def apply(
+        self,
+        clip: vs.VideoNode,
+        slice_size: int | None = None,
+        planes: PlanesT = 0,
+        **kwargs: Any
+    ) -> vs.VideoNode:
+        """
+        Apply the model to the clip.
+
+        :param clip:        The clip to process.
+        :param slice_size:  The size of the slice to process.
+                            This is currently very slow and takes up a ton of memory!
+                            Only enable for testing purposes.
+                            Default: Disable.
+        :param planes:      The planes to apply the model to. Default: luma only.
+        :param kwargs:      Additional keyword arguments.
+
+        :return:            The processed clip.
+        """
+
+        proc = super().apply(clip, **(dict(planes=planes) | kwargs))
+
+        if slice_size is None or slice_size <= 0:
+            # TODO: Once performance issues are solved, use slicing if None. For now, don't.
+            return proc
+
+        import warnings
+
+        warnings.warn('"apply": Slicing is currently very slow and takes up a ton of memory!', UserWarning)
+
+        columns = fallback(slice_size, proc.width // 10)
+
+        clip_np = self._clip_to_numpy(clip)
+        proc_np = self._clip_to_numpy(proc)
+
+        for plane in range(clip_np.shape[-1]):
+            if plane not in planes:
+                continue
+
+            left_columns = proc_np[:, :, :columns, plane]
+            right_columns = proc_np[:, :, -columns:, plane]
+
+            self._replace_array_section(clip_np[:, :, :, plane], left_columns, (0, 0, 0))
+            self._replace_array_section(clip_np[:, :, :, plane], right_columns, (0, 0, -columns))
+
+        return self._numpy_to_clip(clip_np, proc.format)
+
+
+@dataclass
+class LHzDelowpass(_LHzDelowpass):
+
+    @dataclass
+    class DoubleTaps_4_4_15_15(_LHzDelowpass):
         """
         Lowpass model for R2J DVD horizontal lowpassing.
 
         Trained on double 4-taps (1.5, 1.5).
         """
 
-        _model = 0
+        _model_filename = '1x_lanczos_hz_delowpass_4_4_15_15_fp32.onnx'
