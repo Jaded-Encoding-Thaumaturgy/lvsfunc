@@ -1,13 +1,8 @@
 import warnings
 from dataclasses import dataclass
-from math import ceil
 from typing import Any, SupportsFloat
 
-from vsexprtools import expr_func
-from vskernels import Catrom
-from vstools import (InvalidColorFamilyError, LengthMismatchError, PlanesT,
-                     UnsupportedVideoFormatError, depth, inject_self, iterate,
-                     normalize_planes, vs, depth)
+from vstools import PlanesT, depth, inject_self, normalize_planes, vs
 
 from .base import Base1xModelWithStrength
 

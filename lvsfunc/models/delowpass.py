@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Self
+from typing import Any
 
 from vstools import PlanesT, fallback, inject_self, vs
 
