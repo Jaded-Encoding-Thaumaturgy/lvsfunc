@@ -12,17 +12,12 @@ def get_format_from_npy(frame_data: np.ndarray, func_except: FuncExceptT | None 
     Guess the format based on heuristics from the numpy array data.
 
     Input is assumed to be a numpy array with the following structure:
-
-        [
-            ('Y', np.ndarray),
-            ('U', np.ndarray | None),
-            ('V', np.ndarray | None)
-        ]
+    [Y, U, V] where U and V can be None.
 
     If every array has the same shape, it's assumed to be YUV 4:4:4.
     If you output RGB data, you may have to convert it back.
 
-    If the U and V arrays are None, it's assumed to be GRAY.
+    If either U or V arrays are None, it's assumed to be GRAY.
 
     :param frame_data:      The numpy array data to guess the format from.
     :param func_except:     Function returned for custom error handling.
@@ -33,7 +28,7 @@ def get_format_from_npy(frame_data: np.ndarray, func_except: FuncExceptT | None 
 
     func = fallback(func_except, get_format_from_npy)
 
-    y_data, u_data, v_data = frame_data['Y'], frame_data['U'], frame_data['V']
+    y_data, u_data, v_data = frame_data
 
     bit_depth = 32 if y_data.dtype == np.float32 else y_data.itemsize * 8
     sample_type = vs.FLOAT if bit_depth == 32 else vs.INTEGER
