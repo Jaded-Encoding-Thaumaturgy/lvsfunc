@@ -1,7 +1,7 @@
 # lvsfunc
 
 <p align="center">
-    <a href="https://lvsfunc.encode.moe"><img alt="Read the Docs" src="https://img.shields.io/readthedocs/lvsfunc"></a>
+    <!-- <a href="https://lvsfunc.encode.moe"><img alt="Read the Docs" src="https://img.shields.io/readthedocs/lvsfunc"></a> -->
     <img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/lvsfunc">
     <a href="https://pypi.org/project/lvsfunc/"><img alt="PyPI" src="https://img.shields.io/pypi/v/lvsfunc"></a>
     <a href="https://github.com/Irrational-Encoding-Wizardry/lvsfunc/commits/master"><img alt="GitHub commits since tagged version" src="https://img.shields.io/github/commits-since/Irrational-Encoding-Wizardry/lvsfunc/latest"></a>
@@ -26,7 +26,7 @@ A collection of VapourSynth functions and wrappers
 written and/or modified by LightArrowsEXE.
 Full information on how every function/wrapper works,
 as well as a list of dependencies and links,
-can be found in the [documentation](https://lvsfunc.encode.moe/en/latest/).
+can be found in the docstrings of each function/wrapper.
 For further support,
 drop by `#dev` in the [JET Discord server](https://discord.gg/XTpc6Fa9eB).
 
