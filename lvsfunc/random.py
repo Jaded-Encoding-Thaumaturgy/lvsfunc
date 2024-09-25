@@ -1,4 +1,4 @@
-import random
+from random import randint
 from typing import Any, Callable
 
 from vstools import (CustomRuntimeError, CustomValueError, core, depth,
@@ -13,7 +13,7 @@ __all__: list[str] = [
 ]
 
 
-def get_random_frame_nums(clip: vs.VideoNode, interval: int = 120, seed: int | None = None) -> list[int]:
+def get_random_frame_nums(clip: vs.VideoNode, interval: int = 120) -> list[int]:
     """
     Get a list of random frames numbers from a clip.
 
@@ -23,22 +23,17 @@ def get_random_frame_nums(clip: vs.VideoNode, interval: int = 120, seed: int | N
     :param interval:    The amount of frames for each chunk.
                         It will grab a random frame from every `interval` frames.
                         Default: 120 frames.
-    :param seed:        Seed for the random number generator.
-                        Default: None.
 
     :return:            A list of random frame numbers.
     """
 
-    if seed is not None:
-        random.seed(seed)
-
     return [
-        random.randint(i * interval, min((i + 1) * interval - 1, clip.num_frames - 1))
+        randint(i * interval, min((i + 1) * interval - 1, clip.num_frames - 1))
         for i in range((clip.num_frames + interval - 1) // interval)
     ]
 
 
-def get_random_frames(clip: vs.VideoNode, interval: int = 120, seed: int | None = None) -> vs.VideoNode:
+def get_random_frames(clip: vs.VideoNode, interval: int = 120) -> vs.VideoNode:
     """
     Get random frames from a clip spliced together into a new clip.
 
@@ -48,26 +43,24 @@ def get_random_frames(clip: vs.VideoNode, interval: int = 120, seed: int | None 
     :param interval:    The amount of frames for each chunk.
                         It will grab a random frame from every `interval` frames.
                         Default: 120 frames.
-    :param seed:        Seed for the random number generator.
-                        Default: None.
 
     :return:            A clip with random frames from the input clip.
     """
 
-    return core.std.Splice([clip[num] for num in get_random_frame_nums(clip, interval, seed)])
+    return core.std.Splice([clip[num] for num in get_random_frame_nums(clip, interval)])
 
 
 def get_smart_random_frame_nums(
     clip: vs.VideoNode,
     interval: int = 120, max_retries: int = 10,
     solid_threshold: int = 2, similarity_threshold: float = 0.02,
-    strict: bool = False, seed: int | None = None,
-) -> list[int]:
+    strict: bool = False,
+) -> vs.VideoNode:
     """
-    Get smart random frame numbers from a clip.
+    Get smart random frames from a clip.
 
     This function selects random frame numbers from a clip, avoiding solid colors and similar consecutive frames.
-    It divides the clip into intervals and attempts to select a suitable frame number from each interval.
+    It divides the clip into intervals and attempts to select a suitable frame from each interval.
 
     The function uses the following criteria to select frames:
 
@@ -81,15 +74,14 @@ def get_smart_random_frame_nums(
     If `strict` is True, raises an error if no suitable frame is found in any interval
     after max retries. If False (default), falls back to a random frame from the interval.
 
-    :param clip:                    Clip to get the random frame numbers from.
+    :param clip:                    Clip to get the random frames from.
     :param interval:                The amount of frames for each chunk. Default: 120 frames.
     :param max_retries:             Maximum number of retries before picking a random frame. Default: 10.
     :param solid_threshold:         Threshold for determining if a frame is a solid color. Default: 2.
     :param similarity_threshold:    Threshold for determining if frames are too similar. Default: 0.95.
     :param strict:                  Whether to raise an error if a suitable frame cannot be found. Default: False.
-    :param seed:                    Seed for the random number generator. Default: None.
 
-    :return:                        A list of intelligently selected random frame numbers from the input clip.
+    :return:                        A clip of intelligently selected random frames from the input clip.
 
     :raises CustomValueError:       If `interval` is less than or equal to 0.
     :raises CustomValueError:       If `max_retries` is less than 0.
@@ -104,10 +96,6 @@ def get_smart_random_frame_nums(
 
     solid_threshold = max(0, min(solid_threshold, 255))
     similarity_threshold = max(0, min(similarity_threshold, 1))
-
-    # Set the random seed if provided
-    if seed is not None:
-        random.seed(seed)
 
     def _check_solid_color(frame: vs.VideoNode) -> tuple[bool, int]:
         min_value = get_prop(frame, 'PlaneStatsMin', int)
@@ -129,10 +117,10 @@ def get_smart_random_frame_nums(
         tried_frames = set()
 
         for _ in range(actual_retries):
-            frame_num = random.randint(start, end)
+            frame_num = randint(start, end)
 
             while frame_num in tried_frames:
-                frame_num = random.randint(start, end)
+                frame_num = randint(start, end)
 
             tried_frames.add(frame_num)
 
@@ -153,7 +141,7 @@ def get_smart_random_frame_nums(
             )
 
         # If we couldn't find a suitable frame after max_retries, just return a random frame number
-        return random.randint(start, end)
+        return randint(start, end)
 
     clip = depth(clip, 8).std.PlaneStats()
 
@@ -162,7 +150,6 @@ def get_smart_random_frame_nums(
     num_intervals = (clip.num_frames + interval - 1) // interval
 
     prev_frame = None
-
     for interval_index in range(num_intervals):
         interval_start = interval_index * interval
         interval_end = min(interval_start + interval - 1, clip.num_frames - 1)
@@ -173,9 +160,10 @@ def get_smart_random_frame_nums(
         frame_num = _select_smart_frame(interval_start, interval_end, prev_frame)
         frame_nums.append(frame_num)
 
+        # Sanitize the frame values
         prev_frame = core.std.Limiter(clip[frame_num])
 
-    return frame_nums
+    return core.std.Splice([core.std.Limiter(clip[num]) for num in frame_nums])
 
 
 def _raise_strict_error(
@@ -221,8 +209,7 @@ def get_smart_random_frames(
     max_retries: int = 10,
     solid_threshold: int = 2,
     similarity_threshold: float = 0.02,
-    strict: bool = False,
-    seed: int | None = None
+    strict: bool = False
 ) -> vs.VideoNode:
     """
     Get smart random frames from a clip spliced together into a new clip.
@@ -236,7 +223,6 @@ def get_smart_random_frames(
     :param solid_threshold:         Threshold for determining if a frame is a solid color. Default: 2.
     :param similarity_threshold:    Threshold for determining if frames are too similar. Default: 0.02.
     :param strict:                  Whether to raise an error if a suitable frame cannot be found. Default: False.
-    :param seed:                    Seed for the random number generator. Default: None.
 
     :return:                        A clip with intelligently selected random frames from the input clip.
 
@@ -246,7 +232,7 @@ def get_smart_random_frames(
     """
 
     frame_nums = get_smart_random_frame_nums(
-        clip, interval, max_retries, solid_threshold, similarity_threshold, strict, seed
+        clip, interval, max_retries, solid_threshold, similarity_threshold, strict
     )
 
     return core.std.Splice([clip[num] for num in frame_nums])
