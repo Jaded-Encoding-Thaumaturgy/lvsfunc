@@ -122,7 +122,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
 
     kernel = Kernel.ensure_obj(kernel)
 
-    vsdpir_final_args = dict[str, Any](mode='deblock', cuda=cuda)
+    vsdpir_final_args = dict[str, Any](cuda=cuda)
     vsdpir_final_args |= vsdpir_args
     vsdpir_final_args.pop('strength', None)
 
@@ -153,7 +153,7 @@ def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
     diffprev = core.std.PlaneStats(rgb, rgb[0] + rgb, prop='YPrev')
 
     db_clips = [
-        dpir(rgb, strength=st, **vsdpir_final_args)
+        dpir.DEBLOCK(rgb, strength=st, **vsdpir_final_args)
         .std.SetFrameProp('Adb_DeblockStrength', intval=int(st)) for st in strs
     ]
 
