@@ -34,7 +34,6 @@ setuptools.setup(
     install_requires=install_requires,
     project_urls={
         "Source Code": 'https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc',
-        "Documentation": 'https://lvsfunc.encode.moe/en/latest/',
         "Contact": 'https://discord.gg/XTpc6Fa9eB',
     },
     classifiers=[
@@ -52,12 +51,4 @@ setuptools.setup(
         "Topic :: Multimedia :: Video :: Display",
     ],
     python_requires='>=3.12',
-    command_options={
-        "build_sphinx": {
-            "project": ("setup.py", package_name),
-            "version": ("setup.py", meta['__version__']),
-            "release": ("setup.py", meta['__version__']),
-            "source_dir": ("setup.py", "docs")
-        }
-    }
 )
