@@ -55,12 +55,12 @@ def get_smart_random_frame_nums(
     interval: int = 120, max_retries: int = 10,
     solid_threshold: int = 2, similarity_threshold: float = 0.02,
     strict: bool = False,
-) -> vs.VideoNode:
+) -> list[int]:
     """
-    Get smart random frames from a clip.
+    Get smart random frame numbers from a clip.
 
     This function selects random frame numbers from a clip, avoiding solid colors and similar consecutive frames.
-    It divides the clip into intervals and attempts to select a suitable frame from each interval.
+    It divides the clip into intervals and attempts to select a suitable frame number from each interval.
 
     The function uses the following criteria to select frames:
 
@@ -74,14 +74,14 @@ def get_smart_random_frame_nums(
     If `strict` is True, raises an error if no suitable frame is found in any interval
     after max retries. If False (default), falls back to a random frame from the interval.
 
-    :param clip:                    Clip to get the random frames from.
+    :param clip:                    Clip to get the random frame numbers from.
     :param interval:                The amount of frames for each chunk. Default: 120 frames.
     :param max_retries:             Maximum number of retries before picking a random frame. Default: 10.
     :param solid_threshold:         Threshold for determining if a frame is a solid color. Default: 2.
     :param similarity_threshold:    Threshold for determining if frames are too similar. Default: 0.95.
     :param strict:                  Whether to raise an error if a suitable frame cannot be found. Default: False.
 
-    :return:                        A clip of intelligently selected random frames from the input clip.
+    :return:                        A list of intelligently selected random frame numbers from the input clip.
 
     :raises CustomValueError:       If `interval` is less than or equal to 0.
     :raises CustomValueError:       If `max_retries` is less than 0.
@@ -150,6 +150,7 @@ def get_smart_random_frame_nums(
     num_intervals = (clip.num_frames + interval - 1) // interval
 
     prev_frame = None
+
     for interval_index in range(num_intervals):
         interval_start = interval_index * interval
         interval_end = min(interval_start + interval - 1, clip.num_frames - 1)
@@ -160,10 +161,9 @@ def get_smart_random_frame_nums(
         frame_num = _select_smart_frame(interval_start, interval_end, prev_frame)
         frame_nums.append(frame_num)
 
-        # Sanitize the frame values
         prev_frame = core.std.Limiter(clip[frame_num])
 
-    return core.std.Splice([core.std.Limiter(clip[num]) for num in frame_nums])
+    return frame_nums
 
 
 def _raise_strict_error(
