@@ -74,7 +74,7 @@ class ExportFrames(CustomStrEnum):
 
         sfile.parent.mkdir(parents=True, exist_ok=True)
 
-        if sfile.parent.glob("*"):
+        if list(sfile.parent.glob("*")):
             input(
                 f'ExportFrames: Files found in \"{sfile.parent}\". They may be overwritten. '
                 'Press Enter to continue or Ctrl+C to abort...'
