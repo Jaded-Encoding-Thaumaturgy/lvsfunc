@@ -108,11 +108,11 @@ def clip_to_npy(src: vs.VideoNode, out_dir: SPathLike = 'bin/') -> list[SPath]:
         nonlocal next_name
 
         try:
-            frame_data = np.array([(
+            frame_data = np.array([
                 np.asarray(frame[0]),
                 np.asarray(frame[1]) if frame.format.num_planes > 1 else None,
                 np.asarray(frame[2]) if frame.format.num_planes > 1 else None
-            )], dtype=[('Y', object), ('U', object), ('V', object)])
+            ], dtype=np.float32)
 
             filename = f'{next_name:05d}.npy'
             file_path = out_dir / filename
@@ -155,6 +155,10 @@ def npy_to_clip(
     """
     Read numpy files and convert them to a VapourSynth clip.
 
+    We use modifyframe to assign the numpy array to frames.
+    This helps with memory usage as we don't need to keep all the frames in memory at once
+    (which can make loading many frames impractical).
+
     :param file_paths:      The list of numpy files to convert to a clip.
                             If a directory is provided, all .npy files in the directory will be used.
                             If a single file is provided, it will be used instead.
@@ -163,7 +167,7 @@ def npy_to_clip(
     :param func_except:     Function returned for custom error handling.
                             This should only be set by VS package developers.
 
-    :return:                The clip.
+    :return:                The numpy array as a clip.
     """
 
     func = fallback(func_except, npy_to_clip)
@@ -181,20 +185,20 @@ def npy_to_clip(
 
     file_paths = sorted(file_paths, key=lambda x: int(x.stem))
 
-    first_frame = np.load(file_paths[0], allow_pickle=False)[0]
-    height, width = first_frame['Y'].shape
+    first_frame = np.load(file_paths[0], allow_pickle=False)
+    height, width = first_frame.shape
 
     fmt = get_format_from_npy(first_frame)
 
     blank_clip = core.std.BlankClip(None, width, height, fmt, length=len(file_paths), keep=True)
 
     def _read_frame(n: int, f: vs.VideoFrame) -> vs.VideoNode:
-        loaded_frame = np.load(file_paths[n], allow_pickle=False)[0]
+        loaded_frame = np.load(file_paths[n], allow_pickle=False)
 
         fout = f.copy()
 
         for plane in range(f.format.num_planes):
-            plane_data = loaded_frame[f.format.name[plane]]
+            plane_data = loaded_frame[plane]
             np.copyto(np.asarray(fout[plane]), plane_data)
 
         return fout
