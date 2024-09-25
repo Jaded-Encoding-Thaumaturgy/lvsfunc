@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any
 
-from vstools import PlanesT, fallback, inject_self, vs
+from vstools import PlanesT, depth, fallback, inject_self, vs
 
 from .base import Base1xModel
 from .np import ModelNumpyHandling
@@ -66,7 +66,7 @@ class _LHzDelowpass(Base1xModel, ModelNumpyHandling):
 
         if slice_size is None or slice_size <= 0:
             # TODO: Once performance issues are solved, use slicing if None. For now, don't.
-            return proc
+            return depth(proc, clip)
 
         import warnings
 
