@@ -14,16 +14,19 @@ __all__ = [
 ]
 
 
-def autodb_dpir(clip: vs.VideoNode, edgevalue: int = 24,
-                strs: Sequence[float] = [10, 50, 75],
-                thrs: Sequence[tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
-                matrix: Matrix | int | None = None,
-                edgemasker: Callable[[vs.VideoNode], vs.VideoNode] | None = None,
-                kernel: KernelT = Catrom,
-                cuda: bool | Literal['trt'] | None = None,
-                return_mask: bool = False,
-                write_props: bool = False,
-                **vsdpir_args: Any) -> vs.VideoNode:
+def autodb_dpir(
+    clip: vs.VideoNode,
+    edgevalue: int = 24,
+    strs: Sequence[float] = [10, 50, 75],
+    thrs: Sequence[tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
+    matrix: Matrix | int | None = None,
+    edgemasker: Callable[[vs.VideoNode], vs.VideoNode] | None = None,
+    kernel: KernelT = Catrom,
+    cuda: bool | Literal['trt'] | None = None,
+    return_mask: bool = False,
+    write_props: bool = False,
+    **vsdpir_args: Any
+) -> vs.VideoNode:
     """
     Rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
 
