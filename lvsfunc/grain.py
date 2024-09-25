@@ -1,6 +1,5 @@
-from vstools import (CustomImportError, DependencyNotFoundError, Keyframes,
-                     MismatchRefError, find_prop_rfs, get_script_path,
-                     merge_clip_props, vs)
+from vstools import (DependencyNotFoundError, Keyframes, MismatchRefError,
+                     find_prop_rfs, get_script_path, merge_clip_props, vs)
 
 __all__: list[str] = [
     'dynamic_scene_adaptive_grain'
@@ -44,16 +43,14 @@ def dynamic_scene_adaptive_grain(
 
     try:
         from stgfunc import SceneAverageStats
-    except ModuleNotFoundError:
-        raise DependencyNotFoundError(dynamic_scene_adaptive_grain, "stgfunc")
-    except ImportError:
-        raise CustomImportError(dynamic_scene_adaptive_grain, "stgfunc")
+    except (ModuleNotFoundError, ImportError) as e:
+        raise DependencyNotFoundError(dynamic_scene_adaptive_grain, "stgfunc") from e
 
     MismatchRefError.check(dynamic_scene_adaptive_grain, grain_dark, grain_bright)
 
     if thr <= 0:
         return grain_dark
-    elif thr >= 1:
+    if thr >= 1:
         return grain_bright
 
     keyframes = keyframes or Keyframes.unique(clip, get_script_path().stem)

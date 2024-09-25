@@ -1,14 +1,11 @@
-from __future__ import annotations
-
 import colorsys
 import random
 import re
 from typing import Any
 
-from vstools import (CustomIndexError, CustomValueError, FrameRangeN,
-                     FrameRangesN, FuncExceptT, KwargsT,
-                     check_variable_resolution, core, fallback, get_h, get_w,
-                     vs)
+from vstools import (CustomIndexError, CustomValueError, FrameRangesN,
+                     FuncExceptT, KwargsT, check_variable_resolution, core,
+                     fallback, get_h, get_w, vs)
 
 __all__ = [
     'colored_clips',
@@ -33,19 +30,20 @@ def colored_clips(
 
     :param amount:          Number of VideoNodes to return.
     :param max_hue:         Maximum hue (0 < hue <= 360) in degrees to generate colors from (uses the HSL color model).
-                            Setting this higher than ``315`` will result in the clip colors looping back towards red
+                            Setting this higher than 315 may result in the clip colors looping back towards red
                             and is not recommended for visually distinct colors.
-                            If the `amount` of clips is higher than the `max_hue` expect there to be identical
-                            or visually similar colored clips returned (Default: 300)
-    :param rand:            Randomizes order of the returned list (Default: True).
-    :param seed:            Bytes-like object passed to ``random.seed`` which allows for consistent randomized order.
-                            of the resulting clips (Default: None)
-    :param kwargs:          Arguments passed to :py:func:`vapoursynth.core.std.BlankClip` (Default: keep=1).
+                            If the `amount` of clips is higher than `max_hue`, expect there to be identical
+                            or visually similar colored clips returned.
+                            Default: 300.
+    :param rand:            Randomizes order of the returned list. Default: True.
+    :param seed:            Seed for random number generator. Allows for consistent randomized order
+                            of the resulting clips if specified. Default: None.
+    :param kwargs:          Additional keyword arguments passed to :py:func:`vapoursynth.core.std.BlankClip`.
 
     :return:                List of uniquely colored clips in sequential or random order.
 
-    :raises ValueError:     ``amount`` is less than 2.
-    :raises ValueError:     ``max_hue`` is not between 0–360.
+    :raises CustomIndexError:   If `amount` is less than 2.
+    :raises CustomValueError:   If `max_hue` is not between 0 and 360.
     """
 
     if amount < 2:
@@ -53,7 +51,7 @@ def colored_clips(
     if not (0 < max_hue <= 360):
         raise CustomValueError("`max_hue` must be greater than 0 and less than 360 degrees!", colored_clips)
 
-    blank_clip_args: dict[str, Any] = {'keep': 1, **kwargs}
+    blank_clip_args: dict[str, Any] = dict(keep=1) | kwargs
 
     hues = [i * max_hue / (amount - 1) for i in range(amount - 1)] + [max_hue]
 
@@ -69,41 +67,40 @@ def colored_clips(
 
 def convert_rfs(rfs_string: str) -> FrameRangesN:
     """
-    A utility function to convert `ReplaceFramesSimple`-styled ranges to `replace_ranges`-styled ranges.
+    Convert `ReplaceFramesSimple`-styled ranges to `replace_ranges`-styled ranges.
 
-    This function accepts the RFS ranges as a string only. This is in line with how RFS handles them.
-    The string will be validated before it's passed on. As with all framerange-related functions,
-    the more ranges you have, the slower the function will become.
+    This function accepts RFS ranges as a string, consistent with RFS handling.
+    The input string is validated before processing.
 
-    This function works with both '[x y]' and 'x' styles of frame numbering.
-    If no frames could be found, it will simply return an empty list.
+    Performance may decrease with a larger number of ranges.
 
-    :param rfs_string:      A string representing frame ranges, as you would for ReplaceFramesSimple.
+    Supports both '[x y]' and 'x' frame numbering styles.
+    Returns an empty list if no valid frames are found.
 
-    :return:                A FrameRangesN list containing frame ranges as accepted by `replace_ranges`.
-                            If no frames are found, it will simply return an empty list.
+    :param rfs_string:          A string representing frame ranges in ReplaceFramesSimple format.
 
-    :raises ValueError:     Invalid input string is passed.
+    :return:                    A FrameRangesN list containing frame ranges compatible with `replace_ranges`.
+                                Returns an empty list if no valid frames are found.
+
+    :raises CustomValueError:   If the input string contains invalid characters.
     """
 
     rfs_string = str(rfs_string).strip()
 
-    if not set(rfs_string).issubset('0123456789[] '):
-        raise CustomValueError('Invalid characters were found in the input string.', convert_rfs)
+    if not rfs_string:
+        return []
 
-    matches = re.findall(r'\[(\s*?\d+\s\d+\s*?)\]|(\d+)', rfs_string)
-    ranges = list[FrameRangeN]()
+    valid_chars = set('0123456789[] ')
+    illegal_chars = set(rfs_string) - valid_chars
 
-    if not matches:
-        return ranges
+    if illegal_chars:
+        reason = ', '.join(f"{c}:{rfs_string.index(c)}" for c in sorted(illegal_chars, key=rfs_string.index))
+        raise CustomValueError('Invalid characters found in input string!', convert_rfs, reason)
 
-    for match in [next(y for y in x if y) for x in matches]:
-        try:
-            ranges += [int(match)]
-        except ValueError:
-            ranges += [tuple(int(x) for x in str(match).strip().split(' '))]  # type:ignore[list-item]
-
-    return ranges
+    return [
+        int(match[2]) if match[2] else (int(match[0]), int(match[1]))
+        for match in re.findall(r'\[(\d+)\s+(\d+)\]|(\d+)', rfs_string)
+    ]
 
 
 def get_match_centers_scaling(
@@ -179,17 +176,14 @@ def get_match_centers_scaling(
     if target_width is None and target_height is None:
         raise CustomValueError("Either `target_width` or `target_height` must be a positive integer.", func)
 
-    if target_width is not None and (not isinstance(target_width, int) or target_width <= 0):
-        raise CustomValueError("`target_width` must be a positive integer or None.", func)
-
-    if target_height is not None and (not isinstance(target_height, int) or target_height <= 0):
-        raise CustomValueError("`target_height` must be a positive integer or None.", func)
+    for target, name in [(target_width, 'width'), (target_height, 'height')]:
+        if target is not None and (not isinstance(target, int) or target <= 0):
+            raise CustomValueError(f"`target_{name}` must be a positive integer or None.", func)
 
     check_variable_resolution(clip, func)
 
     if target_height is None:
         target_height = get_h(target_width, clip, 1)
-
     elif target_width is None:
         target_width = get_w(target_height, clip, 1)
 

@@ -13,9 +13,11 @@ __all__ = [
 ]
 
 
-def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
-                 frame_ranges: FrameRangeN | FrameRangesN | None = None, fade_length: int = 0,
-                 matrix: Matrix | int | None = None) -> vs.VideoNode:
+def overlay_sign(
+    clip: vs.VideoNode, overlay: vs.VideoNode | str,
+    frame_ranges: FrameRangeN | FrameRangesN | None = None, fade_length: int = 0,
+    matrix: Matrix | int | None = None
+) -> vs.VideoNode:
     """
     Overlay a logo or sign onto another clip.
 
@@ -51,12 +53,12 @@ def overlay_sign(clip: vs.VideoNode, overlay: vs.VideoNode | str,
     :return:                        Clip with a logo or sign overlaid on top for the given frame ranges,
                                     either with or without a fade.
 
-    :raises DependencyNotFoundError: `fade_length` > 0 and dependencies are missing.
-    :raises ValueError:             ``overlay`` is not a VideoNode or a path.
-    :raises ResolutionsMismatchError:   The overlay clip is not of the same dimensions as the input clip.
-    :raises InvalidMatrixError:     ``Matrix`` is an invalid value.
-    :raises FramePropError:         Overlay does not have an alpha channel.
-    :raises FramePropError:         Overlay clip was not loaded in using :py:func:`vapoursynth.core.imwri.Read`.
+    :raises DependencyNotFoundError:        `fade_length` > 0 and dependencies are missing.
+    :raises ValueError:                     ``overlay`` is not a VideoNode or a path.
+    :raises ResolutionsMismatchError:       The overlay clip is not of the same dimensions as the input clip.
+    :raises InvalidMatrixError:             ``Matrix`` is an invalid value.
+    :raises FramePropError:                 Overlay does not have an alpha channel.
+    :raises FramePropError:                 Overlay clip was not loaded in using :py:func:`vapoursynth.core.imwri.Read`.
     """
 
     if fade_length > 0:
