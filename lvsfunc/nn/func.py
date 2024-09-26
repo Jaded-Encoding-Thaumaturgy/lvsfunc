@@ -2,10 +2,11 @@ import warnings
 
 import numpy as np
 from vsexprtools import norm_expr
-from vstools import (CustomValueError, FuncExceptT, FunctionUtil, SPath,
-                     SPathLike, clip_async_render, core, fallback, get_depth,
-                     initialize_clip, vs)
+from vstools import (CustomValueError, FileWasNotFoundError, FuncExceptT,
+                     FunctionUtil, SPath, SPathLike, clip_async_render, core,
+                     fallback, get_depth, initialize_clip, vs)
 
+from ..exceptions import NumpyArrayLoadError
 from .util import get_format_from_npy
 
 __all__: list[str] = [
@@ -183,100 +184,116 @@ def npy_to_clip(
     :param func_except:     Function returned for custom error handling.
                             This should only be set by VS package developers.
 
-    :return:                The numpy array as a clip.
+    :return:                VapourSynth clip created from the numpy files.
     """
 
     func = fallback(func_except, npy_to_clip)
+    paths = [SPath(file_paths)] if not isinstance(file_paths, list) else [SPath(x) for x in file_paths]
     is_npz = False
 
-    if not isinstance(file_paths, list):
-        file_paths_list = [SPath(file_paths)]
-    else:
-        file_paths_list = [SPath(fp) for fp in file_paths]
+    if not paths:
+        raise FileWasNotFoundError("No files provided!", func)
 
-    if file_paths_list and file_paths_list[0].is_dir():
-        file_paths_list = list(file_paths_list[0].glob("*.np[yz]"))
-
-        if not file_paths_list:
-            raise CustomValueError("No .npy or .npz files found in the directory", func)
-    elif not file_paths_list:
-        raise CustomValueError("No files provided", func)
-
-    is_npz = file_paths_list[0].suffix == '.npz'
+    if paths[0].is_dir():
+        if npy_files := list(paths[0].glob("*.npy")):
+            paths = npy_files
+        elif npz_files := list(paths[0].glob("*.npz")):
+            paths = npz_files
+            is_npz = True
+        else:
+            raise FileWasNotFoundError("No .npy or .npz files found in the given directory!", func)
+    elif paths[0].suffix == '.npz':
+        is_npz = True
 
     if not is_npz:
-        file_paths_list = sorted(
-            file_paths_list, key=lambda x: int(x.stem) if x.stem.isdigit() else float('inf')
-        )
+        try:
+            paths = sorted(paths, key=lambda x: int(x.stem) if x.stem.isdigit() else float('inf'))
+        except ValueError as e:
+            if "invalid literal for int() with base 10" in str(e):
+                raise CustomValueError("Error sorting paths: File names must be valid integers!", func)
+            else:
+                raise
+        except Exception as e:
+            raise CustomValueError(f"Error sorting paths! {str(e)}", func)
 
     if is_npz:
-        with np.load(file_paths_list[0], allow_pickle=True) as npz_data:
-            first_frame = next(iter(npz_data.values())).item()
+        npz_data = np.load(paths[0], allow_pickle=True)
+        first_key = list(npz_data.keys())[0]
+        first_frame = npz_data[first_key]
+
+        if isinstance(first_frame, np.ndarray) and first_frame.shape == ():
+            first_frame = first_frame.item()
     else:
-        first_frame = np.load(file_paths_list[0], allow_pickle=True).item()
+        first_frame = np.load(paths[0], allow_pickle=True).item()
 
     if isinstance(first_frame, dict):
-        plane_0 = first_frame.get('plane_0')
+        plane_0_missing = 'plane_0' not in first_frame
+        plane_0_not_array = not isinstance(first_frame['plane_0'], np.ndarray)
+        plane_0_low_dim = first_frame['plane_0'].ndim < 2
 
-        if not isinstance(plane_0, np.ndarray) or plane_0.ndim < 2:
-            raise CustomValueError(
-                "Invalid frame data structure. 'plane_0' is missing, not a numpy array, "
-                "or has less than 2 dimensions!", func
-            )
+        if plane_0_missing or plane_0_not_array or plane_0_low_dim:
+            error_message = "Invalid frame data structure."
 
-        height, width = plane_0.shape
+            if plane_0_missing:
+                error_message += " 'plane_0' is missing from the frame dictionary."
+            elif plane_0_not_array:
+                error_message += " 'plane_0' is not a numpy array."
+            elif plane_0_low_dim:
+                error_message += " 'plane_0' has less than 2 dimensions."
+
+            raise NumpyArrayLoadError(error_message, func)
+
+        height, width = first_frame['plane_0'].shape
     elif isinstance(first_frame, np.ndarray):
         if first_frame.ndim < 2:
-            raise CustomValueError(
-                f"Invalid frame shape: {first_frame.shape}. Expected at least 2 dimensions!", func
+            raise NumpyArrayLoadError(
+                f"Invalid frame shape: {first_frame.shape}. Expected at least 2 dimensions.", func
             )
 
         height, width = first_frame.shape[:2]
     else:
-        raise CustomValueError(f"Unsupported frame data type: {type(first_frame)}", func)
+        raise NumpyArrayLoadError(f"Unsupported frame data type: {type(first_frame)}", func)
 
     fmt = get_format_from_npy(first_frame)
 
+    clip_length = len(npz_data.keys()) if is_npz else len(paths)
     blank_clip = core.std.BlankClip(
-        None, width, height, fmt,
-        length=len(npz_data.keys()) if is_npz else len(file_paths_list),
-        keep=True
+        None, width, height, fmt, length=clip_length, keep=True
     )
 
     def _read_frame(n: int, f: vs.VideoFrame) -> vs.VideoFrame:
         if is_npz:
-            loaded_frame = next(iter(npz_data.values()))
+            loaded_frame = npz_data[list(npz_data.keys())[n]]
+            if isinstance(loaded_frame, np.ndarray) and loaded_frame.shape == ():
+                loaded_frame = loaded_frame.item()
         else:
-            loaded_frame = np.load(file_paths_list[n], allow_pickle=True)
-
-        loaded_frame = loaded_frame.item()
+            loaded_frame = np.load(paths[n], allow_pickle=True).item()
 
         fout = f.copy()
 
         if isinstance(loaded_frame, np.ndarray):
             if loaded_frame.ndim < 2:
-                raise CustomValueError(
-                    f"Invalid frame shape at index {n}: {loaded_frame.shape}. "
-                    "Expected at least 2 dimensions!", func
+                raise NumpyArrayLoadError(
+                    f"Invalid frame shape at index {n}: {loaded_frame.shape}. Expected at least 2 dimensions.", func
                 )
+
             np.copyto(np.asarray(fout[0]), loaded_frame)
         elif isinstance(loaded_frame, dict):
             for plane in range(f.format.num_planes):
                 plane_key = f'plane_{plane}'
-                plane_data = loaded_frame.get(plane_key)
 
-                if plane_data is None or plane_data.ndim < 2:
-                    raise CustomValueError(
+                if plane_key not in loaded_frame or loaded_frame[plane_key].ndim < 2:
+                    raise NumpyArrayLoadError(
                         f"Invalid frame data structure at index {n}. '{plane_key}' "
-                        "is missing or has less than 2 dimensions!", func=func
+                        "is missing or has less than 2 dimensions.", func
                     )
 
-                np.copyto(np.asarray(fout[plane]), plane_data)
+                np.copyto(np.asarray(fout[plane]), loaded_frame[plane_key])
         else:
-            raise CustomValueError(f"Unsupported frame data type at index {n}: {type(loaded_frame)}", func=func)
+            raise CustomValueError(f"Unsupported frame data type at index {n}: {type(loaded_frame)}", func)
 
         return fout
 
     proc_clip = blank_clip.std.ModifyFrame(blank_clip, _read_frame)
 
-    return initialize_clip(proc_clip, ref or get_depth(proc_clip), func=func)
+    return initialize_clip(proc_clip, ref or get_depth(proc_clip), func=func)  # type:ignore[arg-type]
