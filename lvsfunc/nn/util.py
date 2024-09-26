@@ -1,6 +1,8 @@
 import numpy as np
-from vstools import (CustomTypeError, FuncExceptT, InvalidVideoFormatError,
-                     core, depth, fallback, get_video_format, vs)
+from vstools import (FuncExceptT, InvalidVideoFormatError, core, depth,
+                     fallback, get_video_format, vs)
+
+from ..exceptions import NumpyArrayLoadError
 
 __all__: list[str] = [
     'get_format_from_npy',
@@ -35,7 +37,7 @@ def get_format_from_npy(frame_data: np.ndarray, func_except: FuncExceptT | None 
         y_data = frame_data
         num_planes = y_data.ndim if y_data.ndim <= 2 else y_data.shape[2]
     else:
-        raise CustomTypeError(f"Unsupported data type: {type(frame_data)}", func)
+        raise NumpyArrayLoadError(f"Unsupported data type: {type(frame_data)}", func)
 
     bit_depth = 32 if y_data.dtype == np.float32 else y_data.itemsize * 8
 
