@@ -7,10 +7,8 @@ from vsexprtools import expr_func
 from vskernels import Catrom, Lanczos
 from vsscale import autoselect_backend
 from vstools import (ColorRange, CustomValueError, DependencyNotFoundError,
-                     FileWasNotFoundError, FunctionUtil,
-                     InvalidColorFamilyError, LengthMismatchError, Matrix,
-                     SPath, UnsupportedVideoFormatError, depth, inject_self,
-                     iterate, join, normalize_planes, split, vs)
+                     FileWasNotFoundError, FunctionUtil, Matrix, SPath, depth,
+                     inject_self, iterate, join, normalize_planes, split, vs, get_peak_value)
 
 __all__: list[str] = []
 
@@ -198,57 +196,52 @@ class Base1xModel:
 
 
 class Base1xModelWithStrength(Base1xModel):
-    """Base class for 1x models to reconstruct high-frequency information."""
+    """Base class for 1x models to reconstruct high-frequency information with strength control."""
 
-    _strength: float | vs.VideoNode | None = None
-    """Strength of the model."""
+    def _initialize_strength(
+        self, clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode = 10.0
+    ) -> vs.VideoNode:
+        self._strength_clip = strength
 
-    def _initialize_strength(self, clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode | None = None) -> None:
-        self._strength = strength
+        if isinstance(strength, (float, int)):
+            self._set_strength_clip(clip, strength)
+        elif isinstance(strength, vs.VideoNode):
+            self._norm_str_clip(clip)
 
-        if isinstance(self._strength, SupportsFloat):
-            self._set_strength_clip(clip)
-        elif isinstance(self._strength, vs.VideoNode):
-            self._norm_str_clip()
-        else:
-            raise UnsupportedVideoFormatError(
-                '`strength` must be a float or a GRAYS clip', self._func.func, type(self._strength)
-            )
+        return self._strength_clip
 
-    def _set_strength_clip(self, clip: vs.VideoNode) -> None:
-        self._strength = clip.std.BlankClip(
-            format=vs.GRAYH if self._fp16 else vs.GRAYS, color=float(self._strength) / 255, keep=True
+    def _set_strength_clip(self, clip: vs.VideoNode, strength: float) -> None:
+        norm_strength = strength / 100.0 * get_peak_value(16 if self._fp16 else 32)
+
+        self._strength_clip = expr_func(
+            [clip.std.BlankClip(format=vs.GRAYH if self._fp16 else vs.GRAYS, keep=True)],
+            f"x {norm_strength} +"
         )
 
-    def _norm_str_clip(self) -> None:
-        assert not isinstance(self._strength, float), 'The dev must run `_initialize_strength` in the apply method!'
+    def _norm_str_clip(self, clip: vs.VideoNode) -> None:
+        str_clip = self._strength_clip
 
-        assert (fmt := self._strength.format)
-        fmt_name = fmt.name.upper()
+        if str_clip.format.color_family != vs.GRAY:
+            raise ValueError("Strength clip must be GRAY")
 
-        InvalidColorFamilyError.check(
-            fmt, vs.GRAY, self._func.func, '"strength" must be of {correct} color family, not {wrong}!'
-        )
+        if str_clip.format.id == vs.GRAY8:
+            str_clip = expr_func(str_clip, 'x 255 /', vs.GRAYH if self._fp16 else vs.GRAYS)
+        elif self._fp16 and str_clip.format.id != vs.GRAYH:
+            str_clip = depth(str_clip, 16, vs.FLOAT)
 
-        if fmt.id == vs.GRAY8:
-            self._strength = expr_func(self._strength, 'x 255 /', vs.GRAYH if self._fp16 else vs.GRAYS)
-        elif fmt.id not in {vs.GRAYH, vs.GRAYS}:
-            raise UnsupportedVideoFormatError(
-                f'`strength` must be GRAY8, GRAYH, or GRAYS, not {fmt_name}!', self._func.func
-            )
-        elif self._fp16 and fmt.id != vs.GRAYH:
-            self._strength = depth(self._strength, 16, vs.FLOAT)
+        if str_clip.width != clip.width or str_clip.height != clip.height:
+            str_clip = Catrom.scale(str_clip, clip.width, clip.height)
 
-        if self._strength.width != self._func.work_clip.width or self._strength.height != self._func.work_clip.height:
-            self._strength = Catrom.scale(self._strength, self._func.work_clip.width, self._func.work_clip.height)
+        if str_clip.num_frames != clip.num_frames:
+            raise ValueError("Strength clip must have the same number of frames as the input clip")
 
-        if self._strength.num_frames != self._func.work_clip.num_frames:
-            raise LengthMismatchError(self._func.func, '`strength` must be the same length as \'clip\'')
+        self._strength_clip = str_clip
 
     def _should_process(self, strength: SupportsFloat | vs.VideoNode | None | Literal[False] = False) -> bool:
-        strength = self._strength if strength is False else strength
+        if hasattr(self, '_strength_clip'):
+            return self._strength_clip is not False
 
-        return not (isinstance(strength, int) and strength >= 0)
+        return (strength is None) or not (isinstance(strength, (int, float)) and strength <= 0.0)
 
 
 def get_models_path() -> SPath:

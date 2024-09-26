@@ -32,8 +32,8 @@ class LDempeg2(Base1xModelWithStrength):
         :param clip:        The clip to process.
         :param strength:    The "strength" of the model. Works by merging the clip with a "strength" mask,
                             just like DPIR. Higher values remove more noise, but also more detail.
-                            Sane values are between 75 and 125. A custom strength clip can be provided instead.
-                            If None, do not apply a strength mask.
+                            Sane values are between 50-100. A custom strength clip can be provided instead.
+                            If None, do not apply a strength mask. Values above 100 are not recommended.
                             Default: None.
         :param show_mask:   Whether to show the strength mask. Default: False.
         :param iterations:  The number of iterations to apply the model.
@@ -45,7 +45,7 @@ class LDempeg2(Base1xModelWithStrength):
         :return:            The processed clip.
         """
 
-        if not self._should_process():
+        if not self._should_process(strength):
             return clip
 
         nplanes = normalize_planes(clip, planes)
@@ -57,14 +57,14 @@ class LDempeg2(Base1xModelWithStrength):
 
         processed = super().apply(clip, **kwargs)
 
-        if self._strength is None:
+        if strength is None:
             return depth(processed, clip)
 
-        self._initialize_strength(clip, strength)
+        strength_mask = self._initialize_strength(clip, strength)
 
         if show_mask:
-            return self._strength
+            return strength_mask
 
-        limited = depth(clip, processed).std.MaskedMerge(processed, self._strength, nplanes)
+        limited = depth(clip, processed).std.MaskedMerge(processed, strength_mask, nplanes)
 
         return depth(limited, clip)
