@@ -8,8 +8,7 @@ from vskernels import Catrom, Lanczos
 from vsscale import autoselect_backend
 from vstools import (ColorRange, CustomValueError, DependencyNotFoundError,
                      FileWasNotFoundError, FunctionUtil, Matrix, SPath, depth,
-                     get_peak_value, inject_self, iterate, join,
-                     normalize_planes, split, vs)
+                     inject_self, iterate, join, normalize_planes, split, vs, get_peak_value)
 
 __all__: list[str] = []
 
