@@ -1,15 +1,13 @@
 import colorsys
 import random
-import re
 from typing import Any
 
-from vstools import (CustomIndexError, CustomValueError, FrameRangesN,
-                     FuncExceptT, KwargsT, check_variable_resolution, core,
-                     fallback, get_h, get_w, vs)
+from vstools import (CustomIndexError, CustomValueError, FuncExceptT, KwargsT,
+                     check_variable_resolution, core, fallback, get_h, get_w,
+                     vs)
 
 __all__ = [
     'colored_clips',
-    'convert_rfs',
     'get_match_centers_scaling',
 ]
 
@@ -63,44 +61,6 @@ def colored_clips(
         shuffle(rgb_color_list)
 
     return [core.std.BlankClip(color=color, **blank_clip_args) for color in rgb_color_list]
-
-
-def convert_rfs(rfs_string: str) -> FrameRangesN:
-    """
-    Convert `ReplaceFramesSimple`-styled ranges to `replace_ranges`-styled ranges.
-
-    This function accepts RFS ranges as a string, consistent with RFS handling.
-    The input string is validated before processing.
-
-    Performance may decrease with a larger number of ranges.
-
-    Supports both '[x y]' and 'x' frame numbering styles.
-    Returns an empty list if no valid frames are found.
-
-    :param rfs_string:          A string representing frame ranges in ReplaceFramesSimple format.
-
-    :return:                    A FrameRangesN list containing frame ranges compatible with `replace_ranges`.
-                                Returns an empty list if no valid frames are found.
-
-    :raises CustomValueError:   If the input string contains invalid characters.
-    """
-
-    rfs_string = str(rfs_string).strip()
-
-    if not rfs_string:
-        return []
-
-    valid_chars = set('0123456789[] ')
-    illegal_chars = set(rfs_string) - valid_chars
-
-    if illegal_chars:
-        reason = ', '.join(f"{c}:{rfs_string.index(c)}" for c in sorted(illegal_chars, key=rfs_string.index))
-        raise CustomValueError('Invalid characters found in input string!', convert_rfs, reason)
-
-    return [
-        int(match[2]) if match[2] else (int(match[0]), int(match[1]))
-        for match in re.findall(r'\[(\d+)\s+(\d+)\]|(\d+)', rfs_string)
-    ]
 
 
 def get_match_centers_scaling(
