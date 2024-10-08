@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from vskernels import KernelT, Lanczos
+from vskernels import Bilinear, Kernel, KernelT, Lanczos
 from vstools import (CustomStrEnum, CustomTypeError, CustomValueError,
-                     FuncExceptT, FunctionUtil, MatrixT, SPath, SPathLike,
+                     FuncExceptT, Matrix, MatrixT, SPath, SPathLike,
                      clip_async_render, core, fallback, vs)
 
 from .random import get_random_frames
@@ -34,6 +34,7 @@ class ExportFrames(CustomStrEnum):
     def __call__(
         self, clip: vs.VideoNode,
         filename: SPathLike = "bin/%d.png",
+        kernel: KernelT = Bilinear,
         matrix: MatrixT | None = None,
         func_except: FuncExceptT | None = None,
         **kwargs: Any
@@ -50,6 +51,7 @@ class ExportFrames(CustomStrEnum):
 
         :param clip:            The input clip to process.
         :param filename:        Output filename pattern. Must include "%d" for frame number substitution.
+        :param kernel:          Kernel for resampling, if necessary. Default: Bilinear.
         :param matrix:          Color matrix of the input clip. Attempts to detect if None.
         :param func_except:     Function returned for custom error handling.
                                 This should only be set by VS package developers.
@@ -58,9 +60,14 @@ class ExportFrames(CustomStrEnum):
         :return:                List of SPath objects pointing to exported images.
         """
 
-        func = FunctionUtil(clip, fallback(func_except, self), None, vs.RGB, 8, matrix=matrix)
+        func = func_except or self.__class__
 
-        sfile = self._check_sfile(filename, func.func)
+        kernel = Kernel.ensure_obj(kernel, func)
+        matrix = Matrix.from_param_or_video(matrix, clip, False, func)
+
+        clip = kernel.resample(clip, vs.RGB24, matrix_in=matrix)
+
+        sfile = self._check_sfile(filename, func)
 
         return self._render_frames(clip, sfile, **kwargs)
 
