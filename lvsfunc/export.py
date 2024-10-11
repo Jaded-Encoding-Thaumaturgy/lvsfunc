@@ -7,6 +7,7 @@ from vstools import (CustomStrEnum, CustomTypeError, CustomValueError,
                      FuncExceptT, Matrix, MatrixT, SPath, SPathLike,
                      clip_async_render, core, fallback, vs)
 
+from .nn import clip_to_npy
 from .random import get_random_frames
 
 __all__: list[str] = [
@@ -30,6 +31,8 @@ class ExportFrames(CustomStrEnum):
     PNM: ExportFrames = 'pnm'  # type:ignore
     TGA: ExportFrames = 'tga'  # type:ignore
     TIFF: ExportFrames = 'tiff'  # type:ignore
+    NPY: ExportFrames = 'npy'  # type:ignore
+    NPZ: ExportFrames = 'npz'  # type:ignore
 
     def __call__(
         self, clip: vs.VideoNode,
@@ -65,7 +68,10 @@ class ExportFrames(CustomStrEnum):
         kernel = Kernel.ensure_obj(kernel, func)
         matrix = Matrix.from_param_or_video(matrix, clip, False, func)
 
-        clip = kernel.resample(clip, vs.RGB24, matrix_in=matrix)
+        self._is_np = self in (ExportFrames.NPY, ExportFrames.NPZ)
+
+        if not self._is_np:
+            clip = kernel.resample(clip, vs.RGB24, matrix_in=matrix)
 
         sfile = self._check_sfile(filename, func)
 
@@ -76,7 +82,7 @@ class ExportFrames(CustomStrEnum):
 
         sfile = SPath(file)
 
-        if '%d' not in sfile.to_str():
+        if not self._is_np and '%d' not in sfile.to_str():
             raise CustomTypeError("Filename must include '%d' for frame number substitution!", func)
 
         sfile.parent.mkdir(parents=True, exist_ok=True)
@@ -91,6 +97,9 @@ class ExportFrames(CustomStrEnum):
 
     def _render_frames(self, clip: vs.VideoNode, out_file: SPath, **kwargs: Any) -> list[SPath]:
         """Render the frames to a PNG file using the vsfpng plugin, or fallback to imwri.Write."""
+
+        if self._is_np:
+            return clip_to_npy(clip, out_file.parent.to_str(), export_npz=self == ExportFrames.NPZ, **kwargs)
 
         if self is ExportFrames.PNG and hasattr(core, "fpng"):
             writer = clip.fpng.Write(out_file.to_str(), **kwargs)
