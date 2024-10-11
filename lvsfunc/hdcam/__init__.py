@@ -3,6 +3,6 @@
     These will likely be deprecated in the nearish-future.
 """
 
-# flake8: noqa
+# ruff: noqa: F401, F403
 
 from .dering import *
