@@ -85,9 +85,9 @@ class ExportFrames(CustomStrEnum):
         if not self._is_np and '%d' not in sfile.to_str():
             raise CustomTypeError("Filename must include '%d' for frame number substitution!", func)
 
-        sfile.parent.mkdir(parents=True, exist_ok=True)
+        sfile.get_folder().mkdir(parents=True, exist_ok=True)
 
-        if list(sfile.parent.glob("*")):
+        if list(sfile.get_folder().glob("*")):
             input(
                 f'ExportFrames: Files found in \"{sfile.parent}\". They may be overwritten. '
                 'Press Enter to continue or Ctrl+C to abort...'
