@@ -21,7 +21,7 @@ __all__ = [
     'compare',
     'Comparer',
     'comparison_shots',
-    'diff',
+    'find_diff', 'diff',
     'Interleave',
     'Split',
     'stack_compare',
@@ -561,7 +561,7 @@ def stack_compare(*clips: vs.VideoNode, height: int | None = None) -> vs.VideoNo
 
 
 @overload
-def diff(
+def find_diff(
     *clips: vs.VideoNode,
     thr: float = ...,
     height: int = ...,
@@ -578,7 +578,7 @@ def diff(
 
 
 @overload
-def diff(
+def find_diff(
     *clips: vs.VideoNode,
     thr: float = ...,
     height: int = ...,
@@ -594,7 +594,7 @@ def diff(
     ...
 
 
-def diff(
+def find_diff(
     *clips: vs.VideoNode,
     thr: float = 96,
     height: int = 288,
@@ -660,20 +660,20 @@ def diff(
     from vstools import plane as vst_plane
 
     if clips and namedclips:
-        raise ClipsAndNamedClipsError(diff)
+        raise ClipsAndNamedClipsError(find_diff)
 
     if (clips and len(clips) != 2) or (namedclips and len(namedclips) != 2):
-        raise CustomValueError("Must pass exactly 2 `clips` or `namedclips`!", diff)
+        raise CustomValueError("Must pass exactly 2 `clips` or `namedclips`!", find_diff)
 
     if abs(thr) > 128:
-        raise CustomValueError("`thr` must be between [-128, 128]!", diff, thr)
+        raise CustomValueError("`thr` must be between [-128, 128]!", find_diff, thr)
     if avg_thr is True:
         avg_thr = max(0.012, (128 - thr) * 0.000046875 + 0.0105) if thr > 1 else 0.0
 
     if clips and not all([c.format for c in clips]):
-        raise VariableFormatError(diff)
+        raise VariableFormatError(find_diff)
     elif namedclips and not all([nc.format for nc in namedclips.values()]):  # noqa
-        raise VariableFormatError(diff)
+        raise VariableFormatError(find_diff)
 
     def _to_ranges(iterable: list[int]) -> Iterable[tuple[int, int]]:
         iterable = sorted(set(iterable))
@@ -693,7 +693,7 @@ def diff(
     assert isinstance(a, vs.VideoNode)
     assert isinstance(b, vs.VideoNode)
 
-    LengthMismatchError.check(diff, a.num_frames, b.num_frames)
+    LengthMismatchError.check(find_diff, a.num_frames, b.num_frames)
 
     callbacks = []
 
@@ -730,7 +730,7 @@ def diff(
     frames = list(Sentinel.filter(frames_render))
 
     if not frames:
-        raise CustomError["StopIteration"]("No differences found!", diff)  # type: ignore[index]
+        raise CustomError["StopIteration"]("No differences found!", find_diff)  # type: ignore[index]
 
     frames.sort()
 
@@ -849,3 +849,110 @@ def comparison_shots(
         }
 
     return Stack(clips if clips else namedclips, direction=Direction.HORIZONTAL).clip
+
+
+@overload
+def diff(
+    *clips: vs.VideoNode,
+    thr: float = ...,
+    height: int = ...,
+    interleave: bool = ...,
+    return_ranges: Literal[True] = True,
+    avg_thr: float | Literal[True] = True,
+    exclusion_ranges: Sequence[int | tuple[int, int]] | None = ...,
+    diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
+    msg: str = ...,
+    plane: int = ...,
+    **namedclips: vs.VideoNode,
+) -> tuple[vs.VideoNode, list[tuple[int, int]]]:
+    ...
+
+
+@overload
+def diff(
+    *clips: vs.VideoNode,
+    thr: float = ...,
+    height: int = ...,
+    interleave: bool = ...,
+    return_ranges: Literal[False],
+    avg_thr: float | Literal[True] = True,
+    exclusion_ranges: Sequence[int | tuple[int, int]] | None = ...,
+    diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
+    msg: str = ...,
+    plane: int = ...,
+    **namedclips: vs.VideoNode,
+) -> vs.VideoNode:
+    ...
+
+
+def diff(
+    *clips: vs.VideoNode,
+    thr: float = 96,
+    height: int = 288,
+    interleave: bool = False,
+    return_ranges: bool = False,
+    avg_thr: float | Literal[True] = True,
+    exclusion_ranges: Sequence[int | tuple[int, int]] | None = None,
+    diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a,
+    b: core.std.MakeDiff(a, b),
+    msg: str = "Diffing clips...",
+    plane: int = 0,
+    **namedclips: vs.VideoNode,
+) -> vs.VideoNode | tuple[vs.VideoNode, list[tuple[int, int]]]:
+    """
+    Create a standard :py:class:`lvsfunc.comparison.Stack` between frames from two clips that have differences.
+
+    Useful for making comparisons between TV and BD encodes, as well as clean and hardsubbed sources.
+
+    There are two methods used here to find differences:
+    If `thr` is below 1, PlaneStatsDiff is used to figure out the differences.
+    Else, if `thr` is equal than or higher than 1, PlaneStatsMin/Max are used.
+
+    Recommended is PlaneStatsMin/Max, as those seem to catch more outrageous differences
+    without returning too many starved frames.
+
+    Note that this might catch artifacting as differences!
+    Make sure you verify every frame with your own eyes!
+
+    Alias for this function is ``lvsfunc.diff``.
+
+    :param clips:               Clips for comparison (order is kept).
+    :param namedclips:          Keyword arguments of `name=clip` for all clips in the comparison.
+                                Clips will be labeled at the top left with their `name`.
+    :param thr:                 Threshold, <= 1 uses PlaneStatsDiff, > 1 uses Max/Min.
+                                Higher values will catch more differences.
+                                Value must be lower than 128
+    :param height:              Height in px to downscale clips to if `interleave` is ``False``.
+                                (MakeDiff clip will be twice this resolution)
+    :param interleave:          Return clip as an interleaved comparison.
+                                (using :py:class:`lvsfunc.comparison.Interleave`).
+                                This will not return a diff clip
+    :param return_ranges:       Return a list of ranges in addition to the comparison clip.
+    :param avg_thr:             Threshold of additional average diff check.
+                                True to automatically calculate based on thr.
+    :param exclusion_ranges:    Excludes a list of frame ranges from difference checking output (but not processing).
+    :param diff_func:           Function for calculating diff in PlaneStatsMin/Max mode.
+    :param msg:                 Message for the progress bar. Defaults to "Diffing clips...".
+                                Useful if you're using `diff` for some other process.
+    :param plane:               Plane to diff. Defaults to luma.
+
+    :return:                    Either an interleaved clip of the differences between the two clips
+                                or a stack of both input clips on top of MakeDiff clip.
+                                Furthermore, the function will print the ranges of all the diffs found.
+
+    :raises ClipsAndNamedClipsError: Both positional and named clips are given.
+    :raises ValueError:         More or less than two clips are given.
+    :raises ValueError:         ``thr`` is 128 or higher.
+    :raises VariableFormatError: One of the clips is of a variable format.
+    :raises LengthMismatchError: The given clips are of different lengths.
+    :raises StopIteration:      No differences are found.
+    """
+
+    import warnings
+
+    warnings.warn('`diff` is deprecated, use `find_diff` instead!', DeprecationWarning)
+
+    return find_diff(
+        *clips, thr=thr, height=height, interleave=interleave, return_ranges=return_ranges, avg_thr=avg_thr,
+        exclusion_ranges=exclusion_ranges,diff_func=diff_func, msg=msg, plane=plane, **namedclips
+    )
