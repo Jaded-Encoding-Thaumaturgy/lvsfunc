@@ -7,7 +7,7 @@
     For further support, drop by `#dev` in the `IEW Discord server <https://discord.gg/qxTxVJGtst>`_.
 """
 
-# flake8: noqa
+# ruff: noqa: F401, F403
 
 from .comparison import *
 from .deblock import *

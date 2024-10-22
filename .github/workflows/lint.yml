@@ -1,10 +1,14 @@
-name: lint
+name: Lint Python code with Ruff
 
 on:
   push:
     branches:
       - master
+    paths:
+      - '**.py'
   pull_request:
+    paths:
+      - '**.py'
 
 jobs:
   windows:
@@ -14,7 +18,7 @@ jobs:
         vs-versions:
           - 68
         python-version:
-          - "3.12"
+          - '3.12'
 
     steps:
       - uses: actions/checkout@v4
