@@ -105,11 +105,11 @@ class LHzDelowpass(_LHzDelowpass):
         _model_filename = '1x_lanczos_hz_delowpass_4_4_15_15_fp32.onnx'
 
     @dataclass
-    class DoubleTaps_4_4_15_15_mpeg2(_LHzDelowpass):
+    class DoubleTaps_4_4_125_1375_mpeg2(_LHzDelowpass):
         """
         Lowpass model for common R2J DVD horizontal lowpassing.
 
-        Trained on double 4-taps (1.5, 1.5) + mpeg2 compression.
+        Trained on double 4-taps (1.25, 1.375) + mpeg2 compression.
         """
 
-        _model_filename = '1x_lanczos_hz_delowpass_4_4_15_15_mpeg2_fp32.onnx'
+        _model_filename = '1x_lanczos_hz_delowpass_4_4_125_1375_mpeg2_fp32.onnx'
