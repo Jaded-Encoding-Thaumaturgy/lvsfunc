@@ -34,7 +34,8 @@ class _LHzDelowpass(Base1xModel, ModelNumpyHandling):
     Each model is trained on different lowpassing values.
     As such, you may need to experiment to find the one that best suits your source.
 
-    Defaults to Double 4-taps (1.5, 1.5).
+    Note that some models will also by nature perform mpeg2 compression denoising.
+    If this effect is too strong, you should mask the output.
     """
 
     def __str__(self):
@@ -45,7 +46,7 @@ class _LHzDelowpass(Base1xModel, ModelNumpyHandling):
         self,
         clip: vs.VideoNode,
         slice_size: int | None = None,
-        planes: PlanesT = 0,
+        planes: PlanesT = None,
         **kwargs: Any
     ) -> vs.VideoNode:
         """
@@ -56,7 +57,7 @@ class _LHzDelowpass(Base1xModel, ModelNumpyHandling):
                             This is currently very slow and takes up a ton of memory!
                             Only enable for testing purposes.
                             Default: Disable.
-        :param planes:      The planes to apply the model to. Default: luma only.
+        :param planes:      The planes to apply the model to. Default: all planes.
         :param kwargs:      Additional keyword arguments.
 
         :return:            The processed clip.
@@ -96,9 +97,19 @@ class LHzDelowpass(_LHzDelowpass):
     @dataclass
     class DoubleTaps_4_4_15_15(_LHzDelowpass):
         """
-        Lowpass model for R2J DVD horizontal lowpassing.
+        Lowpass model for common R2J DVD horizontal lowpassing.
 
         Trained on double 4-taps (1.5, 1.5).
         """
 
         _model_filename = '1x_lanczos_hz_delowpass_4_4_15_15_fp32.onnx'
+
+    @dataclass
+    class DoubleTaps_4_4_15_15_mpeg2(_LHzDelowpass):
+        """
+        Lowpass model for common R2J DVD horizontal lowpassing.
+
+        Trained on double 4-taps (1.5, 1.5) + mpeg2 compression.
+        """
+
+        _model_filename = '1x_lanczos_hz_delowpass_4_4_15_15_mpeg2_fp32.onnx'

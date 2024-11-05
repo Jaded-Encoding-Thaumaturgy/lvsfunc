@@ -4,7 +4,7 @@ from typing import Any, Literal, SupportsFloat
 from warnings import warn
 
 from vsexprtools import expr_func
-from vskernels import Catrom, Lanczos
+from vskernels import Catrom, Point
 from vsscale import autoselect_backend
 from vstools import (ColorRange, CustomValueError, DependencyNotFoundError,
                      FileWasNotFoundError, FunctionUtil, Matrix, SPath, depth,
@@ -119,7 +119,7 @@ class Base1xModel:
             elif clip.format.subsampling_h == 4:
                 res_kwargs |= dict(height=clip.height // 8)
 
-        return Lanczos.resample(clip, **res_kwargs)
+        return Point.resample(clip, **res_kwargs)
 
     def _apply_model(self, proc_clip: vs.VideoNode, ref: vs.VideoNode | None = None) -> vs.VideoNode:
         """Apply the model to the clip."""
@@ -138,7 +138,7 @@ class Base1xModel:
         )
 
         if ref is not None and ref.format.color_family != vs.RGB:
-            processed = Catrom(linear=True).resample(processed, ref, matrix=self._matrix)
+            processed = Point(linear=True).resample(processed, ref, matrix=self._matrix)
 
         processed = self._select_planes(processed, ref)
 
