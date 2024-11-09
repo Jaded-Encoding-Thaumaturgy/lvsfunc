@@ -103,22 +103,6 @@ class Base1xModel:
         res_kwargs = dict(matrix_in=self._matrix)
         res_kwargs |= dict(format=vs.RGB48 if self._fp16 else vs.RGBS)
 
-        if self._planes == [1, 2]:
-            # TODO: test all of these
-            if clip.format.subsampling_w == 1:
-                res_kwargs |= dict(width=clip.width // 2)
-            elif clip.format.subsampling_w == 2:
-                res_kwargs |= dict(width=clip.width // 4)
-            elif clip.format.subsampling_w == 4:
-                res_kwargs |= dict(width=clip.width // 8)
-
-            if clip.format.subsampling_h == 1:
-                res_kwargs |= dict(height=clip.height // 2)
-            elif clip.format.subsampling_h == 2:
-                res_kwargs |= dict(height=clip.height // 4)
-            elif clip.format.subsampling_h == 4:
-                res_kwargs |= dict(height=clip.height // 8)
-
         return Point.resample(clip, **res_kwargs)
 
     def _apply_model(self, proc_clip: vs.VideoNode, ref: vs.VideoNode | None = None) -> vs.VideoNode:
