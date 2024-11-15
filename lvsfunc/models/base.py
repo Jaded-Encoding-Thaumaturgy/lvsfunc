@@ -162,7 +162,7 @@ class Base1xModel:
         if not model_path.exists():
             raise FileWasNotFoundError(
                 "Could not find model file! Please update lvsfunc.", str(self),
-                dict(parent=model_path.parent, name=model_path.name)
+                dict(filename=model_path.name, path=model_path.parent)
             )
 
         self._model_path = model_path
@@ -176,7 +176,7 @@ class Base1xModel:
             self._model_path = new_path
             return
 
-        warn(f'{self}: Could not find fp16 model! Using fp32 model instead.')
+        warn(f'{self}: Could not find fp16 model! Using fp32 model instead.', stacklevel=2)
         self._fp16 = False
 
 
