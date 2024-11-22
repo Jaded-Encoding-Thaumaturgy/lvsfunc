@@ -43,7 +43,7 @@ class Base1xModel:
     _model_filename = ''
     """Filename of the model."""
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__class__.__name__
 
     @inject_self
