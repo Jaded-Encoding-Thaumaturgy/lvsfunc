@@ -102,7 +102,7 @@ class ExportFrames(CustomStrEnum):
             return clip_to_npy(clip, out_file.parent.to_str(), export_npz=self == ExportFrames.NPZ, **kwargs)
 
         if self is ExportFrames.PNG and hasattr(core, "fpng"):
-            writer = clip.fpng.Write(out_file.to_str(), **kwargs)
+            writer = Lanczos.resample(clip, vs.RGB24).fpng.Write(out_file.to_str(), **kwargs)
         else:
             writer = clip.imwri.Write(self.value, out_file.to_str(), **kwargs)
 
