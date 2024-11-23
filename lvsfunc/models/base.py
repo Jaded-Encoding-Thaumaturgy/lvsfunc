@@ -41,7 +41,18 @@ class Base1xModel:
     """
 
     _model_filename = ''
-    """Filename of the model."""
+    """
+    Filename of the model. If it contains a slash, it will be treated as a relative path.
+
+    For example:
+
+    ```python
+        >>> class ExampleModel(Base1xModel):
+        ...     _model_filename = "./example_model_fp32.onnx"
+        ...
+        >>> ExampleModel.apply(clip)
+    ```
+    """
 
     def __str__(self) -> str:
         return self.__class__.__name__
@@ -90,7 +101,7 @@ class Base1xModel:
         color_range = ColorRange.from_param_or_video(self._kwargs.pop('color_range', None), clip)
 
         self._matrix = Matrix.from_param_or_video(matrix, clip)
-        self._planes = normalize_planes(clip, self._kwargs.pop('planes', 0))
+        self._planes = normalize_planes(clip, self._kwargs.pop('planes', None))
 
         # Pre-resample using the same method I use during training.
         proc_clip = self._scale_based_on_planes(clip)
@@ -157,7 +168,10 @@ class Base1xModel:
     def _set_model_path(self) -> None:
         """Set the path of the model."""
 
-        model_path = get_models_path() / str(self).lower() / self._model_filename
+        if any(x in self._model_filename for x in ['/', '\\']):
+            model_path = SPath(self._model_filename)
+        else:
+            model_path = get_models_path() / str(self).lower() / self._model_filename
 
         if not model_path.exists():
             raise FileWasNotFoundError(
