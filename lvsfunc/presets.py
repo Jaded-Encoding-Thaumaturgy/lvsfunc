@@ -1,20 +1,28 @@
-from vsdenoise import MotionMode, MVToolsPreset, Prefilter, SADMode, SearchMode
+from typing import Any
+
+from vsdenoise import MotionMode, Prefilter, SADMode, SearchMode
 
 __all__: list[str] = [
     'MVLightPreset',
 ]
 
 
-MVLightPreset = MVToolsPreset(
+MVLightPreset: dict[str, Any] = dict(
     block_size=16, overlap=8,
-    range_conversion=4.5,
+    range_conversion=4.0,
     sad_mode=SADMode.SPATIAL.same_recalc,
     search=SearchMode.DIAMOND,
     motion=MotionMode.HIGH_SAD,
     prefilter=Prefilter.DFTTEST(
-        sloc=[(0.0, 1.0), (0.4, 2.4), (0.45, 32.0), (1.0, 64.0)],
-        ssystem=1, planes=None
+        sloc=[(0.0, 1.0), (0.2, 4.0), (0.35, 12.0), (1.0, 24.0)],
+        ssystem=1, planes=0
     ),
     planes=None
 )
-"""Light's MVTools preset."""
+"""
+Light's MVTools preset.
+
+Please set parameters such as tr, thSAD, etc. manually.
+Make sure to always check that this preset gives you the results you want,
+and don't blindly apply it.
+"""
