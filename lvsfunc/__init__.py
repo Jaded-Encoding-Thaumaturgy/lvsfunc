@@ -19,6 +19,6 @@ from .hdcam import *
 from .misc import *
 from .models import *
 from .nn import *
-from .presets import *
+# from .presets import *
 from .random import *
 from .util import *
