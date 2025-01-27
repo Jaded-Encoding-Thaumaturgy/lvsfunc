@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import random
+import warnings
 from abc import ABC, abstractmethod
 from itertools import groupby, zip_longest
 from typing import Callable, Iterable, Iterator, Literal, Sequence, overload
@@ -27,6 +28,7 @@ __all__ = [
     'stack_compare',
     'Stack',
     'Tile',
+    'diff_between_clips_stack',
 ]
 
 
@@ -757,30 +759,51 @@ def find_diff(
             }
         ).clip
     else:
-        scaled_width = get_w(height, mod=1)
-        diff_clip = diff_clip.resize.Spline36(
-            width=scaled_width * 2, height=height * 2
-        ).text.FrameNum(9)
-        a, b = (
-            c.resize.Spline36(width=scaled_width, height=height).text.FrameNum(9)
-            for c in (a, b)
+        comparison = diff_between_clips_stack(
+            core.std.Splice([a[f] for f in frames]),
+            core.std.Splice([b[f] for f in frames]),
+            height
         )
-
-        diff_stack = Stack(
-            {
-                f"{name_a}": core.std.Splice([a[f] for f in frames]),
-                f"{name_b}": core.std.Splice([b[f] for f in frames]),
-            }
-        ).clip
-        diff_clip = diff_clip.text.Text(text="diff", alignment=8)
-        diff_clip = core.std.Splice([diff_clip[f] for f in frames])
-
-        comparison = Stack((diff_stack, diff_clip), direction=Direction.VERTICAL).clip
 
     if return_ranges:
         return comparison, list(_to_ranges(frames))
     else:
         return comparison
+
+
+def diff_between_clips_stack(clip_a: vs.VideoNode, clip_b: vs.VideoNode, height: int = 288) -> vs.VideoNode:
+
+    if clip_a.format != clip_b.format:
+        raise CustomValueError(
+            f'Clips are not of the same format! {clip_a.format.name} != {clip_b.format.name}',
+            diff_between_clips_stack,
+        )
+
+    if clip_a.num_frames != clip_b.num_frames:
+        warnings.warn(
+            'diff_between_clips_stack: "Clips are not of the same length! This function will only compare the frames that are present in both clips."',
+            UserWarning,
+        )
+
+        if clip_a.num_frames > clip_b.num_frames:
+            clip_a = clip_a[:clip_b.num_frames]
+        else:
+            clip_b = clip_b[:clip_a.num_frames]
+
+    scaled_width = get_w(height, mod=1)
+
+    diff_clip = core.std.MakeDiff(clip_a, clip_b)
+    diff_clip = diff_clip.resize.Bicubic(width=scaled_width * 2, height=height * 2).text.FrameNum(9)
+
+    a, b = (
+        c.resize.Spline36(width=scaled_width, height=height).text.FrameNum(9)
+        for c in (clip_a, clip_b)
+    )
+
+    diff_stack = Stack({ "Clip A": a, "Clip B": b }).clip
+    diff_clip = diff_clip.text.Text(text="diff", alignment=8)
+
+    return Stack((diff_stack, diff_clip), direction=Direction.VERTICAL).clip
 
 
 def comparison_shots(
