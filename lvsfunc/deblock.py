@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import partial
 from typing import Any, Callable, Literal, Sequence
+from warnings import warn
 
 from vsdenoise import dpir
 from vsexprtools import expr_func
@@ -125,7 +126,10 @@ def autodb_dpir(
 
     kernel = Kernel.ensure_obj(kernel)
 
-    vsdpir_final_args = dict[str, Any](cuda=cuda)
+    if vsdpir_args.get('fp16', None):
+        warn("autodb_dpir: fp16 has been known to cause issues! It's highly recommended to set it to False!")
+
+    vsdpir_final_args = dict[str, Any](cuda=cuda, fp16=vsdpir_args.pop('fp16', False))
     vsdpir_final_args |= vsdpir_args
     vsdpir_final_args.pop('strength', None)
 
