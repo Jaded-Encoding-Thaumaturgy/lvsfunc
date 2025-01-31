@@ -41,7 +41,7 @@ def autodb_dpir(
     If that happens, you can perform a denoise on the original clip (maybe even using dpir's denoising mode)
     and grab the brightest pixels from your two clips. That should return a perfectly fine clip.
 
-    Thanks `Vardë <https://github.com/Ichunjo>`_, `louis <https://github.com/tomato39>_`,
+    Thanks `Vardë <https://github.com/Ichunjo>`_, `louis <https://github.com/tomato39>`_,
     `Setsugen no ao <https://github.com/Setsugennoao>`_!
 
     Dependencies:
