@@ -93,7 +93,7 @@ def autodb_dpir(
             for i, prop in zip(range(3), ['EdgeValRefDiff', 'YNextDiff', 'YPrevDiff'])
         ]
 
-        f_type = get_prop(f[0], '_PictType', bytes).decode('utf-8')
+        f_type = get_prop(f[0], '_PictType', str)
 
         if f_type == 'I':
             y_next_diff = (y_next_diff + evref_diff) / 2
