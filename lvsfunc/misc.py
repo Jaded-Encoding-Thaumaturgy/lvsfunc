@@ -4,7 +4,7 @@ from typing import cast
 
 from vskernels import Catrom
 from vstools import (CustomValueError, DependencyNotFoundError, FramePropError,
-                     FrameRangeN, FrameRangesN, Matrix,
+                     FrameRangeN, FrameRangesN, Matrix, limiter,
                      ResolutionsMismatchError, check_variable, core, depth,
                      get_depth, normalize_ranges, replace_ranges, vs)
 
@@ -105,7 +105,7 @@ def overlay_sign(
 
         raise FramePropError(overlay_sign, "You must load in the sign using `imwri.Read`!")
 
-    merge = clip.std.MaskedMerge(overlay, depth(mask, get_depth(overlay)).std.Limiter())
+    merge = clip.std.MaskedMerge(overlay, limiter(depth(mask, get_depth(overlay)), func=overlay_sign))
 
     if not frame_ranges:
         return merge

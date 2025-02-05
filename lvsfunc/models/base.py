@@ -8,7 +8,7 @@ from vskernels import Catrom, Point
 from vsscale import autoselect_backend
 from vstools import (ColorRange, CustomValueError, DependencyNotFoundError,
                      FileWasNotFoundError, FunctionUtil, Matrix, SPath, depth,
-                     get_peak_value, inject_self, iterate, join,
+                     get_peak_value, inject_self, iterate, join, limiter,
                      normalize_planes, split, vs)
 
 __all__: list[str] = []
@@ -106,7 +106,7 @@ class Base1xModel:
         # Pre-resample using the same method I use during training.
         proc_clip = self._scale_based_on_planes(clip)
 
-        self._func = FunctionUtil(proc_clip.std.Limiter(), str(self), None, vs.RGB, bitdepth, range_in=color_range)
+        self._func = FunctionUtil(limiter(proc_clip), str(self), None, vs.RGB, bitdepth, range_in=color_range)
 
     def _scale_based_on_planes(self, clip: vs.VideoNode) -> vs.VideoNode:
         """Scale the clip based on the planes."""
