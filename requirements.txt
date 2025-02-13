@@ -1,5 +1,4 @@
 VapourSynth>=68
 vsjetpack>=0.1.1
-stgfunc>=3.1.0
 numpy>=2.1.1
 
