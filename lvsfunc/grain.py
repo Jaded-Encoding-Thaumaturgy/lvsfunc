@@ -1,4 +1,4 @@
-from vstools import (DependencyNotFoundError, Keyframes, MismatchRefError,
+from vstools import (Keyframes, MismatchRefError, SceneAverageStats,
                      find_prop_rfs, get_script_path, merge_clip_props, vs)
 
 __all__: list[str] = [
@@ -40,11 +40,6 @@ def dynamic_scene_adaptive_grain(
 
     :return:                Clip with different types of graining applied based on the scene's luminosity.
     """
-
-    try:
-        from stgfunc import SceneAverageStats
-    except (ModuleNotFoundError, ImportError) as e:
-        raise DependencyNotFoundError(dynamic_scene_adaptive_grain, "stgfunc") from e
 
     MismatchRefError.check(dynamic_scene_adaptive_grain, grain_dark, grain_bright)
 
