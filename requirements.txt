@@ -1,12 +1,5 @@
 VapourSynth>=68
-vstools>=2.3.0
-vsaa>=1.8.2
-vsdehalo>=1.7.2
-vsdeinterlace>=0.5.1
-vsexprtools>=1.4.6
-vskernels>=2.4.1
-vsmasktools>=1.1.2
-vsrgtools>=1.5.1
+vsjetpack>=0.1.1
 stgfunc>=3.1.0
 numpy>=2.1.1
 
