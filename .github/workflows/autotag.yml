@@ -27,7 +27,7 @@ jobs:
           tag: ${{ env.CURR_VER }}
 
       - name: Make tag
-        uses: actions/github-script@v7
+        uses: actions/github-script@v3
         if: steps.tagcheck.outputs.exists == 'false'
         with:
           github-token: ${{ secrets.WORKFLOW_TOKEN }}
