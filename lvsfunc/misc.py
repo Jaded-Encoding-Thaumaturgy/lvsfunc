@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import cast
 
 from vskernels import Catrom
-from vstools import (CustomValueError, DependencyNotFoundError, FramePropError,
-                     FrameRangeN, FrameRangesN, Matrix,
-                     ResolutionsMismatchError, check_variable, core, depth,
-                     get_depth, normalize_ranges, replace_ranges, vs)
+from vstools import (
+    CustomValueError, DependencyNotFoundError, FileWasNotFoundError, FramePropError,
+    FrameRangeN, FrameRangesN, Matrix, ResolutionsMismatchError, SPath, SPathLike,
+    check_variable, core, depth, get_depth, limiter, normalize_ranges, replace_ranges, vs
+)
 
 __all__ = [
     'overlay_sign'
@@ -14,26 +15,27 @@ __all__ = [
 
 
 def overlay_sign(
-    clip: vs.VideoNode, overlay: vs.VideoNode | str,
+    clip: vs.VideoNode, overlay: vs.VideoNode | SPathLike,
     frame_ranges: FrameRangeN | FrameRangesN | None = None, fade_length: int = 0,
-    matrix: Matrix | int | None = None
+    matrix: Matrix | int | None = None, return_mask: bool = False
 ) -> vs.VideoNode:
     """
     Overlay a logo or sign onto another clip.
 
     This is a rewrite of fvsfunc.InsertSign.
 
+    `overlay` can be a VideoNode or a path to an image file, and must have an alpha channel.
     This wrapper also allows you to set fades to fade a logo in and out.
 
     Dependencies:
 
-    * `vs-imwri <https://github.com/vapoursynth/vs-imwri>`_
     * `kagefunc <https://github.com/Irrational-Encoding-Wizardry/kagefunc>`_ (optional: ``fade_length``)
 
     :param clip:                    Clip to process.
     :param overlay:                 Sign or logo to overlay. Must be the png loaded in
                                     through :py:func:`core.vapoursynth.imwri.Read` or a path string to the image file,
                                     and **MUST** be the same dimensions as the ``clip`` to process.
+                                    The clip **MUST** also have an alpha channel.
     :param frame_ranges:            Frame ranges or starting frame to apply the overlay to.
                                     See :py:attr:`vstools.FrameRange` for more info.
                                     If None, overlays the entire clip.
@@ -46,9 +48,9 @@ def overlay_sign(
                                     The fade will start and end on the frames given in frame_ranges.
                                     If set to 0, it won't fade and the sign will simply pop in.
     :param matrix:                  Enum for the matrix of the Clip to process.
-                                    See :py:attr:`lvsfunc.types.Matrix` for more info.
-                                    If not specified, gets matrix from the "_Matrix" prop of the clip
-                                    unless it's an RGB clip, in which case it stays as `None`.
+                                    See :py:attr:`vstools.types.Matrix` for more info.
+                                    If not specified, gets matrix from the "_Matrix" prop of the input clip.
+    :param return_mask:             Whether to return the mask of the overlay. Default: False.
 
     :return:                        Clip with a logo or sign overlaid on top for the given frame ranges,
                                     either with or without a fade.
@@ -69,14 +71,12 @@ def overlay_sign(
 
     assert check_variable(clip, overlay_sign)
 
-    is_string = isinstance(overlay, str)
-    clip_fam = clip.format.color_family
+    matrix = matrix or Matrix.from_video(clip)
 
-    if is_string:
-        overlay = core.imwri.Read(overlay, alpha=True)
-
-    if not isinstance(overlay, vs.VideoNode):
-        raise CustomValueError('`overlay` must be a VideoNode object or a string path!', overlay_sign)
+    if isinstance(overlay, SPathLike):
+        overlay = _get_overlay_from_file(overlay)
+    elif not isinstance(overlay, vs.VideoNode):
+        raise CustomValueError('`overlay` must be a VideoNode object or a path to an image file!', overlay_sign)
 
     overlay = cast(vs.VideoNode, overlay)
 
@@ -89,35 +89,79 @@ def overlay_sign(
         warnings.warn("overlay_sign: 'Only one range is currently supported! Grabbing the first item in list.'")
         frame_ranges = frame_ranges[0]
 
-    if overlay.format.color_family is not clip_fam:
-        if clip_fam is vs.RGB:
-            overlay = Catrom.resample(overlay, clip.format.id, matrix_in=matrix)
-        else:
-            overlay = Catrom.resample(overlay, clip.format.id, matrix)
-
+    overlay = _resample_overlay_matrix(overlay, clip, matrix)
     overlay = overlay[0] * clip.num_frames
+
+    merged = _merge_with_mask(clip, overlay, return_mask)
+
+    if return_mask or not frame_ranges:
+        return merged
+
+    if fade_length > 0:
+        return _overlay_fade(clip, merged, fade_length, frame_ranges)
+
+    return replace_ranges(clip, merged, frame_ranges)
+
+
+def _get_overlay_from_file(overlay: SPathLike) -> vs.VideoNode:
+    spath = SPath(overlay)
+
+    if not spath.exists():
+        raise FileWasNotFoundError(f"The given path, \"{spath}\" does not exist!", overlay_sign)
+
+    if hasattr(core, 'bs'):
+        return core.bs.VideoSource(overlay)
+
+    return core.imwri.Read(overlay, alpha=True)
+
+
+def _resample_overlay_matrix(
+    overlay: vs.VideoNode, clip: vs.VideoNode, matrix: Matrix | int | None
+) -> vs.VideoNode:
+    """Resample the overlay to the clip's format and matrix."""
+
+    if overlay.format.color_family is clip.format.color_family:
+        return overlay
+
+    if clip.format.color_family is vs.RGB:
+        return Catrom.resample(overlay, clip.format.id, matrix_in=matrix)
+
+    return Catrom.resample(overlay, clip.format.id, matrix)
+
+
+def _merge_with_mask(
+    clip: vs.VideoNode, overlay: vs.VideoNode, return_mask: bool = False
+) -> vs.VideoNode:
+    """Extract alpha mask and merge the overlay with the base clip."""
 
     try:
         mask = overlay.std.PropToClip('_Alpha')
     except vs.Error:
-        if is_string:
+        if isinstance(overlay, SPathLike):
             raise FramePropError(overlay_sign, "Your image must have an alpha channel (transparency)!")
 
-        raise FramePropError(overlay_sign, "You must load in the sign using `imwri.Read`!")
+        raise FramePropError(overlay_sign, "You must load in the sign using `bs.VideoSource` or `imwri.Read`!")
 
-    merge = clip.std.MaskedMerge(overlay, depth(mask, get_depth(overlay)).std.Limiter())
+    mask = limiter(depth(mask, get_depth(overlay)))
 
-    if not frame_ranges:
-        return merge
+    if return_mask:
+        return mask
 
-    if fade_length > 0:
-        if isinstance(frame_ranges, int):
-            return crossfade(clip[:frame_ranges + fade_length], merge[frame_ranges:], fade_length)
+    return clip.std.MaskedMerge(overlay, mask)
 
-        start, end = normalize_ranges(clip, frame_ranges)[0]
 
-        merge = crossfade(clip[:start + fade_length], merge[start:], fade_length)
+def _overlay_fade(
+    clip: vs.VideoNode, merged: vs.VideoNode, fade_length: int, frame_ranges: FrameRangeN | FrameRangesN
+) -> vs.VideoNode:
+    """Overlay a fade on the overlay."""
 
-        return crossfade(merge[:end], clip[end - fade_length:], fade_length)
+    from kagefunc import crossfade
 
-    return replace_ranges(clip, merge, frame_ranges)
+    if isinstance(frame_ranges, int):
+        return crossfade(clip[:frame_ranges + fade_length], merged[frame_ranges:], fade_length)
+
+    start, end = normalize_ranges(clip, frame_ranges)[0]
+
+    merged = crossfade(clip[:start + fade_length], merged[start:], fade_length)
+
+    return crossfade(merged[:end], clip[end - fade_length:], fade_length)
