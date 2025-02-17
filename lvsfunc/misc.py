@@ -109,9 +109,6 @@ def _get_overlay_from_file(overlay: SPathLike) -> vs.VideoNode:
     if not spath.exists():
         raise FileWasNotFoundError(f"The given path, \"{spath}\" does not exist!", overlay_sign)
 
-    if hasattr(core, 'bs'):
-        return core.bs.VideoSource(overlay)
-
     return core.imwri.Read(overlay, alpha=True)
 
 
@@ -140,7 +137,7 @@ def _merge_with_mask(
         if isinstance(overlay, SPathLike):
             raise FramePropError(overlay_sign, "Your image must have an alpha channel (transparency)!")
 
-        raise FramePropError(overlay_sign, "You must load in the sign using `bs.VideoSource` or `imwri.Read`!")
+        raise FramePropError(overlay_sign, "You must load in the sign using `imwri.Read`!")
 
     mask = limiter(depth(mask, get_depth(overlay)))
 
