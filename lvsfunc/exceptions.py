@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from stgpytools import SupportsString
-from vstools import CustomTypeError, CustomValueError, FuncExceptT
+from vstools import (CustomTypeError, CustomValueError, FuncExceptT,
+                     SupportsString)
 
 __all__ = [
     'ClipsAndNamedClipsError',
