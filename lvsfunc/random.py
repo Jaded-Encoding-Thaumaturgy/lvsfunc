@@ -2,7 +2,7 @@ import random
 from typing import Any, Callable
 
 from vstools import (CustomRuntimeError, CustomValueError, core, depth,
-                     get_prop, vs)
+                     get_prop, limiter, vs)
 
 __all__: list[str] = [
     'get_random_frame_nums',
@@ -173,7 +173,7 @@ def get_smart_random_frame_nums(
         frame_num = _select_smart_frame(interval_start, interval_end, prev_frame)
         frame_nums.append(frame_num)
 
-        prev_frame = core.std.Limiter(clip[frame_num])
+        prev_frame = limiter(clip[frame_num], func=get_smart_random_frame_nums)
 
     return frame_nums
 
