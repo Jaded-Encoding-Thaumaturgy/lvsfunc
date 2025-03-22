@@ -159,7 +159,7 @@ class Stack(Comparer):
         if not self.width:
             raise CustomValueError(
                 "StackVertical requires that all clips be the same width!",
-                self.__class__,
+                self.__class__, (x.width for x in self.clips)
             )
 
         return core.std.StackVertical(self._marked_clips())
