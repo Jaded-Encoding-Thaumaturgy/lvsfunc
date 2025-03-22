@@ -762,7 +762,7 @@ def find_diff(
         comparison = diff_between_clips_stack(
             core.std.Splice([a[f] for f in frames]),
             core.std.Splice([b[f] for f in frames]),
-            height
+            height=height
         )
 
     if return_ranges:
@@ -771,7 +771,32 @@ def find_diff(
         return comparison
 
 
-def diff_between_clips_stack(clip_a: vs.VideoNode, clip_b: vs.VideoNode, height: int = 288) -> vs.VideoNode:
+def diff_between_clips_stack(
+    *clips: vs.VideoNode, height: int = 288,
+    **namedclips: vs.VideoNode
+) -> vs.VideoNode:
+    """
+    Make a stacked diff between two clips.
+
+    :param clip_a:          The first clip to compare.
+    :param clip_b:          The second clip to compare.
+    :param height:          The height to downscale the clips to.
+    :param namedclips:      Keyword arguments of `name=clip` for all clips in the comparison.
+
+    :return:                Stacked clip with a diff and the original clips.
+
+    :raises ClipsAndNamedClipsError:    Both positional and named clips are given.
+    """
+
+    if clips and namedclips:
+        raise ClipsAndNamedClipsError(diff_between_clips_stack)
+
+    if clips and not len(clips) == 2:
+        raise CustomValueError("Must pass exactly 2 `clips`!", diff_between_clips_stack)
+    elif namedclips and not len(namedclips) == 2:
+        raise CustomValueError("Must pass exactly 2 `namedclips`!", diff_between_clips_stack)
+
+    clip_a, clip_b = clips if clips else namedclips.values()
 
     if clip_a.format != clip_b.format:
         raise CustomValueError(
@@ -800,7 +825,9 @@ def diff_between_clips_stack(clip_a: vs.VideoNode, clip_b: vs.VideoNode, height:
         for c in (clip_a, clip_b)
     )
 
-    diff_stack = Stack({ "Clip A": a, "Clip B": b }).clip
+    name_a, name_b = ("Clip A", "Clip B") if clips else namedclips.keys()
+
+    diff_stack = Stack({name_a: a, name_b: b}).clip
     diff_clip = diff_clip.text.Text(text="diff", alignment=8)
 
     return Stack((diff_stack, diff_clip), direction=Direction.VERTICAL).clip
