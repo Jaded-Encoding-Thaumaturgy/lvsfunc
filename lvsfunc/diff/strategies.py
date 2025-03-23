@@ -99,9 +99,8 @@ class PlaneAvgDiff(DiffStrategy):
         if hasattr(core, 'vszip'):
             return
 
-        raise CustomValueError(
-            'vszip is not available! Please install it at "https://github.com/dnjulek/vapoursynth-zip"!',
-            self._func_except
+        raise DependencyNotFoundError(
+            self._func_except, 'vszip <https://github.com/dnjulek/vapoursynth-zip>',
         )
 
 
@@ -132,6 +131,7 @@ class VMAFDiff(DiffStrategy):
 
         super().__init__(threshold, planes, func_except)
         self.feature = [feature] if isinstance(feature, VMAFFeature) else feature
+        self._check_vmaf_version()
 
     def process(self, src: vs.VideoNode, ref: vs.VideoNode) -> tuple[vs.VideoNode, CallbacksT]:
         """Process the difference between two clips using VMAF."""
@@ -156,6 +156,14 @@ class VMAFDiff(DiffStrategy):
         )
 
         return vmaf_clip.std.SetFrameProps(fd_thr=self.threshold), callbacks
+
+    def _check_vmaf_version(self) -> None:
+        if hasattr(core, 'vmaf'):
+            return
+
+        raise DependencyNotFoundError(
+            self._func_except, 'vmaf <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-VMAF>'
+        )
 
 
 class ButteraugliDiff(DiffStrategy):
@@ -188,6 +196,7 @@ class ButteraugliDiff(DiffStrategy):
         super().__init__(threshold, planes, func_except)
         self.intensity_multiplier = intensity_multiplier
         self.norm_mode = norm_mode
+        self._check_vship_version()
 
     def process(self, src: vs.VideoNode, ref: vs.VideoNode) -> tuple[vs.VideoNode, CallbacksT]:
         """Process the difference between two clips using Butteraugli."""
@@ -219,4 +228,6 @@ class ButteraugliDiff(DiffStrategy):
         if hasattr(core, 'vship'):
             return
 
-        raise DependencyNotFoundError(self._func_except, 'vship <https://github.com/Line-fr/Vship>')
+        raise DependencyNotFoundError(
+            self._func_except, 'vship <https://github.com/Line-fr/Vship>',
+        )
