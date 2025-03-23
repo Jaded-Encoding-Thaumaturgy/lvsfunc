@@ -236,7 +236,7 @@ class ButteraugliDiff(DiffStrategy):
                 core.vship.GpuInfo()
                 return core.vship.BUTTERAUGLI, 'intensity_multiplier'
             except vs.Error as e:
-                if 'NoDeviceDetected' in str(e):
+                if 'Device' in str(e):
                     if hasattr(core, 'julek'):
                         return core.julek.Butteraugli, 'intensity_target'
 
