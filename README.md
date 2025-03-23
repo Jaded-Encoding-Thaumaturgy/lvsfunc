@@ -10,15 +10,21 @@
     <img alt="downloads" src="https://static.pepy.tech/personalized-badge/lvsfunc?period=total&units=international_system&left_color=grey&right_color=blue&left_text=downloads">
 </p>
 
-## ⚠️ **WARNING** ⚠️
+> [!CAUTION]
+> This package is intended to be
+> a sort of testing grounds
+> for functions I write.
+> As such,
+> you should NEVER depend on this package,
+> and instead wait for the useful functions
+> to get adopted into other [JET](https://github.com/Jaded-Encoding-Thaumaturgy) packages.
 
-This package is intended to be
-a sort of testing grounds
-for functions I write.
-As such,
-you should NEVER rely on this package,
-and instead wait for the useful functions
-to get adopted into other [JET](https://github.com/Jaded-Encoding-Thaumaturgy) packages.
+If you're testing new functionality
+that may be ported over
+to a JET package
+in the future,
+please make sure to install
+the latest version on git.
 
 ----
 
