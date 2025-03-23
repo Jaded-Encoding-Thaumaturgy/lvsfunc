@@ -12,6 +12,7 @@
 from .comparison import *
 from .deblock import *
 from .dependency import *
+from .diff import *
 from .exceptions import *
 from .export import *
 from .grain import *

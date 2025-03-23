@@ -24,6 +24,7 @@ setuptools.setup(
     packages=[
         package_name,
         f"{package_name}.dependency",
+        f"{package_name}.diff",
         f"{package_name}.hdcam",
         f"{package_name}.models",
         f"{package_name}.nn",
