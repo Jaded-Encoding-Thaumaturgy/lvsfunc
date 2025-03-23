@@ -106,6 +106,9 @@ class VMAFFeature(CustomIntEnum):
 class ButteraugliNorm(CustomIntEnum):
     """Different supported Butteraugli norms."""
 
+    JULEK = -2
+    """Use the Julek norm."""
+
     ALL = -1
     """Use all norms."""
 
@@ -126,6 +129,7 @@ class ButteraugliNorm(CustomIntEnum):
             ButteraugliNorm.TWO_NORM: '_BUTTERAUGLI_2Norm',
             ButteraugliNorm.THREE_NORM: '_BUTTERAUGLI_3Norm',
             ButteraugliNorm.INF_NORM: '_BUTTERAUGLI_INFNorm',
+            ButteraugliNorm.JULEK: '_FrameButteraugli',
         }
 
         if self == ButteraugliNorm.ALL:

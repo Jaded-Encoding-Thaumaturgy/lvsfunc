@@ -1,8 +1,11 @@
 from abc import ABC, abstractmethod
 
+from vskernels import Catrom
 from vstools import (
-    DependencyNotFoundError,CustomValueError, FuncExceptT, Matrix, PlanesT, core, get_nvidia_version, get_prop, merge_clip_props,
-                     normalize_planes, vs)
+    CustomRuntimeError,
+    VSFunction,CustomValueError, DependencyNotFoundError, FuncExceptT,
+                     Matrix, PlanesT, core, get_nvidia_version, get_prop,
+                     merge_clip_props, normalize_planes, vs)
 
 from .enum import ButteraugliNorm, VMAFFeature
 from .types import CallbacksT
@@ -171,7 +174,7 @@ class ButteraugliDiff(DiffStrategy):
 
     def __init__(
         self,
-        threshold: float = 1.0,
+        threshold: float = 2.0,
         intensity_multiplier: float = 80.0,
         norm_mode: ButteraugliNorm | list[ButteraugliNorm] = ButteraugliNorm.TWO_NORM,
         planes: PlanesT = None,
@@ -182,6 +185,7 @@ class ButteraugliDiff(DiffStrategy):
 
         Dependencies:
             - vship (https://github.com/Line-fr/Vship) (GPU)
+            - vapoursynth-julek-plugin (https://github.com/dnjulek/vapoursynth-julek-plugin) (CPU)
 
         :param threshold:               The threshold to use for the comparison.
                                         Lower will catch more differences.
@@ -196,38 +200,56 @@ class ButteraugliDiff(DiffStrategy):
         super().__init__(threshold, planes, func_except)
         self.intensity_multiplier = intensity_multiplier
         self.norm_mode = norm_mode
-        self._check_vship_version()
+
+        if not isinstance(self.norm_mode, list):
+            self.norm_mode = [self.norm_mode]
 
     def process(self, src: vs.VideoNode, ref: vs.VideoNode) -> tuple[vs.VideoNode, CallbacksT]:
         """Process the difference between two clips using Butteraugli."""
 
-        self.threshold = max(0, min(1, self.threshold))
+        plugin, intensity_param = self._get_plugin()
 
-        ba_clip = src.vship.BUTTERAUGLI(ref, intensity_multiplier=self.intensity_multiplier, distmap=0)
+        src_matrix = Matrix.from_video(src)
 
-        props = (
-            [self.norm_mode.prop] if isinstance(self.norm_mode, ButteraugliNorm)
-            else [norm.prop for norm in self.norm_mode]
-        )
+        # We have to resample to RGB ourselves because the plugin doesn't do it
+        if intensity_param == 'intensity_target':
+            src, ref = self._to_rgb(src), self._to_rgb(ref)
+            self.norm_mode = [ButteraugliNorm.JULEK]
+        else:
+            self.norm_mode = [x for x in self.norm_mode if x != ButteraugliNorm.JULEK]
+
+            if not self.norm_mode:
+                self.norm_mode = [ButteraugliNorm.TWO_NORM]
+
+        ba_clip = plugin(src, ref, **{intensity_param: self.intensity_multiplier})
+        props = [norm.prop for norm in self.norm_mode]
 
         callbacks = CallbacksT([
             lambda f: any(get_prop(f, prop, (float, int), default=0) >= self.threshold for prop in props)
         ])
 
-        # For some reason it sets Matrix.RGB...
-        ba_clip = Matrix.from_video(src).apply(ba_clip)
+        # Get the matrix from source back to prevent it from being set to RGB in the return clip
+        return src_matrix.apply(ba_clip).std.SetFrameProps(fd_thr=self.threshold), callbacks
 
-        return ba_clip.std.SetFrameProps(fd_thr=self.threshold), callbacks
-
-    def _check_vship_version(self) -> None:
-        if not get_nvidia_version():
-            raise DependencyNotFoundError(
-                self._func_except, 'nvidia', 'You must have a NVIDIA GPU to use Butteraugli!'
-            )
-
+    def _get_plugin(self) -> tuple[VSFunction, str]:
         if hasattr(core, 'vship'):
-            return
+            try:
+                core.vship.GpuInfo()
+                return core.vship.BUTTERAUGLI, 'intensity_multiplier'
+            except vs.Error as e:
+                if 'NoDeviceDetected' in str(e):
+                    if hasattr(core, 'julek'):
+                        return core.julek.Butteraugli, 'intensity_target'
+
+                    raise CustomRuntimeError('No GPU detected!', self.process, str(e))
+
+        if hasattr(core, 'julek'):
+            return core.julek.Butteraugli, 'intensity_target'
 
         raise DependencyNotFoundError(
-            self._func_except, 'vship <https://github.com/Line-fr/Vship>',
+            self._func_except, 'vship <https://github.com/Line-fr/Vship> (GPU) or '
+            'vapoursynth-julek-plugin <https://github.com/dnjulek/vapoursynth-julek-plugin> (CPU)',
         )
+
+    def _to_rgb(self, clip: vs.VideoNode) -> vs.VideoNode:
+        return Catrom.resample(clip, vs.RGBS, matrix_in=Matrix.from_param_or_video(1, clip))
