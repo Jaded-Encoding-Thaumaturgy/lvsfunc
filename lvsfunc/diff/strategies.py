@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
 
 from vskernels import Catrom
-from vstools import (
-    CustomRuntimeError,
-    VSFunction,CustomValueError, DependencyNotFoundError, FuncExceptT,
-                     Matrix, PlanesT, core, get_nvidia_version, get_prop,
-                     merge_clip_props, normalize_planes, vs)
+from vstools import (CustomRuntimeError, CustomValueError,
+                     DependencyNotFoundError, FuncExceptT, Matrix, PlanesT,
+                     VSFunction, core, get_prop, merge_clip_props,
+                     normalize_planes, vs)
 
 from .enum import ButteraugliNorm, VMAFFeature
 from .types import CallbacksT
