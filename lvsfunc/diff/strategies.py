@@ -7,7 +7,7 @@ from .enum import VMAFFeature
 from .types import CallbacksT
 
 __all__: list[str] = [
-    'PlaneStatsDiff',
+    'PlaneAvgDiff',
     'VMAFDiff',
 ]
 
@@ -47,8 +47,8 @@ class DiffStrategy(ABC):
         ...
 
 
-class PlaneStatsDiff(DiffStrategy):
-    """Strategy for comparing clips using PlaneStats."""
+class PlaneAvgDiff(DiffStrategy):
+    """Strategy for comparing clips using PlaneAvg."""
 
     def __init__(
         self,
@@ -57,7 +57,11 @@ class PlaneStatsDiff(DiffStrategy):
         func_except: FuncExceptT | None = None
     ) -> None:
         """
-        Initialize the PlaneStats strategy.
+        Initialize the PlaneAvg strategy.
+
+        Dependencies:
+
+            - vapoursynth-zip (https://github.com/dnjulek/vapoursynth-zip)
 
         :param threshold:       The threshold to use for the comparison.
                                 Higher will catch more differences.
@@ -69,7 +73,7 @@ class PlaneStatsDiff(DiffStrategy):
         self._check_vszip_version()
 
     def process(self, src: vs.VideoNode, ref: vs.VideoNode) -> tuple[vs.VideoNode, CallbacksT]:
-        """Process the difference between two clips using PlaneStats."""
+        """Process the difference between two clips using PlaneAvg."""
 
         self.threshold = max(0, min(1, self.threshold))
 
@@ -111,6 +115,10 @@ class VMAFDiff(DiffStrategy):
     ) -> None:
         """
         Initialize the VMAF strategy.
+
+        Dependencies:
+
+            - VapourSynth-VMAF (https://github.com/HomeOfVapourSynthEvolution/VapourSynth-VMAF)
 
         :param threshold:       The threshold to use for the comparison.
                                 Lower will catch more differences.

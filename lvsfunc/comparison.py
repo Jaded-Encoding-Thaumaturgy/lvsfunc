@@ -539,8 +539,6 @@ def stack_compare(*clips: vs.VideoNode, height: int | None = None) -> vs.VideoNo
     if not height:
         height = 288
     elif height > clipa.height / 2:
-        import warnings
-
         warnings.warn(
             f"stack_compare: 'Given 'height' ({height}) is bigger than clipa's height {clipa.height}!' "
             "Will be using clipa's height instead."
@@ -651,11 +649,9 @@ def find_diff(*clips: vs.VideoNode,
     :raises StopIteration:      No differences are found.
     """
 
-    import warnings
-
     from vstools import scale_value
 
-    from .diff import FindDiff, PlaneStatsDiff
+    from .diff import FindDiff, PlaneAvgDiff
 
     warnings.warn('find_diff: This function is deprecated! Please use `FindDiff` instead!', DeprecationWarning)
 
@@ -673,7 +669,7 @@ def find_diff(*clips: vs.VideoNode,
     thr = scale_value(thr, 8, clip_a) if thr > 1 else thr
 
     return FindDiff(
-        PlaneStatsDiff(thr, plane, find_diff),
+        PlaneAvgDiff(thr, plane, find_diff),
         exclusion_ranges=exclusion_ranges, func_except=find_diff
     ).get_diff(clip_a, clip_b, names)
 
@@ -905,9 +901,7 @@ def diff(
     :raises StopIteration:      No differences are found.
     """
 
-    import warnings
-
-    warnings.warn('`diff` is deprecated, use `find_diff` instead!', DeprecationWarning)
+    warnings.warn('`diff` is deprecated, use `FindDiff` instead!', DeprecationWarning)
 
     return find_diff(
         *clips, thr=thr, height=height, interleave=interleave, return_ranges=return_ranges, avg_thr=avg_thr,

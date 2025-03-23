@@ -12,7 +12,7 @@ from vstools import (CustomError, CustomValueError, FrameRangesN, FuncExceptT,
                      normalize_franges, vs)
 
 from .enum import DiffMode
-from .strategies import DiffStrategy, PlaneStatsDiff
+from .strategies import DiffStrategy, PlaneAvgDiff
 from .types import CallbacksT
 
 
@@ -39,7 +39,7 @@ class FindDiff:
 
     def __init__(
         self,
-        strategies: DiffStrategy | Sequence[DiffStrategy] = [PlaneStatsDiff],
+        strategies: DiffStrategy | Sequence[DiffStrategy] = [PlaneAvgDiff],
         mode: DiffMode = DiffMode.ANY,
         pre_process: VSFunctionNoArgs | bool = True,
         exclusion_ranges: Sequence[int | tuple[int, int]] | None = None,
@@ -58,11 +58,11 @@ class FindDiff:
 
         .. code-block:: python
 
-            from lvsfunc import DiffMode, FindDiff, PlaneStatsDiff
+            from lvsfunc import DiffMode, FindDiff, PlaneAvgDiff
 
             # Assume clip_a and clip_b are your input clips
             diff_finder = FindDiff(
-                strategies=PlaneStatsDiff(24, DiffMode.PLANESTATS_MINMAX, [0]),
+                strategies=PlaneAvgDiff(0.005, planes=0),
             ).get_diff(clip_a, clip_b)
 
         Custom preprocessing example:
@@ -76,7 +76,7 @@ class FindDiff:
 
         :param strategies:          The strategy or strategies to use for comparison.
                                     See each strategy's class documentation for more information.
-                                    Default: PlaneStatsDiff.
+                                    Default: PlaneAvgDiff.
         :param mode:                The mode to use for combining results from multiple strategies.
                                     Default: DiffMode.ANY.
         :param pre_process:         The pre-processing function to use for the comparison.
@@ -106,7 +106,7 @@ class FindDiff:
     def get_diff(
         self: TFindDiff,
         src: vs.VideoNode, ref: vs.VideoNode,
-        names: tuple[str, str] = ('Src', 'Ref')
+        names: tuple[str, str] = ('src', 'ref')
     ) -> vs.VideoNode:
         """
         Get a processed clip highlighting the differences between two clips.
