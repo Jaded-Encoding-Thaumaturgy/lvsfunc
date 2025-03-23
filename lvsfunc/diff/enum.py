@@ -5,6 +5,7 @@ from vstools import CustomIntEnum
 __all__: list[str] = [
     'DiffMode',
     'VMAFFeature',
+    'ButteraugliNorm',
 ]
 
 
@@ -100,3 +101,34 @@ class VMAFFeature(CustomIntEnum):
             VMAFFeature.MS_SSIM: 'float_ms_ssim',
             VMAFFeature.CIEDE2000: 'ciede2000',
         }[self]
+
+
+class ButteraugliNorm(CustomIntEnum):
+    """Different supported Butteraugli norms."""
+
+    ALL = -1
+    """Use all norms."""
+
+    TWO_NORM = 0
+    """Use the 2-norm."""
+
+    THREE_NORM = 1
+    """Use the 3-norm."""
+
+    INF_NORM = 2
+    """Use the infinity norm."""
+
+    @property
+    def prop(self) -> str:
+        """Get the property name for the norm."""
+
+        props = {
+            ButteraugliNorm.TWO_NORM: '_BUTTERAUGLI_2Norm',
+            ButteraugliNorm.THREE_NORM: '_BUTTERAUGLI_3Norm',
+            ButteraugliNorm.INF_NORM: '_BUTTERAUGLI_INFNorm',
+        }
+
+        if self == ButteraugliNorm.ALL:
+            return list(props.values())
+
+        return props[self]

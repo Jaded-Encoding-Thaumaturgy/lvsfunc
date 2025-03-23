@@ -1,14 +1,16 @@
 from abc import ABC, abstractmethod
 
-from vstools import (CustomValueError, FuncExceptT, PlanesT, core, get_prop, merge_clip_props,
+from vstools import (
+    DependencyNotFoundError,CustomValueError, FuncExceptT, Matrix, PlanesT, core, get_nvidia_version, get_prop, merge_clip_props,
                      normalize_planes, vs)
 
-from .enum import VMAFFeature
+from .enum import ButteraugliNorm, VMAFFeature
 from .types import CallbacksT
 
 __all__: list[str] = [
     'PlaneAvgDiff',
     'VMAFDiff',
+    'ButteraugliDiff',
 ]
 
 
@@ -154,3 +156,67 @@ class VMAFDiff(DiffStrategy):
         )
 
         return vmaf_clip.std.SetFrameProps(fd_thr=self.threshold), callbacks
+
+
+class ButteraugliDiff(DiffStrategy):
+    """Strategy for comparing clips using Butteraugli."""
+
+    def __init__(
+        self,
+        threshold: float = 1.0,
+        intensity_multiplier: float = 80.0,
+        norm_mode: ButteraugliNorm | list[ButteraugliNorm] = ButteraugliNorm.TWO_NORM,
+        planes: PlanesT = None,
+        func_except: FuncExceptT | None = None
+    ) -> None:
+        """
+        Initialize the Butteraugli strategy.
+
+        Dependencies:
+            - vship (https://github.com/Line-fr/Vship) (GPU)
+
+        :param threshold:               The threshold to use for the comparison.
+                                        Lower will catch more differences.
+        :param intensity_multiplier:    Controls sensitivity of the Butteraugli metric.
+                                        Higher values make it more sensitive to differences.
+        :param norm_mode:               Which norm to use for the comparison.
+                                        See :py:class:`lvsfunc.diff.enum.ButteraugliNorm` for more information.
+        :param planes:                  The planes to compare.
+        :param func_except:             The function exception to use for the comparison.
+        """
+
+        super().__init__(threshold, planes, func_except)
+        self.intensity_multiplier = intensity_multiplier
+        self.norm_mode = norm_mode
+
+    def process(self, src: vs.VideoNode, ref: vs.VideoNode) -> tuple[vs.VideoNode, CallbacksT]:
+        """Process the difference between two clips using Butteraugli."""
+
+        self.threshold = max(0, min(1, self.threshold))
+
+        ba_clip = src.vship.BUTTERAUGLI(ref, intensity_multiplier=self.intensity_multiplier, distmap=0)
+
+        props = (
+            [self.norm_mode.prop] if isinstance(self.norm_mode, ButteraugliNorm)
+            else [norm.prop for norm in self.norm_mode]
+        )
+
+        callbacks = CallbacksT([
+            lambda f: any(get_prop(f, prop, (float, int), default=0) >= self.threshold for prop in props)
+        ])
+
+        # For some reason it sets Matrix.RGB...
+        ba_clip = Matrix.from_video(src).apply(ba_clip)
+
+        return ba_clip.std.SetFrameProps(fd_thr=self.threshold), callbacks
+
+    def _check_vship_version(self) -> None:
+        if not get_nvidia_version():
+            raise DependencyNotFoundError(
+                self._func_except, 'nvidia', 'You must have a NVIDIA GPU to use Butteraugli!'
+            )
+
+        if hasattr(core, 'vship'):
+            return
+
+        raise DependencyNotFoundError(self._func_except, 'vship <https://github.com/Line-fr/Vship>')
