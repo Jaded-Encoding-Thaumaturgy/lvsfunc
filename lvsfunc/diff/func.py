@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from itertools import groupby
-from typing import Iterable, Sequence, TypeVar
+from typing import Iterable, Literal, Sequence, TypeVar
 
 from vskernels import Bicubic
 from vsrgtools import box_blur
@@ -41,7 +41,7 @@ class FindDiff:
         self,
         strategies: DiffStrategy | Sequence[DiffStrategy] = [PlaneAvgDiff],
         mode: DiffMode = DiffMode.ANY,
-        pre_process: VSFunctionNoArgs | bool = True,
+        pre_process: VSFunctionNoArgs | Literal[False] = lambda x: box_blur(x).std.Crop(8, 8, 8, 8),
         exclusion_ranges: Sequence[int | tuple[int, int]] | None = None,
         func_except: FuncExceptT | None = None
     ) -> None:
@@ -95,7 +95,7 @@ class FindDiff:
         if not self.strategies:
             raise CustomValueError('You must pass at least one strategy!', self._func_except)
 
-        self.pre_process = pre_process if callable(pre_process) else (box_blur if pre_process is True else None)
+        self.pre_process = pre_process if callable(pre_process) else None
 
         self.exclusion_ranges = exclusion_ranges or []
 
