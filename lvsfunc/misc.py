@@ -4,8 +4,7 @@ from typing import cast
 
 from vskernels import Catrom
 from vstools import (CustomValueError, DependencyNotFoundError, FramePropError,
-                     FrameRangeN, FrameRangesN, Matrix, limiter,
-                     ResolutionsMismatchError, check_variable, core, depth,
+                     FrameRangeN, FrameRangesN, Matrix, ResolutionsMismatchError, check_variable, core, depth,
                      get_depth, limiter, normalize_ranges, replace_ranges, vs)
 
 __all__ = [
