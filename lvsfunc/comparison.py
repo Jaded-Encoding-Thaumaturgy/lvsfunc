@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-import random
+import random  # type:ignore
 import warnings
 from abc import ABC, abstractmethod
 from itertools import zip_longest
@@ -10,10 +10,9 @@ from typing import Callable, Iterable, Iterator, Literal, Sequence, overload
 from vskernels import Catrom, Kernel, KernelT, Point
 from vstools import (CustomNotImplementedError, CustomTypeError,
                      CustomValueError, Direction, FormatsMismatchError,
-                     LengthMismatchError, Matrix, T,
-                     check_variable_format,
-                     check_variable_resolution, core, get_subsampling, get_w, mod2,
-                     vs)
+                     LengthMismatchError, Matrix, T, check_variable_format,
+                     check_variable_resolution, core, get_subsampling, get_w,
+                     mod2, vs)
 
 from .exceptions import ClipsAndNamedClipsError
 
