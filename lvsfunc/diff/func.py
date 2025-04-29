@@ -4,7 +4,9 @@ import warnings
 from itertools import groupby
 from typing import Iterable, Literal, Self, Sequence, TypeVar
 
-from jetpytools import CustomRuntimeError
+from jetpytools import (CustomRuntimeError, FileIsADirectoryError,
+                        FilePermissionError, FileWasNotFoundError, SPath,
+                        SPathLike)
 from vskernels import Bicubic
 from vsrgtools import box_blur
 from vstools import (CustomError, CustomValueError, FrameRangesN, FuncExceptT,
@@ -206,6 +208,126 @@ class FindDiff:
             )
 
         return core.std.Splice([clip[f] for f in self._diff_frames])
+
+    def to_file(self, output_path: SPathLike) -> SPath:
+        """
+        Save the frame ranges to a file.
+
+        Frames will be saved in the format:
+
+        .. code-block:: text
+
+            1-10
+            21-30
+            etc.
+
+
+        :param output_path:             The path to save the differences to.
+
+        :return:                        The path to the file.
+
+        :raise CustomRuntimeError:      If you haven't run `find_diff` yet.
+        :raise FileIsADirectoryError:   If the output path is a directory.
+        :raise CustomRuntimeError:      If you don't have permission to write to the file.
+        :raise CustomOSError:           If there's an OS error (disk full, invalid path, etc.).
+        :raise CustomRuntimeError:      If there's an unexpected error.
+        :raise FileWasNotFoundError:    If the file was not found after it was supposed to be written.
+        """
+
+        if not self.diff_ranges:
+            raise CustomRuntimeError(
+                'You have not found the differences yet! Please run `find_diff` first.',
+                self.to_file, self.diff_ranges,
+            )
+
+        sfile = SPath(output_path)
+
+        if sfile.is_dir():
+            raise FileIsADirectoryError(
+                'Failed to save frame ranges! Output path is a directory!',
+                self.to_file, sfile,
+            )
+
+        franges = '\n'.join(f'{start}-{end}' for start, end in self.diff_ranges)
+
+        try:
+            sfile.write_text(franges)
+        except PermissionError as e:
+            raise FilePermissionError(
+                'Failed to save frame ranges! Insufficient permissions!',
+                self.to_file, e,
+            )
+        except OSError as e:
+            raise CustomError['OSError'](
+                'Failed to save frame ranges! OS error (disk full, invalid path, etc.)!',
+                self.to_file, e,
+            )
+        except Exception as e:
+            raise CustomRuntimeError(
+                'Failed to save frame ranges!',
+                self.to_file, e,
+            )
+
+        if not sfile.exists():
+            raise FileWasNotFoundError(
+                'Failed to save frame ranges! File was not found!',
+                self.to_file, sfile,
+            )
+
+        return sfile
+
+    def from_file(self, input_path: SPathLike) -> list[tuple[int, int]]:
+        """
+        Load the frame ranges from a file.
+
+        :param input_path:              The path to load the frame ranges from.
+
+        :return:                        The frame ranges.
+
+        :raise CustomValueError:        If the file is empty or the format is invalid.
+        :raise FileWasNotFoundError:    If the file was not found.
+        :raise FilePermissionError:     If you don't have permission to read the file.
+        """
+
+        sfile = SPath(input_path)
+
+        if not sfile.exists():
+            raise FileWasNotFoundError(
+                'Failed to load frame ranges! File was not found!',
+                self.from_file, sfile,
+            )
+
+        try:
+            content = sfile.read_text()
+        except PermissionError as e:
+            raise FilePermissionError(
+                'Failed to load frame ranges! Insufficient permissions!',
+                self.from_file, e,
+            )
+
+        if not (content := content.strip()):
+            raise CustomValueError(
+                'Failed to load frame ranges! File is empty!',
+                self.from_file, sfile,
+            )
+
+        for line in content.splitlines():
+            if not (line := line.strip()):
+                continue
+
+            parts = line.split('-')
+
+            if len(parts) != 2 or not all(x.strip().isdigit() for x in parts):
+                raise CustomValueError(
+                    'Failed to load frame ranges! Invalid format in file! Expected "start-end" per line.',
+                    self.from_file, sfile,
+                )
+
+            start, end = map(int, parts)
+
+            self.diff_ranges.append((start, end))
+
+        return self.diff_ranges
 
     def _validate_inputs(self, src: vs.VideoNode, ref: vs.VideoNode) -> tuple[vs.VideoNode, vs.VideoNode]:
         check_ref_clip(src, ref, self._func_except)
