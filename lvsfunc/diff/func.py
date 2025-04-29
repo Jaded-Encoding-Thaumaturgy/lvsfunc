@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import warnings
 from itertools import groupby
-from typing import Iterable, Literal, Sequence, TypeVar
+from typing import Iterable, Literal, Self, Sequence, TypeVar
 
+from jetpytools import CustomRuntimeError
 from vskernels import Bicubic
 from vsrgtools import box_blur
 from vstools import (CustomError, CustomValueError, FrameRangesN, FuncExceptT,
@@ -36,6 +37,9 @@ class FindDiff:
 
     callbacks: CallbacksT
     """List of callback functions for each comparison method."""
+
+    diff_ranges: FrameRangesN = []
+    """Ranges of frames that are different between the two clips."""
 
     def __init__(
         self,
@@ -85,6 +89,8 @@ class FindDiff:
         :param exclusion_ranges:    Ranges to exclude from the comparison.
                                     These frames will still be processed, but not outputted.
         :param func_except:         The function exception to use for the comparison.
+
+        :raise CustomValueError:    If you don't pass any strategies.
         """
 
         self._func_except = func_except or self.__class__.__name__
@@ -100,8 +106,41 @@ class FindDiff:
         self.exclusion_ranges = exclusion_ranges or []
 
         self._diff_frames: list[int] | None = None
-        self._diff_ranges: list[tuple[int, int]] | None = None
         self._processed_clip: vs.VideoNode | None = None
+
+    def find_diff(
+        self: TFindDiff,
+        src: vs.VideoNode, ref: vs.VideoNode,
+        force: bool = False
+    ) -> Self:
+        """
+        Find the differences between two clips and store the results.
+
+        The ranges will be accessible through the `diff_ranges` attribute.
+        If you have already found the differences, the method will return the current instance,
+        unless `force` is True, in which case the current results will be cleared.
+
+        :param src:                     The source clip to compare.
+        :param ref:                     The reference clip to compare.
+        :param force:                   If True, force the method to find differences
+                                        even if they have already been found.
+                                        This will clear the current results.
+
+        :return:                        The current instance of FindDiff.
+
+        :raise CustomStopIteration:     If no differences are found.
+        """
+
+        if not force and self._diff_frames:
+            return self
+
+        self._diff_frames = None
+        self.diff_ranges = []
+
+        self._validate_inputs(src, ref)
+        self._process(src, ref)
+
+        return self
 
     def get_diff(
         self: TFindDiff,
@@ -111,22 +150,24 @@ class FindDiff:
         """
         Get a processed clip highlighting the differences between two clips.
 
-        :param clip_a:          The source clip to compare.
-        :param clip_b:          The reference clip to compare.
-        :param diff_height:     The height of each output clip (diff will be double this height).
-                                Default: 288.
-        :param names:           The names of the clips. Default: ('Src', 'Ref').
+        If you haven't run `find_diff` yet, the method will do so automatically.
 
-        :return:                A clip highlighting the differences between the source and reference clips.
+        :param src:                     The source clip to compare.
+        :param ref:                     The reference clip to compare.
+        :param diff_height:             The height of each output clip (diff will be double this height).
+                                        Default: 288.
+        :param names:                   The names of the clips. Default: ('Src', 'Ref').
+
+        :return:                        A clip highlighting the differences between the source and reference clips.
+
+        :raise CustomStopIteration:     If no differences are found.
+        :raise CustomValueError:        If `names` is not a tuple of two strings.
         """
 
-        src, ref = self._validate_inputs(src, ref)
-        prep_src, prep_ref = self._prepare_clips(src, ref)
-
-        self._process(prep_src, prep_ref)
+        self.find_diff(src, ref)
 
         if not isinstance(names, tuple):
-            names = (names, names)
+            names = ('src', 'ref')
         elif len(names) != 2:
             raise CustomValueError("Names must be a tuple of two strings!", self.get_diff_clip, names)
 
@@ -143,9 +184,28 @@ class FindDiff:
             stack_srcref, diff_clip.text.Text(text='Differences found:', alignment=8),
         ])
 
-        out_diff = core.std.Splice([stack_diff[f] for f in self._diff_frames])
+        out_diff = self.get_clip_frames(stack_diff)
 
-        return out_diff.std.SetFrameProps(fd_diffRanges=str(self._diff_ranges))
+        return out_diff.std.SetFrameProps(fd_diffRanges=str(self.diff_ranges))
+
+    def get_clip_frames(self, clip: vs.VideoNode) -> vs.VideoNode:
+        """
+        Get a clip of the frames that are different between the two clips.
+
+        :param clip:                    The clip to get the frames from.
+
+        :return:                        A clip of the frames that are different between the two clips.
+
+        :raises CustomRuntimeError:     If you haven't run `find_diff` yet.
+        """
+
+        if not self._diff_frames:
+            raise CustomRuntimeError(
+                'You have not found the differences yet! Please run `find_diff` first.',
+                self.get_clip_frames, self._diff_frames,
+            )
+
+        return core.std.Splice([clip[f] for f in self._diff_frames])
 
     def _validate_inputs(self, src: vs.VideoNode, ref: vs.VideoNode) -> tuple[vs.VideoNode, vs.VideoNode]:
         check_ref_clip(src, ref, self._func_except)
@@ -209,7 +269,7 @@ class FindDiff:
 
             self._diff_frames = [f for f in self._diff_frames if f not in excluded]
 
-        self._diff_ranges = list(self._to_ranges(self._diff_frames))
+        self.diff_ranges = list(self._to_ranges(self._diff_frames))
 
     @staticmethod
     def _to_ranges(iterable: list[int]) -> Iterable[tuple[int, int]]:
