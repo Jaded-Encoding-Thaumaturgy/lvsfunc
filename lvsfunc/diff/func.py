@@ -221,7 +221,6 @@ class FindDiff:
             21-30
             etc.
 
-
         :param output_path:             The path to save the differences to.
 
         :return:                        The path to the file.
@@ -279,6 +278,14 @@ class FindDiff:
     def from_file(self, input_path: SPathLike) -> list[tuple[int, int]]:
         """
         Load the frame ranges from a file.
+
+        The file must follow this format:
+
+        .. code-block:: text
+
+            1-10
+            21-30
+            etc.
 
         :param input_path:              The path to load the frame ranges from.
 
