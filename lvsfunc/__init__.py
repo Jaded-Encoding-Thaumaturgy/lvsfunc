@@ -9,6 +9,7 @@
 
 # ruff: noqa: F401, F403
 
+from .color import *
 from .comparison import *
 from .deblock import *
 from .dependency import *
