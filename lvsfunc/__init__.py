@@ -21,4 +21,5 @@ from .misc import *
 from .models import *
 from .nn import *
 from .random import *
+from .scaler import *
 from .util import *
