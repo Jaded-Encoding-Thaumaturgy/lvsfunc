@@ -1,7 +1,7 @@
-from jetpytools import CustomEnum, NotFoundEnumValue, fallback
+from jetpytools import CustomEnum, NotFoundEnumValue
 from vskernels import Point
-from vstools import Matrix, check_variable_format, vs, core, ColorRange, scale_value
-from typing import Any, Literal, Self
+from vstools import Matrix, vs, core, ColorRange, scale_value
+from typing import Literal, Self
 
 __all__: list[str] = [
     'RGBColor'
