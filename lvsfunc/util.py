@@ -152,7 +152,7 @@ def get_match_centers_scaling(
         base_dimensions = (base_dimensions.width, base_dimensions.height)
 
     base_width, base_height = base_dimensions
-    dar = dar or Dar.from_size(*base_dimensions)
+    dar = dar or Dar.from_res(*base_dimensions)
 
     if target_height is None:
         target_height = get_h(target_width, dar, 1)
