@@ -17,7 +17,6 @@ from .diff import *
 from .exceptions import *
 from .export import *
 from .grain import *
-from .hdcam import *
 from .misc import *
 from .models import *
 from .nn import *
