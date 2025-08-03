@@ -1,6 +1,8 @@
+from typing import Any
+
 import numpy as np
 from vstools import (FuncExceptT, InvalidVideoFormatError, core, depth,
-                     fallback, get_video_format, vs)
+                     get_video_format, vs)
 
 from ..exceptions import NumpyArrayLoadError
 
@@ -9,7 +11,7 @@ __all__: list[str] = [
 ]
 
 
-def get_format_from_npy(frame_data: np.ndarray, func_except: FuncExceptT | None = None) -> vs.VideoFormat:
+def get_format_from_npy(frame_data: np.ndarray[Any, Any], func_except: FuncExceptT | None = None) -> vs.VideoFormat:
     """
     Guess the format based on heuristics from the numpy array data.
 
@@ -28,7 +30,7 @@ def get_format_from_npy(frame_data: np.ndarray, func_except: FuncExceptT | None 
     :return:                The guessed format.
     """
 
-    func = fallback(func_except, get_format_from_npy)
+    func = func_except or get_format_from_npy
 
     if not isinstance(frame_data, np.ndarray):
         raise NumpyArrayLoadError(f"Unsupported data type: {type(frame_data)}", func)
@@ -54,9 +56,9 @@ def get_format_from_npy(frame_data: np.ndarray, func_except: FuncExceptT | None 
     subsampling = subsampling_map.get(y_ratio)
 
     if not subsampling:
-        raise InvalidVideoFormatError(f'Unknown subsampling! {y_shape=}, {u_shape=}', func)
+        raise InvalidVideoFormatError(f'Unknown subsampling! {y_shape=}, {u_shape=}', func)  # type: ignore
 
     try:
         return get_video_format(depth(core.std.BlankClip(format=subsampling, keep=True), bit_depth))
     except AttributeError:
-        raise InvalidVideoFormatError(f'Unsupported format: {subsampling=} {bit_depth=}', func)
+        raise InvalidVideoFormatError(f'Unsupported format: {subsampling=} {bit_depth=}', func)  # type: ignore

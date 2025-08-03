@@ -3,7 +3,7 @@ import random
 from typing import Any
 
 from vstools import (CustomIndexError, CustomValueError, Dar, FuncExceptT,
-                     KwargsT, check_variable_resolution, core, fallback, get_h,
+                     KwargsT, check_variable_resolution, core, get_h,
                      get_w, vs)
 
 __all__ = [
@@ -137,7 +137,7 @@ def get_match_centers_scaling(
                                 which can be passed directly to `vodesfunc.DescaleTarget` or similar functions.
     """
 
-    func = fallback(func_except, get_match_centers_scaling)
+    func = func_except or get_match_centers_scaling
 
     if target_width is None and target_height is None:
         raise CustomValueError("Either `target_width` or `target_height` must be a positive integer.", func)
@@ -147,17 +147,19 @@ def get_match_centers_scaling(
             raise CustomValueError(f"`target_{name}` must be a positive integer or None.", func)
 
     if isinstance(base_dimensions, vs.VideoNode):
-        check_variable_resolution(base_dimensions, func)
+        check_variable_resolution(base_dimensions, func)  # type: ignore
+        base_width, base_height = base_dimensions.width, base_dimensions.height  # type: ignore
+    elif isinstance(base_dimensions, tuple):
+        base_width, base_height = base_dimensions
+    else:
+        raise CustomValueError("`base_dimensions` must be a VideoNode or a tuple of (Width, Height).", func)
 
-        base_dimensions = (base_dimensions.width, base_dimensions.height)
+    dar = dar or Dar.from_res(base_width, base_height)
 
-    base_width, base_height = base_dimensions
-    dar = dar or Dar.from_res(*base_dimensions)
-
-    if target_height is None:
-        target_height = get_h(target_width, dar, 1)
-    elif target_width is None:
-        target_width = get_w(target_height, dar, 1)
+    if target_height is None and target_width is not None:
+        target_height = int(get_h(target_width, dar))
+    elif target_width is None and target_height is not None:
+        target_width = int(get_w(target_height, dar))
 
     width = base_width * (target_width - 1) / (base_width - 1)
     height = base_height * (target_height - 1) / (base_height - 1)

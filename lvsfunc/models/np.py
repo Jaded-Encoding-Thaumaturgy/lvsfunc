@@ -1,7 +1,9 @@
+from typing import Any
 import warnings
 
+from jetpytools import CustomValueError
 import numpy as np
-from vstools import check_variable, core, vs
+from vstools import VariableFormatError, check_variable, core, vs
 
 __all__: list[str] = []
 
@@ -9,7 +11,7 @@ __all__: list[str] = []
 class ModelNumpyHandling:
     """A class to inherite from to handle numpy array conversion and handling."""
 
-    def _clip_to_numpy(self, clip: vs.VideoNode) -> np.ndarray:
+    def _clip_to_numpy(self, clip: vs.VideoNode) -> np.ndarray[Any, Any]:
         """
         Convert a given vs.VideoNode into a numpy array for model processing.
 
@@ -17,7 +19,12 @@ class ModelNumpyHandling:
         :return:        The clip converted into a numpy array.
         """
 
-        check_variable(clip, self._clip_to_numpy)
+        try:
+            check_variable(clip, self._clip_to_numpy)
+        except VariableFormatError as e:
+            raise CustomValueError("You must pass a clip with a constant format and resolution.", self._clip_to_numpy) from e
+
+        assert clip.format is not None
 
         dtype = np.uint16 if clip.format.bits_per_sample > 8 else np.uint8
         np_array = []
@@ -52,7 +59,7 @@ class ModelNumpyHandling:
 
         return np.stack(np_array, axis=0)
 
-    def _numpy_to_clip(self, np_array: np.ndarray, format: vs.VideoFormat) -> vs.VideoNode:
+    def _numpy_to_clip(self, np_array: np.ndarray[Any, Any], format: vs.VideoFormat) -> vs.VideoNode:
         """
         Convert a given numpy array back into a vs.VideoNode.
 
@@ -63,24 +70,19 @@ class ModelNumpyHandling:
         """
 
         num_frames, height, width, num_planes = np_array.shape
-        clip = core.std.BlankClip(length=num_frames, width=width, height=height, format=format)
-
-        def _read_frame(n: int, f: vs.VideoFrame) -> vs.VideoFrame:
-            frame = f.copy()
-
+        clip = core.std.BlankClip(length=num_frames, width=width, height=height, format=format.id)
+        for n in range(num_frames):
+            frame = clip.get_frame(n)
             for plane in range(num_planes):
-                np.copyto(np.asarray(frame.get_write_array(plane)), np_array[n, :, :, plane])
-
-            return frame
-
-        return clip.std.ModifyFrame(clip, _read_frame)
+                                    np.copyto(np.asarray(frame.get_write_array(plane)), np_array[n, :, :, plane])  # type: ignore[attr-defined]  # type: ignore[attr-defined]
+        return clip
 
     def _replace_array_section(
         self,
-        target_array: np.ndarray,
-        replacement_array: np.ndarray,
-        start_idx: tuple[int, int, int, int],
-    ) -> np.ndarray:
+        target_array: np.ndarray[Any, Any],
+        replacement_array: np.ndarray[Any, Any],
+        section: tuple[int, int, int, int]
+    ) -> np.ndarray[Any, Any]:
         """
         Replace a section of the target array with the replacement array.
 
@@ -91,7 +93,7 @@ class ModelNumpyHandling:
         :return:                    The modified numpy array.
         """
 
-        slices = tuple(slice(start, start + size) for start, size in zip(start_idx, replacement_array.shape))
+        slices = tuple(slice(start, start + size) for start, size in zip(section, replacement_array.shape))
         target_array[slices] = replacement_array
 
         return target_array

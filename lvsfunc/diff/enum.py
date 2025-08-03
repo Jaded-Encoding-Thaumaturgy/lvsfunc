@@ -75,19 +75,22 @@ class VMAFFeature(CustomIntEnum):
     """Use the CIEDE2000 feature."""
 
     @classmethod
-    def _missing_(cls, value: str | int) -> VMAFFeature | None:
+    def _missing_(cls, value: object) -> VMAFFeature | None:
         """
         Handle string inputs by mapping them to enum members.
 
         :param value:   String or integer value to convert
         :return:        Matching enum member or None
         """
+
         if isinstance(value, str):
             value = value.upper().replace('-', '_')
+
             try:
                 return cls[value]
             except KeyError:
                 pass
+
         return None
 
     @property
@@ -133,6 +136,6 @@ class ButteraugliNorm(CustomIntEnum):
         }
 
         if self == ButteraugliNorm.ALL:
-            return list(props.values())
+            return ' '.join(props.values())
 
         return props[self]

@@ -41,7 +41,7 @@ class _LHzDelowpass(Base1xModel, ModelNumpyHandling):
     If this effect is too strong, you should mask the output.
     """
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'LHzDelowpass'
 
     @inject_self
@@ -82,16 +82,16 @@ class _LHzDelowpass(Base1xModel, ModelNumpyHandling):
         proc_np = self._clip_to_numpy(proc)
 
         for plane in range(clip_np.shape[-1]):
-            if plane not in planes:
+            if planes is not None and plane not in planes:  # type: ignore
                 continue
 
             left_columns = proc_np[:, :, :columns, plane]
             right_columns = proc_np[:, :, -columns:, plane]
 
-            self._replace_array_section(clip_np[:, :, :, plane], left_columns, (0, 0, 0))
-            self._replace_array_section(clip_np[:, :, :, plane], right_columns, (0, 0, -columns))
+            self._replace_array_section(clip_np[:, :, :, plane], left_columns, (0, 0, 0, 0))
+            self._replace_array_section(clip_np[:, :, :, plane], right_columns, (0, 0, 0, -columns))
 
-        return self._numpy_to_clip(clip_np, proc.format)
+        return self._numpy_to_clip(clip_np, proc.format)  # type: ignore
 
 
 @dataclass

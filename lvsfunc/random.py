@@ -1,4 +1,4 @@
-import random  # type:ignore
+import random
 from typing import Any, Callable
 
 from vstools import (CustomRuntimeError, CustomValueError, core, depth,

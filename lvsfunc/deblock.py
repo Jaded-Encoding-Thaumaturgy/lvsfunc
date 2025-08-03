@@ -134,8 +134,11 @@ def autodb_dpir(
     vsdpir_final_args.pop('strength', None)
 
     nthrs = [tuple(x / 255 for x in thr) for thr in thrs]
+    nthrs = [tuple(thr) if len(thr) == 3 else (thr[0], thr[1], thr[2]) for thr in nthrs]
+    nthrs = list[tuple[float, float, float]](nthrs)  # type: ignore
 
     is_rgb = clip.format.color_family is vs.RGB
+    targ_matrix = None
 
     if not is_rgb:
         if matrix is None:
@@ -147,7 +150,7 @@ def autodb_dpir(
     else:
         rgb = clip
 
-    maxvalue = (1 << rgb.format.bits_per_sample) - 1  # type:ignore[union-attr]
+    maxvalue = (1 << rgb.format.bits_per_sample) - 1
     evref = edgemasker(rgb)
     evref = expr_func(evref, f"x {edgevalue} >= {maxvalue} x ?")
     evref_rm = evref.std.Median().std.Convolution(matrix=[1, 2, 1, 2, 4, 2, 1, 2, 1])

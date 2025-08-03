@@ -21,7 +21,7 @@ class SharpBilinear(ComplexScaler):
 
     @inject_self.cached
     @inject_kwargs_params
-    def scale(  # type: ignore[override]
+    def scale(
         self, clip: vs.VideoNode, width: int | None = None, height: int | None = None,
         shift: tuple[TopShift, LeftShift] = (0, 0),
         *,

@@ -5,7 +5,7 @@ import random  # type:ignore
 import warnings
 from abc import ABC, abstractmethod
 from itertools import zip_longest
-from typing import Callable, Iterable, Iterator, Literal, Sequence, overload
+from typing import Callable, Iterable, Iterator, Literal, Sequence, cast, overload
 
 from vskernels import Catrom, Kernel, KernelT, Point
 from vstools import (CustomNotImplementedError, CustomTypeError,
@@ -658,9 +658,9 @@ def find_diff(*clips: vs.VideoNode,
         raise CustomValueError("Must pass exactly 2 clips!", find_diff, len(namedclips or clips))
 
     if namedclips:
-        clip_a = namedclips[0]
-        clip_b = namedclips[1]
         names = tuple(namedclips.keys())
+        clip_a = namedclips[names[0]]
+        clip_b = namedclips[names[1]]
     else:
         clip_a, clip_b = clips
         names = ('Clip A', 'Clip B')
@@ -670,7 +670,7 @@ def find_diff(*clips: vs.VideoNode,
     return FindDiff(
         PlaneAvgDiff(thr, plane, find_diff),
         exclusion_ranges=exclusion_ranges, func_except=find_diff
-    ).get_diff(clip_a, clip_b, names)
+    ).get_diff(clip_a, clip_b, cast(tuple[str, str], names))
 
 
 def diff_between_clips_stack(

@@ -5,7 +5,7 @@ from vsexprtools import norm_expr
 from vskernels import Kernel, KernelT, Point
 from vstools import (CustomValueError, FileWasNotFoundError, FuncExceptT,
                      FunctionUtil, SPath, SPathLike, clip_async_render, core,
-                     fallback, vs)
+                     vs)
 
 from ..exceptions import NumpyArrayLoadError
 from .util import get_format_from_npy
@@ -155,7 +155,7 @@ def npy_to_clip(
     :return:                VapourSynth clip created from the numpy files.
     """
 
-    func = fallback(func_except, npy_to_clip)
+    func = func_except or npy_to_clip
     kernel = Kernel.ensure_obj(kernel, func)
 
     paths = [SPath(file_paths)] if not isinstance(file_paths, list) else [SPath(x) for x in file_paths]

@@ -364,7 +364,7 @@ class FindDiff:
 
         for strategy in self.strategies:
             if not isinstance(strategy, DiffStrategy):
-                strategy = strategy()
+                strategy = strategy()  # type: ignore
 
             processed_clip, cb = strategy.process(src=self._processed_clip, ref=ref)
             self._processed_clip = processed_clip

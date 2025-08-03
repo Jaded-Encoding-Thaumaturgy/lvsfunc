@@ -5,7 +5,7 @@ from typing import Any
 from vskernels import Bilinear, Kernel, KernelT, Lanczos
 from vstools import (CustomStrEnum, CustomTypeError, CustomValueError,
                      FuncExceptT, Matrix, MatrixT, SPath, SPathLike,
-                     clip_async_render, core, fallback, vs)
+                     clip_async_render, core, vs)
 
 from .nn import clip_to_npy
 from .random import get_random_frames
@@ -141,7 +141,7 @@ def export_frames(
         DeprecationWarning
     )
 
-    func = fallback(func_except, export_frames)
+    func = func_except or export_frames
 
     if frames is None:
         frames_clip = get_random_frames(clip)

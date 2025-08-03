@@ -3,13 +3,14 @@ from dataclasses import dataclass
 from typing import Any, Literal, SupportsFloat
 from warnings import warn
 
+from jetpytools import CustomTypeError
 from vsexprtools import expr_func
 from vskernels import Catrom, Point
 from vsscale import autoselect_backend
 from vstools import (ColorRange, CustomValueError, DependencyNotFoundError,
-                     FileWasNotFoundError, FunctionUtil, Matrix, SPath, depth,
+                     FileWasNotFoundError, FunctionUtil, Matrix, SPath, VariableFormatError, check_variable_format, depth,
                      get_peak_value, inject_self, iterate, join, limiter,
-                     normalize_planes, split, vs)
+                     normalize_planes, split, vs, get_video_format)
 
 __all__: list[str] = []
 
@@ -54,6 +55,10 @@ class Base1xModel:
     ```
     """
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._initialize(kwargs.get('clip', None), kwargs)
+
     def __str__(self) -> str:
         return self.__class__.__name__
 
@@ -73,9 +78,7 @@ class Base1xModel:
         """
 
         if not self._model_filename:
-            raise CustomValueError("Model path not set! You may need to use a subclass!", self)
-
-        self._initialize(clip, kwargs)
+            raise CustomValueError("Model path not set! You may need to use a subclass!", self.apply)
 
         processed = self._apply_model(self._func.work_clip, clip)
         return self._func.return_clip(processed)
@@ -122,14 +125,14 @@ class Base1xModel:
         try:
             from vsmlrt import inference
         except ImportError:
-            raise DependencyNotFoundError("vsmlrt", self._func.func)
+            raise DependencyNotFoundError("vsmlrt", self._func.func)  # type: ignore
 
         if self.backend is None:
             self.backend = autoselect_backend(fp16=self._fp16)
 
         processed = iterate(
             proc_clip, inference, self._kwargs.pop('iterations', 1),
-            self._model_path, self.overlap, self.tilesize, self.backend
+            self._model_path.to_str(), self.overlap, self.tilesize, self.backend
         )
 
         if ref is not None and ref.format.color_family != vs.RGB:
@@ -200,8 +203,6 @@ class Base1xModelWithStrength(Base1xModel):
     def _initialize_strength(
         self, clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode = 10.0
     ) -> vs.VideoNode:
-        self._strength_clip = strength
-
         if isinstance(strength, (float, int)):
             self._set_strength_clip(clip, strength)
         elif isinstance(strength, vs.VideoNode):
@@ -220,19 +221,30 @@ class Base1xModelWithStrength(Base1xModel):
     def _norm_str_clip(self, clip: vs.VideoNode) -> None:
         str_clip = self._strength_clip
 
+        try:
+            check_variable_format(str_clip, self._norm_str_clip)
+        except VariableFormatError as e:
+            raise CustomValueError("Strength clip must be a constant format", self._norm_str_clip) from e
+
+        assert str_clip.format
+
         if str_clip.format.color_family != vs.GRAY:
-            raise ValueError("Strength clip must be GRAY")
+            raise CustomValueError("Strength clip must be GRAY", self._norm_str_clip)
 
         if str_clip.format.id == vs.GRAY8:
             str_clip = expr_func(str_clip, 'x 255 /', vs.GRAYH if self._fp16 else vs.GRAYS)
-        elif self._fp16 and str_clip.format.id != vs.GRAYH:
+        elif self._fp16 and get_video_format(str_clip) == vs.FLOAT:
             str_clip = depth(str_clip, 16, vs.FLOAT)
 
+        if not isinstance(str_clip, vs.VideoNode):
+            raise CustomTypeError("str_clip must be a VideoNode to scale", self._norm_str_clip)
         if str_clip.width != clip.width or str_clip.height != clip.height:
             str_clip = Catrom.scale(str_clip, clip.width, clip.height)
 
+        if not isinstance(str_clip, vs.VideoNode):
+            raise CustomTypeError("str_clip must be a VideoNode to check num_frames", self._norm_str_clip)
         if str_clip.num_frames != clip.num_frames:
-            raise ValueError("Strength clip must have the same number of frames as the input clip")
+            raise CustomValueError("Strength clip must have the same number of frames as the input clip", self._norm_str_clip)
 
         self._strength_clip = str_clip
 
@@ -248,4 +260,4 @@ def get_models_path() -> SPath:
 
     import lvsfunc
 
-    return SPath(pkg_resources.files(lvsfunc)) / 'models' / 'shaders'
+    return SPath(str(pkg_resources.files(lvsfunc))) / 'models' / 'shaders'
