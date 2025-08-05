@@ -81,7 +81,11 @@ class Base1xModel:
         if not self._model_filename:
             raise CustomValueError("Model path not set! You may need to use a subclass!", self.apply)
 
+        if not hasattr(self, '_func') or self._func is None:
+            self._initialize(clip, kwargs)
+
         processed = self._apply_model(self._func.work_clip, clip)
+
         return self._func.return_clip(processed)
 
     def _initialize(self, clip: vs.VideoNode, kwargs: dict[str, Any] = {}) -> None:
@@ -137,7 +141,7 @@ class Base1xModel:
         )
 
         if ref is not None and ref.format.color_family != vs.RGB:
-            processed = Point(linear=True).resample(processed, ref, matrix=self._matrix)
+            processed = Point().resample(processed, ref, matrix=self._matrix)
 
         processed = self._select_planes(processed, ref)
 
