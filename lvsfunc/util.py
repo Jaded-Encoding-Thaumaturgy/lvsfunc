@@ -137,7 +137,18 @@ def get_match_centers_scaling(
                                 which can be passed directly to `vodesfunc.DescaleTarget` or similar functions.
     """
 
+    import warnings
+
     func = func_except or get_match_centers_scaling
+
+    warnings.warn(
+        "get_match_centers_scaling: This function is deprecated in favor of passing "
+        "`SampleGridModel.MATCH_CENTERS` to `KernelLike` objects (example usage: `Bilinear(sample_grid_model=SampleGridModel.MATCH_CENTERS)`).\n"
+        "This function will remain for backwards compatibility and educational purposes, "
+        "but will likely be removed in the future.\nFor more information, see the documentation for `SampleGridModel` at "
+        "<https://jaded-encoding-thaumaturgy.github.io/vs-jetpack/api/vskernels/types/#vskernels.types.SampleGridModel>.",
+        FutureWarning
+    )
 
     if target_width is None and target_height is None:
         raise CustomValueError("Either `target_width` or `target_height` must be a positive integer.", func)
@@ -160,6 +171,8 @@ def get_match_centers_scaling(
         target_height = int(get_h(target_width, dar))
     elif target_width is None and target_height is not None:
         target_width = int(get_w(target_height, dar))
+
+    assert target_width is not None and target_height is not None
 
     width = base_width * (target_width - 1) / (base_width - 1)
     height = base_height * (target_height - 1) / (base_height - 1)
