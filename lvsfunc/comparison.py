@@ -5,7 +5,8 @@ import random  # type:ignore
 import warnings
 from abc import ABC, abstractmethod
 from itertools import zip_longest
-from typing import Callable, Iterable, Iterator, Literal, Sequence, cast, overload
+from typing import (Callable, Iterable, Iterator, Literal, Sequence, cast,
+                    overload)
 
 from vskernels import Catrom, Kernel, KernelT, Point
 from vstools import (CustomNotImplementedError, CustomTypeError,
@@ -546,13 +547,13 @@ def stack_compare(*clips: vs.VideoNode, height: int | None = None) -> vs.VideoNo
 
     scaled_width = get_w(height, mod=1)
 
-    diff = Catrom.scale(
+    diff = Catrom().scale(
         clipa.std.MakeDiff(clipb), scaled_width * 2, height * 2
     ).text.FrameNum(8)
 
     resized = [
-        Catrom.scale(clipa, scaled_width, height).text.Text("Clip A", 3),
-        Catrom.scale(clipb, scaled_width, height).text.Text("Clip B", 1),
+        Catrom().scale(clipa, scaled_width, height).text.Text("Clip A", 3),
+        Catrom().scale(clipb, scaled_width, height).text.Text("Clip B", 1),
     ]
 
     return Stack([Stack(resized).clip, diff], direction=Direction.VERTICAL).clip
@@ -742,7 +743,7 @@ def comparison_shots(
     top: int = 0,
     bottom: int = 0,
     height: int | None = None,
-    kernel: KernelT = Point,
+    kernel: KernelT = Point(),
     **namedclips: vs.VideoNode,
 ) -> vs.VideoNode:
     """
