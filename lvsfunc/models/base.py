@@ -8,9 +8,10 @@ from vsexprtools import expr_func
 from vskernels import Catrom, Point
 from vsscale import autoselect_backend
 from vstools import (ColorRange, CustomValueError, DependencyNotFoundError,
-                     FileWasNotFoundError, FunctionUtil, Matrix, SPath, VariableFormatError, check_variable_format, depth,
-                     get_peak_value, inject_self, iterate, join, limiter,
-                     normalize_planes, split, vs, get_video_format)
+                     FileWasNotFoundError, FunctionUtil, Matrix, SPath,
+                     VariableFormatError, check_variable_format, depth,
+                     get_peak_value, get_video_format, inject_self, iterate,
+                     join, limiter, normalize_planes, split, vs)
 
 __all__: list[str] = []
 

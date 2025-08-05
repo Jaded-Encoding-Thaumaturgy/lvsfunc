@@ -3,8 +3,8 @@ import random
 from typing import Any
 
 from vstools import (CustomIndexError, CustomValueError, Dar, FuncExceptT,
-                     KwargsT, check_variable_resolution, core, get_h,
-                     get_w, vs)
+                     KwargsT, check_variable_resolution, core, get_h, get_w,
+                     vs)
 
 __all__ = [
     'colored_clips',
