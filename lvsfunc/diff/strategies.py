@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 
 from vskernels import Catrom
 from vstools import (CustomRuntimeError, CustomValueError,
-                     DependencyNotFoundError, FuncExceptT, Matrix, PlanesT,
-                     VSFunction, core, get_prop, merge_clip_props,
-                     normalize_planes, vs)
+                     DependencyNotFoundError, FuncExceptT,
+                     LengthRefClipMismatchError, Matrix, PlanesT, VSFunction,
+                     core, get_prop, merge_clip_props, normalize_planes, vs)
 
 from .enum import ButteraugliNorm, VMAFFeature
 from .types import CallbacksT
@@ -81,9 +81,15 @@ class PlaneAvgDiff(DiffStrategy):
 
         self.threshold = max(0, min(1, self.threshold))
 
-        ps_comp = src.vszip.PlaneAverage(
-            [0], ref, planes=normalize_planes(src, self.planes), prop='fd_ps'
-        )
+        try:
+            ps_comp = src.vszip.PlaneAverage(
+                [0], ref, planes=normalize_planes(src, self.planes), prop='fd_ps'
+            )
+        except vs.Error as e:
+            if 'less frames than' in str(e):
+                raise LengthRefClipMismatchError(self.process, src, ref)
+
+            raise
 
         def _check_diff(f: vs.VideoFrame) -> bool:
             diff = get_prop(f, 'fd_psDiff', (list, float), default=0)
