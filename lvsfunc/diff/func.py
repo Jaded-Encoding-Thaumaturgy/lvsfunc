@@ -7,7 +7,7 @@ from typing import Iterable, Literal, Self, Sequence, TypeVar
 from jetpytools import (CustomRuntimeError, FileIsADirectoryError,
                         FilePermissionError, FileWasNotFoundError, SPath,
                         SPathLike)
-from vskernels import Bicubic
+from vskernels import Catrom
 from vsrgtools import box_blur
 from vstools import (CustomError, CustomValueError, FrameRangesN, FuncExceptT,
                      PlanesT, Sentinel, VSFunctionNoArgs, check_ref_clip,
@@ -175,7 +175,7 @@ class FindDiff:
 
         diff_clip = core.std.MakeDiff(src, ref).text.FrameNum(9)
 
-        a, b = (Bicubic.scale(c, width=c.width // 2, height=c.height // 2) for c in (src, ref))
+        a, b = (Catrom().scale(c, width=c.width // 2, height=c.height // 2) for c in (src, ref))
         a = merge_clip_props(a, self._processed_clip)
 
         stack_srcref = core.std.StackHorizontal([

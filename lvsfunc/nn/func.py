@@ -2,7 +2,7 @@ import warnings
 
 import numpy as np
 from vsexprtools import norm_expr
-from vskernels import Kernel, KernelT, Point
+from vskernels import Kernel, KernelLike, Point
 from vstools import (CustomValueError, FileWasNotFoundError, FuncExceptT,
                      FunctionUtil, SPath, SPathLike, clip_async_render, core,
                      vs)
@@ -18,7 +18,7 @@ __all__: list[str] = [
 def clip_to_npy(
     src: vs.VideoNode, out_dir: SPathLike = 'bin/',
     export_npz: bool = False,
-    kernel: KernelT = Point,
+    kernel: KernelLike = Point,
     func_except: FuncExceptT | None = None
 ) -> list[SPath]:
     """
@@ -132,7 +132,7 @@ def clip_to_npy(
 def npy_to_clip(
     file_paths: list[SPathLike] | SPathLike = [],
     ref: vs.VideoNode | None = None,
-    kernel: KernelT = Point,
+    kernel: KernelLike = Point,
     func_except: FuncExceptT | None = None
 ) -> vs.VideoNode:
     """
@@ -156,6 +156,7 @@ def npy_to_clip(
     """
 
     func = func_except or npy_to_clip
+
     kernel = Kernel.ensure_obj(kernel, func)
 
     paths = [SPath(file_paths)] if not isinstance(file_paths, list) else [SPath(x) for x in file_paths]

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from vskernels import Bilinear, Kernel, KernelT, Lanczos
+from vskernels import Bilinear, Kernel, KernelLike, Lanczos
 from vstools import (CustomStrEnum, CustomTypeError, CustomValueError,
                      FuncExceptT, Matrix, MatrixT, SPath, SPathLike,
                      clip_async_render, core, vs)
@@ -37,7 +37,7 @@ class ExportFrames(CustomStrEnum):
     def __call__(
         self, clip: vs.VideoNode,
         filename: SPathLike = "bin/%d.png",
-        kernel: KernelT = Bilinear,
+        kernel: KernelLike = Bilinear,
         matrix: MatrixT | None = None,
         func_except: FuncExceptT | None = None,
         **kwargs: Any
@@ -102,7 +102,7 @@ class ExportFrames(CustomStrEnum):
             return clip_to_npy(clip, out_file.parent.to_str(), export_npz=self == ExportFrames.NPZ, **kwargs)
 
         if self is ExportFrames.PNG and hasattr(core, "fpng"):
-            writer = Lanczos.resample(clip, vs.RGB24).fpng.Write(out_file.to_str(), **kwargs)
+            writer = Lanczos().resample(clip, vs.RGB24).fpng.Write(out_file.to_str(), **kwargs)
         else:
             writer = clip.imwri.Write(self.value, out_file.to_str(), **kwargs)
 
@@ -117,7 +117,7 @@ def export_frames(
     filename: SPathLike = SPath("bin/%d.png"),
     dur: float = 5.0,
     matrix: MatrixT | None = None,
-    kernel: KernelT = Lanczos(3),
+    kernel: KernelLike = Lanczos(3),
     func_except: FuncExceptT | None = None,
     **kwargs: Any
 ) -> list[SPath]:
@@ -154,4 +154,4 @@ def export_frames(
         except vs.Error:
             raise CustomValueError("Invalid frame numbers provided!", func)
 
-    return ExportFrames.PNG(frames_clip, filename, matrix, func, **kwargs)
+    return ExportFrames.PNG(frames_clip, filename, kernel, matrix, func, **kwargs)

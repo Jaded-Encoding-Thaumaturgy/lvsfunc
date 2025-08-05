@@ -8,7 +8,7 @@ from itertools import zip_longest
 from typing import (Callable, Iterable, Iterator, Literal, Sequence, cast,
                     overload)
 
-from vskernels import Catrom, Kernel, KernelT, Point
+from vskernels import Catrom, Kernel, KernelLike, Point, Spline36
 from vstools import (CustomNotImplementedError, CustomTypeError,
                      CustomValueError, Direction, FormatsMismatchError,
                      LengthMismatchError, Matrix, T, check_variable_format,
@@ -469,7 +469,7 @@ def compare(
 
     def _resample(clip: vs.VideoNode) -> vs.VideoNode:
         # Resampling to 8 bit and RGB to properly display how it appears on your screen
-        return Catrom.resample(
+        return Catrom().resample(
             clip, vs.RGB24, None, Matrix.from_video(clip), dither_type="error_diffusion"
         )
 
@@ -721,10 +721,10 @@ def diff_between_clips_stack(
     scaled_width = get_w(height, mod=1)
 
     diff_clip = core.std.MakeDiff(clip_a, clip_b)
-    diff_clip = diff_clip.resize.Bicubic(width=scaled_width * 2, height=height * 2).text.FrameNum(9)
+    diff_clip = Catrom().scale(diff_clip, scaled_width * 2, height * 2).text.FrameNum(9)
 
     a, b = (
-        c.resize.Spline36(width=scaled_width, height=height).text.FrameNum(9)
+        Spline36().scale(c, scaled_width, height).text.FrameNum(9)
         for c in (clip_a, clip_b)
     )
 
@@ -743,7 +743,7 @@ def comparison_shots(
     top: int = 0,
     bottom: int = 0,
     height: int | None = None,
-    kernel: KernelT = Point(),
+    kernel: KernelLike = Point,
     **namedclips: vs.VideoNode,
 ) -> vs.VideoNode:
     """

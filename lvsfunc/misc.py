@@ -91,9 +91,9 @@ def overlay_sign(
 
     if overlay.format.color_family is not clip_fam:
         if clip_fam is vs.RGB:
-            overlay = Catrom.resample(overlay, clip.format.id, matrix_in=matrix)
+            overlay = Catrom().resample(overlay, clip.format.id, matrix_in=matrix)
         else:
-            overlay = Catrom.resample(overlay, clip.format.id, matrix)
+            overlay = Catrom().resample(overlay, clip.format.id, matrix)
 
     overlay = overlay[0] * clip.num_frames
 

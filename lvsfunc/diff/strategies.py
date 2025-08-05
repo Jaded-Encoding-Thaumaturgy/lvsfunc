@@ -257,4 +257,4 @@ class ButteraugliDiff(DiffStrategy):
         )
 
     def _to_rgb(self, clip: vs.VideoNode) -> vs.VideoNode:
-        return Catrom.resample(clip, vs.RGBS, matrix_in=Matrix.from_param_or_video(1, clip))
+        return Catrom().resample(clip, vs.RGBS, matrix_in=Matrix.from_param_or_video(1, clip))

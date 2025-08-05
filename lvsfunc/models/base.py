@@ -243,8 +243,9 @@ class Base1xModelWithStrength(Base1xModel):
 
         if not isinstance(str_clip, vs.VideoNode):
             raise CustomTypeError("str_clip must be a VideoNode to scale", self._norm_str_clip)
+
         if str_clip.width != clip.width or str_clip.height != clip.height:
-            str_clip = Catrom.scale(str_clip, clip.width, clip.height)
+            str_clip = Catrom().scale(str_clip, clip.width, clip.height)
 
         if not isinstance(str_clip, vs.VideoNode):
             raise CustomTypeError("str_clip must be a VideoNode to check num_frames", self._norm_str_clip)
