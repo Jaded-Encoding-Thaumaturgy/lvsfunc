@@ -1,11 +1,10 @@
-
 from typing import Callable, TypeAlias
 
 from vstools import vs
 
 __all__: list[str] = [
-    'CallbackT',
-    'CallbacksT',
+    "CallbackT",
+    "CallbacksT",
 ]
 
 

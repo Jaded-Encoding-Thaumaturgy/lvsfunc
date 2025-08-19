@@ -7,17 +7,14 @@ from .exceptions import MissingPluginFunctionsError
 from .plugin import check_installed_plugins
 from .types import F
 
-__all__: list[str] = [
-    'check_installed_plugin_functions',
-    'required_plugin_functions'
-]
+__all__: list[str] = ["check_installed_plugin_functions", "required_plugin_functions"]
 
 
 def check_installed_plugin_functions(
     plugin: str,
     functions: str | list[str] = [],
     strict: bool = True,
-    func_except: FuncExceptT | None = None
+    func_except: FuncExceptT | None = None,
 ) -> list[str]:
     """
     Check if the given plugins are installed.
@@ -64,8 +61,7 @@ def check_installed_plugin_functions(
 
 
 def required_plugin_functions(
-    plugin: str, functions: list[str] = [],
-    func_except: FuncExceptT | None = None
+    plugin: str, functions: list[str] = [], func_except: FuncExceptT | None = None
 ) -> Callable[[F], F]:
     """
     Decorator to ensure that the specified plugin has specific functions.
@@ -94,7 +90,9 @@ def required_plugin_functions(
     def decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            check_installed_plugin_functions(plugin, functions, True, func_except or func)
+            check_installed_plugin_functions(
+                plugin, functions, True, func_except or func
+            )
             func.required_plugin_functions = (plugin, functions)  # type:ignore
 
             return func(*args, **kwargs)

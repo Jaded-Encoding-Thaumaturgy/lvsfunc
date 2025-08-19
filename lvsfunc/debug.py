@@ -3,15 +3,11 @@ import inspect
 from vstools import CustomKeyError
 
 __all__: list[str] = [
-    'get_full_caller_stack',
-
-    'get_caller_chain',
-
-    'format_caller_stack',
-
-    'get_caller_info',
-
-    'summarize_stack',
+    "get_full_caller_stack",
+    "get_caller_chain",
+    "format_caller_stack",
+    "get_caller_info",
+    "summarize_stack",
 ]
 
 
@@ -28,13 +24,11 @@ def _remove_caller_formatting(stack: list[str]) -> list[str]:
 
     if current_module:
         module_functions = [
-            name for name, obj in inspect.getmembers(current_module)
+            name
+            for name, obj in inspect.getmembers(current_module)
             if inspect.isfunction(obj) and obj.__module__ == current_module.__name__
         ]
-        return [
-            caller for caller in stack
-            if caller.split()[0] not in module_functions
-        ]
+        return [caller for caller in stack if caller.split()[0] not in module_functions]
 
     return stack
 
@@ -55,7 +49,9 @@ def get_full_caller_stack() -> list[str]:
 
     while frame:
         caller_info = inspect.getframeinfo(frame)
-        stack.append(f'{caller_info.function} in {caller_info.filename}:{caller_info.lineno}')
+        stack.append(
+            f"{caller_info.function} in {caller_info.filename}:{caller_info.lineno}"
+        )
         frame = frame.f_back
 
     return stack
@@ -72,10 +68,12 @@ def get_caller_chain() -> str:
     stack = get_full_caller_stack()
     function_names = [caller.split()[0] for caller in stack]
 
-    return '→'.join(reversed(function_names))
+    return "→".join(reversed(function_names))
 
 
-def format_caller_stack(max_depth: int | None = None, include_line_numbers: bool = True) -> str:
+def format_caller_stack(
+    max_depth: int | None = None, include_line_numbers: bool = True
+) -> str:
     """
     Format the caller stack into a readable string.
 
@@ -95,14 +93,14 @@ def format_caller_stack(max_depth: int | None = None, include_line_numbers: bool
     formatted_stack = []
 
     for i, caller in enumerate(reversed(stack), 1):
-        parts = caller.split(' in ')
+        parts = caller.split(" in ")
 
         func_name = parts[0]
-        location = parts[1] if include_line_numbers else parts[1].split(':')[0]
+        location = parts[1] if include_line_numbers else parts[1].split(":")[0]
 
-        formatted_stack.append(f'{i:0{len(str(max_depth))}d}. {func_name} - {location}')
+        formatted_stack.append(f"{i:0{len(str(max_depth))}d}. {func_name} - {location}")
 
-    return '\n'.join(formatted_stack)
+    return "\n".join(formatted_stack)
 
 
 def get_caller_info(depth: int = 1) -> str:
@@ -119,12 +117,14 @@ def get_caller_info(depth: int = 1) -> str:
     stack = _remove_caller_formatting(get_full_caller_stack())
 
     if depth < 1 or depth > len(stack):
-        raise CustomKeyError(f'Invalid depth: {depth}. Stack depth is {len(stack)}', get_caller_info)
+        raise CustomKeyError(
+            f"Invalid depth: {depth}. Stack depth is {len(stack)}", get_caller_info
+        )
 
     caller = stack[depth - 1]
-    parts = caller.split(' in ')
+    parts = caller.split(" in ")
 
-    return f'Caller at depth {depth}: {parts[0]} - {parts[1]}'
+    return f"Caller at depth {depth}: {parts[0]} - {parts[1]}"
 
 
 def summarize_stack(include_line_numbers: bool = False) -> str:
@@ -141,12 +141,12 @@ def summarize_stack(include_line_numbers: bool = False) -> str:
     total_calls = len(stack)
     unique_functions = len(set(caller.split()[0] for caller in stack))
 
-    summary = f'Total function calls: {total_calls}\n'
-    summary += f'Unique functions called: {unique_functions}\n'
-    summary += f'Deepest call: {stack[0].split()[0]}\n'
-    summary += f'Entry point: {stack[-1].split()[0]}'
+    summary = f"Total function calls: {total_calls}\n"
+    summary += f"Unique functions called: {unique_functions}\n"
+    summary += f"Deepest call: {stack[0].split()[0]}\n"
+    summary += f"Entry point: {stack[-1].split()[0]}"
 
     if include_line_numbers:
-        summary += f' at {stack[-1].split(":")[-1]}'
+        summary += f" at {stack[-1].split(':')[-1]}"
 
     return summary

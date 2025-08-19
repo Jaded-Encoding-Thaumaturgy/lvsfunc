@@ -42,7 +42,7 @@ class _LHzDelowpass(Base1xModel, ModelNumpyHandling):
     """
 
     def __str__(self) -> str:
-        return 'LHzDelowpass'
+        return "LHzDelowpass"
 
     @inject_self
     def apply(
@@ -50,7 +50,7 @@ class _LHzDelowpass(Base1xModel, ModelNumpyHandling):
         clip: vs.VideoNode,
         slice_size: int | None = None,
         planes: PlanesT = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> vs.VideoNode:
         """
         Apply the model to the clip.
@@ -74,7 +74,10 @@ class _LHzDelowpass(Base1xModel, ModelNumpyHandling):
 
         import warnings
 
-        warnings.warn('"apply": Slicing is currently very slow and takes up a ton of memory!', UserWarning)
+        warnings.warn(
+            '"apply": Slicing is currently very slow and takes up a ton of memory!',
+            UserWarning,
+        )
 
         columns = fallback(slice_size, proc.width // 10)
 
@@ -88,15 +91,18 @@ class _LHzDelowpass(Base1xModel, ModelNumpyHandling):
             left_columns = proc_np[:, :, :columns, plane]
             right_columns = proc_np[:, :, -columns:, plane]
 
-            self._replace_array_section(clip_np[:, :, :, plane], left_columns, (0, 0, 0, 0))
-            self._replace_array_section(clip_np[:, :, :, plane], right_columns, (0, 0, 0, -columns))
+            self._replace_array_section(
+                clip_np[:, :, :, plane], left_columns, (0, 0, 0, 0)
+            )
+            self._replace_array_section(
+                clip_np[:, :, :, plane], right_columns, (0, 0, 0, -columns)
+            )
 
         return self._numpy_to_clip(clip_np, proc.format)  # type: ignore
 
 
 @dataclass
 class LHzDelowpass(_LHzDelowpass):
-
     @dataclass
     class DoubleTaps_4_4_15_15(_LHzDelowpass):
         """
@@ -105,7 +111,7 @@ class LHzDelowpass(_LHzDelowpass):
         Trained on double 4-taps (1.5, 1.5).
         """
 
-        _model_filename = '1x_lanczos_hz_delowpass_4_4_15_15_fp32.onnx'
+        _model_filename = "1x_lanczos_hz_delowpass_4_4_15_15_fp32.onnx"
 
     @dataclass
     class DoubleTaps_4_4_15_15_mpeg2(_LHzDelowpass):
@@ -115,7 +121,7 @@ class LHzDelowpass(_LHzDelowpass):
         Trained on double 4-taps (1.5, 1.5) + mpeg2 compression.
         """
 
-        _model_filename = '1x_lanczos_hz_delowpass_4_4_15_15_mpeg2_fp32.onnx'
+        _model_filename = "1x_lanczos_hz_delowpass_4_4_15_15_mpeg2_fp32.onnx"
 
     @dataclass
     class DoubleTaps_4_4_125_1375_mpeg2(_LHzDelowpass):
@@ -125,4 +131,4 @@ class LHzDelowpass(_LHzDelowpass):
         Trained on double 4-taps (1.25, 1.375) + mpeg2 compression.
         """
 
-        _model_filename = '1x_lanczos_hz_delowpass_4_4_125_1375_mpeg2_fp32.onnx'
+        _model_filename = "1x_lanczos_hz_delowpass_4_4_125_1375_mpeg2_fp32.onnx"

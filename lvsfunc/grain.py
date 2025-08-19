@@ -1,9 +1,14 @@
-from vstools import (Keyframes, MismatchRefError, SceneAverageStats,
-                     find_prop_rfs, get_script_path, merge_clip_props, vs)
+from vstools import (
+    Keyframes,
+    MismatchRefError,
+    SceneAverageStats,
+    find_prop_rfs,
+    get_script_path,
+    merge_clip_props,
+    vs,
+)
 
-__all__: list[str] = [
-    'dynamic_scene_adaptive_grain'
-]
+__all__: list[str] = ["dynamic_scene_adaptive_grain"]
 
 
 def dynamic_scene_adaptive_grain(
@@ -57,7 +62,10 @@ def dynamic_scene_adaptive_grain(
     grain = find_prop_rfs(
         grain_dark.std.SetFrameProps(SceneGrain="dark"),
         grain_bright.std.SetFrameProps(SceneGrain="bright"),
-        f"SceneStats{key}Average", ">=", thr, sas
+        f"SceneStats{key}Average",
+        ">=",
+        thr,
+        sas,
     )
 
     return merge_clip_props(grain, sas)

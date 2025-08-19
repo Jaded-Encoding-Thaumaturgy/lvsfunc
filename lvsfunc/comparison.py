@@ -5,29 +5,41 @@ import random  # type:ignore
 import warnings
 from abc import ABC, abstractmethod
 from itertools import zip_longest
-from typing import (Callable, Iterable, Iterator, Literal, Sequence, cast,
-                    overload)
+from typing import Callable, Iterable, Iterator, Literal, Sequence, cast, overload
 
 from vskernels import Catrom, Kernel, KernelLike, Point, Spline36
-from vstools import (CustomNotImplementedError, CustomTypeError,
-                     CustomValueError, Direction, FormatsMismatchError,
-                     LengthMismatchError, Matrix, T, check_variable_format,
-                     check_variable_resolution, core, get_subsampling, get_w,
-                     mod2, vs)
+from vstools import (
+    CustomNotImplementedError,
+    CustomTypeError,
+    CustomValueError,
+    Direction,
+    FormatsMismatchError,
+    LengthMismatchError,
+    Matrix,
+    T,
+    check_variable_format,
+    check_variable_resolution,
+    core,
+    get_subsampling,
+    get_w,
+    mod2,
+    vs,
+)
 
 from .exceptions import ClipsAndNamedClipsError
 
 __all__ = [
-    'compare',
-    'Comparer',
-    'comparison_shots',
-    'find_diff', 'diff',
-    'Interleave',
-    'Split',
-    'stack_compare',
-    'Stack',
-    'Tile',
-    'diff_between_clips_stack',
+    "compare",
+    "Comparer",
+    "comparison_shots",
+    "find_diff",
+    "diff",
+    "Interleave",
+    "Split",
+    "stack_compare",
+    "Stack",
+    "Tile",
+    "diff_between_clips_stack",
 ]
 
 
@@ -52,8 +64,11 @@ class Comparer(ABC):
     """
 
     def __init__(
-        self, clips: dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
-        /, *, label_alignment: int = 7,
+        self,
+        clips: dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
+        /,
+        *,
+        label_alignment: int = 7,
     ) -> None:
         if len(clips) < 2:
             raise CustomValueError(
@@ -90,8 +105,10 @@ class Comparer(ABC):
 
         if self.names:
             return [
-                clip.text.Text(text=name, alignment=self.label_alignment) if name.strip()
-                else clip for clip, name in zip(self.clips, self.names)
+                clip.text.Text(text=name, alignment=self.label_alignment)
+                if name.strip()
+                else clip
+                for clip, name in zip(self.clips, self.names)
             ]
 
         return self.clips.copy()
@@ -137,8 +154,11 @@ class Stack(Comparer):
     """
 
     def __init__(
-        self, clips: dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
-        /, *, direction: Direction = Direction.HORIZONTAL,
+        self,
+        clips: dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
+        /,
+        *,
+        direction: Direction = Direction.HORIZONTAL,
         label_alignment: int = 7,
     ) -> None:
         self.direction = direction
@@ -158,7 +178,8 @@ class Stack(Comparer):
         if not self.width:
             raise CustomValueError(
                 "StackVertical requires that all clips be the same width!",
-                self.__class__, (x.width for x in self.clips)
+                self.__class__,
+                (x.width for x in self.clips),
             )
 
         return core.std.StackVertical(self._marked_clips())
@@ -202,8 +223,11 @@ class Interleave(Comparer):
     """
 
     def __init__(
-        self, clips: dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
-        /, *, label_alignment: int = 7,
+        self,
+        clips: dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
+        /,
+        *,
+        label_alignment: int = 7,
     ) -> None:
         super().__init__(clips, label_alignment=label_alignment)
 
@@ -264,8 +288,11 @@ class Tile(Comparer):
     """
 
     def __init__(
-        self, clips: dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
-        /, *, arrangement: list[list[int]] | None = None,
+        self,
+        clips: dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
+        /,
+        *,
+        arrangement: list[list[int]] | None = None,
         label_alignment: int = 7,
     ) -> None:
         super().__init__(clips, label_alignment=label_alignment)
@@ -356,15 +383,22 @@ class Split(Stack):
     """
 
     def __init__(
-        self, clips: dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
-        /, *, direction: Direction = Direction.HORIZONTAL,
+        self,
+        clips: dict[str, vs.VideoNode] | Sequence[vs.VideoNode],
+        /,
+        *,
+        direction: Direction = Direction.HORIZONTAL,
         label_alignment: int = 7,
     ) -> None:
         super().__init__(clips, direction=direction, label_alignment=label_alignment)
 
         self._smart_crop()
 
-    def _smart_crop(self) -> None:  # has to alter self.clips to send clips to _marked_clips() in Stack's _compare()
+    def _smart_crop(
+        self,
+    ) -> (
+        None
+    ):  # has to alter self.clips to send clips to _marked_clips() in Stack's _compare()
         """Crops self.clips in place accounting for odd resolutions."""
 
         if not self.width or not self.height:
@@ -432,7 +466,8 @@ class Split(Stack):
 
 
 def compare(
-    clip_a: vs.VideoNode, clip_b: vs.VideoNode,
+    clip_a: vs.VideoNode,
+    clip_b: vs.VideoNode,
     frames: list[int] | None = None,
     rand_total: int | None = None,
     force_resample: bool = True,
@@ -507,8 +542,12 @@ def compare(
 
         frames = sorted(random.sample(range(1, clip_a.num_frames - 1), rand_total))
 
-    frames_a = core.std.Splice([clip_a[f] for f in frames]).std.AssumeFPS(fpsnum=1, fpsden=1)
-    frames_b = core.std.Splice([clip_b[f] for f in frames]).std.AssumeFPS(fpsnum=1, fpsden=1)
+    frames_a = core.std.Splice([clip_a[f] for f in frames]).std.AssumeFPS(
+        fpsnum=1, fpsden=1
+    )
+    frames_b = core.std.Splice([clip_b[f] for f in frames]).std.AssumeFPS(
+        fpsnum=1, fpsden=1
+    )
 
     return core.std.Interleave([frames_a, frames_b], mismatch=mismatch)
 
@@ -532,7 +571,9 @@ def stack_compare(*clips: vs.VideoNode, height: int | None = None) -> vs.VideoNo
     """
 
     if len(clips) != 2:
-        raise CustomValueError("You must pass at least two clips", stack_compare, f"{len(clips)} < 2")
+        raise CustomValueError(
+            "You must pass at least two clips", stack_compare, f"{len(clips)} < 2"
+        )
 
     clipa, clipb = clips
 
@@ -547,9 +588,11 @@ def stack_compare(*clips: vs.VideoNode, height: int | None = None) -> vs.VideoNo
 
     scaled_width = get_w(height, mod=1)
 
-    diff = Catrom().scale(
-        clipa.std.MakeDiff(clipb), scaled_width * 2, height * 2
-    ).text.FrameNum(8)
+    diff = (
+        Catrom()
+        .scale(clipa.std.MakeDiff(clipb), scaled_width * 2, height * 2)
+        .text.FrameNum(8)
+    )
 
     resized = [
         Catrom().scale(clipa, scaled_width, height).text.Text("Clip A", 3),
@@ -560,46 +603,51 @@ def stack_compare(*clips: vs.VideoNode, height: int | None = None) -> vs.VideoNo
 
 
 @overload
-def find_diff(*clips: vs.VideoNode,
-         thr: float = ...,
-         height: int = ...,
-         interleave: bool = ...,
-         return_ranges: Literal[True] = True,
-         avg_thr: float | Literal[True] = True,
-         exclusion_ranges: Sequence[int | tuple[int, int]] | None = ...,
-         diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
-         msg: str = ...,
-         plane: int = ...,
-         **namedclips: vs.VideoNode) -> tuple[vs.VideoNode, list[tuple[int, int]]]:
-    ...
+def find_diff(
+    *clips: vs.VideoNode,
+    thr: float = ...,
+    height: int = ...,
+    interleave: bool = ...,
+    return_ranges: Literal[True] = True,
+    avg_thr: float | Literal[True] = True,
+    exclusion_ranges: Sequence[int | tuple[int, int]] | None = ...,
+    diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
+    msg: str = ...,
+    plane: int = ...,
+    **namedclips: vs.VideoNode,
+) -> tuple[vs.VideoNode, list[tuple[int, int]]]: ...
 
 
 @overload
-def find_diff(*clips: vs.VideoNode,
-         thr: float = ...,
-         height: int = ...,
-         interleave: bool = ...,
-         return_ranges: Literal[False],
-         avg_thr: float | Literal[True] = True,
-         exclusion_ranges: Sequence[int | tuple[int, int]] | None = ...,
-         diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
-         msg: str = ...,
-         plane: int = ...,
-         **namedclips: vs.VideoNode) -> vs.VideoNode:
-    ...
+def find_diff(
+    *clips: vs.VideoNode,
+    thr: float = ...,
+    height: int = ...,
+    interleave: bool = ...,
+    return_ranges: Literal[False],
+    avg_thr: float | Literal[True] = True,
+    exclusion_ranges: Sequence[int | tuple[int, int]] | None = ...,
+    diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = ...,
+    msg: str = ...,
+    plane: int = ...,
+    **namedclips: vs.VideoNode,
+) -> vs.VideoNode: ...
 
 
-def find_diff(*clips: vs.VideoNode,
-         thr: float = 96,
-         height: int = 288,
-         interleave: bool = False,
-         return_ranges: bool = False,
-         avg_thr: float | Literal[True] = True,
-         exclusion_ranges: Sequence[int | tuple[int, int]] | None = None,
-         diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a, b: core.std.MakeDiff(a, b),
-         msg: str = "Diffing clips...",
-         plane: int = 0,
-         **namedclips: vs.VideoNode) -> vs.VideoNode | tuple[vs.VideoNode, list[tuple[int, int]]]:
+def find_diff(
+    *clips: vs.VideoNode,
+    thr: float = 96,
+    height: int = 288,
+    interleave: bool = False,
+    return_ranges: bool = False,
+    avg_thr: float | Literal[True] = True,
+    exclusion_ranges: Sequence[int | tuple[int, int]] | None = None,
+    diff_func: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode] = lambda a,
+    b: core.std.MakeDiff(a, b),
+    msg: str = "Diffing clips...",
+    plane: int = 0,
+    **namedclips: vs.VideoNode,
+) -> vs.VideoNode | tuple[vs.VideoNode, list[tuple[int, int]]]:
     """
     Create a standard :py:class:`lvsfunc.comparison.Stack` between frames from two clips that have differences.
 
@@ -653,10 +701,15 @@ def find_diff(*clips: vs.VideoNode,
 
     from .diff import FindDiff, PlaneAvgDiff
 
-    warnings.warn('find_diff: This function is deprecated! Please use `FindDiff` instead!', DeprecationWarning)
+    warnings.warn(
+        "find_diff: This function is deprecated! Please use `FindDiff` instead!",
+        DeprecationWarning,
+    )
 
     if len(namedclips or clips) != 2:
-        raise CustomValueError("Must pass exactly 2 clips!", find_diff, len(namedclips or clips))
+        raise CustomValueError(
+            "Must pass exactly 2 clips!", find_diff, len(namedclips or clips)
+        )
 
     if namedclips:
         names = tuple(namedclips.keys())
@@ -664,19 +717,19 @@ def find_diff(*clips: vs.VideoNode,
         clip_b = namedclips[names[1]]
     else:
         clip_a, clip_b = clips
-        names = ('Clip A', 'Clip B')
+        names = ("Clip A", "Clip B")
 
     thr = scale_value(thr, 8, clip_a) if thr > 1 else thr
 
     return FindDiff(
         PlaneAvgDiff(thr, plane, find_diff),
-        exclusion_ranges=exclusion_ranges, func_except=find_diff
+        exclusion_ranges=exclusion_ranges,
+        func_except=find_diff,
     ).get_diff(clip_a, clip_b, cast(tuple[str, str], names))
 
 
 def diff_between_clips_stack(
-    *clips: vs.VideoNode, height: int = 288,
-    **namedclips: vs.VideoNode
+    *clips: vs.VideoNode, height: int = 288, **namedclips: vs.VideoNode
 ) -> vs.VideoNode:
     """
     Make a stacked diff between two clips.
@@ -697,13 +750,15 @@ def diff_between_clips_stack(
     if clips and not len(clips) == 2:
         raise CustomValueError("Must pass exactly 2 `clips`!", diff_between_clips_stack)
     elif namedclips and not len(namedclips) == 2:
-        raise CustomValueError("Must pass exactly 2 `namedclips`!", diff_between_clips_stack)
+        raise CustomValueError(
+            "Must pass exactly 2 `namedclips`!", diff_between_clips_stack
+        )
 
     clip_a, clip_b = clips if clips else namedclips.values()
 
     if clip_a.format != clip_b.format:
         raise CustomValueError(
-            f'Clips are not of the same format! {clip_a.format.name} != {clip_b.format.name}',
+            f"Clips are not of the same format! {clip_a.format.name} != {clip_b.format.name}",
             diff_between_clips_stack,
         )
 
@@ -714,9 +769,9 @@ def diff_between_clips_stack(
         )
 
         if clip_a.num_frames > clip_b.num_frames:
-            clip_a = clip_a[:clip_b.num_frames]
+            clip_a = clip_a[: clip_b.num_frames]
         else:
-            clip_b = clip_b[:clip_a.num_frames]
+            clip_b = clip_b[: clip_a.num_frames]
 
     scaled_width = get_w(height, mod=1)
 
@@ -817,8 +872,7 @@ def diff(
     msg: str = ...,
     plane: int = ...,
     **namedclips: vs.VideoNode,
-) -> tuple[vs.VideoNode, list[tuple[int, int]]]:
-    ...
+) -> tuple[vs.VideoNode, list[tuple[int, int]]]: ...
 
 
 @overload
@@ -834,8 +888,7 @@ def diff(
     msg: str = ...,
     plane: int = ...,
     **namedclips: vs.VideoNode,
-) -> vs.VideoNode:
-    ...
+) -> vs.VideoNode: ...
 
 
 def diff(
@@ -901,9 +954,18 @@ def diff(
     :raises StopIteration:      No differences are found.
     """
 
-    warnings.warn('`diff` is deprecated, use `FindDiff` instead!', DeprecationWarning)
+    warnings.warn("`diff` is deprecated, use `FindDiff` instead!", DeprecationWarning)
 
     return find_diff(
-        *clips, thr=thr, height=height, interleave=interleave, return_ranges=return_ranges, avg_thr=avg_thr,
-        exclusion_ranges=exclusion_ranges,diff_func=diff_func, msg=msg, plane=plane, **namedclips
+        *clips,
+        thr=thr,
+        height=height,
+        interleave=interleave,
+        return_ranges=return_ranges,
+        avg_thr=avg_thr,
+        exclusion_ranges=exclusion_ranges,
+        diff_func=diff_func,
+        msg=msg,
+        plane=plane,
+        **namedclips,
     )

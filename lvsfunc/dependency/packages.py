@@ -6,16 +6,13 @@ from vstools import FuncExceptT
 from .exceptions import MissingPackagesError
 from .types import DEP_URL, F
 
-__all__: list[str] = [
-    'check_installed_packages',
-    'required_packages'
-]
+__all__: list[str] = ["check_installed_packages", "required_packages"]
 
 
 def check_installed_packages(
     packages: str | list[str] | dict[str, DEP_URL] = [],
     strict: bool = True,
-    func_except: FuncExceptT | None = None
+    func_except: FuncExceptT | None = None,
 ) -> list[str]:
     """
     Check if the given packages are installed.
@@ -51,11 +48,13 @@ def check_installed_packages(
 
     missing = list[str]()
 
-    for pkg in (packages.keys() if isinstance(packages, dict) else packages):
+    for pkg in packages.keys() if isinstance(packages, dict) else packages:
         try:
             __import__(pkg)
         except ImportError:
-            missing.append(f"{pkg} ({packages[pkg]})" if isinstance(packages, dict) else pkg)
+            missing.append(
+                f"{pkg} ({packages[pkg]})" if isinstance(packages, dict) else pkg
+            )
 
     if not missing or not strict:
         return missing
@@ -65,7 +64,7 @@ def check_installed_packages(
 
 def required_packages(
     packages: list[str] | dict[str, DEP_URL] = [],
-    func_except: FuncExceptT | None = None
+    func_except: FuncExceptT | None = None,
 ) -> Callable[[F], F]:
     """
     Decorator to ensure that specified packages are installed.

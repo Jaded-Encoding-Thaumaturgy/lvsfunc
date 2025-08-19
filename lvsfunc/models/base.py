@@ -7,11 +7,27 @@ from jetpytools import CustomTypeError
 from vsexprtools import expr_func
 from vskernels import Catrom, Point
 from vsscale import autoselect_backend
-from vstools import (ColorRange, CustomValueError, DependencyNotFoundError,
-                     FileWasNotFoundError, FunctionUtil, Matrix, SPath,
-                     VariableFormatError, check_variable_format, depth,
-                     get_peak_value, get_video_format, inject_self, iterate,
-                     join, limiter, normalize_planes, split, vs)
+from vstools import (
+    ColorRange,
+    CustomValueError,
+    DependencyNotFoundError,
+    FileWasNotFoundError,
+    FunctionUtil,
+    Matrix,
+    SPath,
+    VariableFormatError,
+    check_variable_format,
+    depth,
+    get_peak_value,
+    get_video_format,
+    inject_self,
+    iterate,
+    join,
+    limiter,
+    normalize_planes,
+    split,
+    vs,
+)
 
 __all__: list[str] = []
 
@@ -42,7 +58,7 @@ class Base1xModel:
     Overlap between tiles.
     """
 
-    _model_filename = ''
+    _model_filename = ""
     """
     Filename of the model. If it contains a slash, it will be treated as a relative path.
 
@@ -58,7 +74,7 @@ class Base1xModel:
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._initialize(kwargs.get('clip', None), kwargs)
+        self._initialize(kwargs.get("clip", None), kwargs)
 
     def __str__(self) -> str:
         return self.__class__.__name__
@@ -79,9 +95,11 @@ class Base1xModel:
         """
 
         if not self._model_filename:
-            raise CustomValueError("Model path not set! You may need to use a subclass!", self.apply)
+            raise CustomValueError(
+                "Model path not set! You may need to use a subclass!", self.apply
+            )
 
-        if not hasattr(self, '_func') or self._func is None:
+        if not hasattr(self, "_func") or self._func is None:
             self._initialize(clip, kwargs)
 
         processed = self._apply_model(self._func.work_clip, clip)
@@ -99,22 +117,26 @@ class Base1xModel:
         """Set the keyword arguments."""
 
         self._kwargs = kwargs
-        self._fp16 = self._kwargs.pop('fp16', False)
+        self._fp16 = self._kwargs.pop("fp16", False)
 
     def _set_func(self, clip: vs.VideoNode) -> None:
         """Set the function util."""
 
-        matrix = self._kwargs.pop('matrix', None)
+        matrix = self._kwargs.pop("matrix", None)
         bitdepth = 16 if self._fp16 else 32
-        color_range = ColorRange.from_param_or_video(self._kwargs.pop('color_range', None), clip)
+        color_range = ColorRange.from_param_or_video(
+            self._kwargs.pop("color_range", None), clip
+        )
 
         self._matrix = Matrix.from_param_or_video(matrix, clip)
-        self._planes = normalize_planes(clip, self._kwargs.pop('planes', None))
+        self._planes = normalize_planes(clip, self._kwargs.pop("planes", None))
 
         # Pre-resample using the same method I use during training.
         proc_clip = self._scale_based_on_planes(clip)
 
-        self._func = FunctionUtil(limiter(proc_clip), str(self), None, vs.RGB, bitdepth, range_in=color_range)
+        self._func = FunctionUtil(
+            limiter(proc_clip), str(self), None, vs.RGB, bitdepth, range_in=color_range
+        )
 
     def _scale_based_on_planes(self, clip: vs.VideoNode) -> vs.VideoNode:
         """Scale the clip based on the planes."""
@@ -124,7 +146,9 @@ class Base1xModel:
 
         return Point.resample(clip, **res_kwargs)
 
-    def _apply_model(self, proc_clip: vs.VideoNode, ref: vs.VideoNode | None = None) -> vs.VideoNode:
+    def _apply_model(
+        self, proc_clip: vs.VideoNode, ref: vs.VideoNode | None = None
+    ) -> vs.VideoNode:
         """Apply the model to the clip."""
 
         try:
@@ -136,8 +160,13 @@ class Base1xModel:
             self.backend = autoselect_backend(fp16=self._fp16)
 
         processed = iterate(
-            proc_clip, inference, self._kwargs.pop('iterations', 1),
-            self._model_path.to_str(), self.overlap, self.tilesize, self.backend
+            proc_clip,
+            inference,
+            self._kwargs.pop("iterations", 1),
+            self._model_path.to_str(),
+            self.overlap,
+            self.tilesize,
+            self.backend,
         )
 
         if ref is not None and ref.format.color_family != vs.RGB:
@@ -147,7 +176,9 @@ class Base1xModel:
 
         return processed
 
-    def _select_planes(self, processed: vs.VideoNode, ref: vs.VideoNode | None = None) -> vs.VideoNode:
+    def _select_planes(
+        self, processed: vs.VideoNode, ref: vs.VideoNode | None = None
+    ) -> vs.VideoNode:
         """Select the planes of the clip to return."""
 
         if ref is None or (self._planes is None or self._planes == [0, 1, 2]):
@@ -176,15 +207,16 @@ class Base1xModel:
     def _set_model_path(self) -> None:
         """Set the path of the model."""
 
-        if any(x in self._model_filename for x in ['/', '\\']):
+        if any(x in self._model_filename for x in ["/", "\\"]):
             model_path = SPath(self._model_filename)
         else:
             model_path = get_models_path() / str(self).lower() / self._model_filename
 
         if not model_path.exists():
             raise FileWasNotFoundError(
-                "Could not find model file! Please update lvsfunc.", str(self),
-                dict(filename=model_path.name, path=model_path.parent)
+                "Could not find model file! Please update lvsfunc.",
+                str(self),
+                dict(filename=model_path.name, path=model_path.parent),
             )
 
         self._model_path = model_path
@@ -192,13 +224,18 @@ class Base1xModel:
         if not self._fp16:
             return
 
-        new_path = model_path.with_name(model_path.stem.replace('_fp32', '_fp16') + '.onnx')
+        new_path = model_path.with_name(
+            model_path.stem.replace("_fp32", "_fp16") + ".onnx"
+        )
 
         if new_path.exists():
             self._model_path = new_path
             return
 
-        warn(f'{self}: Could not find fp16 model! Using fp32 model instead.', stacklevel=2)
+        warn(
+            f"{self}: Could not find fp16 model! Using fp32 model instead.",
+            stacklevel=2,
+        )
         self._fp16 = False
 
 
@@ -219,8 +256,12 @@ class Base1xModelWithStrength(Base1xModel):
         norm_strength = strength / 100.0 * get_peak_value(16 if self._fp16 else 32)
 
         self._strength_clip = expr_func(
-            [clip.std.BlankClip(format=vs.GRAYH if self._fp16 else vs.GRAYS, keep=True)],
-            f"x {norm_strength} +"
+            [
+                clip.std.BlankClip(
+                    format=vs.GRAYH if self._fp16 else vs.GRAYS, keep=True
+                )
+            ],
+            f"x {norm_strength} +",
         )
 
     def _norm_str_clip(self, clip: vs.VideoNode) -> None:
@@ -229,7 +270,9 @@ class Base1xModelWithStrength(Base1xModel):
         try:
             check_variable_format(str_clip, self._norm_str_clip)
         except VariableFormatError as e:
-            raise CustomValueError("Strength clip must be a constant format", self._norm_str_clip) from e
+            raise CustomValueError(
+                "Strength clip must be a constant format", self._norm_str_clip
+            ) from e
 
         assert str_clip.format
 
@@ -237,28 +280,41 @@ class Base1xModelWithStrength(Base1xModel):
             raise CustomValueError("Strength clip must be GRAY", self._norm_str_clip)
 
         if str_clip.format.id == vs.GRAY8:
-            str_clip = expr_func(str_clip, 'x 255 /', vs.GRAYH if self._fp16 else vs.GRAYS)
+            str_clip = expr_func(
+                str_clip, "x 255 /", vs.GRAYH if self._fp16 else vs.GRAYS
+            )
         elif self._fp16 and get_video_format(str_clip) == vs.FLOAT:
             str_clip = depth(str_clip, 16, vs.FLOAT)
 
         if not isinstance(str_clip, vs.VideoNode):
-            raise CustomTypeError("str_clip must be a VideoNode to scale", self._norm_str_clip)
+            raise CustomTypeError(
+                "str_clip must be a VideoNode to scale", self._norm_str_clip
+            )
 
         if str_clip.width != clip.width or str_clip.height != clip.height:
             str_clip = Catrom().scale(str_clip, clip.width, clip.height)
 
         if not isinstance(str_clip, vs.VideoNode):
-            raise CustomTypeError("str_clip must be a VideoNode to check num_frames", self._norm_str_clip)
+            raise CustomTypeError(
+                "str_clip must be a VideoNode to check num_frames", self._norm_str_clip
+            )
         if str_clip.num_frames != clip.num_frames:
-            raise CustomValueError("Strength clip must have the same number of frames as the input clip", self._norm_str_clip)
+            raise CustomValueError(
+                "Strength clip must have the same number of frames as the input clip",
+                self._norm_str_clip,
+            )
 
         self._strength_clip = str_clip
 
-    def _should_process(self, strength: SupportsFloat | vs.VideoNode | None | Literal[False] = False) -> bool:
-        if hasattr(self, '_strength_clip'):
+    def _should_process(
+        self, strength: SupportsFloat | vs.VideoNode | None | Literal[False] = False
+    ) -> bool:
+        if hasattr(self, "_strength_clip"):
             return self._strength_clip is not False
 
-        return (strength is None) or not (isinstance(strength, (int, float)) and strength <= 0.0)
+        return (strength is None) or not (
+            isinstance(strength, (int, float)) and strength <= 0.0
+        )
 
 
 def get_models_path() -> SPath:
@@ -266,4 +322,4 @@ def get_models_path() -> SPath:
 
     import lvsfunc
 
-    return SPath(str(pkg_resources.files(lvsfunc))) / 'models' / 'shaders'
+    return SPath(str(pkg_resources.files(lvsfunc))) / "models" / "shaders"

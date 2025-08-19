@@ -3,20 +3,33 @@ from __future__ import annotations
 from typing import cast
 
 from vskernels import Catrom
-from vstools import (CustomValueError, DependencyNotFoundError, FramePropError,
-                     FrameRangeN, FrameRangesN, Matrix,
-                     ResolutionsMismatchError, check_variable, core, depth,
-                     get_depth, limiter, normalize_ranges, replace_ranges, vs)
+from vstools import (
+    CustomValueError,
+    DependencyNotFoundError,
+    FramePropError,
+    FrameRangeN,
+    FrameRangesN,
+    Matrix,
+    ResolutionsMismatchError,
+    check_variable,
+    core,
+    depth,
+    get_depth,
+    limiter,
+    normalize_ranges,
+    replace_ranges,
+    vs,
+)
 
-__all__ = [
-    'overlay_sign'
-]
+__all__ = ["overlay_sign"]
 
 
 def overlay_sign(
-    clip: vs.VideoNode, overlay: vs.VideoNode | str,
-    frame_ranges: FrameRangeN | FrameRangesN | None = None, fade_length: int = 0,
-    matrix: Matrix | int | None = None
+    clip: vs.VideoNode,
+    overlay: vs.VideoNode | str,
+    frame_ranges: FrameRangeN | FrameRangesN | None = None,
+    fade_length: int = 0,
+    matrix: Matrix | int | None = None,
 ) -> vs.VideoNode:
     """
     Overlay a logo or sign onto another clip.
@@ -76,7 +89,9 @@ def overlay_sign(
         overlay = core.imwri.Read(overlay, alpha=True)
 
     if not isinstance(overlay, vs.VideoNode):
-        raise CustomValueError('`overlay` must be a VideoNode object or a string path!', overlay_sign)
+        raise CustomValueError(
+            "`overlay` must be a VideoNode object or a string path!", overlay_sign
+        )
 
     overlay = cast(vs.VideoNode, overlay)
 
@@ -86,7 +101,10 @@ def overlay_sign(
 
     if isinstance(frame_ranges, list) and len(frame_ranges) > 1:
         import warnings
-        warnings.warn("overlay_sign: 'Only one range is currently supported! Grabbing the first item in list.'")
+
+        warnings.warn(
+            "overlay_sign: 'Only one range is currently supported! Grabbing the first item in list.'"
+        )
         frame_ranges = frame_ranges[0]
 
     if overlay.format.color_family is not clip_fam:
@@ -98,12 +116,16 @@ def overlay_sign(
     overlay = overlay[0] * clip.num_frames
 
     try:
-        mask = overlay.std.PropToClip('_Alpha')
+        mask = overlay.std.PropToClip("_Alpha")
     except vs.Error:
         if is_string:
-            raise FramePropError(overlay_sign, "Your image must have an alpha channel (transparency)!")
+            raise FramePropError(
+                overlay_sign, "Your image must have an alpha channel (transparency)!"
+            )
 
-        raise FramePropError(overlay_sign, "You must load in the sign using `imwri.Read`!")
+        raise FramePropError(
+            overlay_sign, "You must load in the sign using `imwri.Read`!"
+        )
 
     merge = clip.std.MaskedMerge(overlay, depth(mask, get_depth(overlay)))
     merge = limiter(merge, func=overlay_sign)
@@ -113,12 +135,14 @@ def overlay_sign(
 
     if fade_length > 0:
         if isinstance(frame_ranges, int):
-            return crossfade(clip[:frame_ranges + fade_length], merge[frame_ranges:], fade_length)
+            return crossfade(
+                clip[: frame_ranges + fade_length], merge[frame_ranges:], fade_length
+            )
 
         start, end = normalize_ranges(clip, frame_ranges)[0]
 
-        merge = crossfade(clip[:start + fade_length], merge[start:], fade_length)
+        merge = crossfade(clip[: start + fade_length], merge[start:], fade_length)
 
-        return crossfade(merge[:end], clip[end - fade_length:], fade_length)
+        return crossfade(merge[:end], clip[end - fade_length :], fade_length)
 
     return replace_ranges(clip, merge, frame_ranges)

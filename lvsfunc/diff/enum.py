@@ -3,9 +3,9 @@ from __future__ import annotations
 from vstools import CustomIntEnum
 
 __all__: list[str] = [
-    'DiffMode',
-    'VMAFFeature',
-    'ButteraugliNorm',
+    "DiffMode",
+    "VMAFFeature",
+    "ButteraugliNorm",
 ]
 
 
@@ -84,7 +84,7 @@ class VMAFFeature(CustomIntEnum):
         """
 
         if isinstance(value, str):
-            value = value.upper().replace('-', '_')
+            value = value.upper().replace("-", "_")
 
             try:
                 return cls[value]
@@ -98,11 +98,11 @@ class VMAFFeature(CustomIntEnum):
         """Get the property name for the feature."""
 
         return {
-            VMAFFeature.PSNR: 'psnr_y',
-            VMAFFeature.PSNR_HVS: 'psnr_hvs',
-            VMAFFeature.SSIM: 'float_ssim',
-            VMAFFeature.MS_SSIM: 'float_ms_ssim',
-            VMAFFeature.CIEDE2000: 'ciede2000',
+            VMAFFeature.PSNR: "psnr_y",
+            VMAFFeature.PSNR_HVS: "psnr_hvs",
+            VMAFFeature.SSIM: "float_ssim",
+            VMAFFeature.MS_SSIM: "float_ms_ssim",
+            VMAFFeature.CIEDE2000: "ciede2000",
         }[self]
 
 
@@ -129,13 +129,13 @@ class ButteraugliNorm(CustomIntEnum):
         """Get the property name for the norm."""
 
         props = {
-            ButteraugliNorm.TWO_NORM: '_BUTTERAUGLI_2Norm',
-            ButteraugliNorm.THREE_NORM: '_BUTTERAUGLI_3Norm',
-            ButteraugliNorm.INF_NORM: '_BUTTERAUGLI_INFNorm',
-            ButteraugliNorm.JULEK: '_FrameButteraugli',
+            ButteraugliNorm.TWO_NORM: "_BUTTERAUGLI_2Norm",
+            ButteraugliNorm.THREE_NORM: "_BUTTERAUGLI_3Norm",
+            ButteraugliNorm.INF_NORM: "_BUTTERAUGLI_INFNorm",
+            ButteraugliNorm.JULEK: "_FrameButteraugli",
         }
 
         if self == ButteraugliNorm.ALL:
-            return ' '.join(props.values())
+            return " ".join(props.values())
 
         return props[self]

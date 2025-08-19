@@ -4,9 +4,7 @@ from jetpytools import CustomEnum, NotFoundEnumValue
 from vskernels import Point
 from vstools import ColorRange, Matrix, core, scale_value, vs
 
-__all__: list[str] = [
-    'RGBColor'
-]
+__all__: list[str] = ["RGBColor"]
 
 
 class RGBColor(tuple[float, float, float], CustomEnum):
@@ -58,7 +56,9 @@ class RGBColor(tuple[float, float, float], CustomEnum):
         """Get the RGBColor from a name."""
 
         if name.upper() not in cls.__members__:
-            raise NotFoundEnumValue(f'{name} is not a valid RGBColor name.', cls.from_name)
+            raise NotFoundEnumValue(
+                f"{name} is not a valid RGBColor name.", cls.from_name
+            )
 
         return cls(name)
 
@@ -75,13 +75,38 @@ class RGBColor(tuple[float, float, float], CustomEnum):
         return Point.resample(blank_clip, ref.format.id, matrix=Matrix.from_video(ref))
 
     def scale_value(
-        self, bitdepth: Literal[
-            8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
-        ]
+        self,
+        bitdepth: Literal[
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+        ],
     ) -> list[int]:
         """Scale the value of the color."""
 
         # TODO: idk what to do with the colour range
         return [
-            int(scale_value(value, bitdepth, 32, range_in=ColorRange.FULL)) for value in self.value
+            int(scale_value(value, bitdepth, 32, range_in=ColorRange.FULL))
+            for value in self.value
         ]

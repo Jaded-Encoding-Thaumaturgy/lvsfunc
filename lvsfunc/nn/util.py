@@ -1,17 +1,25 @@
 from typing import Any
 
 import numpy as np
-from vstools import (FuncExceptT, InvalidVideoFormatError, core, depth,
-                     get_video_format, vs)
+from vstools import (
+    FuncExceptT,
+    InvalidVideoFormatError,
+    core,
+    depth,
+    get_video_format,
+    vs,
+)
 
 from ..exceptions import NumpyArrayLoadError
 
 __all__: list[str] = [
-    'get_format_from_npy',
+    "get_format_from_npy",
 ]
 
 
-def get_format_from_npy(frame_data: np.ndarray[Any, Any], func_except: FuncExceptT | None = None) -> vs.VideoFormat:
+def get_format_from_npy(
+    frame_data: np.ndarray[Any, Any], func_except: FuncExceptT | None = None
+) -> vs.VideoFormat:
     """
     Guess the format based on heuristics from the numpy array data.
 
@@ -41,24 +49,28 @@ def get_format_from_npy(frame_data: np.ndarray[Any, Any], func_except: FuncExcep
     bit_depth = 32 if y_data.dtype == np.float32 else y_data.itemsize * 8
 
     if num_planes == 1:
-        return get_video_format(depth(core.std.BlankClip(format=vs.GRAY8, keep=True), bit_depth))
+        return get_video_format(
+            depth(core.std.BlankClip(format=vs.GRAY8, keep=True), bit_depth)
+        )
 
     y_shape = y_data.shape
     u_shape = frame_data[1].shape
 
-    subsampling_map = {
-        (1, 1): vs.YUV444P8,
-        (1, 2): vs.YUV422P8,
-        (2, 2): vs.YUV420P8
-    }
+    subsampling_map = {(1, 1): vs.YUV444P8, (1, 2): vs.YUV422P8, (2, 2): vs.YUV420P8}
 
     y_ratio = (y_shape[0] // u_shape[0], y_shape[1] // u_shape[1])
     subsampling = subsampling_map.get(y_ratio)
 
     if not subsampling:
-        raise InvalidVideoFormatError(f'Unknown subsampling! {y_shape=}, {u_shape=}', func)  # type: ignore
+        raise InvalidVideoFormatError(
+            f"Unknown subsampling! {y_shape=}, {u_shape=}", func
+        )  # type: ignore
 
     try:
-        return get_video_format(depth(core.std.BlankClip(format=subsampling, keep=True), bit_depth))
+        return get_video_format(
+            depth(core.std.BlankClip(format=subsampling, keep=True), bit_depth)
+        )
     except AttributeError:
-        raise InvalidVideoFormatError(f'Unsupported format: {subsampling=} {bit_depth=}', func)  # type: ignore
+        raise InvalidVideoFormatError(
+            f"Unsupported format: {subsampling=} {bit_depth=}", func
+        )  # type: ignore

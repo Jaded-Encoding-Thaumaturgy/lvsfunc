@@ -6,16 +6,13 @@ from vstools import FuncExceptT, core
 from .exceptions import MissingPluginsError
 from .types import DEP_URL, F
 
-__all__: list[str] = [
-    'check_installed_plugins',
-    'required_plugins'
-]
+__all__: list[str] = ["check_installed_plugins", "required_plugins"]
 
 
 def check_installed_plugins(
     plugins: str | list[str] | dict[str, DEP_URL] = [],
     strict: bool = True,
-    func_except: FuncExceptT | None = None
+    func_except: FuncExceptT | None = None,
 ) -> list[str]:
     """
     Check if the given plugins are installed.
@@ -62,8 +59,7 @@ def check_installed_plugins(
 
 
 def required_plugins(
-    plugins: list[str] | dict[str, DEP_URL] = [],
-    func_except: FuncExceptT | None = None
+    plugins: list[str] | dict[str, DEP_URL] = [], func_except: FuncExceptT | None = None
 ) -> Callable[[F], F]:
     """
     Decorator to ensure that specified plugins are installed.

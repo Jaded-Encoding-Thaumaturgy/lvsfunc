@@ -4,15 +4,31 @@ import warnings
 from itertools import groupby
 from typing import Iterable, Literal, Self, Sequence, TypeVar
 
-from jetpytools import (CustomRuntimeError, FileIsADirectoryError,
-                        FilePermissionError, FileWasNotFoundError, SPath,
-                        SPathLike)
+from jetpytools import (
+    CustomRuntimeError,
+    FileIsADirectoryError,
+    FilePermissionError,
+    FileWasNotFoundError,
+    SPath,
+    SPathLike,
+)
 from vskernels import Catrom
 from vsrgtools import box_blur
-from vstools import (CustomError, CustomValueError, FrameRangesN, FuncExceptT,
-                     PlanesT, Sentinel, VSFunctionNoArgs, check_ref_clip,
-                     clip_async_render, core, merge_clip_props,
-                     normalize_franges, vs)
+from vstools import (
+    CustomError,
+    CustomValueError,
+    FrameRangesN,
+    FuncExceptT,
+    PlanesT,
+    Sentinel,
+    VSFunctionNoArgs,
+    check_ref_clip,
+    clip_async_render,
+    core,
+    merge_clip_props,
+    normalize_franges,
+    vs,
+)
 
 from .enum import DiffMode
 from .strategies import DiffStrategy, PlaneAvgDiff
@@ -47,9 +63,11 @@ class FindDiff:
         self,
         strategies: DiffStrategy | Sequence[DiffStrategy] = [PlaneAvgDiff],
         mode: DiffMode = DiffMode.ANY,
-        pre_process: VSFunctionNoArgs | Literal[False] = lambda x: box_blur(x).std.Crop(8, 8, 8, 8),
+        pre_process: VSFunctionNoArgs | Literal[False] = lambda x: box_blur(x).std.Crop(
+            8, 8, 8, 8
+        ),
         exclusion_ranges: Sequence[int | tuple[int, int]] | None = None,
-        func_except: FuncExceptT | None = None
+        func_except: FuncExceptT | None = None,
     ) -> None:
         """
         Find differences between two clips using various comparison methods.
@@ -98,10 +116,14 @@ class FindDiff:
         self._func_except = func_except or self.__class__.__name__
         self.mode = DiffMode(mode)
 
-        self.strategies = [strategies] if not isinstance(strategies, Sequence) else list(strategies)
+        self.strategies = (
+            [strategies] if not isinstance(strategies, Sequence) else list(strategies)
+        )
 
         if not self.strategies:
-            raise CustomValueError('You must pass at least one strategy!', self._func_except)
+            raise CustomValueError(
+                "You must pass at least one strategy!", self._func_except
+            )
 
         self.pre_process = pre_process if callable(pre_process) else None
 
@@ -111,9 +133,7 @@ class FindDiff:
         self._processed_clip: vs.VideoNode | None = None
 
     def find_diff(
-        self: TFindDiff,
-        src: vs.VideoNode, ref: vs.VideoNode,
-        force: bool = False
+        self: TFindDiff, src: vs.VideoNode, ref: vs.VideoNode, force: bool = False
     ) -> Self:
         """
         Find the differences between two clips and store the results.
@@ -146,8 +166,9 @@ class FindDiff:
 
     def get_diff(
         self: TFindDiff,
-        src: vs.VideoNode, ref: vs.VideoNode,
-        names: tuple[str, str] = ('src', 'ref')
+        src: vs.VideoNode,
+        ref: vs.VideoNode,
+        names: tuple[str, str] = ("src", "ref"),
     ) -> vs.VideoNode:
         """
         Get a processed clip highlighting the differences between two clips.
@@ -169,22 +190,33 @@ class FindDiff:
         self.find_diff(src, ref)
 
         if not isinstance(names, tuple):
-            names = ('src', 'ref')
+            names = ("src", "ref")
         elif len(names) != 2:
-            raise CustomValueError("Names must be a tuple of two strings!", self.get_diff_clip, names)
+            raise CustomValueError(
+                "Names must be a tuple of two strings!", self.get_diff_clip, names
+            )
 
         diff_clip = core.std.MakeDiff(src, ref).text.FrameNum(9)
 
-        a, b = (Catrom().scale(c, width=c.width // 2, height=c.height // 2) for c in (src, ref))
+        a, b = (
+            Catrom().scale(c, width=c.width // 2, height=c.height // 2)
+            for c in (src, ref)
+        )
         a = merge_clip_props(a, self._processed_clip)
 
-        stack_srcref = core.std.StackHorizontal([
-            a.text.Text(names[0], 7), b.text.Text(names[1], 7),
-        ])
+        stack_srcref = core.std.StackHorizontal(
+            [
+                a.text.Text(names[0], 7),
+                b.text.Text(names[1], 7),
+            ]
+        )
 
-        stack_diff = core.std.StackVertical([
-            stack_srcref, diff_clip.text.Text(text='Differences found:', alignment=8),
-        ])
+        stack_diff = core.std.StackVertical(
+            [
+                stack_srcref,
+                diff_clip.text.Text(text="Differences found:", alignment=8),
+            ]
+        )
 
         out_diff = self.get_clip_frames(stack_diff)
 
@@ -203,8 +235,9 @@ class FindDiff:
 
         if not self._diff_frames:
             raise CustomRuntimeError(
-                'You have not found the differences yet! Please run `find_diff` first.',
-                self.get_clip_frames, self._diff_frames,
+                "You have not found the differences yet! Please run `find_diff` first.",
+                self.get_clip_frames,
+                self._diff_frames,
             )
 
         return core.std.Splice([clip[f] for f in self._diff_frames])
@@ -235,42 +268,48 @@ class FindDiff:
 
         if not self.diff_ranges:
             raise CustomRuntimeError(
-                'You have not found the differences yet! Please run `find_diff` first.',
-                self.to_file, self.diff_ranges,
+                "You have not found the differences yet! Please run `find_diff` first.",
+                self.to_file,
+                self.diff_ranges,
             )
 
         sfile = SPath(output_path)
 
         if sfile.is_dir():
             raise FileIsADirectoryError(
-                'Failed to save frame ranges! Output path is a directory!',
-                self.to_file, sfile,
+                "Failed to save frame ranges! Output path is a directory!",
+                self.to_file,
+                sfile,
             )
 
-        franges = '\n'.join(f'{start}-{end}' for start, end in self.diff_ranges)
+        franges = "\n".join(f"{start}-{end}" for start, end in self.diff_ranges)
 
         try:
             sfile.write_text(franges)
         except PermissionError as e:
             raise FilePermissionError(
-                'Failed to save frame ranges! Insufficient permissions!',
-                self.to_file, e,
+                "Failed to save frame ranges! Insufficient permissions!",
+                self.to_file,
+                e,
             )
         except OSError as e:
-            raise CustomError['OSError'](
-                'Failed to save frame ranges! OS error (disk full, invalid path, etc.)!',
-                self.to_file, e,
+            raise CustomError["OSError"](
+                "Failed to save frame ranges! OS error (disk full, invalid path, etc.)!",
+                self.to_file,
+                e,
             )
         except Exception as e:
             raise CustomRuntimeError(
-                'Failed to save frame ranges!',
-                self.to_file, e,
+                "Failed to save frame ranges!",
+                self.to_file,
+                e,
             )
 
         if not sfile.exists():
             raise FileWasNotFoundError(
-                'Failed to save frame ranges! File was not found!',
-                self.to_file, sfile,
+                "Failed to save frame ranges! File was not found!",
+                self.to_file,
+                sfile,
             )
 
         return sfile
@@ -300,34 +339,38 @@ class FindDiff:
 
         if not sfile.exists():
             raise FileWasNotFoundError(
-                'Failed to load frame ranges! File was not found!',
-                self.from_file, sfile,
+                "Failed to load frame ranges! File was not found!",
+                self.from_file,
+                sfile,
             )
 
         try:
             content = sfile.read_text()
         except PermissionError as e:
             raise FilePermissionError(
-                'Failed to load frame ranges! Insufficient permissions!',
-                self.from_file, e,
+                "Failed to load frame ranges! Insufficient permissions!",
+                self.from_file,
+                e,
             )
 
         if not (content := content.strip()):
             raise CustomValueError(
-                'Failed to load frame ranges! File is empty!',
-                self.from_file, sfile,
+                "Failed to load frame ranges! File is empty!",
+                self.from_file,
+                sfile,
             )
 
         for line in content.splitlines():
             if not (line := line.strip()):
                 continue
 
-            parts = line.split('-')
+            parts = line.split("-")
 
             if len(parts) != 2 or not all(x.strip().isdigit() for x in parts):
                 raise CustomValueError(
                     'Failed to load frame ranges! Invalid format in file! Expected "start-end" per line.',
-                    self.from_file, sfile,
+                    self.from_file,
+                    sfile,
                 )
 
             start, end = map(int, parts)
@@ -336,7 +379,9 @@ class FindDiff:
 
         return self.diff_ranges
 
-    def _validate_inputs(self, src: vs.VideoNode, ref: vs.VideoNode) -> tuple[vs.VideoNode, vs.VideoNode]:
+    def _validate_inputs(
+        self, src: vs.VideoNode, ref: vs.VideoNode
+    ) -> tuple[vs.VideoNode, vs.VideoNode]:
         check_ref_clip(src, ref, self._func_except)
 
         if src.num_frames == ref.num_frames:
@@ -351,7 +396,9 @@ class FindDiff:
         min_frames = min(src.num_frames, ref.num_frames)
         return src[:min_frames], ref[:min_frames]
 
-    def _prepare_clips(self, src: vs.VideoNode, ref: vs.VideoNode) -> tuple[vs.VideoNode, vs.VideoNode]:
+    def _prepare_clips(
+        self, src: vs.VideoNode, ref: vs.VideoNode
+    ) -> tuple[vs.VideoNode, vs.VideoNode]:
         if callable(self.pre_process):
             return self.pre_process(src), self.pre_process(ref)
 
@@ -378,14 +425,20 @@ class FindDiff:
         assert isinstance(self._processed_clip, vs.VideoNode)
 
         frames_render = clip_async_render(
-            self._processed_clip, None, "Finding differences between clips...",
-            lambda n, f: Sentinel.check(n, self.mode.check_result([cb(f) for cb in callbacks])),
+            self._processed_clip,
+            None,
+            "Finding differences between clips...",
+            lambda n, f: Sentinel.check(
+                n, self.mode.check_result([cb(f) for cb in callbacks])
+            ),
         )
 
         self._diff_frames = list(Sentinel.filter(frames_render))
 
         if not self._diff_frames:
-            raise CustomError['StopIteration']('No differences found!', self._func_except)  # type: ignore[index]
+            raise CustomError["StopIteration"](
+                "No differences found!", self._func_except
+            )  # type: ignore[index]
 
         self._diff_frames.sort()
 
@@ -409,4 +462,4 @@ class FindDiff:
             yield groupl[0][1], groupl[-1][1]
 
 
-TFindDiff = TypeVar('TFindDiff', bound='FindDiff')
+TFindDiff = TypeVar("TFindDiff", bound="FindDiff")

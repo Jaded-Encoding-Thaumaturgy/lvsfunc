@@ -7,26 +7,27 @@ from warnings import warn
 from vsdenoise import dpir
 from vsexprtools import expr_func
 from vskernels import Catrom, Kernel, KernelLike
-from vstools import (CustomValueError, Matrix, check_variable, core, get_prop,
-                     vs)
+from vstools import CustomValueError, Matrix, check_variable, core, get_prop, vs
 
-__all__ = [
-    'autodb_dpir'
-]
+__all__ = ["autodb_dpir"]
 
 
 def autodb_dpir(
     clip: vs.VideoNode,
     edgevalue: int = 24,
     strs: Sequence[float] = [10, 50, 75],
-    thrs: Sequence[tuple[float, float, float]] = [(1.5, 2.0, 2.0), (3.0, 4.5, 4.5), (5.5, 7.0, 7.0)],
+    thrs: Sequence[tuple[float, float, float]] = [
+        (1.5, 2.0, 2.0),
+        (3.0, 4.5, 4.5),
+        (5.5, 7.0, 7.0),
+    ],
     matrix: Matrix | int | None = None,
     edgemasker: Callable[[vs.VideoNode], vs.VideoNode] | None = None,
     kernel: KernelLike = Catrom,
-    cuda: bool | Literal['trt'] | None = None,
+    cuda: bool | Literal["trt"] | None = None,
     return_mask: bool = False,
     write_props: bool = False,
-    **vsdpir_args: Any
+    **vsdpir_args: Any,
 ) -> vs.VideoNode:
     """
     Rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
@@ -84,22 +85,24 @@ def autodb_dpir(
     assert check_variable(clip, "autodb_dpir")
 
     def _eval_db(
-        n: int, f: Sequence[vs.VideoFrame],
-        clip: vs.VideoNode, db_clips: Sequence[vs.VideoNode],
-        nthrs: Sequence[tuple[float, float, float]]
+        n: int,
+        f: Sequence[vs.VideoFrame],
+        clip: vs.VideoNode,
+        db_clips: Sequence[vs.VideoNode],
+        nthrs: Sequence[tuple[float, float, float]],
     ) -> vs.VideoNode:
         evref_diff, y_next_diff, y_prev_diff = [
             get_prop(f[i], prop, float)
-            for i, prop in zip(range(3), ['EdgeValRefDiff', 'YNextDiff', 'YPrevDiff'])
+            for i, prop in zip(range(3), ["EdgeValRefDiff", "YNextDiff", "YPrevDiff"])
         ]
 
-        f_type = get_prop(f[0], '_PictType', str)
+        f_type = get_prop(f[0], "_PictType", str)
 
-        if f_type == 'I':
+        if f_type == "I":
             y_next_diff = (y_next_diff + evref_diff) / 2
 
         out = clip
-        nthr_used = (-1., ) * 3
+        nthr_used = (-1.0,) * 3
         for dblk, nthr in zip(db_clips, nthrs):
             if all(p > t for p, t in zip([evref_diff, y_next_diff, y_prev_diff], nthr)):
                 out = dblk
@@ -107,9 +110,15 @@ def autodb_dpir(
 
         if write_props:
             for prop_name, prop_val in zip(
-                ['Adb_EdgeValRefDiff', 'Adb_YNextDiff', 'Adb_YPrevDiff',
-                 'Adb_EdgeValRefDiffThreshold', 'Adb_YNextDiffThreshold', 'Adb_YPrevDiffThreshold'],
-                [evref_diff, y_next_diff, y_prev_diff] + list(nthr_used)
+                [
+                    "Adb_EdgeValRefDiff",
+                    "Adb_YNextDiff",
+                    "Adb_YPrevDiff",
+                    "Adb_EdgeValRefDiffThreshold",
+                    "Adb_YNextDiffThreshold",
+                    "Adb_YPrevDiffThreshold",
+                ],
+                [evref_diff, y_next_diff, y_prev_diff] + list(nthr_used),
             ):
                 out = out.std.SetFrameProp(prop_name, floatval=max(prop_val * 255, -1))
 
@@ -118,7 +127,8 @@ def autodb_dpir(
     if len(strs) != len(thrs):
         raise CustomValueError(
             f"You must pass an equal amount of values to strength {len(strs)} and thrs {len(thrs)}!",
-            autodb_dpir, f"{len(strs)} != {len(thrs)}"
+            autodb_dpir,
+            f"{len(strs)} != {len(thrs)}",
         )
 
     if edgemasker is None:
@@ -126,12 +136,14 @@ def autodb_dpir(
 
     kernel = Kernel.ensure_obj(kernel, autodb_dpir)
 
-    if vsdpir_args.get('fp16', None):
-        warn("autodb_dpir: fp16 has been known to cause issues! It's highly recommended to set it to False!")
+    if vsdpir_args.get("fp16", None):
+        warn(
+            "autodb_dpir: fp16 has been known to cause issues! It's highly recommended to set it to False!"
+        )
 
-    vsdpir_final_args = dict[str, Any](cuda=cuda, fp16=vsdpir_args.pop('fp16', False))
+    vsdpir_final_args = dict[str, Any](cuda=cuda, fp16=vsdpir_args.pop("fp16", False))
     vsdpir_final_args |= vsdpir_args
-    vsdpir_final_args.pop('strength', None)
+    vsdpir_final_args.pop("strength", None)
 
     nthrs = [tuple(x / 255 for x in thr) for thr in thrs]
     nthrs = [tuple(thr) if len(thr) == 3 else (thr[0], thr[1], thr[2]) for thr in nthrs]
@@ -156,20 +168,27 @@ def autodb_dpir(
     evref_rm = evref.std.Median().std.Convolution(matrix=[1, 2, 1, 2, 4, 2, 1, 2, 1])
 
     if return_mask:
-        return kernel.resample(evref_rm, format=clip.format, matrix=targ_matrix if not is_rgb else None)
+        return kernel.resample(
+            evref_rm, format=clip.format, matrix=targ_matrix if not is_rgb else None
+        )
 
-    diffevref = core.std.PlaneStats(evref, evref_rm, prop='EdgeValRef')
-    diffnext = core.std.PlaneStats(rgb, rgb.std.DeleteFrames([0]), prop='YNext')
-    diffprev = core.std.PlaneStats(rgb, rgb[0] + rgb, prop='YPrev')
+    diffevref = core.std.PlaneStats(evref, evref_rm, prop="EdgeValRef")
+    diffnext = core.std.PlaneStats(rgb, rgb.std.DeleteFrames([0]), prop="YNext")
+    diffprev = core.std.PlaneStats(rgb, rgb[0] + rgb, prop="YPrev")
 
     db_clips = [
-        dpir.DEBLOCK(rgb, strength=st, **vsdpir_final_args)
-        .std.SetFrameProp('Adb_DeblockStrength', intval=int(st)) for st in strs
+        dpir.DEBLOCK(rgb, strength=st, **vsdpir_final_args).std.SetFrameProp(
+            "Adb_DeblockStrength", intval=int(st)
+        )
+        for st in strs
     ]
 
     debl = core.std.FrameEval(
-        rgb, partial(_eval_db, clip=rgb, db_clips=db_clips, nthrs=nthrs),
-        prop_src=[diffevref, diffnext, diffprev]
+        rgb,
+        partial(_eval_db, clip=rgb, db_clips=db_clips, nthrs=nthrs),
+        prop_src=[diffevref, diffnext, diffprev],
     )
 
-    return kernel.resample(debl, format=clip.format, matrix=targ_matrix if not is_rgb else None)
+    return kernel.resample(
+        debl, format=clip.format, matrix=targ_matrix if not is_rgb else None
+    )

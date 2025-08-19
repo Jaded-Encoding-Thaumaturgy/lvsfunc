@@ -2,18 +2,31 @@ import colorsys
 import random
 from typing import Any
 
-from vstools import (CustomIndexError, CustomValueError, Dar, FuncExceptT,
-                     KwargsT, check_variable_resolution, core, get_h, get_w,
-                     vs)
+from vstools import (
+    CustomIndexError,
+    CustomValueError,
+    Dar,
+    FuncExceptT,
+    KwargsT,
+    check_variable_resolution,
+    core,
+    get_h,
+    get_w,
+    vs,
+)
 
 __all__ = [
-    'colored_clips',
-    'get_match_centers_scaling',
+    "colored_clips",
+    "get_match_centers_scaling",
 ]
 
 
 def colored_clips(
-    amount: int, max_hue: int = 300, rand: bool = True, seed: Any | None = None, **kwargs: Any
+    amount: int,
+    max_hue: int = 300,
+    rand: bool = True,
+    seed: Any | None = None,
+    **kwargs: Any,
 ) -> list[vs.VideoNode]:
     """
     Return a list of BlankClips with unique colors in sequential or random order.
@@ -47,7 +60,9 @@ def colored_clips(
     if amount < 2:
         raise CustomIndexError("`amount` must be at least 2!", colored_clips)
     if not (0 < max_hue <= 360):
-        raise CustomValueError("`max_hue` must be greater than 0 and less than 360 degrees!", colored_clips)
+        raise CustomValueError(
+            "`max_hue` must be greater than 0 and less than 360 degrees!", colored_clips
+        )
 
     blank_clip_args: dict[str, Any] = dict(keep=1) | kwargs
 
@@ -60,7 +75,9 @@ def colored_clips(
         shuffle = random.shuffle if seed is None else random.Random(seed).shuffle
         shuffle(rgb_color_list)
 
-    return [core.std.BlankClip(color=color, **blank_clip_args) for color in rgb_color_list]
+    return [
+        core.std.BlankClip(color=color, **blank_clip_args) for color in rgb_color_list
+    ]
 
 
 def get_match_centers_scaling(
@@ -68,7 +85,7 @@ def get_match_centers_scaling(
     target_width: int | None = None,
     target_height: int | None = 720,
     dar: Dar | None = None,
-    func_except: FuncExceptT | None = None
+    func_except: FuncExceptT | None = None,
 ) -> KwargsT:
     """
     Convenience function to calculate the native resolution for sources that were upsampled
@@ -147,15 +164,19 @@ def get_match_centers_scaling(
         "This function will remain for backwards compatibility and educational purposes, "
         "but will likely be removed in the future.\nFor more information, see the documentation for `SampleGridModel` at "
         "<https://jaded-encoding-thaumaturgy.github.io/vs-jetpack/api/vskernels/types/#vskernels.types.SampleGridModel>.",
-        FutureWarning
+        FutureWarning,
     )
 
     if target_width is None and target_height is None:
-        raise CustomValueError("Either `target_width` or `target_height` must be a positive integer.", func)
+        raise CustomValueError(
+            "Either `target_width` or `target_height` must be a positive integer.", func
+        )
 
-    for target, name in [(target_width, 'width'), (target_height, 'height')]:
+    for target, name in [(target_width, "width"), (target_height, "height")]:
         if target is not None and (not isinstance(target, int) or target <= 0):
-            raise CustomValueError(f"`target_{name}` must be a positive integer or None.", func)
+            raise CustomValueError(
+                f"`target_{name}` must be a positive integer or None.", func
+            )
 
     if isinstance(base_dimensions, vs.VideoNode):
         check_variable_resolution(base_dimensions, func)  # type: ignore
@@ -163,7 +184,9 @@ def get_match_centers_scaling(
     elif isinstance(base_dimensions, tuple):
         base_width, base_height = base_dimensions
     else:
-        raise CustomValueError("`base_dimensions` must be a VideoNode or a tuple of (Width, Height).", func)
+        raise CustomValueError(
+            "`base_dimensions` must be a VideoNode or a tuple of (Width, Height).", func
+        )
 
     dar = dar or Dar.from_res(base_width, base_height)
 
@@ -177,4 +200,6 @@ def get_match_centers_scaling(
     width = base_width * (target_width - 1) / (base_width - 1)
     height = base_height * (target_height - 1) / (base_height - 1)
 
-    return KwargsT(width=width, height=height, base_width=target_width, base_height=target_height)
+    return KwargsT(
+        width=width, height=height, base_width=target_width, base_height=target_height
+    )

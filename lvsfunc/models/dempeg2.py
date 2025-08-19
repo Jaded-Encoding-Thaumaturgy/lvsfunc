@@ -18,13 +18,17 @@ class LDempeg2(Base1xModelWithStrength):
     Dempeg2 model to denoise MPEG-2 sources.
     """
 
-    _model_filename = '1x_dempeg2_fp32.onnx'
+    _model_filename = "1x_dempeg2_fp32.onnx"
 
     @inject_self
     def apply(
-        self, clip: vs.VideoNode,
-        strength: SupportsFloat | vs.VideoNode | None = None, show_mask: bool = False,
-        iterations: int = 1, planes: PlanesT = 0, **kwargs: Any
+        self,
+        clip: vs.VideoNode,
+        strength: SupportsFloat | vs.VideoNode | None = None,
+        show_mask: bool = False,
+        iterations: int = 1,
+        planes: PlanesT = 0,
+        **kwargs: Any,
     ) -> vs.VideoNode:
         """
         Apply the model to the clip.
@@ -51,7 +55,9 @@ class LDempeg2(Base1xModelWithStrength):
         nplanes = normalize_planes(clip, planes)
 
         if any(x in nplanes for x in [1, 2]):
-            warnings.warn('Chroma denoising may be more destructive than expected. Be extra careful!')
+            warnings.warn(
+                "Chroma denoising may be more destructive than expected. Be extra careful!"
+            )
 
         kwargs |= dict(planes=nplanes, iterations=iterations)
 
@@ -65,6 +71,8 @@ class LDempeg2(Base1xModelWithStrength):
         if show_mask:
             return strength_mask
 
-        limited = depth(clip, processed).std.MaskedMerge(processed, strength_mask, nplanes)
+        limited = depth(clip, processed).std.MaskedMerge(
+            processed, strength_mask, nplanes
+        )
 
         return depth(limited, clip)
