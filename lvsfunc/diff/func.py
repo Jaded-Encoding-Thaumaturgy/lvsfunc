@@ -140,7 +140,11 @@ class FindDiff:
         self._processed_clip: vs.VideoNode | None = None
 
     def find_diff(
-        self: FindDiff, src: vs.VideoNode, ref: vs.VideoNode, force: bool = False
+        self: FindDiff,
+        src: vs.VideoNode,
+        ref: vs.VideoNode,
+        force: bool = False,
+        error_on_no_diff: bool = True,
     ) -> FindDiff:
         """
         Find the differences between two clips and store the results.
@@ -154,10 +158,12 @@ class FindDiff:
         :param force:                   If True, force the method to find differences
                                         even if they have already been found.
                                         This will clear the current results.
+        :param error_on_no_diff:        If True, raise a CustomStopIteration error if no differences are found.
+                                        Default: True.
 
         :return:                        The current instance of FindDiff.
 
-        :raise CustomStopIteration:     If no differences are found.
+        :raise CustomStopIteration:     If no differences are found and `error_on_no_diff` is True.
         """
 
         if not force and self._diff_frames:
@@ -168,6 +174,11 @@ class FindDiff:
 
         self._validate_inputs(src, ref)
         self._process(src, ref)
+
+        if error_on_no_diff and not self._diff_frames:
+            raise CustomError["StopIteration"](
+                "No differences found!", self._func_except
+            )  # type: ignore[index]
 
         return self
 
