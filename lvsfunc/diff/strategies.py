@@ -325,12 +325,12 @@ class ButteraugliDiff(DiffStrategy):
             src, ref = self._to_rgb(src), self._to_rgb(ref)
             self.norm_mode = [ButteraugliNorm.JULEK]
         else:
-            self.norm_mode = [x for x in self.norm_mode if x != ButteraugliNorm.JULEK]
+            self.norm_mode = [x for x in self.norm_mode if x != ButteraugliNorm.JULEK]  # type: ignore
 
             if not self.norm_mode:
                 self.norm_mode = [ButteraugliNorm.TWO_NORM]
 
-        ba_clip = plugin(src, ref, **{intensity_param: self.intensity_multiplier})
+        ba_clip = plugin(src, ref, **{intensity_param: self.intensity_multiplier})  # type: ignore
         props = [norm.prop for norm in self.norm_mode]
 
         callbacks = CallbacksT(
@@ -351,16 +351,16 @@ class ButteraugliDiff(DiffStrategy):
         if hasattr(core, "vship"):
             try:
                 core.vship.GpuInfo()
-                return core.vship.BUTTERAUGLI, "intensity_multiplier"
+                return core.vship.BUTTERAUGLI, "intensity_multiplier"  # type: ignore
             except vs.Error as e:
                 if "Device" in str(e):
                     if hasattr(core, "julek"):
-                        return core.julek.Butteraugli, "intensity_target"
+                        return core.julek.Butteraugli, "intensity_target"  # type: ignore
 
                     raise CustomRuntimeError("No GPU detected!", self.process, str(e))
 
         if hasattr(core, "julek"):
-            return core.julek.Butteraugli, "intensity_target"
+            return core.julek.Butteraugli, "intensity_target"  # type: ignore
 
         raise DependencyNotFoundError(
             self._func_except,
