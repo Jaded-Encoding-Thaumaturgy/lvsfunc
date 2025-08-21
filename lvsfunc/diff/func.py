@@ -260,9 +260,16 @@ class FindDiff:
         :raises CustomRuntimeError:     If you haven't run `find_diff` yet.
         """
 
-        if self._diff_frames is None:
+        if not self._diff_frames:
+            err_msg = (
+                "You have not looked for differences yet! Please run `find_diff` first."
+            )
+
+            if isinstance(self._diff_frames, list) and not self._diff_frames:
+                err_msg = f"No differences found! ({self._diff_frames=})"
+
             raise NoDifferencesFoundError(
-                "You have not found the differences yet! Please run `find_diff` first.",
+                err_msg,
                 self.get_clip_frames,
                 reason=self._diff_frames,
             )
