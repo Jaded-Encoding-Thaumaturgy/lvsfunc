@@ -207,27 +207,32 @@ class FindDiff:
 
         diff_clip = core.std.MakeDiff(src, ref).text.FrameNum(9)
 
-        a, b = (
+        a_scaled, b_scaled = (
             Catrom().scale(c, width=c.width // 2, height=c.height // 2)
             for c in (src, ref)
         )
-        a = merge_clip_props(a, self._processed_clip)
+
+        a_scaled = merge_clip_props(a_scaled, self._processed_clip)
 
         stack_srcref = core.std.StackHorizontal(
             [
-                a.text.Text(names[0], 7),
-                b.text.Text(names[1], 7),
+                a_scaled.text.Text(names[0], 9),
+                b_scaled.text.Text(names[1], 7),
             ]
         )
 
-        stack_diff = core.std.StackVertical(
-            [
-                stack_srcref,
-                diff_clip.text.Text(text="Differences found:", alignment=8),
-            ]
-        )
+        stack_diff = core.std.StackVertical([stack_srcref, diff_clip])
 
         out_diff = self.get_clip_frames(stack_diff)
+
+        out_diff = core.std.StackVertical(
+            [
+                out_diff.std.Crop(bottom=out_diff.height - stack_srcref.height),
+                out_diff.std.Crop(top=stack_srcref.height)
+                .text.Text(text="Differences found:", alignment=8)
+                .text.FrameNum(alignment=7),
+            ]
+        )
 
         return out_diff.std.SetFrameProps(fd_diffRanges=str(self.diff_ranges))
 
