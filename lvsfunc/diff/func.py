@@ -15,7 +15,6 @@ from jetpytools import (
 from vskernels import Catrom
 from vsrgtools import box_blur
 from vstools import (
-    CustomError,
     CustomValueError,
     FrameRangesN,
     FuncExceptT,
@@ -31,6 +30,7 @@ from vstools import (
 )
 
 from .enum import DiffMode
+from .exceptions import CustomOSError, NoDifferencesFoundError
 from .strategies import DiffStrategy, PlaneStatsDiff
 from .types import CallbacksT
 
@@ -175,10 +175,12 @@ class FindDiff:
         self._validate_inputs(src, ref)
         self._process(src, ref)
 
-        if error_on_no_diff and not self._diff_frames:
-            raise CustomError["StopIteration"](
-                "No differences found!", self._func_except
-            )  # type: ignore[index]
+        if error_on_no_diff and self._diff_frames is None:
+            raise NoDifferencesFoundError(
+                "No differences found!",
+                self._func_except,
+                reason=self.diff_ranges,
+            )
 
         return self
 
@@ -258,11 +260,11 @@ class FindDiff:
         :raises CustomRuntimeError:     If you haven't run `find_diff` yet.
         """
 
-        if not self._diff_frames:
-            raise CustomRuntimeError(
+        if self._diff_frames is None:
+            raise NoDifferencesFoundError(
                 "You have not found the differences yet! Please run `find_diff` first.",
                 self.get_clip_frames,
-                self._diff_frames,
+                reason=self._diff_frames,
             )
 
         return core.std.Splice([clip[f] for f in self._diff_frames])
@@ -292,10 +294,10 @@ class FindDiff:
         """
 
         if not self.diff_ranges:
-            raise CustomRuntimeError(
+            raise NoDifferencesFoundError(
                 "You have not found the differences yet! Please run `find_diff` first.",
                 self.to_file,
-                self.diff_ranges,
+                reason=self.diff_ranges,
             )
 
         sfile = SPath(output_path)
@@ -304,7 +306,7 @@ class FindDiff:
             raise FileIsADirectoryError(
                 "Failed to save frame ranges! Output path is a directory!",
                 self.to_file,
-                sfile,
+                reason=sfile,
             )
 
         franges = "\n".join(f"{start}-{end}" for start, end in self.diff_ranges)  # type: ignore
@@ -315,26 +317,26 @@ class FindDiff:
             raise FilePermissionError(
                 "Failed to save frame ranges! Insufficient permissions!",
                 self.to_file,
-                e,
+                reason=e,
             )
         except OSError as e:
-            raise CustomError["OSError"](
+            raise CustomOSError(
                 "Failed to save frame ranges! OS error (disk full, invalid path, etc.)!",
                 self.to_file,
-                e,
+                reason=e,
             )
         except Exception as e:
             raise CustomRuntimeError(
                 "Failed to save frame ranges!",
                 self.to_file,
-                e,
+                reason=e,
             )
 
         if not sfile.exists():
             raise FileWasNotFoundError(
                 "Failed to save frame ranges! File was not found!",
                 self.to_file,
-                sfile,
+                reason=sfile,
             )
 
         return sfile
@@ -355,11 +357,11 @@ class FindDiff:
 
         :return:                        The frame ranges.
 
-        :raise CustomValueError:        If the file is empty or the format is invalid.
         :raise FileWasNotFoundError:    If the file was not found.
         :raise FilePermissionError:     If you don't have permission to read the file.
-        :raise CustomOSError:           If there's an OS error (disk full, invalid path, etc.).
-        :raise CustomRuntimeError:      If there's an unexpected error.
+        :raise CustomOSError:           If there's an OS error (disk full, invalid path, etc.)
+                                        or an unexpected error occurs.
+        :raise CustomValueError:        If the file is empty or the format is invalid.
         """
 
         sfile = SPath(input_path)
@@ -380,13 +382,13 @@ class FindDiff:
                 e,
             )
         except OSError as e:
-            raise CustomError["OSError"](
+            raise CustomOSError(
                 "Failed to load frame ranges! OS error (disk full, invalid path, etc.)!",
                 self.from_file,
                 e,
             )
         except Exception as e:
-            raise CustomRuntimeError(
+            raise CustomOSError(
                 "Failed to load frame ranges! Unexpected error!",
                 self.from_file,
                 e,
@@ -396,7 +398,7 @@ class FindDiff:
             raise CustomValueError(
                 "Failed to load frame ranges! File is empty!",
                 self.from_file,
-                sfile,
+                reason=sfile,
             )
 
         for line in content.splitlines():
@@ -409,7 +411,7 @@ class FindDiff:
                 raise CustomValueError(
                     'Failed to load frame ranges! Invalid format in file! Expected "start-end" per line.',
                     self.from_file,
-                    sfile,
+                    reason=sfile,
                 )
 
             start, end = map(int, parts)
@@ -477,9 +479,9 @@ class FindDiff:
         self._diff_frames = list(Sentinel.filter(frames_render))
 
         if not self._diff_frames:
-            raise CustomError["StopIteration"](
-                "No differences found!", self._func_except
-            )  # type: ignore[index]
+            raise NoDifferencesFoundError(
+                "No differences found!", self._func_except, reason=self._diff_frames
+            )
 
         self._diff_frames.sort()
 

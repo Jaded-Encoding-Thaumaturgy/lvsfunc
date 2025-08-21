@@ -3,7 +3,6 @@ from typing import Iterable
 
 from vskernels import Catrom
 from vstools import (
-    CustomRuntimeError,
     CustomValueError,
     DependencyNotFoundError,
     FuncExceptT,
@@ -20,6 +19,7 @@ from vstools import (
 )
 
 from .enum import ButteraugliNorm, VMAFFeature
+from .exceptions import NoGpuError, VMAFError
 from .types import CallbacksT
 
 __all__: list[str] = [
@@ -245,9 +245,9 @@ class VMAFDiff(DiffStrategy):
         ]
 
         if not features:
-            raise CustomValueError(
+            raise VMAFError(
                 "You must specify at least one VMAF feature!",
-                self.process,
+                self._func_except,
                 self.feature,
             )
 
@@ -267,6 +267,12 @@ class VMAFDiff(DiffStrategy):
         return vmaf_clip.std.SetFrameProps(fd_thr=self.threshold), callbacks
 
     def _check_vmaf_version(self) -> None:
+        """
+        Check if VMAF is installed.
+
+        :raise DependencyNotFoundError: If VMAF is not installed.
+        """
+
         if hasattr(core, "vmaf"):
             return
 
@@ -314,7 +320,12 @@ class ButteraugliDiff(DiffStrategy):
     def process(
         self, src: vs.VideoNode, ref: vs.VideoNode
     ) -> tuple[vs.VideoNode, CallbacksT]:
-        """Process the difference between two clips using Butteraugli."""
+        """
+        Process the difference between two clips using Butteraugli.
+
+        :raise NoGpuError:              If no GPU is detected.
+        :raise VMAFError:               If there's an issue with VMAF.
+        """
 
         plugin, intensity_param = self._get_plugin()
 
@@ -357,7 +368,7 @@ class ButteraugliDiff(DiffStrategy):
                     if hasattr(core, "julek"):
                         return core.julek.Butteraugli, "intensity_target"  # type: ignore
 
-                    raise CustomRuntimeError("No GPU detected!", self.process, str(e))
+                    raise NoGpuError("No GPU detected!", self._get_plugin)
 
         if hasattr(core, "julek"):
             return core.julek.Butteraugli, "intensity_target"  # type: ignore
