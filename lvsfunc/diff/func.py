@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from itertools import groupby
-from typing import Iterable, Literal, Self, Sequence, TypeVar
+from typing import Iterable, Literal, Sequence
 
 from jetpytools import (
     CustomRuntimeError,
@@ -31,7 +31,7 @@ from vstools import (
 )
 
 from .enum import DiffMode
-from .strategies import DiffStrategy, PlaneAvgDiff
+from .strategies import DiffStrategy, PlaneStatsDiff
 from .types import CallbacksT
 
 
@@ -61,12 +61,12 @@ class FindDiff:
 
     def __init__(
         self,
-        strategies: DiffStrategy | Sequence[DiffStrategy] = [PlaneAvgDiff],
+        strategies: DiffStrategy | Sequence[DiffStrategy] = [PlaneStatsDiff()],
         mode: DiffMode = DiffMode.ANY,
-        pre_process: VSFunctionNoArgs | Literal[False] = lambda x: box_blur(x).std.Crop(
-            8, 8, 8, 8
+        pre_process: VSFunctionNoArgs | Literal[False] | None = (
+            lambda clip: box_blur(clip).std.Crop(8, 8, 8, 8)
         ),
-        exclusion_ranges: Sequence[int | tuple[int, int]] | None = None,
+        exclusion_ranges: FrameRangesN | None = None,
         func_except: FuncExceptT | None = None,
     ) -> None:
         """
@@ -125,7 +125,14 @@ class FindDiff:
                 "You must pass at least one strategy!", self._func_except
             )
 
-        self.pre_process = pre_process if callable(pre_process) else None
+        for i, strategy in enumerate(self.strategies):
+            if not isinstance(strategy, DiffStrategy):
+                self.strategies[i] = strategy()  # type: ignore
+
+        if callable(pre_process):
+            self.pre_process = pre_process
+        else:
+            self.pre_process = False
 
         self.exclusion_ranges = exclusion_ranges or []
 
@@ -133,8 +140,8 @@ class FindDiff:
         self._processed_clip: vs.VideoNode | None = None
 
     def find_diff(
-        self: TFindDiff, src: vs.VideoNode, ref: vs.VideoNode, force: bool = False
-    ) -> Self:
+        self: FindDiff, src: vs.VideoNode, ref: vs.VideoNode, force: bool = False
+    ) -> FindDiff:
         """
         Find the differences between two clips and store the results.
 
@@ -165,7 +172,7 @@ class FindDiff:
         return self
 
     def get_diff(
-        self: TFindDiff,
+        self: FindDiff,
         src: vs.VideoNode,
         ref: vs.VideoNode,
         names: tuple[str, str] = ("src", "ref"),
@@ -195,6 +202,8 @@ class FindDiff:
             raise CustomValueError(
                 "Names must be a tuple of two strings!", self.get_diff_clip, names
             )
+
+        assert self._processed_clip is not None
 
         diff_clip = core.std.MakeDiff(src, ref).text.FrameNum(9)
 
@@ -282,7 +291,7 @@ class FindDiff:
                 sfile,
             )
 
-        franges = "\n".join(f"{start}-{end}" for start, end in self.diff_ranges)
+        franges = "\n".join(f"{start}-{end}" for start, end in self.diff_ranges)  # type: ignore
 
         try:
             sfile.write_text(franges)
@@ -314,7 +323,7 @@ class FindDiff:
 
         return sfile
 
-    def from_file(self, input_path: SPathLike) -> list[tuple[int, int]]:
+    def from_file(self, input_path: SPathLike) -> FrameRangesN:
         """
         Load the frame ranges from a file.
 
@@ -375,7 +384,7 @@ class FindDiff:
 
             start, end = map(int, parts)
 
-            self.diff_ranges.append((start, end))
+            self.diff_ranges.append((start, end))  # type: ignore
 
         return self.diff_ranges
 
@@ -445,8 +454,8 @@ class FindDiff:
         if self.exclusion_ranges:
             excluded = set(
                 frame
-                for range_ in normalize_franges(self.exclusion_ranges)
-                for frame in range(range_[0], range_[-1] + 1)
+                for range_ in normalize_franges(self.exclusion_ranges)  # type: ignore[arg-type]
+                for frame in range(range_[0], range_[-1] + 1)  # type: ignore[arg-type]
             )
 
             self._diff_frames = [f for f in self._diff_frames if f not in excluded]
@@ -460,6 +469,3 @@ class FindDiff:
         for _, group in groupby(enumerate(iterable), lambda t: t[1] - t[0]):
             groupl = list(group)
             yield groupl[0][1], groupl[-1][1]
-
-
-TFindDiff = TypeVar("TFindDiff", bound="FindDiff")

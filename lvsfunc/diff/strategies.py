@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Iterable
 
 from vskernels import Catrom
 from vstools import (
@@ -11,6 +12,7 @@ from vstools import (
     PlanesT,
     VSFunction,
     core,
+    depth,
     get_prop,
     merge_clip_props,
     normalize_planes,
@@ -21,7 +23,8 @@ from .enum import ButteraugliNorm, VMAFFeature
 from .types import CallbacksT
 
 __all__: list[str] = [
-    "PlaneAvgDiff",
+    "PlaneStatsDiff",
+    "PlaneAvgFloatDiff",
     "VMAFDiff",
     "ButteraugliDiff",
 ]
@@ -64,27 +67,100 @@ class DiffStrategy(ABC):
         ...
 
 
-class PlaneAvgDiff(DiffStrategy):
-    """Strategy for comparing clips using PlaneAvg."""
+class _vszipStrategy:
+    """Base class for vszip strategies."""
+
+    def _check_vszip_version(self) -> None:
+        if hasattr(core, "vszip"):
+            return
+
+        if not hasattr(self, "_func_except"):
+            self._func_except = self.__class__.__name__
+
+        raise DependencyNotFoundError(
+            self._func_except,
+            "vszip <https://github.com/dnjulek/vapoursynth-zip>",
+        )
+
+
+class PlaneStatsDiff(DiffStrategy):
+    """Strategy for comparing clips using PlaneStats."""
 
     def __init__(
         self,
-        threshold: float = 0.005,
+        threshold: int = 96,
         planes: PlanesT = None,
         func_except: FuncExceptT | None = None,
     ) -> None:
         """
-        Initialize the PlaneAvg strategy.
+        Initialize the PlaneStats strategy.
+
+        :param threshold:       The threshold to use for the comparison.
+                                Must be between -128 and 128.
+                                Higher values will catch more differences.
+        :param planes:          The planes to compare.
+        :param func_except:     The function exception to use for the comparison.
+        """
+
+        if not -128 <= threshold <= 128:
+            raise CustomValueError(
+                "Threshold must be between -128 and 128!",
+                self.__init__,
+                threshold,
+            )
+
+        super().__init__(threshold, planes, func_except)
+
+    def process(
+        self, src: vs.VideoNode, ref: vs.VideoNode
+    ) -> tuple[vs.VideoNode, CallbacksT]:
+        """Process the difference between two clips using the old find_diff logic."""
+
+        src = depth(src, 8)
+        ref = depth(ref, 8)
+
+        diff_clip = src.std.MakeDiff(ref).std.PlaneStats(prop="fs_ps")
+
+        def _check_diff(f: vs.VideoFrame) -> bool:
+            diff_min = get_prop(f, "fs_psMin", (float, int), default=0.0)
+            diff_max = get_prop(f, "fs_psMax", (float, int), default=0.0)
+
+            return diff_min <= self.threshold or diff_max >= (255 - self.threshold)
+
+        callbacks = [_check_diff]
+
+        return diff_clip, CallbacksT(callbacks)
+
+
+class PlaneAvgFloatDiff(DiffStrategy, _vszipStrategy):
+    """Strategy for comparing clips using PlaneAvg."""
+
+    def __init__(
+        self,
+        threshold: float = 0.003,
+        planes: PlanesT = None,
+        func_except: FuncExceptT | None = None,
+    ) -> None:
+        """
+        Initialize the PlaneAvg (float) strategy.
 
         Dependencies:
 
             - vapoursynth-zip (https://github.com/dnjulek/vapoursynth-zip)
 
         :param threshold:       The threshold to use for the comparison.
-                                Higher will catch more differences.
+                                Must be between 0 and 1.
+                                Lower values will catch more differences.
         :param planes:          The planes to compare.
         :param func_except:     The function exception to use for the comparison.
         """
+
+        if not 0 <= threshold <= 1:
+            raise CustomValueError(
+                "Threshold must be between 0 and 1!",
+                self.__init__,
+                threshold,
+            )
 
         super().__init__(threshold, planes, func_except)
         self._check_vszip_version()
@@ -96,9 +172,12 @@ class PlaneAvgDiff(DiffStrategy):
 
         self.threshold = max(0, min(1, self.threshold))
 
+        src = depth(src, 32)
+        ref = depth(ref, 32)
+
         try:
             ps_comp = src.vszip.PlaneAverage(
-                [0], ref, planes=normalize_planes(src, self.planes), prop="fd_ps"
+                [0], ref, planes=normalize_planes(src, self.planes), prop="fd_psf"
             )
         except vs.Error as e:
             if "less frames than" in str(e):
@@ -107,25 +186,16 @@ class PlaneAvgDiff(DiffStrategy):
             raise
 
         def _check_diff(f: vs.VideoFrame) -> bool:
-            diff = get_prop(f, "fd_psDiff", (list, float), default=0)
+            diff = get_prop(f, "fd_psfDiff", (list, float), default=0.0)
 
-            if isinstance(diff, float):
-                return diff >= self.threshold
+            if isinstance(diff, Iterable):
+                return any(int(x) >= self.threshold for x in diff)
 
-            return any(float(x) >= self.threshold for x in diff)
+            return diff >= self.threshold
 
         callbacks = CallbacksT([_check_diff])
 
         return ps_comp.std.SetFrameProps(fd_thr=self.threshold), callbacks
-
-    def _check_vszip_version(self) -> None:
-        if hasattr(core, "vszip"):
-            return
-
-        raise DependencyNotFoundError(
-            self._func_except,
-            "vszip <https://github.com/dnjulek/vapoursynth-zip>",
-        )
 
 
 class VMAFDiff(DiffStrategy):
