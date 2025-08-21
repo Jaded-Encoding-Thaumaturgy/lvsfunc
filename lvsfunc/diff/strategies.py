@@ -70,7 +70,7 @@ class DiffStrategy(ABC):
 class _vszipStrategy:
     """Base class for vszip strategies."""
 
-    def _check_vszip_version(self) -> None:
+    def __post_init__(self) -> None:
         if hasattr(core, "vszip"):
             return
 
@@ -83,7 +83,7 @@ class _vszipStrategy:
         )
 
 
-class PlaneStatsDiff(DiffStrategy):
+class PlaneStatsDiff(DiffStrategy, _vszipStrategy):
     """Strategy for comparing clips using PlaneStats."""
 
     def __init__(
@@ -94,6 +94,10 @@ class PlaneStatsDiff(DiffStrategy):
     ) -> None:
         """
         Initialize the PlaneStats strategy.
+
+        Dependencies:
+
+            - vapoursynth-zip (https://github.com/dnjulek/vapoursynth-zip)
 
         :param threshold:       The threshold to use for the comparison.
                                 Must be between -128 and 128.
@@ -119,7 +123,11 @@ class PlaneStatsDiff(DiffStrategy):
         src = depth(src, 8)
         ref = depth(ref, 8)
 
-        diff_clip = src.std.MakeDiff(ref).std.PlaneStats(prop="fs_ps")
+        diff_clip = (
+            src.std.MakeDiff(ref, planes=self.planes)
+            .vszip.PlaneMinMax(prop="fs_ps")
+            .std.PlaneStats(prop="fs_ps")
+        )
 
         def _check_diff(f: vs.VideoFrame) -> bool:
             diff_min = get_prop(f, "fs_psMin", (float, int), default=0.0)
@@ -163,7 +171,6 @@ class PlaneAvgFloatDiff(DiffStrategy, _vszipStrategy):
             )
 
         super().__init__(threshold, planes, func_except)
-        self._check_vszip_version()
 
     def process(
         self, src: vs.VideoNode, ref: vs.VideoNode
@@ -201,6 +208,21 @@ class PlaneAvgFloatDiff(DiffStrategy, _vszipStrategy):
 class VMAFDiff(DiffStrategy):
     """Strategy for comparing clips using VMAF."""
 
+    def __post_init__(self) -> None:
+        """
+        Check if VMAF is installed.
+
+        :raise DependencyNotFoundError: If VMAF is not installed.
+        """
+
+        if hasattr(core, "vmaf"):
+            return
+
+        raise DependencyNotFoundError(
+            self._func_except,
+            "vmaf <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-VMAF>",
+        )
+
     def __init__(
         self,
         threshold: float = 0.999,
@@ -225,7 +247,6 @@ class VMAFDiff(DiffStrategy):
 
         super().__init__(threshold, planes, func_except)
         self.feature = [feature] if isinstance(feature, VMAFFeature) else feature
-        self._check_vmaf_version()
 
     def process(
         self, src: vs.VideoNode, ref: vs.VideoNode
@@ -265,21 +286,6 @@ class VMAFDiff(DiffStrategy):
         )
 
         return vmaf_clip.std.SetFrameProps(fd_thr=self.threshold), callbacks
-
-    def _check_vmaf_version(self) -> None:
-        """
-        Check if VMAF is installed.
-
-        :raise DependencyNotFoundError: If VMAF is not installed.
-        """
-
-        if hasattr(core, "vmaf"):
-            return
-
-        raise DependencyNotFoundError(
-            self._func_except,
-            "vmaf <https://github.com/HomeOfVapourSynthEvolution/VapourSynth-VMAF>",
-        )
 
 
 class ButteraugliDiff(DiffStrategy):
