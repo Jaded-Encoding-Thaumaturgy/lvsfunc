@@ -211,7 +211,7 @@ class FindDiff:
             names = ("src", "ref")
         elif len(names) != 2:
             raise CustomValueError(
-                "Names must be a tuple of two strings!", self.get_diff_clip, names
+                "Names must be a tuple of two strings!", self._func_except, names
             )
 
         assert self._processed_clip is not None
@@ -283,9 +283,9 @@ class FindDiff:
 
         :return:                        The path to the file.
 
-        :raise CustomRuntimeError:      If you haven't run `find_diff` yet.
+        :raise CustomStopIteration:     If you haven't run `find_diff` yet.
         :raise FileIsADirectoryError:   If the output path is a directory.
-        :raise CustomRuntimeError:      If you don't have permission to write to the file.
+        :raise FilePermissionError:     If you don't have permission to write to the file.
         :raise CustomOSError:           If there's an OS error (disk full, invalid path, etc.).
         :raise CustomRuntimeError:      If there's an unexpected error.
         :raise FileWasNotFoundError:    If the file was not found after it was supposed to be written.
@@ -358,6 +358,8 @@ class FindDiff:
         :raise CustomValueError:        If the file is empty or the format is invalid.
         :raise FileWasNotFoundError:    If the file was not found.
         :raise FilePermissionError:     If you don't have permission to read the file.
+        :raise CustomOSError:           If there's an OS error (disk full, invalid path, etc.).
+        :raise CustomRuntimeError:      If there's an unexpected error.
         """
 
         sfile = SPath(input_path)
@@ -374,6 +376,18 @@ class FindDiff:
         except PermissionError as e:
             raise FilePermissionError(
                 "Failed to load frame ranges! Insufficient permissions!",
+                self.from_file,
+                e,
+            )
+        except OSError as e:
+            raise CustomError["OSError"](
+                "Failed to load frame ranges! OS error (disk full, invalid path, etc.)!",
+                self.from_file,
+                e,
+            )
+        except Exception as e:
+            raise CustomRuntimeError(
+                "Failed to load frame ranges! Unexpected error!",
                 self.from_file,
                 e,
             )
@@ -399,6 +413,8 @@ class FindDiff:
                 )
 
             start, end = map(int, parts)
+
+            assert not isinstance(self.diff_ranges, int)
 
             self.diff_ranges.append((start, end))  # type: ignore
 
