@@ -26,6 +26,7 @@ from vstools import (
     core,
     merge_clip_props,
     normalize_franges,
+    normalize_ranges,
     vs,
 )
 
@@ -493,6 +494,10 @@ class FindDiff:
         self._diff_frames.sort()
 
         if self.exclusion_ranges:
+            self.exclusion_ranges = normalize_ranges(
+                self._processed_clip, self.exclusion_ranges
+            )
+
             excluded = set(
                 frame
                 for range_ in normalize_franges(self.exclusion_ranges)  # type: ignore[arg-type]
