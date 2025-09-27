@@ -226,7 +226,7 @@ class FindDiff:
                     ref if i else src,
                     "Name",
                     str,
-                    fallback="Ref" if i else "Src",
+                    default="Ref" if i else "Src",
                     func=self.get_diff,
                 )
 
@@ -500,12 +500,6 @@ class FindDiff:
         )
 
         self._diff_frames = list(Sentinel.filter(frames_render))
-
-        if not self._diff_frames:
-            raise NoDifferencesFoundError(
-                "No differences found!", self._func_except, reason=self._diff_frames
-            )
-
         self._diff_frames.sort()
 
         if self.exclusion_ranges:
