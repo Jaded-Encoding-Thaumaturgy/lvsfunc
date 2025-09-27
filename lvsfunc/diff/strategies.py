@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Iterable
+from typing import Any, Iterable
 
 from vskernels import Catrom
 from vstools import (
@@ -16,7 +16,10 @@ from vstools import (
     merge_clip_props,
     normalize_planes,
     vs,
+    plane,
+    join,
 )
+from vsdenoise import DFTTest
 
 from .enum import ButteraugliNorm, VMAFFeature
 from .exceptions import NoGpuError, VMAFError
@@ -27,6 +30,7 @@ __all__: list[str] = [
     "PlaneAvgFloatDiff",
     "VMAFDiff",
     "ButteraugliDiff",
+    "LowpassFilterDiff",
 ]
 
 
@@ -392,3 +396,88 @@ class ButteraugliDiff(DiffStrategy):
         return Catrom().resample(
             clip, vs.RGBS, matrix_in=Matrix.from_param_or_video(1, clip)
         )
+
+
+class LowpassFilterDiff(PlaneAvgFloatDiff):
+    def __init__(
+        self,
+        threshold: float = 0.05,
+        planes: PlanesT = 0,
+        func_except: FuncExceptT | None = None,
+    ) -> None:
+        """
+        Strategy for comparing a lowpassed filtered clip with a non-lowpassed filtered clip using PlaneAvg.
+
+        This strategy is mostly useful for comparing two BDs where one has been lowpassed.
+
+        Dependencies:
+
+            - vapoursynth-zip (https://github.com/dnjulek/vapoursynth-zip)
+            - fftspectrum_rs (https://github.com/julek/vapoursynth-fftspectrum_rs)
+
+        :param threshold:       The threshold to use for the comparison.
+                                Must be between 0 and 1.
+                                Lower values will catch more differences.
+        :param planes:          The planes to compare.
+        :param func_except:     The function exception to use for the comparison.
+        """
+
+        super().__init__(threshold, planes, func_except)
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+
+        if not hasattr(core, "fftspectrum_rs"):
+            raise DependencyNotFoundError(
+                self._func_except,
+                "fftspectrum_rs",
+            )
+
+    def process(
+        self, src: vs.VideoNode, ref: vs.VideoNode
+    ) -> tuple[vs.VideoNode, CallbacksT]:
+        """Process the difference between two clips using DFTTest and PlaneAvg."""
+
+        self.threshold = max(0, min(1, self.threshold))
+
+        planes = normalize_planes(src, self.planes)
+
+        dft = DFTTest(
+            sloc=self.kwargs.pop(
+                "sloc", [(0.0, 0.0), (0.25, 0), (0.5, 1.0), (1.0, 1.0)]
+            ),
+            **self.kwargs,
+        )
+
+        def _prepare_clip(clip: vs.VideoNode) -> vs.VideoNode:
+            clip = depth(clip, 32)
+
+            den = dft.denoise(clip)
+
+            if len(planes) == 1:
+                return plane(den, planes[0]).fftspectrum_rs.FFTSpectrum()
+
+            return join([plane(den, pl).fftspectrum_rs.FFTSpectrum() for pl in planes])
+
+        src = _prepare_clip(src)
+        ref = _prepare_clip(ref)
+
+        try:
+            ps_comp = src.vszip.PlaneAverage([0], ref, planes=planes, prop="fd_psf")
+        except vs.Error as e:
+            if "less frames than" in str(e):
+                raise LengthRefClipMismatchError(self.process, src, ref)
+
+            raise
+
+        def _check_diff(f: vs.VideoFrame) -> bool:
+            diff = get_prop(f, "fd_psfDiff", (list, float), default=0.0)
+
+            if isinstance(diff, Iterable):
+                return any(float(x) >= self.threshold for x in diff)
+
+            return diff >= self.threshold
+
+        callbacks = CallbacksT([_check_diff])
+
+        return ps_comp.std.SetFrameProps(fd_thr=self.threshold), callbacks
