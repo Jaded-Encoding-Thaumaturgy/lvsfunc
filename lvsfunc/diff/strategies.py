@@ -196,7 +196,7 @@ class PlaneAvgFloatDiff(DiffStrategy, _vszipStrategy):
             diff = get_prop(f, "fd_psfDiff", (list, float), default=0.0)
 
             if isinstance(diff, Iterable):
-                return any(int(x) >= self.threshold for x in diff)
+                return any(float(x) >= self.threshold for x in diff)
 
             return diff >= self.threshold
 
