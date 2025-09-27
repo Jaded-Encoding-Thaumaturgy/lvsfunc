@@ -4,26 +4,25 @@ import warnings
 from itertools import groupby
 from typing import Iterable, Literal, Sequence
 
-from jetpytools import (
-    CustomRuntimeError,
-    FileIsADirectoryError,
-    FilePermissionError,
-    FileWasNotFoundError,
-    SPath,
-    SPathLike,
-)
 from vskernels import Catrom
 from vsrgtools import box_blur
 from vstools import (
+    CustomRuntimeError,
     CustomValueError,
+    FileIsADirectoryError,
+    FilePermissionError,
+    FileWasNotFoundError,
     FrameRangesN,
     FuncExceptT,
     PlanesT,
     Sentinel,
+    SPath,
+    SPathLike,
     VSFunctionNoArgs,
     check_ref_clip,
     clip_async_render,
     core,
+    get_prop,
     merge_clip_props,
     normalize_franges,
     normalize_ranges,
@@ -189,7 +188,7 @@ class FindDiff:
         self: FindDiff,
         src: vs.VideoNode,
         ref: vs.VideoNode,
-        names: tuple[str, str] = ("src", "ref"),
+        names: tuple[str | None, str | None] = (None, None),
     ) -> vs.VideoNode:
         """
         Get a processed clip highlighting the differences between two clips.
@@ -200,7 +199,9 @@ class FindDiff:
         :param ref:                     The reference clip to compare.
         :param diff_height:             The height of each output clip (diff will be double this height).
                                         Default: 288.
-        :param names:                   The names of the clips. Default: ('Src', 'Ref').
+        :param names:                   The names of the clips. If None, try to get the Name property
+                                        from the clip for the name. Falls back to "src" and "ref" respectively.
+                                        Default: (None, None).
 
         :return:                        A clip highlighting the differences between the source and reference clips.
 
@@ -211,11 +212,25 @@ class FindDiff:
         self.find_diff(src, ref)
 
         if not isinstance(names, tuple):
-            names = ("src", "ref")
+            names = (None, None)
         elif len(names) != 2:
             raise CustomValueError(
                 "Names must be a tuple of two strings!", self._func_except, names
             )
+
+        new_names = list[str]()
+
+        for i, name in enumerate(names):
+            if name is None:
+                name = get_prop(
+                    ref if i else src,
+                    "Name",
+                    str,
+                    fallback="Ref" if i else "Src",
+                    func=self.get_diff,
+                )
+
+            new_names.append(name)
 
         assert self._processed_clip is not None
 
@@ -230,8 +245,8 @@ class FindDiff:
 
         stack_srcref = core.std.StackHorizontal(
             [
-                a_scaled.text.Text(names[0], 9),
-                b_scaled.text.Text(names[1], 7),
+                a_scaled.text.Text(new_names[0], 9),
+                b_scaled.text.Text(new_names[1], 7),
             ]
         )
 
