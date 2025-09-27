@@ -72,9 +72,10 @@ class Base1xModel:
     ```
     """
 
+    _is_init = False
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._initialize(kwargs.get("clip", None), kwargs)
 
     def __str__(self) -> str:
         return self.__class__.__name__
@@ -99,8 +100,7 @@ class Base1xModel:
                 "Model path not set! You may need to use a subclass!", self.apply
             )
 
-        if not hasattr(self, "_func") or self._func is None:
-            self._initialize(clip, kwargs)
+        self._initialize(clip, kwargs)
 
         processed = self._apply_model(self._func.work_clip, clip)
 
@@ -109,9 +109,14 @@ class Base1xModel:
     def _initialize(self, clip: vs.VideoNode, kwargs: dict[str, Any] = {}) -> None:
         """Initialize the model with the given kwargs and clip."""
 
+        if self._is_init:
+            return
+
         self._set_kwargs(kwargs)
         self._set_model_path()
         self._set_func(clip)
+
+        self._is_init = True
 
     def _set_kwargs(self, kwargs: dict[str, Any]) -> None:
         """Set the keyword arguments."""
@@ -144,7 +149,7 @@ class Base1xModel:
         res_kwargs = dict(matrix_in=self._matrix)
         res_kwargs |= dict(format=vs.RGB48 if self._fp16 else vs.RGBS)
 
-        return Point.resample(clip, **res_kwargs)
+        return Point().resample(clip, **res_kwargs)
 
     def _apply_model(
         self, proc_clip: vs.VideoNode, ref: vs.VideoNode | None = None
