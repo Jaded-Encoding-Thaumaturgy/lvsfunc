@@ -38,6 +38,7 @@ class DiffStrategy(ABC):
         threshold: float,
         planes: PlanesT = None,
         func_except: FuncExceptT | None = None,
+        **kwargs: Any,
     ) -> None:
         """
         Initialize the diff strategy.
@@ -45,11 +46,13 @@ class DiffStrategy(ABC):
         :param threshold:       The threshold to use for the comparison.
         :param planes:          The planes to compare.
         :param func_except:     The function exception to use for the comparison.
+        :param kwargs:          Additional keyword arguments to pass on to the process method.
         """
 
         self.threshold = threshold
         self.planes = planes
         self._func_except = func_except or self.__class__.__name__
+        self.kwargs = kwargs
 
     @abstractmethod
     def process(
