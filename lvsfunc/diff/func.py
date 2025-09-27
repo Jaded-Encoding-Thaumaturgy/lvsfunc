@@ -245,8 +245,8 @@ class FindDiff:
 
         stack_srcref = core.std.StackHorizontal(
             [
-                a_scaled.text.Text(new_names[0], 9),
-                b_scaled.text.Text(new_names[1], 7),
+                a_scaled.text.Text(new_names[0], 3),
+                b_scaled.text.Text(new_names[1], 1),
             ]
         )
 
