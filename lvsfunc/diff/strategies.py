@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Iterable
 
+from vsdenoise import DFTTest
 from vskernels import Catrom
 from vstools import (
     CustomValueError,
@@ -13,13 +14,12 @@ from vstools import (
     core,
     depth,
     get_prop,
+    join,
     merge_clip_props,
     normalize_planes,
-    vs,
     plane,
-    join,
+    vs,
 )
-from vsdenoise import DFTTest
 
 from .enum import ButteraugliNorm, VMAFFeature
 from .exceptions import NoGpuError, VMAFError
