@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from itertools import groupby
-from typing import Iterable, Literal, Sequence
+from typing import Callable, Iterable, Literal, Sequence
 
 from vskernels import Catrom
 from vsrgtools import box_blur
@@ -33,6 +33,26 @@ from .enum import DiffMode
 from .exceptions import CustomOSError, NoDifferencesFoundError
 from .strategies import DiffStrategy, PlaneStatsDiff
 from .types import CallbacksT
+
+__all__: list[str] = [
+    "FindDiff",
+    "remove_isolated_frames",
+]
+
+
+def remove_isolated_frames(frames: Iterable[int], thr: int = 1) -> Iterable[int]:
+    """
+    Remove isolated frames (frames with no adjacent frames) from the list of frames.
+
+    :param frames:  The list of frames to remove isolated frames from.
+    :param thr:     The number of frames to consider adjacent. Default: 1.
+
+    :return:        The list of frames with isolated frames removed.
+    """
+
+    frames_set = set(frames)
+
+    return [f for f in frames if (f - thr in frames_set) or (f + thr in frames_set)]
 
 
 class FindDiff:
@@ -145,13 +165,16 @@ class FindDiff:
         ref: vs.VideoNode,
         force: bool = False,
         error_on_no_diff: bool = True,
+        frames_post_process: Callable[[Iterable[int]], Iterable[int]]
+        | None = remove_isolated_frames,
     ) -> FindDiff:
         """
         Find the differences between two clips and store the results.
 
         The ranges will be accessible through the `diff_ranges` attribute.
         If you have already found the differences, the method will return the current instance,
-        unless `force` is True, in which case the current results will be cleared.
+        unless `force=True`, in which case the current results will be cleared
+        and the differences will be re-calculated.
 
         :param src:                     The source clip to compare.
         :param ref:                     The reference clip to compare.
@@ -160,6 +183,8 @@ class FindDiff:
                                         This will clear the current results.
         :param error_on_no_diff:        If True, raise a CustomStopIteration error if no differences are found.
                                         Default: True.
+        :param frames_post_process:     The post-processing function to use on the list of frames that are different.
+                                        Default: remove_isolated_frames (removes frames with no adjacent frames).
 
         :return:                        The current instance of FindDiff.
 
@@ -173,7 +198,7 @@ class FindDiff:
         self.diff_ranges = []
 
         self._validate_inputs(src, ref)
-        self._process(src, ref)
+        self._process(src, ref, frames_post_process)
 
         if error_on_no_diff and self._diff_frames is None:
             raise NoDifferencesFoundError(
@@ -189,6 +214,8 @@ class FindDiff:
         src: vs.VideoNode,
         ref: vs.VideoNode,
         names: tuple[str | None, str | None] = (None, None),
+        frames_post_process: Callable[[Iterable[int]], Iterable[int]]
+        | None = remove_isolated_frames,
     ) -> vs.VideoNode:
         """
         Get a processed clip highlighting the differences between two clips.
@@ -197,11 +224,11 @@ class FindDiff:
 
         :param src:                     The source clip to compare.
         :param ref:                     The reference clip to compare.
-        :param diff_height:             The height of each output clip (diff will be double this height).
-                                        Default: 288.
         :param names:                   The names of the clips. If None, try to get the Name property
                                         from the clip for the name. Falls back to "src" and "ref" respectively.
                                         Default: (None, None).
+        :param frames_post_process:     The post-processing function to use on the list of frames that are different.
+                                        Default: remove_isolated_frames (removes frames with no adjacent frames).
 
         :return:                        A clip highlighting the differences between the source and reference clips.
 
@@ -263,9 +290,14 @@ class FindDiff:
             ]
         )
 
-        return out_diff.std.SetFrameProps(fd_diffRanges=str(self.diff_ranges))
+        return out_diff.std.SetFrameProps(
+            Name=f"diff clip ({new_names})", fd_diffRanges=str(self.diff_ranges)
+        )
 
-    def get_clip_frames(self, clip: vs.VideoNode) -> vs.VideoNode:
+    def get_clip_frames(
+        self,
+        clip: vs.VideoNode,
+    ) -> vs.VideoNode:
         """
         Get a clip of the frames that are different between the two clips.
 
@@ -470,7 +502,12 @@ class FindDiff:
 
         return src, ref
 
-    def _process(self, src: vs.VideoNode, ref: vs.VideoNode) -> None:
+    def _process(
+        self,
+        src: vs.VideoNode,
+        ref: vs.VideoNode,
+        frames_post_process: Callable[[Iterable[int]], Iterable[int]] | None = None,
+    ) -> None:
         self._processed_clip = src
 
         callbacks: CallbacksT = []
@@ -483,9 +520,13 @@ class FindDiff:
             self._processed_clip = processed_clip
             callbacks += cb
 
-        self._find_frames(callbacks)
+        self._find_frames(callbacks, frames_post_process)
 
-    def _find_frames(self, callbacks: CallbacksT) -> None:
+    def _find_frames(
+        self,
+        callbacks: CallbacksT,
+        frames_post_process: Callable[[Iterable[int]], Iterable[int]] | None = None,
+    ) -> None:
         """Get the frames that are different between two clips."""
 
         assert isinstance(self._processed_clip, vs.VideoNode)
@@ -514,6 +555,9 @@ class FindDiff:
             )
 
             self._diff_frames = [f for f in self._diff_frames if f not in excluded]
+
+        if frames_post_process is not None:
+            self._diff_frames = list(frames_post_process(self._diff_frames))
 
         self.diff_ranges = list(self._to_ranges(self._diff_frames))
 
