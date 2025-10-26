@@ -1,12 +1,12 @@
 from vstools import (
     Keyframes,
     MismatchRefError,
-    SceneAverageStats,
     find_prop_rfs,
     get_script_path,
     merge_clip_props,
     vs,
 )
+from vstools.utils import SceneAverageStats
 
 __all__: list[str] = ["dynamic_scene_adaptive_grain"]
 
