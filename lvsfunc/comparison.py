@@ -7,12 +7,12 @@ from abc import ABC, abstractmethod
 from itertools import zip_longest
 from typing import Callable, Iterable, Iterator, Literal, Sequence, cast, overload
 
+from jetpytools import CustomIntEnum
 from vskernels import Catrom, Kernel, KernelLike, Point, Spline36
 from vstools import (
     CustomNotImplementedError,
     CustomTypeError,
     CustomValueError,
-    Direction,
     FormatsMismatchError,
     LengthMismatchError,
     Matrix,
@@ -32,6 +32,7 @@ __all__ = [
     "compare",
     "Comparer",
     "comparison_shots",
+    "Direction",
     "find_diff",
     "diff",
     "Interleave",
@@ -41,6 +42,43 @@ __all__ = [
     "Tile",
     "diff_between_clips_stack",
 ]
+
+class Direction(CustomIntEnum):
+    """
+    Enum to simplify the direction argument.
+    """
+
+    HORIZONTAL = 0
+    VERTICAL = 1
+
+    LEFT = 2
+    RIGHT = 3
+    UP = 4
+    DOWN = 5
+
+    @property
+    def is_axis(self) -> bool:
+        """
+        Whether the Direction represents an axis (horizontal/vertical).
+        """
+
+        return self <= self.VERTICAL
+
+    @property
+    def is_way(self) -> bool:
+        """
+        Whether the Direction is one of the 4 arrow directions.
+        """
+
+        return self > self.VERTICAL
+
+    @property
+    def string(self) -> str:
+        """
+        A string representation of the Direction.
+        """
+
+        return self._name_.lower()
 
 
 class Comparer(ABC):
