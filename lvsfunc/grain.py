@@ -6,7 +6,7 @@ from vstools import (
     merge_clip_props,
     vs,
 )
-from vstools.utils import SceneAverageStats
+from vstools.functions.timecodes import SceneAverageStats
 
 __all__: list[str] = ["dynamic_scene_adaptive_grain"]
 

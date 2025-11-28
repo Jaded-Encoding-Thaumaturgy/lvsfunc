@@ -4,19 +4,18 @@ import math
 import random  # type:ignore
 import warnings
 from abc import ABC, abstractmethod
+from enum import IntEnum, auto
 from itertools import zip_longest
-from typing import Callable, Iterable, Iterator, Literal, Sequence, cast, overload
+from typing import Any, Callable, Iterable, Iterator, Literal, Sequence, cast, overload
 
 from vskernels import Catrom, Kernel, KernelLike, Point, Spline36
 from vstools import (
     CustomNotImplementedError,
     CustomTypeError,
     CustomValueError,
-    Direction,
     FormatsMismatchError,
     LengthMismatchError,
     Matrix,
-    T,
     check_variable_format,
     check_variable_resolution,
     core,
@@ -41,6 +40,11 @@ __all__ = [
     "Tile",
     "diff_between_clips_stack",
 ]
+
+
+class Direction(IntEnum):
+    VERTICAL = auto()
+    HORIZONTAL = auto()
 
 
 class Comparer(ABC):
@@ -345,8 +349,8 @@ class Tile(Comparer):
 
     def _auto_arrangement(self) -> list[list[int]]:
         def _grouper(
-            iterable: Iterable[T], n: int, fillvalue: T | None = None
-        ) -> Iterator[tuple[T, ...]]:
+            iterable: Iterable[Any], n: int, fillvalue: Any | None = None
+        ) -> Iterator[tuple[Any, ...]]:
             args = [iter(iterable)] * n
             return zip_longest(*args, fillvalue=fillvalue)
 

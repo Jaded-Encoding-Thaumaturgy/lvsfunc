@@ -3,7 +3,7 @@ from typing import Any
 import numpy as np
 from vstools import (
     FuncExceptT,
-    InvalidVideoFormatError,
+    UnsupportedVideoFormatError,
     core,
     depth,
     get_video_format,
@@ -62,7 +62,7 @@ def get_format_from_npy(
     subsampling = subsampling_map.get(y_ratio)
 
     if not subsampling:
-        raise InvalidVideoFormatError(
+        raise UnsupportedVideoFormatError(
             f"Unknown subsampling! {y_shape=}, {u_shape=}", func
         )  # type: ignore
 
@@ -71,6 +71,6 @@ def get_format_from_npy(
             depth(core.std.BlankClip(format=subsampling, keep=True), bit_depth)
         )
     except AttributeError:
-        raise InvalidVideoFormatError(
+        raise UnsupportedVideoFormatError(
             f"Unsupported format: {subsampling=} {bit_depth=}", func
         )  # type: ignore
