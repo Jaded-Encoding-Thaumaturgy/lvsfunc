@@ -31,6 +31,7 @@ __all__ = [
     "compare",
     "Comparer",
     "comparison_shots",
+    "Direction",
     "find_diff",
     "diff",
     "Interleave",
