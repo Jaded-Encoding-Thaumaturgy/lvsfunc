@@ -3,15 +3,17 @@ from __future__ import annotations
 from typing import Any
 
 from vskernels import Bilinear, Kernel, KernelLike, Lanczos
-from vstools import (
+from jetpytools import (
+    SPath,
+    SPathLike,
     CustomStrEnum,
     CustomTypeError,
     CustomValueError,
     FuncExceptT,
+)
+from vstools import (
     Matrix,
-    MatrixT,
-    SPath,
-    SPathLike,
+    MatrixLike,
     clip_async_render,
     core,
     vs,
@@ -50,7 +52,7 @@ class ExportFrames(CustomStrEnum):
         clip: vs.VideoNode,
         filename: SPathLike = "bin/%d.png",
         kernel: KernelLike = Bilinear,
-        matrix: MatrixT | None = None,
+        matrix: MatrixLike | None = None,
         func_except: FuncExceptT | None = None,
         **kwargs: Any,
     ) -> list[SPath]:
@@ -141,7 +143,7 @@ def export_frames(
     frames: list[int] | int | None = None,
     filename: SPathLike = SPath("bin/%d.png"),
     dur: float = 5.0,
-    matrix: MatrixT | None = None,
+    matrix: MatrixLike | None = None,
     kernel: KernelLike = Lanczos(3),
     func_except: FuncExceptT | None = None,
     **kwargs: Any,
