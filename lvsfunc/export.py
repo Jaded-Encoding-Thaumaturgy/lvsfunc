@@ -8,7 +8,6 @@ from jetpytools import (
     SPathLike,
     CustomStrEnum,
     CustomTypeError,
-    CustomValueError,
     FuncExceptT,
 )
 from vstools import (
@@ -20,11 +19,9 @@ from vstools import (
 )
 
 from .nn import clip_to_npy
-from .random import get_random_frames
 
 __all__: list[str] = [
     "ExportFrames",
-    "export_frames",
 ]
 
 
@@ -136,49 +133,3 @@ class ExportFrames(CustomStrEnum):
         clip_async_render(writer)
 
         return list(out_file.parent.glob("*.png"))
-
-
-def export_frames(
-    clip: vs.VideoNode,
-    frames: list[int] | int | None = None,
-    filename: SPathLike = SPath("bin/%d.png"),
-    dur: float = 5.0,
-    matrix: MatrixLike | None = None,
-    kernel: KernelLike = Lanczos(3),
-    func_except: FuncExceptT | None = None,
-    **kwargs: Any,
-) -> list[SPath]:
-    """
-    Export random or specific frames from a VideoNode as PNG images.
-
-    :param clip:        The input clip to process.
-    :param filename:    Output filename pattern. Must include "%d" for frame number substitution.
-    :param matrix:      Color matrix of the input clip. Attempts to detect if None.
-    :param kernel:      Resampling kernel for RGB conversion if necessary.
-    :param func_except: Custom error handling function (for package developers).
-
-    :return:            List of SPath objects pointing to exported images.
-    """
-
-    import warnings
-
-    warnings.warn(
-        "export_frames: This function is deprecated and will be removed "
-        "in a future version. Use ExportFrames with get_random_frames instead!",
-        DeprecationWarning,
-    )
-
-    func = func_except or export_frames
-
-    if frames is None:
-        frames_clip = get_random_frames(clip)
-    else:
-        if isinstance(frames, int):
-            frames = [frames]
-
-        try:
-            frames_clip = core.std.Splice([clip[f] for f in sorted(frames)])
-        except vs.Error:
-            raise CustomValueError("Invalid frame numbers provided!", func)
-
-    return ExportFrames.PNG(frames_clip, filename, kernel, matrix, func, **kwargs)

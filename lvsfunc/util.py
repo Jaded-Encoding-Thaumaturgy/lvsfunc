@@ -2,19 +2,11 @@ import colorsys
 import random
 from typing import Any
 
-from jetpytools import CustomIndexError, CustomValueError, FuncExceptT, KwargsT
-from vstools import (
-    Dar,
-    check_variable_resolution,
-    core,
-    get_h,
-    get_w,
-    vs,
-)
+from jetpytools import CustomIndexError, CustomValueError
+from vstools import core, vs
 
 __all__ = [
     "colored_clips",
-    "get_match_centers_scaling",
 ]
 
 
@@ -75,128 +67,3 @@ def colored_clips(
     return [
         core.std.BlankClip(color=color, **blank_clip_args) for color in rgb_color_list
     ]
-
-
-def get_match_centers_scaling(
-    base_dimensions: vs.VideoNode | tuple[int, int] = (1920, 1080),
-    target_width: int | None = None,
-    target_height: int | None = 720,
-    dar: Dar | None = None,
-    func_except: FuncExceptT | None = None,
-) -> KwargsT:
-    """
-    Convenience function to calculate the native resolution for sources that were upsampled
-    using the "match centers" model as opposed to the more common "match edges" models.
-
-    While match edges will align the edges of the outermost pixels in the target image,
-    match centers will instead align the *centers* of the outermost pixels.
-
-    Here's a visual example for a 3x1 image upsampled to 7x1:
-
-        * Match edges:
-
-    +-------------+-------------+-------------+
-    |      ·      |      ·      |      ·      |
-    +-------------+-------------+-------------+
-    ↓                                         ↓
-    +-----+-----+-----+-----+-----+-----+-----+
-    |  ·  |  ·  |  ·  |  ·  |  ·  |  ·  |  ·  |
-    +-----+-----+-----+-----+-----+-----+-----+
-
-        * Match centers:
-
-    +-----------------+-----------------+-----------------+
-    |        ·        |        ·        |        ·        |
-    +-----------------+-----------------+-----------------+
-             ↓                                   ↓
-          +-----+-----+-----+-----+-----+-----+-----+
-          |  ·  |  ·  |  ·  |  ·  |  ·  |  ·  |  ·  |
-          +-----+-----+-----+-----+-----+-----+-----+
-
-    For a more detailed explanation, refer to this page: `<https://entropymine.com/imageworsener/matching/>`.
-
-    The formula for calculating values we can use during desampling is simple:
-
-    * width: base_width * (target_width - 1) / (base_width - 1)
-    * height: base_height * (target_height - 1) / (base_height - 1)
-
-    Example usage:
-
-    .. code-block:: python
-
-        >>> from vodesfunc import DescaleTarget
-        >>> ...
-        >>> native_res = get_match_centers_scaling(src, 1280, 720)
-        >>> rescaled = DescaleTarget(kernel=Catrom, upscaler=Waifu2x, downscaler=Hermite(linear=True), **native_res)
-
-    The output is meant to be passed to `vodesfunc.DescaleTarget` as keyword arguments,
-    but it may also apply to other functions that require similar parameters.
-
-    :param base_dimensions:     The base dimensions to base the calculations on. This may be derived from
-                                a given clip or a tuple of (Width, Height).
-                                Default: (1920, 1080)
-    :param target_width:        Target width for the descale. This should probably be equal to the base width.
-                                If not provided, this value is calculated using the `target_height`.
-                                Default: None.
-    :param target_height:       Target height for the descale. This should probably be equal to the base height.
-                                If not provided, this value is calculated using the `target_width`.
-                                Default: 720.
-    :param dar:                 Display aspect ratio. Used for calculating the width/height if either is None.
-                                This is used for anamorphic sources. If None, derive from `base_dimensions`.
-                                Default: None.
-    :param func_except:         Function returned for custom error handling.
-                                This should only be set by VS package developers.
-
-    :return:                    A dictionary with the keys, {width, height, base_width, base_height},
-                                which can be passed directly to `vodesfunc.DescaleTarget` or similar functions.
-    """
-
-    import warnings
-
-    func = func_except or get_match_centers_scaling
-
-    warnings.warn(
-        "get_match_centers_scaling: This function is deprecated in favor of passing "
-        "`SampleGridModel.MATCH_CENTERS` to `KernelLike` objects (example usage: `Bilinear(sample_grid_model=SampleGridModel.MATCH_CENTERS)`).\n"
-        "This function will remain for backwards compatibility and educational purposes, "
-        "but will likely be removed in the future.\nFor more information, see the documentation for `SampleGridModel` at "
-        "<https://jaded-encoding-thaumaturgy.github.io/vs-jetpack/api/vskernels/types/#vskernels.types.SampleGridModel>.",
-        FutureWarning,
-    )
-
-    if target_width is None and target_height is None:
-        raise CustomValueError(
-            "Either `target_width` or `target_height` must be a positive integer.", func
-        )
-
-    for target, name in [(target_width, "width"), (target_height, "height")]:
-        if target is not None and (not isinstance(target, int) or target <= 0):
-            raise CustomValueError(
-                f"`target_{name}` must be a positive integer or None.", func
-            )
-
-    if isinstance(base_dimensions, vs.VideoNode):
-        check_variable_resolution(base_dimensions, func)  # type: ignore
-        base_width, base_height = base_dimensions.width, base_dimensions.height  # type: ignore
-    elif isinstance(base_dimensions, tuple):
-        base_width, base_height = base_dimensions
-    else:
-        raise CustomValueError(
-            "`base_dimensions` must be a VideoNode or a tuple of (Width, Height).", func
-        )
-
-    dar = dar or Dar.from_res(base_width, base_height)
-
-    if target_height is None and target_width is not None:
-        target_height = int(get_h(target_width, dar))
-    elif target_width is None and target_height is not None:
-        target_width = int(get_w(target_height, dar))
-
-    assert target_width is not None and target_height is not None
-
-    width = base_width * (target_width - 1) / (base_width - 1)
-    height = base_height * (target_height - 1) / (base_height - 1)
-
-    return KwargsT(
-        width=width, height=height, base_width=target_width, base_height=target_height
-    )
