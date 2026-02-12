@@ -1,6 +1,6 @@
 """Light's Vapoursynth Functions."""
 
-__version__ = "0.8.7"
+__version__ = "0.9.0"
 
 __author__ = "LightArrowsEXE <LightArrowsReboot@gmail.com>"
 __maintainer__ = __author__
