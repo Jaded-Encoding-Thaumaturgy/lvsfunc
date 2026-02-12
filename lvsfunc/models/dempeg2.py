@@ -1,8 +1,8 @@
 import warnings
 from dataclasses import dataclass
 from typing import Any, SupportsFloat
-
-from vstools import PlanesT, depth, inject_self, normalize_planes, vs
+from jetpytools import inject_self
+from vstools import PlanesT, depth, normalize_planes, vs
 
 from .base import Base1xModelWithStrength
 

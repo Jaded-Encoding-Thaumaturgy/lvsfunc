@@ -1,6 +1,6 @@
 import inspect
 
-from vstools import CustomKeyError
+from jetpytools import CustomKeyError
 
 __all__: list[str] = [
     "get_full_caller_stack",

@@ -7,21 +7,23 @@ from jetpytools import CustomTypeError
 from vsexprtools import expr_func
 from vskernels import Catrom, Point
 from vsscale import autoselect_backend
-from vstools import (
-    ColorRange,
+from jetpytools import (
     CustomValueError,
     DependencyNotFoundError,
     FileWasNotFoundError,
+    SPath,
+    inject_self,
+    iterate,
+)
+from vstools import (
+    ColorRange,
     FunctionUtil,
     Matrix,
-    SPath,
     VariableFormatError,
     check_variable_format,
     depth,
     get_peak_value,
     get_video_format,
-    inject_self,
-    iterate,
     join,
     limiter,
     normalize_planes,

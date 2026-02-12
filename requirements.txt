@@ -1,3 +1,3 @@
-VapourSynth>=68
-vsjetpack>=1.0.0
-numpy>=2.1.1
+VapourSynth>=69
+vsjetpack>=1.1.0
+numpy~=2.1.1

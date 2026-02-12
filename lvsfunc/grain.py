@@ -2,10 +2,10 @@ from vstools import (
     Keyframes,
     MismatchRefError,
     find_prop_rfs,
-    get_script_path,
     merge_clip_props,
     vs,
 )
+from jetpytools import get_script_path
 from vstools.functions.timecodes import SceneAverageStats
 
 __all__: list[str] = ["dynamic_scene_adaptive_grain"]

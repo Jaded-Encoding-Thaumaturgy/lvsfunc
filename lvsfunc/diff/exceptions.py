@@ -1,6 +1,6 @@
 from typing import Any
 
-from vstools import CustomError, FuncExceptT, SupportsString
+from jetpytools import CustomError, FuncExceptT, SupportsString
 
 __all__: list[str] = [
     "NoDifferencesFoundError",

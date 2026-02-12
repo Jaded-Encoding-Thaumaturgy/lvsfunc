@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from vstools import CustomIntEnum
+from jetpytools import CustomIntEnum
 
 __all__: list[str] = [
     "DiffMode",

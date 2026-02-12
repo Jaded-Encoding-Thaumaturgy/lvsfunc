@@ -7,7 +7,8 @@ from warnings import warn
 from vsdenoise import dpir
 from vsexprtools import expr_func
 from vskernels import Catrom, Kernel, KernelLike
-from vstools import CustomValueError, Matrix, check_variable, core, get_prop, vs
+from jetpytools import CustomValueError
+from vstools import Matrix, check_variable, core, get_prop, vs
 
 __all__ = ["autodb_dpir"]
 

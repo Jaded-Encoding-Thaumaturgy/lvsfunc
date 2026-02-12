@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import Any
 
-from vstools import PlanesT, depth, fallback, inject_self, vs
+from jetpytools import inject_self, fallback
+from vstools import PlanesT, depth, vs
 
 from .base import Base1xModel
 from .np import ModelNumpyHandling

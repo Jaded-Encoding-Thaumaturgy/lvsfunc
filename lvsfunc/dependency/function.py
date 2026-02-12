@@ -1,7 +1,8 @@
 from functools import wraps
 from typing import Any, Callable
 
-from vstools import FuncExceptT, core
+from jetpytools import FuncExceptT
+from vstools import core
 
 from .exceptions import MissingPluginFunctionsError
 from .plugin import check_installed_plugins

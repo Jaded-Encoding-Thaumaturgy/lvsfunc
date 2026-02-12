@@ -13,7 +13,8 @@ from vskernels import (
     Slope,
     TopShift,
 )
-from vstools import Dar, Sar, fallback, inject_self, vs
+from jetpytools import inject_self, fallback
+from vstools import Dar, Sar, vs
 
 __all__ = ["SharpBilinear"]
 

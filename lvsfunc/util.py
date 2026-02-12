@@ -2,12 +2,9 @@ import colorsys
 import random
 from typing import Any
 
+from jetpytools import CustomIndexError, CustomValueError, FuncExceptT, KwargsT
 from vstools import (
-    CustomIndexError,
-    CustomValueError,
     Dar,
-    FuncExceptT,
-    KwargsT,
     check_variable_resolution,
     core,
     get_h,

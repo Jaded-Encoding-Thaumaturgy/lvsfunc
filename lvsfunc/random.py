@@ -1,9 +1,8 @@
 import random
 from typing import Any, Callable
 
+from jetpytools import CustomRuntimeError, CustomValueError
 from vstools import (
-    CustomRuntimeError,
-    CustomValueError,
     core,
     depth,
     get_prop,

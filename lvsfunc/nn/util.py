@@ -1,8 +1,8 @@
 from typing import Any
 
 import numpy as np
+from jetpytools import FuncExceptT
 from vstools import (
-    FuncExceptT,
     UnsupportedVideoFormatError,
     core,
     depth,

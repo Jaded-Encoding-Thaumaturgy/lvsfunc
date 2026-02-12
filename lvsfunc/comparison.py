@@ -9,10 +9,13 @@ from itertools import zip_longest
 from typing import Any, Callable, Iterable, Iterator, Literal, Sequence, cast, overload
 
 from vskernels import Catrom, Kernel, KernelLike, Point, Spline36
-from vstools import (
+from jetpytools import (
     CustomNotImplementedError,
     CustomTypeError,
     CustomValueError,
+    mod2,
+)
+from vstools import (
     FormatsMismatchError,
     LengthMismatchError,
     Matrix,
@@ -21,7 +24,6 @@ from vstools import (
     core,
     get_subsampling,
     get_w,
-    mod2,
     vs,
 )
 

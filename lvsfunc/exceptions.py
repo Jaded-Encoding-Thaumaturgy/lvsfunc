@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from vstools import CustomTypeError, CustomValueError, FuncExceptT, SupportsString
+from jetpytools import CustomTypeError, CustomValueError, FuncExceptT, SupportsString
 
 __all__ = [
     "ClipsAndNamedClipsError",

@@ -1,7 +1,7 @@
 from functools import wraps
 from typing import Any, Callable
 
-from vstools import FuncExceptT
+from jetpytools import FuncExceptT
 
 from .exceptions import MissingPackagesError
 from .types import DEP_URL, F
