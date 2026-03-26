@@ -411,7 +411,7 @@ class LowpassFilterDiff(PlaneAvgFloatDiff):
         Dependencies:
 
             - vapoursynth-zip (https://github.com/dnjulek/vapoursynth-zip)
-            - fftspectrum_rs (https://github.com/julek/vapoursynth-fftspectrum_rs)
+            - fftspectrum_rs (https://github.com/sgt0/vapoursynth-fftspectrum-rs)
 
         :param threshold:       The threshold to use for the comparison.
                                 Must be between 0 and 1.
