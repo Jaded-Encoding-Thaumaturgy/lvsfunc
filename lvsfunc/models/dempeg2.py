@@ -1,6 +1,7 @@
 import warnings
 from dataclasses import dataclass
 from typing import Any, SupportsFloat
+
 from jetpytools import inject_self
 from vstools import PlanesT, depth, normalize_planes, vs
 

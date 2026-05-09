@@ -1,8 +1,6 @@
 import warnings
 
 import numpy as np
-from vsexprtools import norm_expr
-from vskernels import Kernel, KernelLike, Point
 from jetpytools import (
     CustomValueError,
     FileWasNotFoundError,
@@ -10,12 +8,9 @@ from jetpytools import (
     SPath,
     SPathLike,
 )
-from vstools import (
-    FunctionUtil,
-    clip_async_render,
-    core,
-    vs,
-)
+from vsexprtools import norm_expr
+from vskernels import Kernel, KernelLike, Point
+from vstools import FunctionUtil, clip_async_render, core, vs
 
 from ..exceptions import NumpyArrayLoadError
 from .util import get_format_from_npy

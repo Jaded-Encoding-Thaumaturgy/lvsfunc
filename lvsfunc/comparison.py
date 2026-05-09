@@ -8,13 +8,13 @@ from enum import IntEnum, auto
 from itertools import zip_longest
 from typing import Any, Iterable, Iterator, Sequence
 
-from vskernels import Catrom, Kernel, KernelLike, Point, Spline36
 from jetpytools import (
     CustomNotImplementedError,
     CustomTypeError,
     CustomValueError,
     mod2,
 )
+from vskernels import Catrom, Kernel, KernelLike, Point, Spline36
 from vstools import (
     FormatsMismatchError,
     LengthMismatchError,

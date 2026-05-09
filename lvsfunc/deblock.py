@@ -4,10 +4,10 @@ from functools import partial
 from typing import Any, Callable, Literal, Sequence
 from warnings import warn
 
+from jetpytools import CustomValueError
 from vsdenoise import dpir
 from vsexprtools import expr_func
 from vskernels import Catrom, Kernel, KernelLike
-from jetpytools import CustomValueError
 from vstools import Matrix, check_variable, core, get_prop, vs
 
 __all__ = ["autodb_dpir"]

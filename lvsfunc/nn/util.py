@@ -2,13 +2,7 @@ from typing import Any
 
 import numpy as np
 from jetpytools import FuncExceptT
-from vstools import (
-    UnsupportedVideoFormatError,
-    core,
-    depth,
-    get_video_format,
-    vs,
-)
+from vstools import UnsupportedVideoFormatError, core, depth, get_video_format, vs
 
 from ..exceptions import NumpyArrayLoadError
 

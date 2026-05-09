@@ -3,11 +3,8 @@ from dataclasses import dataclass
 from typing import Any, Literal, SupportsFloat
 from warnings import warn
 
-from jetpytools import CustomTypeError
-from vsexprtools import expr_func
-from vskernels import Catrom, Point
-from vsscale import autoselect_backend
 from jetpytools import (
+    CustomTypeError,
     CustomValueError,
     DependencyNotFoundError,
     FileWasNotFoundError,
@@ -15,6 +12,9 @@ from jetpytools import (
     inject_self,
     iterate,
 )
+from vsexprtools import expr_func
+from vskernels import Catrom, Point
+from vsscale import autoselect_backend
 from vstools import (
     ColorRange,
     FunctionUtil,

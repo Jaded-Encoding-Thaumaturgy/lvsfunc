@@ -5,12 +5,12 @@ from itertools import groupby
 from typing import Callable, Iterable, Literal, Sequence
 
 from jetpytools import (
-    FuncExceptT,
-    CustomValueError,
     CustomRuntimeError,
+    CustomValueError,
     FileIsADirectoryError,
     FilePermissionError,
     FileWasNotFoundError,
+    FuncExceptT,
     Sentinel,
     SPath,
     SPathLike,

@@ -1,7 +1,7 @@
 from math import log2
 from typing import Any
 
-from jetpytools import inject_kwargs_params
+from jetpytools import fallback, inject_kwargs_params, inject_self
 from vskernels import (
     Bilinear,
     BorderHandling,
@@ -13,7 +13,6 @@ from vskernels import (
     Slope,
     TopShift,
 )
-from jetpytools import inject_self, fallback
 from vstools import Dar, Sar, vs
 
 __all__ = ["SharpBilinear"]

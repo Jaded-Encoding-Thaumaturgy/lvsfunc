@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Any, Iterable
 
+from jetpytools import CustomValueError, DependencyNotFoundError, FuncExceptT
 from vsdenoise import DFTTest
 from vskernels import Catrom
-from jetpytools import CustomValueError, DependencyNotFoundError, FuncExceptT
 from vstools import (
     LengthRefClipMismatchError,
     Matrix,
@@ -284,8 +284,10 @@ class VMAFDiff(DiffStrategy):
 
         callbacks = CallbacksT(
             [
-                lambda f: get_prop(f, feature.prop, (float, int), default=100)
-                <= self.threshold
+                lambda f: (
+                    get_prop(f, feature.prop, (float, int), default=100)
+                    <= self.threshold
+                )
                 for feature in features
             ]
         )

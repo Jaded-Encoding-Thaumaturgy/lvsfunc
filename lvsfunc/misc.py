@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import cast
 
-from vskernels import Catrom
 from jetpytools import CustomValueError, DependencyNotFoundError
+from vskernels import Catrom
 from vstools import (
     FramePropError,
     FrameRangeN,
