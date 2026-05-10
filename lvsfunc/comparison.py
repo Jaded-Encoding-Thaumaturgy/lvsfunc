@@ -688,7 +688,7 @@ def comparison_shots(
     maybe an example to stick in a cheeky comment somewhere. Current name pending™.
     Alias for this function is ``lvsfunc.cshots``.
 
-    I suggest you get the crops using vspreview's built-in crop helper (found under `misc`).
+    I suggest you get the crops using vsview's built-in crop helper.
     You can then pass the left/right/top/bottom arguments to this function.
     If the crops result in a very small image, you can upscale it using `height`.
 
