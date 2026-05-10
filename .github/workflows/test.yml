@@ -1,0 +1,72 @@
+name: Test Python code
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - ".github/actions/**"
+      - ".github/workflows/test.yml"
+      - "**.py"
+      - "pyproject.toml"
+  pull_request:
+    paths:
+      - ".github/actions/**"
+      - ".github/workflows/test.yml"
+      - "**.py"
+      - "pyproject.toml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  UV_NO_SYNC: "1"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked --no-dev --group test
+
+      - name: Run tests
+        run: uv run pytest --cov-report=term-missing:skip-covered tests
+
+      - name: Convert coverage report to cobertura
+        run: uv run coverage xml
+
+      - name: Coveralls GitHub Action
+        uses: coverallsapp/github-action@v2.3.7
+        with:
+          file: coverage.xml
+          format: cobertura
+          parallel: true
+          flag-name: ${{ join(matrix.*, ' - ') }}
+          fail-on-error: false
+
+      - name: Post webhook for failure
+        if: failure()
+        uses: Jaded-Encoding-Thaumaturgy/discord-failure-notifier@v1
+        with:
+          webhook-url: ${{ secrets.WEBHOOK_URL }}
+
+  post-test:
+    needs: [test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mark Coveralls as finished
+        uses: coverallsapp/github-action@v2.3.7
+        with:
+          parallel-finished: true
+          fail-on-error: false

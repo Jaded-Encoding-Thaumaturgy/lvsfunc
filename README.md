@@ -10,6 +10,12 @@
     <a href="https://pypi.org/project/lvsfunc/"><img alt="downloads" src="https://static.pepy.tech/personalized-badge/lvsfunc?period=total&units=international_system&left_color=grey&right_color=blue&left_text=downloads"></a>
 </p>
 
+<p align="center">
+    <a href="https://ko-fi.com/L4L01ZAPAB">
+        <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="ko-fi">
+    </a>
+</p>
+
 > [!CAUTION]
 >Anything **MAY** change at any time.
 >The public API **SHOULD NOT** be considered stable.
