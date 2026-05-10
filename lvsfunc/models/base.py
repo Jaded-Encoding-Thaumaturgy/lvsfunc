@@ -161,7 +161,7 @@ class Base1xModel:
         try:
             from vsmlrt import inference
         except ImportError:
-            raise DependencyNotFoundError("vsmlrt", self._func.func)  # type: ignore
+            raise DependencyNotFoundError(self._func.func, "vsmlrt")  # type: ignore
 
         if self.backend is None:
             self.backend = autoselect_backend(fp16=self._fp16)
