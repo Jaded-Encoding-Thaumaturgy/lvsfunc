@@ -70,9 +70,7 @@ def calc_tilesize(
     overlap_w: int,
     overlap_h: int,
 ) -> tuple[tuple[int, int], tuple[int, int]]: ...
-def init_backend(
-    backend: backendT, channels: int, trt_max_shapes: tuple[int, int]
-) -> backendT: ...
+def init_backend(backend: backendT, channels: int, trt_max_shapes: tuple[int, int]) -> backendT: ...
 def inference(
     clips: list[vs.VideoNode],
     network_path: str,

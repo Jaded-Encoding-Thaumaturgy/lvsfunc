@@ -117,6 +117,9 @@ venv.bak/
 # mkdocs documentation
 /site
 
+# hatch-vcs
+lvsfunc/_version.py
+
 # mypy
 .mypy_cache/
 .dmypy.json

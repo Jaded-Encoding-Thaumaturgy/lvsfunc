@@ -1,4 +1,0 @@
-
-packaging>=24.0
-pycodestyle>=2.11.1
-ruff>=0.6.5

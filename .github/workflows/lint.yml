@@ -1,39 +1,56 @@
-name: Lint Python code with Ruff
+name: Lint Python code with Ruff & mypy
 
 on:
   push:
     branches:
       - master
     paths:
-      - '**.py'
+      - "**.py"
+      - "pyproject.toml"
   pull_request:
     paths:
-      - '**.py'
+      - "**.py"
+      - "pyproject.toml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: 3.14
 
 jobs:
-  windows:
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        vs-versions:
-          - 68
-        python-version:
-          - '3.12'
+  lint:
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8.1.0
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
 
       - name: Install dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          pip install vapoursynth-portable==${{ matrix.vs-versions }}
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
+        run: uv sync --locked
 
-      - name: Running ruff
-        run: ruff check lvsfunc
+      - name: Run Ruff check
+        id: ruff_check
+        run: uv run --no-sync ruff check .
+
+      - name: Run Ruff format
+        id: ruff_format
+        if: success() || (failure() && steps.ruff_check.conclusion == 'failure')
+        run: uv run --no-sync ruff format --check --diff
+
+      - name: Running mypy
+        if: success() || (failure() && (steps.ruff_check.conclusion == 'failure' || steps.ruff_format.conclusion == 'failure'))
+        run: uv run --no-sync mypy .
+
+      - name: Post webhook for failure
+        if: failure()
+        uses: Jaded-Encoding-Thaumaturgy/discord-failure-notifier@v1
+        with:
+          webhook-url: ${{ secrets.WEBHOOK_URL }}

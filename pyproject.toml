@@ -1,0 +1,135 @@
+[build-system]
+requires = ["hatchling>=1.27.0", "hatch-vcs>=0.4.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lvsfunc"
+dynamic = ["version"]
+description = "A collection of LightArrowsEXE's VapourSynth experimental functions and wrappers"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "LightArrowsEXE", email = "LightArrowsReboot@gmail.com" }]
+maintainers = [
+    { name = "LightArrowsEXE", email = "LightArrowsReboot@gmail.com" },
+]
+keywords = ["vapoursynth", "vsjetpack", "video", "encoding", "filtering"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: GPU",
+    # "Framework :: VapourSynth"  https://github.com/pypa/trove-classifiers/pull/240
+    "Intended Audience :: Developers",
+    "Intended Audience :: Other Audience",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Multimedia :: Video :: Display",
+    "Typing :: Typed",
+]
+dependencies = [
+    "dfttest2>=10",
+    "vapoursynth>=74",
+    "vapoursynth-bestsource>=17.0",
+    "vapoursynth-resize2>=0.4.3",
+    "vapoursynth-vszip>=13.0.0",
+    "vsfpng>=1.2",
+    "vsjetpack[basic]",
+]
+
+[project.urls]
+"Source Code" = "https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc"
+Tracker = "https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/issues"
+Contact = "https://discord.gg/XTpc6Fa9eB"
+
+[dependency-groups]
+dev = ["mypy~=2.0.0", "prek>=0.3.13", "ruff~=0.15.12", "vsstubs>=1.5.0"]
+
+[tool.hatch.build]
+artifacts = ["lvsfunc/_version.py"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["lvsfunc"]
+include = ["lvsfunc/models/shaders/**/*.onnx"]
+exclude = ["tests", "stubs"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "lvsfunc",
+    "stubs",
+    "tests",
+    "README.md",
+    "LICENSE",
+    "pyproject.toml",
+]
+
+[tool.hatch.build.hooks.vcs]
+version-file = "lvsfunc/_version.py"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.mypy]
+mypy_path = "$MYPY_CONFIG_FILE_DIR/stubs"
+files = ["lvsfunc"]
+exclude_gitignore = true
+
+warn_return_any = true
+warn_unreachable = true
+
+allow_redefinition = false
+implicit_reexport = false
+strict = true
+
+disallow_any_generics = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+
+no_implicit_optional = true
+strict_optional = true
+
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+
+ignore_errors = false
+
+allow_untyped_globals = false
+strict_equality = true
+
+show_error_context = false
+show_column_numbers = true
+show_error_codes = true
+color_output = true
+error_summary = true
+pretty = true
+
+[[tool.mypy.overrides]]
+module = "cytoolz.*"
+ignore_errors = true
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+exclude = ["stubs/**"]
+extend-ignore = ["C408", "D100", "D107", "D301", "E226"]
+
+[tool.ruff.lint.per-file-ignores]
+"lvsfunc/**/__init__.py" = ["F401", "F403"]
+
+[tool.uv.sources]
+vsjetpack = { git = "https://github.com/Jaded-Encoding-Thaumaturgy/vs-jetpack.git" }
