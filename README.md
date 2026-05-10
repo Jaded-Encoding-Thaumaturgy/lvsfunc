@@ -11,13 +11,15 @@
 </p>
 
 > [!CAUTION]
-> This package is intended to be
-> a sort of testing grounds
-> for functions I write.
-> As such,
-> you should NEVER depend on this package,
-> and instead wait for the useful functions
-> to get adopted into other [JET](https://github.com/Jaded-Encoding-Thaumaturgy) packages.
+>Anything **MAY** change at any time.
+>The public API **SHOULD NOT** be considered stable.
+>
+>Many functions in this package are considered **EXPERIMENTAL** and **UNOPTIMAL** for regular filterchains,
+>are likely to require either extensive testing,
+>or may be moved to a different [_Jaded Encoding Thaumaturgy_](https://github.com/Jaded-Encoding-Thaumaturgy) package at any point.
+>
+>If you use `lvsfunc` in any of your projects,
+>please consider hardcoding a version requirement!
 
 If you're testing new functionality
 that may be ported over
@@ -38,19 +40,16 @@ drop by `#dev` in the [JET Discord server](https://discord.gg/XTpc6Fa9eB).
 
 ## How to install
 
-If you have the old `lvsfunc.py` module,
-remove that from your system first.
+`lvsfunc` is distributed via PyPi. You can install it with the following command:
 
-Install `lvsfunc` with the following command:
-
-```sh
-$ pip3 install lvsfunc --no-cache-dir -U
+```shell
+pip install lvsfunc
 ```
 
-Or if you want the latest git version, install it with this command:
+You can install the git latest version with the following command:
 
-```sh
-$ pip3 install git+https://github.com/Irrational-Encoding-Wizardry/lvsfunc.git --no-cache-dir -U
+```shell
+pip install git+https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc.git
 ```
 
 ## Usage
@@ -64,15 +63,3 @@ aa = lvf.deblock.autodb_dpir(...)
 comp = lvf.comparison.compare(...)
 ...
 ```
-
-## Disclaimer
-
-Anything **MAY** change at any time.
-The public API **SHOULD NOT** be considered stable.
-
-Many functions in this package are considered **EXPERIMENTAL**,
-and are likely to require either full testing,
-or may be moved to a different _Jaded Encoding Thaumaturgy_ package after some time.
-
-If you use _lvsfunc_ in any of your projects,
-please consider hardcoding a version requirement.
