@@ -72,6 +72,9 @@ class RGBColor(tuple[float, float, float], CustomEnum):
 
         assert ref.format
 
+        if ref.format.color_family == vs.RGB:
+            return Point().resample(blank_clip, ref.format.id)
+
         return Point.resample(blank_clip, ref.format.id, matrix=Matrix.from_video(ref))
 
     def scale_value(
