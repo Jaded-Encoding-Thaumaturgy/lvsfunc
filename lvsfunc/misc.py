@@ -4,6 +4,7 @@ from typing import cast
 
 from jetpytools import CustomValueError, DependencyNotFoundError
 from vskernels import Catrom
+from vssource import BestSource
 from vstools import (
     FramePropError,
     FrameRangeN,
@@ -11,7 +12,6 @@ from vstools import (
     Matrix,
     ResolutionsMismatchError,
     check_variable,
-    core,
     depth,
     get_depth,
     limiter,
@@ -75,6 +75,7 @@ def overlay_sign(
 
     if fade_length > 0:
         try:
+            # TODO: Modify to use crossfade from vskernels instead
             from kagefunc import crossfade
         except ModuleNotFoundError as e:
             raise DependencyNotFoundError(overlay_sign, e, reason="fade_length > 0")
@@ -82,10 +83,9 @@ def overlay_sign(
     assert check_variable(clip, overlay_sign)
 
     is_string = isinstance(overlay, str)
-    clip_fam = clip.format.color_family
 
     if is_string:
-        overlay = core.imwri.Read(overlay, alpha=True)
+        overlay = BestSource.source(overlay)
 
     if not isinstance(overlay, vs.VideoNode):
         raise CustomValueError(
@@ -106,12 +106,7 @@ def overlay_sign(
         )
         frame_ranges = frame_ranges[0]
 
-    if overlay.format.color_family is not clip_fam:
-        if clip_fam is vs.RGB:
-            overlay = Catrom().resample(overlay, clip.format.id, matrix_in=matrix)
-        else:
-            overlay = Catrom().resample(overlay, clip.format.id, matrix)
-
+    overlay = Catrom().resample(overlay, clip, Matrix.from_param_or_video(matrix, clip))
     overlay = overlay[0] * clip.num_frames
 
     try:
