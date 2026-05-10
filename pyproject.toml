@@ -48,7 +48,7 @@ Tracker = "https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/issues"
 Contact = "https://discord.gg/XTpc6Fa9eB"
 
 [dependency-groups]
-dev = ["mypy~=2.0.0", "prek>=0.3.13", "ruff~=0.15.12", "vsstubs>=1.5.0"]
+dev = ["prek>=0.3.13", "ruff~=0.15.12", "vsstubs>=1.5.0"]
 
 [tool.hatch.build]
 artifacts = ["lvsfunc/_version.py"]
