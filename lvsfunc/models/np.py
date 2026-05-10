@@ -62,9 +62,7 @@ class ModelNumpyHandling:
 
         return np.stack(np_array, axis=0)
 
-    def _numpy_to_clip(
-        self, np_array: np.ndarray[Any, Any], format: vs.VideoFormat
-    ) -> vs.VideoNode:
+    def _numpy_to_clip(self, np_array: np.ndarray[Any, Any], format: vs.VideoFormat) -> vs.VideoNode:
         """
         Convert a given numpy array back into a vs.VideoNode.
 
@@ -75,15 +73,11 @@ class ModelNumpyHandling:
         """
 
         num_frames, height, width, num_planes = np_array.shape
-        clip = core.std.BlankClip(
-            length=num_frames, width=width, height=height, format=format.id
-        )
+        clip = core.std.BlankClip(length=num_frames, width=width, height=height, format=format.id)
         for n in range(num_frames):
             frame = clip.get_frame(n)
             for plane in range(num_planes):
-                np.copyto(
-                    np.asarray(frame.get_write_array(plane)), np_array[n, :, :, plane]
-                )  # type: ignore[attr-defined]  # type: ignore[attr-defined]
+                np.copyto(np.asarray(frame.get_write_array(plane)), np_array[n, :, :, plane])  # type: ignore[attr-defined]  # type: ignore[attr-defined]
         return clip
 
     def _replace_array_section(
@@ -102,10 +96,7 @@ class ModelNumpyHandling:
         :return:                    The modified numpy array.
         """
 
-        slices = tuple(
-            slice(start, start + size)
-            for start, size in zip(section, replacement_array.shape)
-        )
+        slices = tuple(slice(start, start + size) for start, size in zip(section, replacement_array.shape))
         target_array[slices] = replacement_array
 
         return target_array

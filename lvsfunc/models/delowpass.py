@@ -92,12 +92,8 @@ class _LHzDelowpass(Base1xModel, ModelNumpyHandling):
             left_columns = proc_np[:, :, :columns, plane]
             right_columns = proc_np[:, :, -columns:, plane]
 
-            self._replace_array_section(
-                clip_np[:, :, :, plane], left_columns, (0, 0, 0, 0)
-            )
-            self._replace_array_section(
-                clip_np[:, :, :, plane], right_columns, (0, 0, 0, -columns)
-            )
+            self._replace_array_section(clip_np[:, :, :, plane], left_columns, (0, 0, 0, 0))
+            self._replace_array_section(clip_np[:, :, :, plane], right_columns, (0, 0, 0, -columns))
 
         return self._numpy_to_clip(clip_np, proc.format)  # type: ignore
 

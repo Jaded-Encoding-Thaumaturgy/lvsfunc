@@ -88,9 +88,7 @@ def overlay_sign(
         overlay = BestSource.source(overlay)
 
     if not isinstance(overlay, vs.VideoNode):
-        raise CustomValueError(
-            "`overlay` must be a VideoNode object or a string path!", overlay_sign
-        )
+        raise CustomValueError("`overlay` must be a VideoNode object or a string path!", overlay_sign)
 
     overlay = cast(vs.VideoNode, overlay)
 
@@ -101,9 +99,7 @@ def overlay_sign(
     if isinstance(frame_ranges, list) and len(frame_ranges) > 1:
         import warnings
 
-        warnings.warn(
-            "overlay_sign: 'Only one range is currently supported! Grabbing the first item in list.'"
-        )
+        warnings.warn("overlay_sign: 'Only one range is currently supported! Grabbing the first item in list.'")
         frame_ranges = frame_ranges[0]
 
     overlay = Catrom().resample(overlay, clip, Matrix.from_param_or_video(matrix, clip))
@@ -113,13 +109,9 @@ def overlay_sign(
         mask = overlay.std.PropToClip("_Alpha")
     except vs.Error:
         if is_string:
-            raise FramePropError(
-                overlay_sign, "Your image must have an alpha channel (transparency)!"
-            )
+            raise FramePropError(overlay_sign, "Your image must have an alpha channel (transparency)!")
 
-        raise FramePropError(
-            overlay_sign, "You must load in the sign using `imwri.Read`!"
-        )
+        raise FramePropError(overlay_sign, "You must load in the sign using `imwri.Read`!")
 
     merge = clip.std.MaskedMerge(overlay, depth(mask, get_depth(overlay)))
     merge = limiter(merge, func=overlay_sign)
@@ -129,9 +121,7 @@ def overlay_sign(
 
     if fade_length > 0:
         if isinstance(frame_ranges, int):
-            return crossfade(
-                clip[: frame_ranges + fade_length], merge[frame_ranges:], fade_length
-            )
+            return crossfade(clip[: frame_ranges + fade_length], merge[frame_ranges:], fade_length)
 
         start, end = normalize_ranges(clip, frame_ranges)[0]
 

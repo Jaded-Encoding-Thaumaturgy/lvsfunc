@@ -49,9 +49,7 @@ def get_full_caller_stack() -> list[str]:
 
     while frame:
         caller_info = inspect.getframeinfo(frame)
-        stack.append(
-            f"{caller_info.function} in {caller_info.filename}:{caller_info.lineno}"
-        )
+        stack.append(f"{caller_info.function} in {caller_info.filename}:{caller_info.lineno}")
         frame = frame.f_back
 
     return stack
@@ -71,9 +69,7 @@ def get_caller_chain() -> str:
     return "→".join(reversed(function_names))
 
 
-def format_caller_stack(
-    max_depth: int | None = None, include_line_numbers: bool = True
-) -> str:
+def format_caller_stack(max_depth: int | None = None, include_line_numbers: bool = True) -> str:
     """
     Format the caller stack into a readable string.
 
@@ -117,9 +113,7 @@ def get_caller_info(depth: int = 1) -> str:
     stack = _remove_caller_formatting(get_full_caller_stack())
 
     if depth < 1 or depth > len(stack):
-        raise CustomKeyError(
-            f"Invalid depth: {depth}. Stack depth is {len(stack)}", get_caller_info
-        )
+        raise CustomKeyError(f"Invalid depth: {depth}. Stack depth is {len(stack)}", get_caller_info)
 
     caller = stack[depth - 1]
     parts = caller.split(" in ")

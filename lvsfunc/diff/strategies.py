@@ -57,9 +57,7 @@ class DiffStrategy(ABC):
         self.kwargs = kwargs
 
     @abstractmethod
-    def process(
-        self, src: vs.VideoNode, ref: vs.VideoNode
-    ) -> tuple[vs.VideoNode, CallbacksT]:
+    def process(self, src: vs.VideoNode, ref: vs.VideoNode) -> tuple[vs.VideoNode, CallbacksT]:
         """
         Process the difference between two clips.
 
@@ -120,18 +118,14 @@ class PlaneStatsDiff(DiffStrategy, _vszipStrategy):
 
         super().__init__(threshold, planes, func_except)
 
-    def process(
-        self, src: vs.VideoNode, ref: vs.VideoNode
-    ) -> tuple[vs.VideoNode, CallbacksT]:
+    def process(self, src: vs.VideoNode, ref: vs.VideoNode) -> tuple[vs.VideoNode, CallbacksT]:
         """Process the difference between two clips using the old find_diff logic."""
 
         src = depth(src, 8)
         ref = depth(ref, 8)
 
         diff_clip = (
-            src.std.MakeDiff(ref, planes=self.planes)
-            .vszip.PlaneMinMax(prop="fs_ps")
-            .std.PlaneStats(prop="fs_ps")
+            src.std.MakeDiff(ref, planes=self.planes).vszip.PlaneMinMax(prop="fs_ps").std.PlaneStats(prop="fs_ps")
         )
 
         def _check_diff(f: vs.VideoFrame) -> bool:
@@ -177,9 +171,7 @@ class PlaneAvgFloatDiff(DiffStrategy, _vszipStrategy):
 
         super().__init__(threshold, planes, func_except)
 
-    def process(
-        self, src: vs.VideoNode, ref: vs.VideoNode
-    ) -> tuple[vs.VideoNode, CallbacksT]:
+    def process(self, src: vs.VideoNode, ref: vs.VideoNode) -> tuple[vs.VideoNode, CallbacksT]:
         """Process the difference between two clips using PlaneAvg."""
 
         self.threshold = max(0, min(1, self.threshold))
@@ -188,9 +180,7 @@ class PlaneAvgFloatDiff(DiffStrategy, _vszipStrategy):
         ref = depth(ref, 32)
 
         try:
-            ps_comp = src.vszip.PlaneAverage(
-                [0], ref, planes=normalize_planes(src, self.planes), prop="fd_psf"
-            )
+            ps_comp = src.vszip.PlaneAverage([0], ref, planes=normalize_planes(src, self.planes), prop="fd_psf")
         except vs.Error as e:
             if "less frames than" in str(e):
                 raise LengthRefClipMismatchError(self.process, src, ref)
@@ -253,9 +243,7 @@ class VMAFDiff(DiffStrategy):
         super().__init__(threshold, planes, func_except)
         self.feature = [feature] if isinstance(feature, VMAFFeature) else feature
 
-    def process(
-        self, src: vs.VideoNode, ref: vs.VideoNode
-    ) -> tuple[vs.VideoNode, CallbacksT]:
+    def process(self, src: vs.VideoNode, ref: vs.VideoNode) -> tuple[vs.VideoNode, CallbacksT]:
         """Process the difference between two clips using VMAF."""
 
         self.threshold = max(0, min(1, self.threshold))
@@ -263,11 +251,7 @@ class VMAFDiff(DiffStrategy):
         features = [
             f
             for feature in self.feature
-            for f in (
-                [f for f in VMAFFeature if f.value >= 0]
-                if feature == VMAFFeature.ALL
-                else [feature]
-            )
+            for f in ([f for f in VMAFFeature if f.value >= 0] if feature == VMAFFeature.ALL else [feature])
         ]
 
         if not features:
@@ -277,19 +261,11 @@ class VMAFDiff(DiffStrategy):
                 self.feature,
             )
 
-        vmaf_clips = [
-            core.vmaf.Metric(src, ref, feature=feature) for feature in features
-        ]
+        vmaf_clips = [core.vmaf.Metric(src, ref, feature=feature) for feature in features]
         vmaf_clip = merge_clip_props(*vmaf_clips)
 
         callbacks = CallbacksT(
-            [
-                lambda f: (
-                    get_prop(f, feature.prop, (float, int), default=100)
-                    <= self.threshold
-                )
-                for feature in features
-            ]
+            [lambda f: get_prop(f, feature.prop, (float, int), default=100) <= self.threshold for feature in features]
         )
 
         return vmaf_clip.std.SetFrameProps(fd_thr=self.threshold), callbacks
@@ -330,9 +306,7 @@ class ButteraugliDiff(DiffStrategy):
         if not isinstance(self.norm_mode, list):
             self.norm_mode = [self.norm_mode]
 
-    def process(
-        self, src: vs.VideoNode, ref: vs.VideoNode
-    ) -> tuple[vs.VideoNode, CallbacksT]:
+    def process(self, src: vs.VideoNode, ref: vs.VideoNode) -> tuple[vs.VideoNode, CallbacksT]:
         """
         Process the difference between two clips using Butteraugli.
 
@@ -358,18 +332,11 @@ class ButteraugliDiff(DiffStrategy):
         props = [norm.prop for norm in self.norm_mode]
 
         callbacks = CallbacksT(
-            [
-                lambda f: any(
-                    get_prop(f, prop, (float, int), default=0) >= self.threshold
-                    for prop in props
-                )
-            ]
+            [lambda f: any(get_prop(f, prop, (float, int), default=0) >= self.threshold for prop in props)]
         )
 
         # Get the matrix from source back to prevent it from being set to RGB in the return clip
-        return src_matrix.apply(ba_clip).std.SetFrameProps(
-            fd_thr=self.threshold
-        ), callbacks
+        return src_matrix.apply(ba_clip).std.SetFrameProps(fd_thr=self.threshold), callbacks
 
     def _get_plugin(self) -> tuple[VSFunction, str]:
         if hasattr(core, "vship"):
@@ -393,9 +360,7 @@ class ButteraugliDiff(DiffStrategy):
         )
 
     def _to_rgb(self, clip: vs.VideoNode) -> vs.VideoNode:
-        return Catrom().resample(
-            clip, vs.RGBS, matrix_in=Matrix.from_param_or_video(1, clip)
-        )
+        return Catrom().resample(clip, vs.RGBS, matrix_in=Matrix.from_param_or_video(1, clip))
 
 
 class LowpassFilterDiff(PlaneAvgFloatDiff):
@@ -433,9 +398,7 @@ class LowpassFilterDiff(PlaneAvgFloatDiff):
                 "fftspectrum_rs",
             )
 
-    def process(
-        self, src: vs.VideoNode, ref: vs.VideoNode
-    ) -> tuple[vs.VideoNode, CallbacksT]:
+    def process(self, src: vs.VideoNode, ref: vs.VideoNode) -> tuple[vs.VideoNode, CallbacksT]:
         """Process the difference between two clips using DFTTest and PlaneAvg."""
 
         self.threshold = max(0, min(1, self.threshold))
@@ -443,9 +406,7 @@ class LowpassFilterDiff(PlaneAvgFloatDiff):
         planes = normalize_planes(src, self.planes)
 
         dft = DFTTest(
-            sloc=self.kwargs.pop(
-                "sloc", [(0.0, 0.0), (0.25, 0), (0.5, 1.0), (1.0, 1.0)]
-            ),
+            sloc=self.kwargs.pop("sloc", [(0.0, 0.0), (0.25, 0), (0.5, 1.0), (1.0, 1.0)]),
             **self.kwargs,
         )
 

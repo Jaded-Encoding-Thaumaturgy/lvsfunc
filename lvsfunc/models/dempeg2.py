@@ -56,9 +56,7 @@ class LDempeg2(Base1xModelWithStrength):
         nplanes = normalize_planes(clip, planes)
 
         if any(x in nplanes for x in [1, 2]):
-            warnings.warn(
-                "Chroma denoising may be more destructive than expected. Be extra careful!"
-            )
+            warnings.warn("Chroma denoising may be more destructive than expected. Be extra careful!")
 
         kwargs |= dict(planes=nplanes, iterations=iterations)
 
@@ -72,8 +70,6 @@ class LDempeg2(Base1xModelWithStrength):
         if show_mask:
             return strength_mask
 
-        limited = depth(clip, processed).std.MaskedMerge(
-            processed, strength_mask, nplanes
-        )
+        limited = depth(clip, processed).std.MaskedMerge(processed, strength_mask, nplanes)
 
         return depth(limited, clip)

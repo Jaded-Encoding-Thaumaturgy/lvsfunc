@@ -1,13 +1,7 @@
 import warnings
 
 import numpy as np
-from jetpytools import (
-    CustomValueError,
-    FileWasNotFoundError,
-    FuncExceptT,
-    SPath,
-    SPathLike,
-)
+from jetpytools import CustomValueError, FileWasNotFoundError, FuncExceptT, SPath, SPathLike
 from vsexprtools import norm_expr
 from vskernels import Kernel, KernelLike, Point
 from vstools import FunctionUtil, clip_async_render, core, vs
@@ -58,9 +52,7 @@ def clip_to_npy(
     kernel = Kernel.ensure_obj(kernel, func.func)
 
     proc_clip = (
-        kernel.resample(func.work_clip, vs.YUV444PS)
-        if func.work_clip.format.color_family == vs.YUV
-        else func.work_clip
+        kernel.resample(func.work_clip, vs.YUV444PS) if func.work_clip.format.color_family == vs.YUV else func.work_clip
     )
     proc_clip = norm_expr(proc_clip, "x 0.5 +", func.chroma_pplanes)
 
@@ -98,9 +90,7 @@ def clip_to_npy(
         try:
             cfamily = frame.format.color_family
 
-            frame_data = np.stack(
-                [np.asarray(frame[i]) for i in range(frame.format.num_planes)]
-            )
+            frame_data = np.stack([np.asarray(frame[i]) for i in range(frame.format.num_planes)])
 
             if cfamily == vs.GRAY:
                 frame_data = frame_data.squeeze(0)
@@ -176,11 +166,7 @@ def npy_to_clip(
 
     kernel = Kernel.ensure_obj(kernel, func)
 
-    paths = (
-        [SPath(file_paths)]
-        if not isinstance(file_paths, list)
-        else [SPath(x) for x in file_paths]
-    )
+    paths = [SPath(file_paths)] if not isinstance(file_paths, list) else [SPath(x) for x in file_paths]
     is_npz = False
 
     if not paths:
@@ -193,25 +179,19 @@ def npy_to_clip(
             paths = npz_files
             is_npz = True
         else:
-            raise FileWasNotFoundError(
-                "No .npy or .npz files found in the given directory!", func
-            )
+            raise FileWasNotFoundError("No .npy or .npz files found in the given directory!", func)
     elif paths[0].suffix == ".npz":
         is_npz = True
 
     if not is_npz:
         try:
-            paths = sorted(
-                paths, key=lambda x: int(x.stem) if x.stem.isdigit() else float("inf")
-            )
+            paths = sorted(paths, key=lambda x: int(x.stem) if x.stem.isdigit() else float("inf"))
         except ValueError as e:
             if "invalid literal for int() with base 10" in str(e):
                 raise CustomValueError(
                     "Error sorting paths: File names must be valid integers!",
                     func,
-                    "[\n    "
-                    + "\n    ".join([x.stem for x in paths if not x.stem.isdigit()])
-                    + "\n]",
+                    "[\n    " + "\n    ".join([x.stem for x in paths if not x.stem.isdigit()]) + "\n]",
                 )
             else:
                 raise
@@ -239,9 +219,7 @@ def npy_to_clip(
     fmt = get_format_from_npy(first_frame)
 
     clip_length = len(npz_data.keys()) if is_npz else len(paths)
-    blank_clip = core.std.BlankClip(
-        None, width, height, fmt, length=clip_length, keep=True
-    )
+    blank_clip = core.std.BlankClip(None, width, height, fmt, length=clip_length, keep=True)
 
     def _read_frame(n: int, f: vs.VideoFrame) -> vs.VideoFrame:
         if is_npz:

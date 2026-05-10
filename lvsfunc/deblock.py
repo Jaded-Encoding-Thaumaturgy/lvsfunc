@@ -93,8 +93,7 @@ def autodb_dpir(
         nthrs: Sequence[tuple[float, float, float]],
     ) -> vs.VideoNode:
         evref_diff, y_next_diff, y_prev_diff = [
-            get_prop(f[i], prop, float)
-            for i, prop in zip(range(3), ["EdgeValRefDiff", "YNextDiff", "YPrevDiff"])
+            get_prop(f[i], prop, float) for i, prop in zip(range(3), ["EdgeValRefDiff", "YNextDiff", "YPrevDiff"])
         ]
 
         f_type = get_prop(f[0], "_PictType", str)
@@ -138,9 +137,7 @@ def autodb_dpir(
     kernel = Kernel.ensure_obj(kernel, autodb_dpir)
 
     if vsdpir_args.get("fp16", None):
-        warn(
-            "autodb_dpir: fp16 has been known to cause issues! It's highly recommended to set it to False!"
-        )
+        warn("autodb_dpir: fp16 has been known to cause issues! It's highly recommended to set it to False!")
 
     vsdpir_final_args = dict[str, Any](cuda=cuda, fp16=vsdpir_args.pop("fp16", False))
     vsdpir_final_args |= vsdpir_args
@@ -169,18 +166,14 @@ def autodb_dpir(
     evref_rm = evref.std.Median().std.Convolution(matrix=[1, 2, 1, 2, 4, 2, 1, 2, 1])
 
     if return_mask:
-        return kernel.resample(
-            evref_rm, format=clip.format, matrix=targ_matrix if not is_rgb else None
-        )
+        return kernel.resample(evref_rm, format=clip.format, matrix=targ_matrix if not is_rgb else None)
 
     diffevref = core.std.PlaneStats(evref, evref_rm, prop="EdgeValRef")
     diffnext = core.std.PlaneStats(rgb, rgb.std.DeleteFrames([0]), prop="YNext")
     diffprev = core.std.PlaneStats(rgb, rgb[0] + rgb, prop="YPrev")
 
     db_clips = [
-        dpir.DEBLOCK(rgb, strength=st, **vsdpir_final_args).std.SetFrameProp(
-            "Adb_DeblockStrength", intval=int(st)
-        )
+        dpir.DEBLOCK(rgb, strength=st, **vsdpir_final_args).std.SetFrameProp("Adb_DeblockStrength", intval=int(st))
         for st in strs
     ]
 
@@ -190,6 +183,4 @@ def autodb_dpir(
         prop_src=[diffevref, diffnext, diffprev],
     )
 
-    return kernel.resample(
-        debl, format=clip.format, matrix=targ_matrix if not is_rgb else None
-    )
+    return kernel.resample(debl, format=clip.format, matrix=targ_matrix if not is_rgb else None)

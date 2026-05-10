@@ -12,9 +12,7 @@ __all__: list[str] = [
 ]
 
 
-def get_random_frame_nums(
-    clip: vs.VideoNode, interval: int = 120, seed: int | None = None
-) -> list[int]:
+def get_random_frame_nums(clip: vs.VideoNode, interval: int = 120, seed: int | None = None) -> list[int]:
     """
     Get a list of random frames numbers from a clip.
 
@@ -39,9 +37,7 @@ def get_random_frame_nums(
     ]
 
 
-def get_random_frames(
-    clip: vs.VideoNode, interval: int = 120, seed: int | None = None
-) -> vs.VideoNode:
+def get_random_frames(clip: vs.VideoNode, interval: int = 120, seed: int | None = None) -> vs.VideoNode:
     """
     Get random frames from a clip spliced together into a new clip.
 
@@ -57,9 +53,7 @@ def get_random_frames(
     :return:            A clip with random frames from the input clip.
     """
 
-    return core.std.Splice(
-        [clip[num] for num in get_random_frame_nums(clip, interval, seed)]
-    )
+    return core.std.Splice([clip[num] for num in get_random_frame_nums(clip, interval, seed)])
 
 
 def get_smart_random_frame_nums(
@@ -105,9 +99,7 @@ def get_smart_random_frame_nums(
     """
 
     if interval <= 0:
-        raise CustomValueError(
-            "'interval' must be greater than 0!", get_smart_random_frame_nums
-        )
+        raise CustomValueError("'interval' must be greater than 0!", get_smart_random_frame_nums)
 
     if max_retries < 0:
         raise CustomValueError(
@@ -130,17 +122,13 @@ def get_smart_random_frame_nums(
 
         return is_solid, min_value
 
-    def _check_frame_similarity(
-        frame1: vs.VideoNode, frame2: vs.VideoNode
-    ) -> tuple[bool, float]:
+    def _check_frame_similarity(frame1: vs.VideoNode, frame2: vs.VideoNode) -> tuple[bool, float]:
         frame_diff = core.std.PlaneStats(frame1, frame2)
         diff_value = get_prop(frame_diff, "PlaneStatsDiff", float, None, 0)
 
         return diff_value <= similarity_threshold, diff_value
 
-    def _select_smart_frame(
-        start: int, end: int, prev_frame: vs.VideoNode | None
-    ) -> int:
+    def _select_smart_frame(start: int, end: int, prev_frame: vs.VideoNode | None) -> int:
         segment_length = end - start + 1
         actual_retries = min(max_retries, segment_length)
         tried_frames = set()
@@ -157,11 +145,7 @@ def get_smart_random_frame_nums(
 
             is_solid, _ = _check_solid_color(frame)
             is_valid_frame = not is_solid
-            is_similar_to_prev, _ = (
-                (False, 0.0)
-                if prev_frame is None
-                else _check_frame_similarity(prev_frame, frame)
-            )
+            is_similar_to_prev, _ = (False, 0.0) if prev_frame is None else _check_frame_similarity(prev_frame, frame)
 
             if is_valid_frame and not is_similar_to_prev:
                 return frame_num
@@ -218,11 +202,7 @@ def _raise_strict_error(
     for frame_num in tried_frames:
         frame = clip[frame_num]
         is_solid, solid_value = is_solid_color(frame)
-        is_similar, similarity_value = (
-            (False, 0.0)
-            if prev_frame is None
-            else frames_too_similar(prev_frame, frame)
-        )
+        is_similar, similarity_value = (False, 0.0) if prev_frame is None else frames_too_similar(prev_frame, frame)
 
         attempts.append(
             {
@@ -245,9 +225,7 @@ def _raise_strict_error(
     raise CustomRuntimeError(
         f"Could not find a suitable frame after {actual_retries} retries in the interval {start}-{end}!",
         get_smart_random_frame_nums,
-        reason="\nReason:\n\nAttempts:\n"
-        + "\n".join(f"  - {format_attempt(a)}" for a in attempts)
-        + "\n\n",
+        reason="\nReason:\n\nAttempts:\n" + "\n".join(f"  - {format_attempt(a)}" for a in attempts) + "\n\n",
     )
 
 

@@ -82,9 +82,7 @@ class ExportFrames(CustomStrEnum):
         sfile = SPath(file)
 
         if not self._is_np and "%d" not in sfile.to_str():
-            raise CustomTypeError(
-                "Filename must include '%d' for frame number substitution!", func
-            )
+            raise CustomTypeError("Filename must include '%d' for frame number substitution!", func)
 
         sfile.get_folder().mkdir(parents=True, exist_ok=True)
 
@@ -96,9 +94,7 @@ class ExportFrames(CustomStrEnum):
 
         return sfile
 
-    def _render_frames(
-        self, clip: vs.VideoNode, out_file: SPath, **kwargs: Any
-    ) -> list[SPath]:
+    def _render_frames(self, clip: vs.VideoNode, out_file: SPath, **kwargs: Any) -> list[SPath]:
         """Render the frames to a PNG file using the vsfpng plugin, or fallback to imwri.Write."""
 
         if self._is_np:
@@ -110,11 +106,7 @@ class ExportFrames(CustomStrEnum):
             )
 
         if self is ExportFrames.PNG and hasattr(core, "fpng"):
-            writer = (
-                Lanczos()
-                .resample(clip, vs.RGB24)
-                .fpng.Write(out_file.to_str(), **kwargs)
-            )
+            writer = Lanczos().resample(clip, vs.RGB24).fpng.Write(out_file.to_str(), **kwargs)
         else:
             writer = clip.imwri.Write(self.value, out_file.to_str(), **kwargs)
 

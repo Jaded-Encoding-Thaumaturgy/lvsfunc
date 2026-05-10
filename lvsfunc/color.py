@@ -56,9 +56,7 @@ class RGBColor(tuple[float, float, float], CustomEnum):
         """Get the RGBColor from a name."""
 
         if name.upper() not in cls.__members__:
-            raise NotFoundEnumValue(
-                f"{name} is not a valid RGBColor name.", cls.from_name
-            )
+            raise NotFoundEnumValue(f"{name} is not a valid RGBColor name.", cls.from_name)
 
         return cls(name)
 
@@ -109,7 +107,4 @@ class RGBColor(tuple[float, float, float], CustomEnum):
         """Scale the value of the color."""
 
         # TODO: idk what to do with the colour range
-        return [
-            int(scale_value(value, bitdepth, 32, range_in=ColorRange.FULL))
-            for value in self.value
-        ]
+        return [int(scale_value(value, bitdepth, 32, range_in=ColorRange.FULL)) for value in self.value]

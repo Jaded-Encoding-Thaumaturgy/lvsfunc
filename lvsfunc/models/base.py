@@ -76,9 +76,6 @@ class Base1xModel:
 
     _is_init = False
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-
     def __str__(self) -> str:
         return self.__class__.__name__
 
@@ -98,9 +95,7 @@ class Base1xModel:
         """
 
         if not self._model_filename:
-            raise CustomValueError(
-                "Model path not set! You may need to use a subclass!", self.apply
-            )
+            raise CustomValueError("Model path not set! You may need to use a subclass!", self.apply)
 
         self._initialize(clip, kwargs)
 
@@ -131,9 +126,7 @@ class Base1xModel:
 
         matrix = self._kwargs.pop("matrix", None)
         bitdepth = 16 if self._fp16 else 32
-        color_range = ColorRange.from_param_or_video(
-            self._kwargs.pop("color_range", None), clip
-        )
+        color_range = ColorRange.from_param_or_video(self._kwargs.pop("color_range", None), clip)
 
         self._matrix = Matrix.from_param_or_video(matrix, clip)
         self._planes = normalize_planes(clip, self._kwargs.pop("planes", None))
@@ -141,9 +134,7 @@ class Base1xModel:
         # Pre-resample using the same method I use during training.
         proc_clip = self._scale_based_on_planes(clip)
 
-        self._func = FunctionUtil(
-            limiter(proc_clip), str(self), None, vs.RGB, bitdepth, range_in=color_range
-        )
+        self._func = FunctionUtil(limiter(proc_clip), str(self), None, vs.RGB, bitdepth, range_in=color_range)
 
     def _scale_based_on_planes(self, clip: vs.VideoNode) -> vs.VideoNode:
         """Scale the clip based on the planes."""
@@ -153,9 +144,7 @@ class Base1xModel:
 
         return Point().resample(clip, **res_kwargs)
 
-    def _apply_model(
-        self, proc_clip: vs.VideoNode, ref: vs.VideoNode | None = None
-    ) -> vs.VideoNode:
+    def _apply_model(self, proc_clip: vs.VideoNode, ref: vs.VideoNode | None = None) -> vs.VideoNode:
         """Apply the model to the clip."""
 
         try:
@@ -183,9 +172,7 @@ class Base1xModel:
 
         return processed
 
-    def _select_planes(
-        self, processed: vs.VideoNode, ref: vs.VideoNode | None = None
-    ) -> vs.VideoNode:
+    def _select_planes(self, processed: vs.VideoNode, ref: vs.VideoNode | None = None) -> vs.VideoNode:
         """Select the planes of the clip to return."""
 
         if ref is None or (self._planes is None or self._planes == [0, 1, 2]):
@@ -231,9 +218,7 @@ class Base1xModel:
         if not self._fp16:
             return
 
-        new_path = model_path.with_name(
-            model_path.stem.replace("_fp32", "_fp16") + ".onnx"
-        )
+        new_path = model_path.with_name(model_path.stem.replace("_fp32", "_fp16") + ".onnx")
 
         if new_path.exists():
             self._model_path = new_path
@@ -249,9 +234,7 @@ class Base1xModel:
 class Base1xModelWithStrength(Base1xModel):
     """Base class for 1x models to reconstruct high-frequency information with strength control."""
 
-    def _initialize_strength(
-        self, clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode = 10.0
-    ) -> vs.VideoNode:
+    def _initialize_strength(self, clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode = 10.0) -> vs.VideoNode:
         if isinstance(strength, (float, int)):
             self._set_strength_clip(clip, strength)
         elif isinstance(strength, vs.VideoNode):
@@ -263,11 +246,7 @@ class Base1xModelWithStrength(Base1xModel):
         norm_strength = strength / 100.0 * get_peak_value(16 if self._fp16 else 32)
 
         self._strength_clip = expr_func(
-            [
-                clip.std.BlankClip(
-                    format=vs.GRAYH if self._fp16 else vs.GRAYS, keep=True
-                )
-            ],
+            [clip.std.BlankClip(format=vs.GRAYH if self._fp16 else vs.GRAYS, keep=True)],
             f"x {norm_strength} +",
         )
 
@@ -277,9 +256,7 @@ class Base1xModelWithStrength(Base1xModel):
         try:
             check_variable_format(str_clip, self._norm_str_clip)
         except VariableFormatError as e:
-            raise CustomValueError(
-                "Strength clip must be a constant format", self._norm_str_clip
-            ) from e
+            raise CustomValueError("Strength clip must be a constant format", self._norm_str_clip) from e
 
         assert str_clip.format
 
@@ -287,24 +264,18 @@ class Base1xModelWithStrength(Base1xModel):
             raise CustomValueError("Strength clip must be GRAY", self._norm_str_clip)
 
         if str_clip.format.id == vs.GRAY8:
-            str_clip = expr_func(
-                str_clip, "x 255 /", vs.GRAYH if self._fp16 else vs.GRAYS
-            )
+            str_clip = expr_func(str_clip, "x 255 /", vs.GRAYH if self._fp16 else vs.GRAYS)
         elif self._fp16 and get_video_format(str_clip) == vs.FLOAT:
             str_clip = depth(str_clip, 16, vs.FLOAT)
 
         if not isinstance(str_clip, vs.VideoNode):
-            raise CustomTypeError(
-                "str_clip must be a VideoNode to scale", self._norm_str_clip
-            )
+            raise CustomTypeError("str_clip must be a VideoNode to scale", self._norm_str_clip)
 
         if str_clip.width != clip.width or str_clip.height != clip.height:
             str_clip = Catrom().scale(str_clip, clip.width, clip.height)
 
         if not isinstance(str_clip, vs.VideoNode):
-            raise CustomTypeError(
-                "str_clip must be a VideoNode to check num_frames", self._norm_str_clip
-            )
+            raise CustomTypeError("str_clip must be a VideoNode to check num_frames", self._norm_str_clip)
         if str_clip.num_frames != clip.num_frames:
             raise CustomValueError(
                 "Strength clip must have the same number of frames as the input clip",
@@ -313,15 +284,11 @@ class Base1xModelWithStrength(Base1xModel):
 
         self._strength_clip = str_clip
 
-    def _should_process(
-        self, strength: SupportsFloat | vs.VideoNode | None | Literal[False] = False
-    ) -> bool:
+    def _should_process(self, strength: SupportsFloat | vs.VideoNode | None | Literal[False] = False) -> bool:
         if hasattr(self, "_strength_clip"):
             return self._strength_clip is not False
 
-        return (strength is None) or not (
-            isinstance(strength, (int, float)) and strength <= 0.0
-        )
+        return (strength is None) or not (isinstance(strength, (int, float)) and strength <= 0.0)
 
 
 def get_models_path() -> SPath:

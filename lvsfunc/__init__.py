@@ -7,8 +7,6 @@ or reach out to me on Discord (@LightArrowsEXE) or GitHub (@LightArrowsEXE)!
 For further support, drop by `#dev` in the `JET Discord server <https://discord.gg/XTpc6Fa9eB>`_.
 """
 
-# ruff: noqa: F401, F403
-
 from .color import *
 from .comparison import *
 from .deblock import *

@@ -49,9 +49,7 @@ def colored_clips(
     if amount < 2:
         raise CustomIndexError("`amount` must be at least 2!", colored_clips)
     if not (0 < max_hue <= 360):
-        raise CustomValueError(
-            "`max_hue` must be greater than 0 and less than 360 degrees!", colored_clips
-        )
+        raise CustomValueError("`max_hue` must be greater than 0 and less than 360 degrees!", colored_clips)
 
     blank_clip_args: dict[str, Any] = dict(keep=1) | kwargs
 
@@ -64,6 +62,4 @@ def colored_clips(
         shuffle = random.shuffle if seed is None else random.Random(seed).shuffle
         shuffle(rgb_color_list)
 
-    return [
-        core.std.BlankClip(color=color, **blank_clip_args) for color in rgb_color_list
-    ]
+    return [core.std.BlankClip(color=color, **blank_clip_args) for color in rgb_color_list]

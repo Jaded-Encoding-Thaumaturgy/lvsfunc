@@ -51,9 +51,7 @@ class SharpBilinear(ComplexScaler):
             return clip
 
         # Ideally, we should always scale in linear light by default.
-        kernel_kwargs = dict(
-            linear=bool(fallback(linear, self.kwargs.get("linear", True)))
-        )
+        kernel_kwargs = dict(linear=bool(fallback(linear, self.kwargs.get("linear", True))))
 
         scale_args: dict[str, Any] = {
             "border_handling": border_handling,
@@ -65,24 +63,18 @@ class SharpBilinear(ComplexScaler):
         }
 
         if target_width <= clip.width and target_height <= clip.height:
-            return Bilinear(**kernel_kwargs).scale(
-                clip, target_width, target_height, shift=shift, **scale_args
-            )
+            return Bilinear(**kernel_kwargs).scale(clip, target_width, target_height, shift=shift, **scale_args)
 
         max_ratio = max(target_width / clip.width, target_height / clip.height)
         int_ratio = 2 ** int(log2(max_ratio) + 0.5)
         ss_width, ss_height = clip.width * int_ratio, clip.height * int_ratio
 
-        ss_clip = Point(**kernel_kwargs).scale(
-            clip, ss_width, ss_height, shift, **scale_args
-        )
+        ss_clip = Point(**kernel_kwargs).scale(clip, ss_width, ss_height, shift, **scale_args)
 
         if (ss_clip.width, ss_clip.height) == (target_width, target_height):
             return ss_clip
 
-        return Bilinear(**kernel_kwargs).scale(
-            ss_clip, target_width, target_height, **scale_args
-        )
+        return Bilinear(**kernel_kwargs).scale(ss_clip, target_width, target_height, **scale_args)
 
     @inject_self.cached.property
     def kernel_radius(self) -> int:

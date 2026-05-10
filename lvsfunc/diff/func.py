@@ -85,9 +85,7 @@ class FindDiff:
         self,
         strategies: DiffStrategy | Sequence[DiffStrategy] = [PlaneStatsDiff()],
         mode: DiffMode = DiffMode.ANY,
-        pre_process: VSFunctionNoArgs | Literal[False] | None = (
-            lambda clip: box_blur(clip).std.Crop(8, 8, 8, 8)
-        ),
+        pre_process: VSFunctionNoArgs | Literal[False] | None = (lambda clip: box_blur(clip).std.Crop(8, 8, 8, 8)),
         exclusion_ranges: FrameRangesN | None = None,
         func_except: FuncExceptT | None = None,
     ) -> None:
@@ -116,9 +114,9 @@ class FindDiff:
         .. code-block:: python
 
             # Crop the borders of the clips before processing.
-            diff_finder = FindDiff(
-                pre_process=lambda c: c.std.Crop(top=10, bottom=10, left=10, right=10)
-            ).get_diff(clip_a, clip_b)
+            diff_finder = FindDiff(pre_process=lambda c: c.std.Crop(top=10, bottom=10, left=10, right=10)).get_diff(
+                clip_a, clip_b
+            )
 
         :param strategies:          The strategy or strategies to use for comparison.
                                     See each strategy's class documentation for more information.
@@ -138,14 +136,10 @@ class FindDiff:
         self._func_except = func_except or self.__class__.__name__
         self.mode = DiffMode(mode)
 
-        self.strategies = (
-            [strategies] if not isinstance(strategies, Sequence) else list(strategies)
-        )
+        self.strategies = [strategies] if not isinstance(strategies, Sequence) else list(strategies)
 
         if not self.strategies:
-            raise CustomValueError(
-                "You must pass at least one strategy!", self._func_except
-            )
+            raise CustomValueError("You must pass at least one strategy!", self._func_except)
 
         for i, strategy in enumerate(self.strategies):
             if not isinstance(strategy, DiffStrategy):
@@ -167,8 +161,7 @@ class FindDiff:
         ref: vs.VideoNode,
         force: bool = False,
         error_on_no_diff: bool = True,
-        frames_post_process: Callable[[Iterable[int]], Iterable[int]]
-        | None = remove_isolated_frames,
+        frames_post_process: Callable[[Iterable[int]], Iterable[int]] | None = remove_isolated_frames,
     ) -> FindDiff:
         """
         Find the differences between two clips and store the results.
@@ -216,8 +209,7 @@ class FindDiff:
         src: vs.VideoNode,
         ref: vs.VideoNode,
         names: tuple[str | None, str | None] = (None, None),
-        frames_post_process: Callable[[Iterable[int]], Iterable[int]]
-        | None = remove_isolated_frames,
+        frames_post_process: Callable[[Iterable[int]], Iterable[int]] | None = remove_isolated_frames,
     ) -> vs.VideoNode:
         """
         Get a processed clip highlighting the differences between two clips.
@@ -243,9 +235,7 @@ class FindDiff:
         if not isinstance(names, tuple):
             names = (None, None)
         elif len(names) != 2:
-            raise CustomValueError(
-                "Names must be a tuple of two strings!", self._func_except, names
-            )
+            raise CustomValueError("Names must be a tuple of two strings!", self._func_except, names)
 
         new_names = list[str]()
 
@@ -265,10 +255,7 @@ class FindDiff:
 
         diff_clip = core.std.MakeDiff(src, ref).text.FrameNum(9)
 
-        a_scaled, b_scaled = (
-            Catrom().scale(c, width=c.width // 2, height=c.height // 2)
-            for c in (src, ref)
-        )
+        a_scaled, b_scaled = (Catrom().scale(c, width=c.width // 2, height=c.height // 2) for c in (src, ref))
 
         a_scaled = merge_clip_props(a_scaled, self._processed_clip)
 
@@ -292,9 +279,7 @@ class FindDiff:
             ]
         )
 
-        return out_diff.std.SetFrameProps(
-            Name=f"diff clip ({new_names})", fd_diffRanges=str(self.diff_ranges)
-        )
+        return out_diff.std.SetFrameProps(Name=f"diff clip ({new_names})", fd_diffRanges=str(self.diff_ranges))
 
     def get_clip_frames(
         self,
@@ -311,9 +296,7 @@ class FindDiff:
         """
 
         if not self._diff_frames:
-            err_msg = (
-                "You have not looked for differences yet! Please run `find_diff` first."
-            )
+            err_msg = "You have not looked for differences yet! Please run `find_diff` first."
 
             if isinstance(self._diff_frames, list) and not self._diff_frames:
                 err_msg = f"No differences found! ({self._diff_frames=})"
@@ -479,9 +462,7 @@ class FindDiff:
 
         return self.diff_ranges
 
-    def _validate_inputs(
-        self, src: vs.VideoNode, ref: vs.VideoNode
-    ) -> tuple[vs.VideoNode, vs.VideoNode]:
+    def _validate_inputs(self, src: vs.VideoNode, ref: vs.VideoNode) -> tuple[vs.VideoNode, vs.VideoNode]:
         check_ref_clip(src, ref, self._func_except)
 
         if src.num_frames == ref.num_frames:
@@ -496,9 +477,7 @@ class FindDiff:
         min_frames = min(src.num_frames, ref.num_frames)
         return src[:min_frames], ref[:min_frames]
 
-    def _prepare_clips(
-        self, src: vs.VideoNode, ref: vs.VideoNode
-    ) -> tuple[vs.VideoNode, vs.VideoNode]:
+    def _prepare_clips(self, src: vs.VideoNode, ref: vs.VideoNode) -> tuple[vs.VideoNode, vs.VideoNode]:
         if callable(self.pre_process):
             return self.pre_process(src), self.pre_process(ref)
 
@@ -537,18 +516,14 @@ class FindDiff:
             self._processed_clip,
             None,
             "Finding differences between clips...",
-            lambda n, f: Sentinel.check(
-                n, self.mode.check_result([cb(f) for cb in callbacks])
-            ),
+            lambda n, f: Sentinel.check(n, self.mode.check_result([cb(f) for cb in callbacks])),
         )
 
         self._diff_frames = list(Sentinel.filter(frames_render))
         self._diff_frames.sort()
 
         if self.exclusion_ranges:
-            self.exclusion_ranges = normalize_ranges(
-                self._processed_clip, self.exclusion_ranges
-            )
+            self.exclusion_ranges = normalize_ranges(self._processed_clip, self.exclusion_ranges)
 
             excluded = set(
                 frame
