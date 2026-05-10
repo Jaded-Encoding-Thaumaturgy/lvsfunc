@@ -12,7 +12,6 @@ For further support, drop by `#dev` in the `IEW Discord server <https://discord.
 from .color import *
 from .comparison import *
 from .deblock import *
-from .dependency import *
 from .diff import *
 from .exceptions import *
 from .export import *
