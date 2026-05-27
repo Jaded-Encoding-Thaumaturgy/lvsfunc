@@ -34,6 +34,7 @@ classifiers = [
 ]
 dependencies = [
     "dfttest2>=10",
+    "kagefunc>=1.0.1",
     "vapoursynth>=74",
     "vapoursynth-bestsource>=17.0",
     "vapoursynth-resize2>=0.4.3",
@@ -43,12 +44,19 @@ dependencies = [
 ]
 
 [project.urls]
-"Source Code" = "https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc"
 Tracker = "https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/issues"
 Contact = "https://discord.gg/XTpc6Fa9eB"
+Changelog = "https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/blob/master/CHANGELOG.md"
 
 [dependency-groups]
-dev = ["prek>=0.3.13", "ruff~=0.15.12", "vsstubs>=1.5.0"]
+dev = [
+    "mypy~=2.0.0",
+    "prek>=0.3.13",
+    "ruff~=0.15.12",
+    "vsstubs>=1.5.0",
+    { include-group = "test" },
+]
+test = ["pytest>=9.0.0, <10.0.0", "pytest-cov>=6.2.1, <8.0.0"]
 
 [tool.hatch.build]
 artifacts = ["lvsfunc/_version.py"]
