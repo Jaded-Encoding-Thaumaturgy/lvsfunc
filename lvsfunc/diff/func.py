@@ -230,7 +230,7 @@ class FindDiff:
         :raise CustomValueError:        If `names` is not a tuple of two strings.
         """
 
-        self.find_diff(src, ref)
+        self.find_diff(src, ref, frames_post_process=frames_post_process)
 
         if not isinstance(names, tuple):
             names = (None, None)
