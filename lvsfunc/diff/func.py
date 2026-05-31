@@ -281,6 +281,41 @@ class FindDiff:
 
         return out_diff.std.SetFrameProps(Name=f"diff clip ({new_names})", fd_diffRanges=str(self.diff_ranges))
 
+    def get_diff_full(
+        self: FindDiff,
+        src: vs.VideoNode,
+        ref: vs.VideoNode,
+        frames_post_process: Callable[[Iterable[int]], Iterable[int]]
+        | None = remove_isolated_frames,
+    ) -> tuple[vs.VideoNode, vs.VideoNode, vs.VideoNode]:
+        """
+        Get a processed clips of the src, ref and a diff of the two.
+
+        If you haven't run `find_diff` yet, the method will do so automatically.
+
+        :param src:                     The source clip to compare.
+        :param ref:                     The reference clip to compare.
+        :param frames_post_process:     The post-processing function to use on the list of frames that are different.
+                                        Default: remove_isolated_frames (removes frames with no adjacent frames).
+
+        :return:                        A tuple containing the src, ref and diff of the two limited to the differences.
+
+        :raise CustomStopIteration:     If no differences are found.
+        """
+
+        self.find_diff(src, ref, frames_post_process=frames_post_process)
+
+        assert self._processed_clip is not None
+
+        diff_clip = core.std.MakeDiff(src, ref).text.FrameNum(9)
+
+        src_diff = self.get_clip_frames(src)
+        ref_diff = self.get_clip_frames(ref)
+
+        diff_clip = self.get_clip_frames(diff_clip).text.FrameNum(alignment=7)
+
+        return (src_diff, ref_diff, diff_clip)
+
     def get_clip_frames(
         self,
         clip: vs.VideoNode,
