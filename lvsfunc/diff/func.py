@@ -192,7 +192,7 @@ class FindDiff:
         self._diff_frames = None
         self.diff_ranges = []
 
-        self._validate_inputs(src, ref)
+        src, ref = self._validate_inputs(src, ref)
         self._process(src, ref, frames_post_process)
 
         if error_on_no_diff and self._diff_frames is None:
