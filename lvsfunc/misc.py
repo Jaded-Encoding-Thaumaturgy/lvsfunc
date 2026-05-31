@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import cast
 
-from jetpytools import CustomValueError, DependencyNotFoundError
+from jetpytools import CustomValueError
 from vskernels import Catrom
 from vssource import BestSource
 from vstools import (
@@ -74,11 +74,7 @@ def overlay_sign(
     """
 
     if fade_length > 0:
-        try:
-            # TODO: Modify to use crossfade from vskernels instead
-            from kagefunc import crossfade
-        except ModuleNotFoundError as e:
-            raise DependencyNotFoundError(overlay_sign, e, reason="fade_length > 0")
+        from kagefunc import crossfade
 
     assert check_variable(clip, overlay_sign)
 
