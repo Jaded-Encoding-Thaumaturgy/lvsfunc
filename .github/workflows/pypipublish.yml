@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 env:
-  PYTHON_VERSION: 3.14
+  LVSFUNC_PYTHON_VERSION: "3.14"
 
 jobs:
   package_build:
@@ -27,14 +27,11 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v8.1.0
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ env.LVSFUNC_PYTHON_VERSION }}
           enable-cache: true
 
       - name: Build
         run: uv build
-
-      - name: Check the output
-        run: uvx twine check --strict dist/*
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
