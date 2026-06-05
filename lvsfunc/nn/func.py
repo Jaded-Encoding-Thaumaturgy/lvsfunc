@@ -1,4 +1,5 @@
 import warnings
+from typing import Any
 
 import numpy as np
 from jetpytools import CustomValueError, FileWasNotFoundError, FuncExceptT, SPath, SPathLike
@@ -82,7 +83,7 @@ def clip_to_npy(
         pbar.update(1)
 
     exported_files = []
-    frame_data_dict = {}
+    frame_data_dict: dict[str, np.ndarray[Any, Any]] = {}
 
     def _process_frame(n: int, frame: vs.VideoFrame) -> str | None:
         nonlocal next_name
@@ -131,7 +132,7 @@ def clip_to_npy(
         return exported_files
 
     npz_path = out_dir / "frames.npz"
-    np.savez_compressed(npz_path, **frame_data_dict)
+    np.savez_compressed(npz_path, **frame_data_dict)  # type: ignore[arg-type]
 
     return [npz_path]
 
@@ -257,8 +258,8 @@ def npy_to_clip(
     proc_clip = blank_clip.std.ModifyFrame(blank_clip, _read_frame)
     proc_clip = kernel.resample(proc_clip, fmt)
 
-    func = FunctionUtil(proc_clip, func, None, (vs.GRAY, vs.YUV), 32)
-    out = norm_expr(func.work_clip, "x 0.5 -", func.chroma_pplanes)
+    func_util = FunctionUtil(proc_clip, func, None, (vs.GRAY, vs.YUV), 32)
+    out = norm_expr(func_util.work_clip, "x 0.5 -", func_util.chroma_pplanes)
 
     if ref is not None:
         out = kernel.resample(out, ref)

@@ -30,6 +30,7 @@ class SharpBilinear(ComplexScaler):
     @inject_kwargs_params
     def scale(
         self,
+        /,
         clip: vs.VideoNode,
         width: int | None = None,
         height: int | None = None,

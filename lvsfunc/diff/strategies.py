@@ -35,6 +35,8 @@ __all__: list[str] = [
 class DiffStrategy(ABC):
     """Base abstract class for diff strategies."""
 
+    _func_except: FuncExceptT
+
     def __init__(
         self,
         threshold: float,
@@ -72,6 +74,8 @@ class DiffStrategy(ABC):
 
 class _vszipStrategy:
     """Base class for vszip strategies."""
+
+    _func_except: FuncExceptT
 
     def __post_init__(self) -> None:
         if hasattr(core, "vszip"):
@@ -112,7 +116,7 @@ class PlaneStatsDiff(DiffStrategy, _vszipStrategy):
         if not -128 <= threshold <= 128:
             raise CustomValueError(
                 "Threshold must be between -128 and 128!",
-                self.__init__,
+                PlaneStatsDiff.__init__,
                 threshold,
             )
 
@@ -165,7 +169,7 @@ class PlaneAvgFloatDiff(DiffStrategy, _vszipStrategy):
         if not 0 <= threshold <= 1:
             raise CustomValueError(
                 "Threshold must be between 0 and 1!",
-                self.__init__,
+                PlaneAvgFloatDiff.__init__,
                 threshold,
             )
 
@@ -342,16 +346,16 @@ class ButteraugliDiff(DiffStrategy):
         if hasattr(core, "vship"):
             try:
                 core.vship.GpuInfo()
-                return core.vship.BUTTERAUGLI, "intensity_multiplier"  # type: ignore
+                return core.vship.BUTTERAUGLI, "intensity_multiplier"
             except vs.Error as e:
                 if "Device" in str(e):
                     if hasattr(core, "julek"):
-                        return core.julek.Butteraugli, "intensity_target"  # type: ignore
+                        return core.julek.Butteraugli, "intensity_target"
 
                     raise NoGpuError("No GPU detected!", self._get_plugin)
 
         if hasattr(core, "julek"):
-            return core.julek.Butteraugli, "intensity_target"  # type: ignore
+            return core.julek.Butteraugli, "intensity_target"
 
         raise DependencyNotFoundError(
             self._func_except,

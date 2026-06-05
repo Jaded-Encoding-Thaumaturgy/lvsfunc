@@ -143,9 +143,9 @@ def autodb_dpir(
     vsdpir_final_args |= vsdpir_args
     vsdpir_final_args.pop("strength", None)
 
-    nthrs = [tuple(x / 255 for x in thr) for thr in thrs]
-    nthrs = [tuple(thr) if len(thr) == 3 else (thr[0], thr[1], thr[2]) for thr in nthrs]
-    nthrs = list[tuple[float, float, float]](nthrs)  # type: ignore
+    nthrs: list[tuple[float, float, float]] = [
+        (t[0], t[1], t[2]) for t in (tuple(x / 255 for x in thr) for thr in thrs)
+    ]
 
     is_rgb = clip.format.color_family is vs.RGB
     targ_matrix = None

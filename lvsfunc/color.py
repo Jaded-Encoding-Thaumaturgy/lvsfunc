@@ -58,7 +58,7 @@ class RGBColor(tuple[float, float, float], CustomEnum):
         if name.upper() not in cls.__members__:
             raise NotFoundEnumValue(f"{name} is not a valid RGBColor name.", cls.from_name)
 
-        return cls(name)
+        return cls[name.upper()]
 
     def to_clip(self, ref: vs.VideoNode | None = None) -> vs.VideoNode:
         """Create a blank clip with the color."""
@@ -73,7 +73,7 @@ class RGBColor(tuple[float, float, float], CustomEnum):
         if ref.format.color_family == vs.RGB:
             return Point().resample(blank_clip, ref.format.id)
 
-        return Point.resample(blank_clip, ref.format.id, matrix=Matrix.from_video(ref))
+        return Point().resample(blank_clip, ref.format.id, matrix=Matrix.from_video(ref))
 
     def scale_value(
         self,

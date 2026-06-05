@@ -124,7 +124,7 @@ def get_smart_random_frame_nums(
 
     def _check_frame_similarity(frame1: vs.VideoNode, frame2: vs.VideoNode) -> tuple[bool, float]:
         frame_diff = core.std.PlaneStats(frame1, frame2)
-        diff_value = get_prop(frame_diff, "PlaneStatsDiff", float, None, 0)
+        diff_value = get_prop(frame_diff, "PlaneStatsDiff", float, default=0)
 
         return diff_value <= similarity_threshold, diff_value
 

@@ -123,8 +123,16 @@ error_summary = true
 pretty = true
 
 [[tool.mypy.overrides]]
+module = "lvsfunc.scaler"
+disable_error_code = ["arg-type", "override"]
+
+[[tool.mypy.overrides]]
 module = "cytoolz.*"
 ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["kagefunc.*", "vsmlrt.*"]
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 120

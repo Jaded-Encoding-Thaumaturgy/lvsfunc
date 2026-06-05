@@ -80,7 +80,7 @@ class Base1xModel:
         return self.__class__.__name__
 
     @inject_self
-    def apply(self, clip: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
+    def apply(self, /, clip: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
         """
         Apply the model to the clip.
 
@@ -139,10 +139,11 @@ class Base1xModel:
     def _scale_based_on_planes(self, clip: vs.VideoNode) -> vs.VideoNode:
         """Scale the clip based on the planes."""
 
-        res_kwargs = dict(matrix_in=self._matrix)
-        res_kwargs |= dict(format=vs.RGB48 if self._fp16 else vs.RGBS)
-
-        return Point().resample(clip, **res_kwargs)
+        return Point().resample(
+            clip,
+            format=vs.RGB48 if self._fp16 else vs.RGBS,
+            matrix_in=self._matrix,
+        )
 
     def _apply_model(self, proc_clip: vs.VideoNode, ref: vs.VideoNode | None = None) -> vs.VideoNode:
         """Apply the model to the clip."""
@@ -150,7 +151,7 @@ class Base1xModel:
         try:
             from vsmlrt import inference
         except ImportError:
-            raise DependencyNotFoundError(self._func.func, "vsmlrt")  # type: ignore
+            raise DependencyNotFoundError(self._func.func, "vsmlrt")
 
         if self.backend is None:
             self.backend = autoselect_backend(fp16=self._fp16)

@@ -77,7 +77,7 @@ class ModelNumpyHandling:
         for n in range(num_frames):
             frame = clip.get_frame(n)
             for plane in range(num_planes):
-                np.copyto(np.asarray(frame.get_write_array(plane)), np_array[n, :, :, plane])  # type: ignore[attr-defined]  # type: ignore[attr-defined]
+                np.copyto(np.asarray(frame.get_write_array(plane)), np_array[n, :, :, plane])
         return clip
 
     def _replace_array_section(

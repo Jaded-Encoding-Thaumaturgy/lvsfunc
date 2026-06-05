@@ -48,6 +48,7 @@ class _LHzDelowpass(Base1xModel, ModelNumpyHandling):
     @inject_self
     def apply(
         self,
+        /,
         clip: vs.VideoNode,
         slice_size: int | None = None,
         planes: PlanesT = None,
@@ -95,7 +96,7 @@ class _LHzDelowpass(Base1xModel, ModelNumpyHandling):
             self._replace_array_section(clip_np[:, :, :, plane], left_columns, (0, 0, 0, 0))
             self._replace_array_section(clip_np[:, :, :, plane], right_columns, (0, 0, 0, -columns))
 
-        return self._numpy_to_clip(clip_np, proc.format)  # type: ignore
+        return self._numpy_to_clip(clip_np, proc.format)
 
 
 @dataclass

@@ -24,6 +24,7 @@ class LDempeg2(Base1xModelWithStrength):
     @inject_self
     def apply(
         self,
+        /,
         clip: vs.VideoNode,
         strength: SupportsFloat | vs.VideoNode | None = None,
         show_mask: bool = False,

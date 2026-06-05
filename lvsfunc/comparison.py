@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-import random  # type:ignore
+import random
 import warnings
 from abc import ABC, abstractmethod
 from itertools import zip_longest
@@ -268,24 +268,13 @@ class Tile(Comparer):
     where `n` is equivalent to ``math.ceil(math.sqrt(len(clips))``. The bottom rows will be dropped if empty. ::
 
         # For example, for 3 clips, the automatic arrangement becomes:
-        [
-         [1, 1],
-         [1, 0]
-        ]
+        [[1, 1], [1, 0]]
 
         # For 10 clips, the automatic arrangement becomes:
-        [
-         [1, 1, 1, 1],
-         [1, 1, 1, 1],
-         [1, 1, 0, 0]
-        ]
+        [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 0, 0]]
 
         # For custom arrangements, such as (for 4 clips):
-        [
-         [0, 1, 0, 1],
-         [1],
-         [0, 1]
-        ]
+        [[0, 1, 0, 1], [1], [0, 1]]
         # the rows will be auto-padded with 0's to be the same length.
 
     :param clips:               A dict mapping names to clips or simply a sequence of clips in a tuple or a list.
@@ -334,7 +323,7 @@ class Tile(Comparer):
 
         self.arrangement = [row + [0] * (max_length - len(row)) for row in self.arrangement]
 
-        array_count = sum(map(sum, self.arrangement))  # type:ignore[arg-type]
+        array_count = sum(map(sum, self.arrangement))
 
         LengthMismatchError.check(
             self.__class__,

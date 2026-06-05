@@ -26,7 +26,6 @@ from vstools import (
     core,
     get_prop,
     merge_clip_props,
-    normalize_franges,
     normalize_ranges,
     vs,
 )
@@ -232,9 +231,7 @@ class FindDiff:
 
         self.find_diff(src, ref, frames_post_process=frames_post_process)
 
-        if not isinstance(names, tuple):
-            names = (None, None)
-        elif len(names) != 2:
+        if len(names) != 2:
             raise CustomValueError("Names must be a tuple of two strings!", self._func_except, names)
 
         new_names = list[str]()
@@ -285,8 +282,7 @@ class FindDiff:
         self: FindDiff,
         src: vs.VideoNode,
         ref: vs.VideoNode,
-        frames_post_process: Callable[[Iterable[int]], Iterable[int]]
-        | None = remove_isolated_frames,
+        frames_post_process: Callable[[Iterable[int]], Iterable[int]] | None = remove_isolated_frames,
     ) -> tuple[vs.VideoNode, vs.VideoNode, vs.VideoNode]:
         """
         Get a processed clips of the src, ref and a diff of the two.
@@ -560,11 +556,7 @@ class FindDiff:
         if self.exclusion_ranges:
             self.exclusion_ranges = normalize_ranges(self._processed_clip, self.exclusion_ranges)
 
-            excluded = set(
-                frame
-                for range_ in normalize_franges(self.exclusion_ranges)  # type: ignore[arg-type]
-                for frame in range(range_[0], range_[-1] + 1)  # type: ignore[arg-type]
-            )
+            excluded = set(frame for start, stop in self.exclusion_ranges for frame in range(start, stop + 1))
 
             self._diff_frames = [f for f in self._diff_frames if f not in excluded]
 
