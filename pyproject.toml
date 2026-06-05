@@ -84,6 +84,7 @@ source = "vcs"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+addopts = "--cov=lvsfunc"
 
 [tool.mypy]
 mypy_path = "$MYPY_CONFIG_FILE_DIR/stubs"
