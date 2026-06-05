@@ -1,12 +1,14 @@
 # lvsfunc
 
 <p align="center">
-    <!-- <a href="https://lvsfunc.encode.moe"><img alt="Read the Docs" src="https://img.shields.io/readthedocs/lvsfunc"></a> -->
-    <img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/lvsfunc">
     <a href="https://pypi.org/project/lvsfunc/"><img alt="PyPI" src="https://img.shields.io/pypi/v/lvsfunc"></a>
-    <a href="https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commits/master"><img alt="GitHub commits since tagged version" src="https://img.shields.io/github/commits-since/Jaded-Encoding-Thaumaturgy/lvsfunc/latest"></a>
+    <img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/lvsfunc">
     <a href="https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/blob/master/LICENSE"><img alt="PyPI - License" src="https://img.shields.io/pypi/l/lvsfunc"></a>
     <a href="https://coveralls.io/github/Jaded-Encoding-Thaumaturgy/lvsfunc?branch=master"><img alt="Coverage" src="https://img.shields.io/coverallsCoverage/github/Jaded-Encoding-Thaumaturgy/lvsfunc?branch=master"></a>
+</p>
+
+<p align="center">
+    <a href="https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commits/master"><img alt="GitHub commits since tagged version" src="https://img.shields.io/github/commits-since/Jaded-Encoding-Thaumaturgy/lvsfunc/latest"></a>
     <a href="https://discord.gg/XTpc6Fa9eB"><img alt="Discord" src="https://img.shields.io/discord/856381934052704266?label=discord"></a>
     <a href="https://pypi.org/project/lvsfunc/"><img alt="downloads" src="https://static.pepy.tech/personalized-badge/lvsfunc?period=total&units=international_system&left_color=grey&right_color=blue&left_text=downloads"></a>
 </p>
