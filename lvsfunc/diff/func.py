@@ -77,7 +77,7 @@ class FindDiff:
     callbacks: CallbacksT
     """List of callback functions for each comparison method."""
 
-    diff_ranges: FrameRangesN = []
+    diff_ranges: FrameRangesN
     """Ranges of frames that are different between the two clips."""
 
     def __init__(
@@ -151,6 +151,7 @@ class FindDiff:
 
         self.exclusion_ranges = exclusion_ranges or []
 
+        self.diff_ranges = []
         self._diff_frames: list[int] | None = None
         self._processed_clip: vs.VideoNode | None = None
 
@@ -471,6 +472,8 @@ class FindDiff:
                 self.from_file,
                 reason=sfile,
             )
+
+        self.diff_ranges = []
 
         for line in content.splitlines():
             if not (line := line.strip()):
