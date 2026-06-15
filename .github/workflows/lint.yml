@@ -36,6 +36,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
 
+      - name: Generate VapourSynth stubs
+        run: uv run vsstubs
+
       - name: Run Ruff check
         id: ruff_check
         run: uv run --no-sync ruff check .
