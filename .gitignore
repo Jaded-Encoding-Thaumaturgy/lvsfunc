@@ -132,7 +132,7 @@ dmypy.json
 *test*.py
 
 # Unignore tests dir
-!tests/*.py
+!tests/**/*.py
 
 # vscode folder
 .vscode

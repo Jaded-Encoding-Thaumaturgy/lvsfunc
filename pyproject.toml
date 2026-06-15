@@ -50,13 +50,19 @@ Changelog = "https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/blob/master/C
 
 [dependency-groups]
 dev = [
-    "mypy~=2.0.0",
-    "prek>=0.3.13",
-    "ruff~=0.15.12",
-    "vsstubs>=1.5.0",
     { include-group = "test" },
+    "isort",
+    "mypy~=2.1.0",
+    "poethepoet>=0.32.0",
+    "prek>=0.3.12",
+    "ruff~=0.15.0",
+    "vsstubs>=2.1.1",
 ]
 test = ["pytest>=9.0.0, <10.0.0", "pytest-cov>=6.2.1, <8.0.0"]
+
+[[tool.uv.index]]
+name = "vs-wheels"
+url = "https://jaded-encoding-thaumaturgy.github.io/vs-wheels/simple"
 
 [tool.hatch.build]
 artifacts = ["lvsfunc/_version.py"]
@@ -88,40 +94,25 @@ addopts = "--cov=lvsfunc"
 
 [tool.mypy]
 mypy_path = "$MYPY_CONFIG_FILE_DIR/stubs"
-files = ["lvsfunc"]
+files = ["lvsfunc", "tests"]
 exclude_gitignore = true
 
-warn_return_any = true
+# Flags changed by --strict
+warn_return_any = false
+extra_checks = false
+
+# Misc
 warn_unreachable = true
 
-allow_redefinition = false
+allow_redefinition = true
 implicit_reexport = false
 strict = true
 
-disallow_any_generics = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-
-no_implicit_optional = true
-strict_optional = true
-
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-
-ignore_errors = false
-
-allow_untyped_globals = false
-strict_equality = true
-
-show_error_context = false
 show_column_numbers = true
-show_error_codes = true
+pretty = true
 color_output = true
 error_summary = true
-pretty = true
+fixed_format_cache = true
 
 [[tool.mypy.overrides]]
 module = "lvsfunc.scaler"
@@ -132,7 +123,7 @@ module = "cytoolz.*"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-module = ["kagefunc.*", "vsmlrt.*"]
+module = ["vsmlrt.*"]
 ignore_missing_imports = true
 
 [tool.ruff]
@@ -144,9 +135,23 @@ docstring-code-format = true
 [tool.ruff.lint]
 exclude = ["stubs/**"]
 extend-ignore = ["C408", "D100", "D107", "D301", "E226"]
+extend-select = [
+    "E",
+    "C4",
+    "I",
+    "PYI",
+    "Q",
+    "SIM",
+    "N",
+    "W",
+    "UP",
+    "FURB",
+    "RUF",
+]
 
 [tool.ruff.lint.per-file-ignores]
 "lvsfunc/**/__init__.py" = ["F401", "F403"]
+"tests/**/__init__.py" = ["F401", "F403"]
 
-[tool.uv.sources]
-vsjetpack = { git = "https://github.com/Jaded-Encoding-Thaumaturgy/vs-jetpack.git" }
+[tool.poe.tasks]
+lint = { shell = "isort . && ruff check . --fix && ruff format . && mypy . && pytest ." }
