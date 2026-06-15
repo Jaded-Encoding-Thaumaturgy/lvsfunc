@@ -195,7 +195,7 @@ class FindDiff:
         src, ref = self._validate_inputs(src, ref)
         self._process(src, ref, frames_post_process)
 
-        if error_on_no_diff and self._diff_frames is None:
+        if error_on_no_diff and not self._diff_frames:
             raise NoDifferencesFoundError(
                 "No differences found!",
                 self._func_except,
