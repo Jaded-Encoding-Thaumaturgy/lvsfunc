@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import warnings
+from collections.abc import Callable, Iterable, Sequence
 from itertools import groupby
-from typing import Callable, Iterable, Literal, Sequence
+from typing import Literal
 
 from jetpytools import (
     CustomRuntimeError,
@@ -490,9 +491,7 @@ class FindDiff:
 
             start, end = map(int, parts)
 
-            assert not isinstance(self.diff_ranges, int)
-
-            self.diff_ranges.append((start, end))  # type: ignore
+            self.diff_ranges.append((start, end))
 
         return self.diff_ranges
 
@@ -559,7 +558,7 @@ class FindDiff:
         if self.exclusion_ranges:
             self.exclusion_ranges = normalize_ranges(self._processed_clip, self.exclusion_ranges)
 
-            excluded = set(frame for start, stop in self.exclusion_ranges for frame in range(start, stop + 1))
+            excluded = {frame for start, stop in self.exclusion_ranges for frame in range(start, stop + 1)}
 
             self._diff_frames = [f for f in self._diff_frames if f not in excluded]
 

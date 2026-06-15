@@ -1,4 +1,4 @@
-from typing import Callable, TypeAlias
+from collections.abc import Callable
 
 from vstools import vs
 
@@ -8,9 +8,9 @@ __all__: list[str] = [
 ]
 
 
-CallbackT: TypeAlias = Callable[[vs.VideoFrame], bool]
+type CallbackT = Callable[[vs.VideoFrame], bool]
 """A callback function that takes a frame and returns a boolean value."""
 
 
-CallbacksT: TypeAlias = list[CallbackT]
+type CallbacksT = list[CallbackT]
 """A list of callback functions."""

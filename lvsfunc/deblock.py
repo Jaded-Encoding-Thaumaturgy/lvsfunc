@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from functools import partial
-from typing import Any, Callable, Literal, Sequence
+from typing import Any, Literal
 from warnings import warn
 
 from jetpytools import CustomValueError
@@ -118,7 +119,7 @@ def autodb_dpir(
                     "Adb_YNextDiffThreshold",
                     "Adb_YPrevDiffThreshold",
                 ],
-                [evref_diff, y_next_diff, y_prev_diff] + list(nthr_used),
+                [evref_diff, y_next_diff, y_prev_diff, *list(nthr_used)],
             ):
                 out = out.std.SetFrameProp(prop_name, floatval=max(prop_val * 255, -1))
 
@@ -136,7 +137,7 @@ def autodb_dpir(
 
     kernel = Kernel.ensure_obj(kernel, autodb_dpir)
 
-    if vsdpir_args.get("fp16", None):
+    if vsdpir_args.get("fp16"):
         warn("autodb_dpir: fp16 has been known to cause issues! It's highly recommended to set it to False!")
 
     vsdpir_final_args = dict[str, Any](cuda=cuda, fp16=vsdpir_args.pop("fp16", False))

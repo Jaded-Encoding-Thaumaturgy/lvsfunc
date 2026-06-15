@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import cast
-
 from jetpytools import CustomValueError
 from vskernels import Catrom
 from vssource import BestSource
@@ -78,15 +76,11 @@ def overlay_sign(
 
     assert check_variable(clip, overlay_sign)
 
-    is_string = isinstance(overlay, str)
-
-    if is_string:
-        overlay = BestSource.source(overlay)
+    if is_string_path := isinstance(overlay, str):
+        overlay = BestSource.source(str(overlay))
 
     if not isinstance(overlay, vs.VideoNode):
         raise CustomValueError("`overlay` must be a VideoNode object or a string path!", overlay_sign)
-
-    overlay = cast(vs.VideoNode, overlay)
 
     assert check_variable(overlay, overlay_sign)
 
@@ -104,7 +98,7 @@ def overlay_sign(
     try:
         mask = overlay.std.PropToClip("_Alpha")
     except vs.Error:
-        if is_string:
+        if is_string_path:
             raise FramePropError(overlay_sign, "Your image must have an alpha channel (transparency)!")
 
         raise FramePropError(overlay_sign, "You must load in the sign using `imwri.Read`!")

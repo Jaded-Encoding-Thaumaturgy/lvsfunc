@@ -3,10 +3,10 @@ from typing import Any
 from jetpytools import CustomError, FuncExceptT, SupportsString
 
 __all__: list[str] = [
+    "CustomOSError",
     "NoDifferencesFoundError",
     "NoGpuError",
     "VMAFError",
-    "CustomOSError",
 ]
 
 

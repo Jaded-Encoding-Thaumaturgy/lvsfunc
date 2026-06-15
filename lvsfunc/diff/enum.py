@@ -3,9 +3,9 @@ from __future__ import annotations
 from jetpytools import CustomIntEnum
 
 __all__: list[str] = [
+    "ButteraugliNorm",
     "DiffMode",
     "VMAFFeature",
-    "ButteraugliNorm",
 ]
 
 

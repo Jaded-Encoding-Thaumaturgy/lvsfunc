@@ -1,5 +1,6 @@
 import random
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from jetpytools import CustomRuntimeError, CustomValueError
 from vstools import core, depth, get_prop, limiter, vs

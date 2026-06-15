@@ -4,8 +4,9 @@ import math
 import random
 import warnings
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Iterator, Sequence
 from itertools import zip_longest
-from typing import Any, Iterable, Iterator, Sequence
+from typing import Any
 
 from jetpytools import CustomIntEnum, CustomNotImplementedError, CustomTypeError, CustomValueError, mod2
 from vskernels import Catrom, Kernel, KernelLike, Point, Spline36
@@ -24,16 +25,16 @@ from vstools import (
 from .exceptions import ClipsAndNamedClipsError
 
 __all__ = [
-    "compare",
     "Comparer",
-    "comparison_shots",
     "Direction",
     "Interleave",
     "Split",
-    "stack_compare",
     "Stack",
     "Tile",
+    "compare",
+    "comparison_shots",
     "diff_between_clips_stack",
+    "stack_compare",
 ]
 
 
@@ -211,14 +212,14 @@ class Stack(Comparer):
         if clips and namedclips:
             raise ClipsAndNamedClipsError(cls.stack)
 
-        return cls(clips if clips else namedclips).clip
+        return cls(clips or namedclips).clip
 
     @classmethod
     def stack_vertical(cls, *clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
         if clips and namedclips:
             raise ClipsAndNamedClipsError(cls.stack)
 
-        return cls(clips if clips else namedclips, direction=Direction.VERTICAL).clip
+        return cls(clips or namedclips, direction=Direction.VERTICAL).clip
 
 
 class Interleave(Comparer):
@@ -447,7 +448,7 @@ class Split(Stack):
         if clips and namedclips:
             raise ClipsAndNamedClipsError(cls.stack)
 
-        return cls(clips if clips else namedclips, label_alignment=2).clip
+        return cls(clips or namedclips, label_alignment=2).clip
 
 
 def compare(
@@ -593,7 +594,7 @@ def diff_between_clips_stack(*clips: vs.VideoNode, height: int = 288, **namedcli
     elif namedclips and not len(namedclips) == 2:
         raise CustomValueError("Must pass exactly 2 `namedclips`!", diff_between_clips_stack)
 
-    clip_a, clip_b = clips if clips else namedclips.values()
+    clip_a, clip_b = clips or namedclips.values()
 
     if clip_a.format != clip_b.format:
         raise CustomValueError(
@@ -603,7 +604,8 @@ def diff_between_clips_stack(*clips: vs.VideoNode, height: int = 288, **namedcli
 
     if clip_a.num_frames != clip_b.num_frames:
         warnings.warn(
-            'diff_between_clips_stack: "Clips are not of the same length! This function will only compare the frames that are present in both clips."',
+            'diff_between_clips_stack: "Clips are not of the same length! '
+            'This function will only compare the frames that are present in both clips."',
             UserWarning,
         )
 
@@ -677,7 +679,7 @@ def comparison_shots(
         namedclips = {k: v.std.Crop(left, right, top, bottom) for k, v in namedclips.items()}
 
     if height is None:
-        return Stack(clips if clips else namedclips, direction=Direction.HORIZONTAL).clip
+        return Stack(clips or namedclips, direction=Direction.HORIZONTAL).clip
     elif height <= 10:
         height = mod2(clips[0].height * height)
 
@@ -686,4 +688,4 @@ def comparison_shots(
     elif namedclips:
         namedclips = {k: kernel.scale(v, get_w(height), height) for k, v in namedclips.items()}
 
-    return Stack(clips if clips else namedclips, direction=Direction.HORIZONTAL).clip
+    return Stack(clips or namedclips, direction=Direction.HORIZONTAL).clip

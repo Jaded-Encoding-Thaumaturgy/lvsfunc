@@ -197,11 +197,11 @@ def npy_to_clip(
             else:
                 raise
         except Exception as e:
-            raise CustomValueError(f"Error sorting paths! {str(e)}", func)
+            raise CustomValueError(f"Error sorting paths! {e!s}", func)
 
     if is_npz:
         npz_data = np.load(paths[0])
-        first_key = list(npz_data.keys())[0]
+        first_key = next(iter(npz_data.keys()))
         first_frame = npz_data[first_key]
     else:
         first_frame = np.load(paths[0])
@@ -223,10 +223,7 @@ def npy_to_clip(
     blank_clip = core.std.BlankClip(None, width, height, fmt, length=clip_length, keep=True)
 
     def _read_frame(n: int, f: vs.VideoFrame) -> vs.VideoFrame:
-        if is_npz:
-            loaded_frame = npz_data[list(npz_data.keys())[n]]
-        else:
-            loaded_frame = np.load(paths[n])
+        loaded_frame = npz_data[list(npz_data.keys())[n]] if is_npz else np.load(paths[n])
 
         fout = f.copy()
 

@@ -197,7 +197,10 @@ class Base1xModel:
             (0, 2): [clip_y, ref_u, clip_v],
         }
 
-        return join(planes_map.get(tuple(self._planes), processed))
+        if (planes := planes_map.get(tuple(self._planes))) is not None:
+            return join(planes)
+
+        return processed
 
     def _set_model_path(self) -> None:
         """Set the path of the model."""
@@ -287,7 +290,7 @@ class Base1xModelWithStrength(Base1xModel):
 
     def _should_process(self, strength: SupportsFloat | vs.VideoNode | None | Literal[False] = False) -> bool:
         if hasattr(self, "_strength_clip"):
-            return self._strength_clip is not False
+            return True
 
         return (strength is None) or not (isinstance(strength, (int, float)) and strength <= 0.0)
 

@@ -1,0 +1,3 @@
+import vapoursynth as vs
+
+def crossfade(clipa: vs.VideoNode, clipb: vs.VideoNode, duration: int) -> vs.VideoNode: ...

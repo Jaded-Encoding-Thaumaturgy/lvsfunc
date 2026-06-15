@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from jetpytools import CustomValueError, DependencyNotFoundError, FuncExceptT
 from vsdenoise import DFTTest
@@ -24,11 +25,11 @@ from .exceptions import NoGpuError, VMAFError
 from .types import CallbacksT
 
 __all__: list[str] = [
-    "PlaneStatsDiff",
-    "PlaneAvgFloatDiff",
-    "VMAFDiff",
     "ButteraugliDiff",
     "LowpassFilterDiff",
+    "PlaneAvgFloatDiff",
+    "PlaneStatsDiff",
+    "VMAFDiff",
 ]
 
 
@@ -72,7 +73,7 @@ class DiffStrategy(ABC):
         ...
 
 
-class _vszipStrategy:
+class _VszipStrategy:
     """Base class for vszip strategies."""
 
     _func_except: FuncExceptT
@@ -90,7 +91,7 @@ class _vszipStrategy:
         )
 
 
-class PlaneStatsDiff(DiffStrategy, _vszipStrategy):
+class PlaneStatsDiff(DiffStrategy, _VszipStrategy):
     """Strategy for comparing clips using PlaneStats."""
 
     def __init__(
@@ -138,12 +139,12 @@ class PlaneStatsDiff(DiffStrategy, _vszipStrategy):
 
             return diff_min <= self.threshold or diff_max >= (255 - self.threshold)
 
-        callbacks = [_check_diff]
+        callbacks: CallbacksT = [_check_diff]
 
-        return diff_clip, CallbacksT(callbacks)
+        return diff_clip, callbacks
 
 
-class PlaneAvgFloatDiff(DiffStrategy, _vszipStrategy):
+class PlaneAvgFloatDiff(DiffStrategy, _VszipStrategy):
     """Strategy for comparing clips using PlaneAvg."""
 
     def __init__(
@@ -199,7 +200,7 @@ class PlaneAvgFloatDiff(DiffStrategy, _vszipStrategy):
 
             return diff >= self.threshold
 
-        callbacks = CallbacksT([_check_diff])
+        callbacks: CallbacksT = [_check_diff]
 
         return ps_comp.std.SetFrameProps(fd_thr=self.threshold), callbacks
 
@@ -268,9 +269,9 @@ class VMAFDiff(DiffStrategy):
         vmaf_clips = [core.vmaf.Metric(src, ref, feature=feature) for feature in features]
         vmaf_clip = merge_clip_props(*vmaf_clips)
 
-        callbacks = CallbacksT(
-            [lambda f: get_prop(f, feature.prop, (float, int), default=100) <= self.threshold for feature in features]
-        )
+        callbacks: CallbacksT = [
+            lambda f: get_prop(f, feature.prop, (float, int), default=100) <= self.threshold for feature in features
+        ]
 
         return vmaf_clip.std.SetFrameProps(fd_thr=self.threshold), callbacks
 
@@ -335,9 +336,9 @@ class ButteraugliDiff(DiffStrategy):
         ba_clip = plugin(src, ref, **{intensity_param: self.intensity_multiplier})  # type: ignore
         props = [norm.prop for norm in self.norm_mode]
 
-        callbacks = CallbacksT(
-            [lambda f: any(get_prop(f, prop, (float, int), default=0) >= self.threshold for prop in props)]
-        )
+        callbacks: CallbacksT = [
+            lambda f: any(get_prop(f, prop, (float, int), default=0) >= self.threshold for prop in props)
+        ]
 
         # Get the matrix from source back to prevent it from being set to RGB in the return clip
         return src_matrix.apply(ba_clip).std.SetFrameProps(fd_thr=self.threshold), callbacks
@@ -443,6 +444,6 @@ class LowpassFilterDiff(PlaneAvgFloatDiff):
 
             return diff >= self.threshold
 
-        callbacks = CallbacksT([_check_diff])
+        callbacks: CallbacksT = [_check_diff]
 
         return ps_comp.std.SetFrameProps(fd_thr=self.threshold), callbacks

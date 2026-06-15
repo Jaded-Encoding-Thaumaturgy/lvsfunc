@@ -134,7 +134,7 @@ docstring-code-format = true
 
 [tool.ruff.lint]
 exclude = ["stubs/**"]
-extend-ignore = ["C408", "D100", "D107", "D301", "E226"]
+extend-ignore = ["C408", "D100", "D107", "D301", "E226", "RUF002"]
 extend-select = [
     "E",
     "C4",
@@ -151,7 +151,10 @@ extend-select = [
 
 [tool.ruff.lint.per-file-ignores]
 "lvsfunc/**/__init__.py" = ["F401", "F403"]
+"lvsfunc/models/delowpass.py" = [
+    "N801",
+] # Makes the class names too obtuse to read
 "tests/**/__init__.py" = ["F401", "F403"]
 
 [tool.poe.tasks]
-lint = { shell = "isort . && ruff check . --fix && ruff format . && mypy . && pytest ." }
+lint = { shell = "uv run vsstubs && isort . && ruff check . --fix && ruff format . && mypy . && pytest ." }

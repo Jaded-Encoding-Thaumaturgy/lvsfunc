@@ -3,10 +3,10 @@ import inspect
 from jetpytools import CustomKeyError
 
 __all__: list[str] = [
-    "get_full_caller_stack",
-    "get_caller_chain",
     "format_caller_stack",
+    "get_caller_chain",
     "get_caller_info",
+    "get_full_caller_stack",
     "summarize_stack",
 ]
 
@@ -133,7 +133,7 @@ def summarize_stack(include_line_numbers: bool = False) -> str:
     stack = _remove_caller_formatting(get_full_caller_stack())
 
     total_calls = len(stack)
-    unique_functions = len(set(caller.split()[0] for caller in stack))
+    unique_functions = len({caller.split()[0] for caller in stack})
 
     summary = f"Total function calls: {total_calls}\n"
     summary += f"Unique functions called: {unique_functions}\n"
