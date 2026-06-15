@@ -61,7 +61,7 @@ class RGBColor(tuple[float, float, float], CustomEnum):
         return cls[name.upper()]
 
     def to_clip(self, ref: vs.VideoNode | None = None) -> vs.VideoNode:
-        """Create a blank clip with the color."""
+        """Create a blank clip with the RGBColor."""
 
         blank_clip = core.std.BlankClip(ref, format=vs.RGBS, color=self)
 
@@ -104,7 +104,7 @@ class RGBColor(tuple[float, float, float], CustomEnum):
             31,
         ],
     ) -> list[int]:
-        """Scale the value of the color."""
+        """Scale the value of the color to the given bitdepth."""
 
         # TODO: idk what to do with the colour range
-        return [int(scale_value(value, bitdepth, 32, range_in=ColorRange.FULL)) for value in self.value]
+        return [int(scale_value(value, 32, bitdepth, range_in=ColorRange.FULL)) for value in self]
