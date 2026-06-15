@@ -429,6 +429,7 @@ class Split(Stack):
                         right_crop += overflow
 
                     self.clips[key] = clip.std.Crop(left=left_crop, right=right_crop)
+
             case Direction.VERTICAL:
                 crop_height, overflow = divmod(self.height, self.num_clips)
 
@@ -441,7 +442,8 @@ class Split(Stack):
 
                     self.clips[key] = clip.std.Crop(top=top_crop, bottom=bottom_crop)
 
-        raise CustomValueError("Unknown direction", self.__class__)
+            case _:
+                raise CustomValueError("Unknown direction", self.__class__)
 
     @classmethod
     def stack(cls, *clips: vs.VideoNode, **namedclips: vs.VideoNode) -> vs.VideoNode:
