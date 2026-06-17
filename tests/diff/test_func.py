@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 import pytest
-from jetpytools import CustomValueError, FileIsADirectoryError, FilePermissionError, SPath
+from jetpytools import CustomValueError, FileIsADirectoryError, FilePermissionError, FileWasNotFoundError, SPath
 from vstools import core
 
 from lvsfunc.diff.exceptions import NoDifferencesFoundError
@@ -178,3 +180,95 @@ def test_find_diff_applies_exclusion_ranges(monkeypatch: pytest.MonkeyPatch) -> 
 
     assert fd._diff_frames == [5, 6, 7, 8, 9, 16, 17, 18, 19]
     assert fd.diff_ranges == [(5, 9), (16, 19)]
+
+
+def test_find_diff_applies_frame_post_processor(monkeypatch: pytest.MonkeyPatch) -> None:
+    clip = core.std.BlankClip(length=20)
+    observed: list[list[int]] = []
+
+    monkeypatch.setattr("lvsfunc.diff.func.clip_async_render", lambda *_args, **_kwargs: [8, 2, 5, 11, 14, 21])
+
+    def _keep_odd_frames(frames: Iterable[int]) -> Iterable[int]:
+        values = list(frames)
+
+        filtered = [frame for frame in values if frame % 2]
+
+        observed.append(filtered)
+
+        return filtered
+
+    finder = FindDiff(StubStrategy(), pre_process=False)
+    finder.find_diff(clip, clip, frames_post_process=_keep_odd_frames)
+
+    assert observed == [[5, 11, 21]]
+    assert finder.diff_ranges == [(5, 5), (11, 11), (21, 21)]
+
+
+def test_find_diff_reuses_cached_result_unless_forced(monkeypatch: pytest.MonkeyPatch) -> None:
+    clip = core.std.BlankClip(length=20)
+    renders = 0
+
+    def render(*_args: object, **_kwargs: object) -> list[int]:
+        nonlocal renders
+        renders += 1
+
+        return [4, 5]
+
+    monkeypatch.setattr("lvsfunc.diff.func.clip_async_render", render)
+
+    finder = FindDiff(StubStrategy(), pre_process=False)
+    finder.find_diff(clip, clip, frames_post_process=None)
+    finder.find_diff(clip, clip, frames_post_process=None)
+
+    assert renders == 1
+
+    finder.find_diff(clip, clip, force=True, frames_post_process=None)
+
+    assert renders == 2
+
+
+def test_find_diff_truncates_mismatched_clips_before_processing(monkeypatch: pytest.MonkeyPatch) -> None:
+    src = core.std.BlankClip(length=12)
+    ref = core.std.BlankClip(length=7)
+    processed_lengths: list[int] = []
+
+    def render(clip: object, *_args: object, **_kwargs: object) -> list[int]:
+        processed_lengths.append(clip.num_frames)  # type: ignore[attr-defined]
+        return [1, 2]
+
+    monkeypatch.setattr("lvsfunc.diff.func.clip_async_render", render)
+
+    finder = FindDiff(StubStrategy(), pre_process=False)
+
+    with pytest.warns(UserWarning, match="number of frames"):
+        finder.find_diff(src, ref, frames_post_process=None)
+
+    assert processed_lengths == [7]
+
+
+def test_get_clip_frames_returns_only_detected_frames() -> None:
+    clip = core.std.BlankClip(length=20)
+    finder = FindDiff(StubStrategy(), pre_process=False)
+    finder._diff_frames = [1, 4, 9]
+
+    result = finder.get_clip_frames(clip)
+
+    assert result.num_frames == 3
+    assert (result.width, result.height) == (clip.width, clip.height)
+
+
+def test_from_file_replaces_previous_ranges(tmp_path: SPath) -> None:
+    ranges_file = tmp_path / "ranges.txt"
+    ranges_file.write_text("3-4\n8-10\n")
+
+    finder = FindDiff(StubStrategy(), pre_process=False)
+    finder.diff_ranges = [(100, 200)]
+
+    assert finder.from_file(ranges_file) == [(3, 4), (8, 10)]
+
+
+def test_from_file_rejects_missing_file(tmp_path: SPath) -> None:
+    finder = FindDiff(StubStrategy(), pre_process=False)
+
+    with pytest.raises(FileWasNotFoundError):
+        finder.from_file(tmp_path / "missing.txt")
