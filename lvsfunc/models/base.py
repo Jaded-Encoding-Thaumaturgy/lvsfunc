@@ -1,303 +1,181 @@
 import importlib.resources as pkg_resources
-from dataclasses import dataclass
-from typing import Any, Literal, SupportsFloat
-from warnings import warn
+import warnings
+from logging import getLogger
+from typing import Any
 
-from jetpytools import (
-    CustomTypeError,
-    CustomValueError,
-    DependencyNotFoundError,
-    FileWasNotFoundError,
-    SPath,
-    inject_self,
-    iterate,
-)
-from vsexprtools import expr_func
-from vskernels import Catrom, Point
-from vsscale import autoselect_backend
-from vstools import (
-    ColorRange,
-    FunctionUtil,
-    Matrix,
-    VariableFormatError,
-    check_variable_format,
-    depth,
-    get_peak_value,
-    get_video_format,
-    join,
-    limiter,
-    normalize_planes,
-    split,
-    vs,
-)
+from jetpytools import CustomNotImplementedError, FileNotExistsError, FileWasNotFoundError, FuncExcept, SPath, SPathLike
+from vskernels import Catrom, KernelLike, ScalerLike
+from vsscale.onnx import BackendLike, BaseOnnxScalerRGB
+from vstools import depth, get_y, join, vs
 
-__all__: list[str] = []
+__all__: list[str] = [
+    "_LvsfuncRgbModel",
+    "_model_variants",
+    "_shader_path",
+]
+
+logger = getLogger(__name__)
 
 
-@dataclass
-class Base1xModel:
-    """Base class for 1x models to reconstruct high-frequency information."""
+def _model_variants(cls: type) -> tuple[str, ...]:
+    variants = []
 
-    backend: Any | None = None
-    """
-    vs-mlrt backend. Will attempt to autoselect the most suitable one with fp16=True if None.
-    In order of trt > cuda > directml > nncn > cpu.
-    """
+    for member in cls.__subclasses__():
+        if member.__name__ == cls.__name__:
+            break
 
-    tiles: int | tuple[int, int] | None = None
-    """
-    Splits up the frame into multiple tiles.
-    Helps if you're lacking in vram but models may behave differently.
-    """
+        if not isinstance(member, type) or not issubclass(member, _LvsfuncRgbModel):
+            continue
 
-    tilesize: int | tuple[int, int] | None = None
-    """
-    Size of the tiles.
-    """
+        if "Base" in member.__name__:
+            continue
 
-    overlap: int | tuple[int, int] | None = None
-    """
-    Overlap between tiles.
-    """
+        if member.__name__.startswith("_"):
+            continue
 
-    _model_filename = ""
-    """
-    Filename of the model. If it contains a slash, it will be treated as a relative path.
+        variants.append(member.__name__)
 
-    For example:
+    return sorted(variants)
 
-    ```python
-        >>> class ExampleModel(Base1xModel):
-        ...     _model_filename = "./example_model_fp32.onnx"
-        ...
-        >>> ExampleModel.apply(clip)
-    ```
-    """
 
-    _is_init = False
+def _shader_path(subdir: str, filename: str) -> SPath:
+    root = SPath(str(pkg_resources.files("lvsfunc"))) / "models" / "shaders"
 
-    def __str__(self) -> str:
-        return self.__class__.__name__
+    return root / subdir / filename
 
-    @inject_self
-    def apply(self, /, clip: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
+
+class _LvsfuncRgbModel(BaseOnnxScalerRGB):
+    """Base class for all RGB models."""
+
+    _static_kernel_radius = 1
+
+    def __init__(
+        self,
+        model: SPathLike | None = None,
+        backend: BackendLike | None = None,
+        tiles: int | tuple[int, int] | None = None,
+        tilesize: int | tuple[int, int] | None = None,
+        overlap: int | tuple[int, int] = 0,
+        multiple: int = 1,
+        max_instances: int = 2,
+        *,
+        kernel: KernelLike = Catrom,
+        scaler: ScalerLike | None = None,
+        shifter: KernelLike | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Initializes the scaler with the specified parameters.
+
+        Args:
+            model: Path to the ONNX model file.
+            backend: The backend to be used with the vs-mlrt framework. If set to None, the most suitable backend will
+                be automatically selected, prioritizing fp16 support.
+            tiles: Whether to split the image into multiple tiles. This can help reduce VRAM usage, but note that the
+                model's behavior may vary when they are used.
+            tilesize: The size of each tile when splitting the image (if tiles are enabled).
+            overlap: The size of overlap between tiles.
+            multiple: Multiple of the tiles.
+            max_instances: Maximum instances to spawn when scaling a variable resolution clip.
+            kernel: Base kernel to be used for certain scaling/shifting operations. Defaults to Point.
+            scaler: Scaler used for scaling operations. Defaults to kernel.
+            shifter: Kernel used for shifting operations. Defaults to kernel.
+            **kwargs: Additional arguments.
+        """
+
+        self._check_is_base_model()
+
+        super().__init__(
+            _get_onnx_model(self),
+            backend,
+            tiles,
+            tilesize,
+            overlap,
+            multiple,
+            max_instances,
+            kernel=kernel,
+            scaler=scaler,
+            shifter=shifter,
+            **kwargs,
+        )
+
+    def apply(self, clip: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
         """
         Apply the model to the clip.
 
-        :param clip:        The clip to apply the model to.
+        :param clip:        The clip to process.
         :param kwargs:      Additional keyword arguments.
 
         :return:            The processed clip.
-
-        :raises DependencyNotFoundError:    If vsmlrt is not installed.
-        :raises FileWasNotFoundError:       If the model is not found.
-        :raises CustomValueError:           If the model is not a valid model.
         """
 
-        if not self._model_filename:
-            raise CustomValueError("Model path not set! You may need to use a subclass!", self.apply)
+        warnings.warn(
+            f"{self.__class__.__qualname__}.apply() is deprecated; "
+            f"use {self.__class__.__qualname__}().scale(depth(clip, 32)) instead.",
+            DeprecationWarning,
+        )
 
-        self._initialize(clip, kwargs)
+        return depth(self.scale(clip, **kwargs), clip)
 
-        processed = self._apply_model(self._func.work_clip, clip)
-
-        return self._func.return_clip(processed)
-
-    def _initialize(self, clip: vs.VideoNode, kwargs: dict[str, Any] = {}) -> None:
-        """Initialize the model with the given kwargs and clip."""
-
-        if self._is_init:
+    def _check_is_base_model(self) -> None:
+        if hasattr(self, "_model"):
             return
 
-        self._set_kwargs(kwargs)
-        self._set_model_path()
-        self._set_func(clip)
+        variants = _model_variants(self.__class__.__base__)
 
-        self._is_init = True
+        if variants:
+            print(variants)
+            example = f"{self.__class__.__name__}.{variants[0]}().scale(depth(clip, 32))"
 
-    def _set_kwargs(self, kwargs: dict[str, Any]) -> None:
-        """Set the keyword arguments."""
-
-        self._kwargs = kwargs
-        self._fp16 = self._kwargs.pop("fp16", False)
-
-    def _set_func(self, clip: vs.VideoNode) -> None:
-        """Set the function util."""
-
-        matrix = self._kwargs.pop("matrix", None)
-        bitdepth = 16 if self._fp16 else 32
-        color_range = ColorRange.from_param_or_video(self._kwargs.pop("color_range", None), clip)
-
-        self._matrix = Matrix.from_param_or_video(matrix, clip)
-        self._planes = normalize_planes(clip, self._kwargs.pop("planes", None))
-
-        # Pre-resample using the same method I use during training.
-        proc_clip = self._scale_based_on_planes(clip)
-
-        self._func = FunctionUtil(limiter(proc_clip), str(self), None, vs.RGB, bitdepth, range_in=color_range)
-
-    def _scale_based_on_planes(self, clip: vs.VideoNode) -> vs.VideoNode:
-        """Scale the clip based on the planes."""
-
-        return Point().resample(
-            clip,
-            format=vs.RGB48 if self._fp16 else vs.RGBS,
-            matrix_in=self._matrix,
-        )
-
-    def _apply_model(self, proc_clip: vs.VideoNode, ref: vs.VideoNode | None = None) -> vs.VideoNode:
-        """Apply the model to the clip."""
-
-        try:
-            from vsmlrt import inference
-        except ImportError:
-            raise DependencyNotFoundError(self._func.func, "vsmlrt")
-
-        if self.backend is None:
-            self.backend = autoselect_backend(fp16=self._fp16)
-
-        processed = iterate(
-            proc_clip,
-            inference,
-            self._kwargs.pop("iterations", 1),
-            self._model_path.to_str(),
-            self.overlap,
-            self.tilesize,
-            self.backend,
-        )
-
-        if ref is not None and ref.format.color_family != vs.RGB:
-            processed = Point().resample(processed, ref, matrix=self._matrix)
-
-        processed = self._select_planes(processed, ref)
-
-        return processed
-
-    def _select_planes(self, processed: vs.VideoNode, ref: vs.VideoNode | None = None) -> vs.VideoNode:
-        """Select the planes of the clip to return."""
-
-        if ref is None or (self._planes is None or self._planes == [0, 1, 2]):
-            return processed
-
-        # TODO: Figure out a smarter way to do this because holy shit this is bad
-        if self._planes == [0]:
-            return join(processed, ref)
-
-        if self._planes == [1, 2]:
-            return join(ref, processed)
-
-        # TODO: Especially this part is ugly holy SHIIITTT
-        clip_y, clip_u, clip_v = split(processed)
-        ref_y, ref_u, ref_v = split(ref)
-
-        planes_map = {
-            (1,): [ref_y, clip_u, ref_v],
-            (2,): [ref_y, ref_u, clip_v],
-            (0, 1): [clip_y, clip_u, ref_v],
-            (0, 2): [clip_y, ref_u, clip_v],
-        }
-
-        if (planes := planes_map.get(tuple(self._planes))) is not None:
-            return join(planes)
-
-        return processed
-
-    def _set_model_path(self) -> None:
-        """Set the path of the model."""
-
-        if any(x in self._model_filename for x in ["/", "\\"]):
-            model_path = SPath(self._model_filename)
+            hint = (
+                f"{self.__class__.__name__} is a namespace, not a model. "
+                f"Pick a variant, instantiate it, and call .scale(), e.g. {example}. "
+            )
         else:
-            model_path = get_models_path() / str(self).lower() / self._model_filename
+            hint = f"{self.__class__.__name__} has no model variants defined."
 
-        if not model_path.exists():
-            raise FileWasNotFoundError(
-                "Could not find model file! Please update lvsfunc.",
-                str(self),
-                dict(filename=model_path.name, path=model_path.parent),
-            )
+        raise CustomNotImplementedError(hint, self.__class__)
 
-        self._model_path = model_path
+    @property
+    def _model_dir(self) -> str:
+        return self.__class__.__qualname__.split(".")[0].lower()
 
-        if not self._fp16:
-            return
 
-        new_path = model_path.with_name(model_path.stem.replace("_fp32", "_fp16") + ".onnx")
+class _BaseLvsfuncLuma(_LvsfuncRgbModel):
+    def preprocess_clip(self, clip: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
+        return super().preprocess_clip(get_y(clip), **kwargs)
 
-        if new_path.exists():
-            self._model_path = new_path
-            return
+    def _finish_scale(
+        self,
+        clip: vs.VideoNode,
+        input_clip: vs.VideoNode,
+        width: int,
+        height: int,
+        shift: tuple[float, float] = (0, 0),
+        copy_props: bool = False,
+    ) -> vs.VideoNode:
+        if input_clip.format.color_family == vs.YUV:
+            scaled_chroma = self.scaler.scale(input_clip, clip.width, clip.height)
+            clip = join(clip, scaled_chroma, prop_src=scaled_chroma)
 
-        warn(
-            f"{self}: Could not find fp16 model! Using fp32 model instead.",
-            stacklevel=2,
+            logger.debug("%s: Chroma planes has been scaled accordingly", self)
+
+        return super()._finish_scale(clip, input_clip, width, height, shift, copy_props)
+
+
+def _get_onnx_model(
+    model: _LvsfuncRgbModel,
+    *,
+    package_name: str = "lvsfunc",
+    func_except: FuncExcept | None = None,
+) -> SPath:
+    func = func_except or _get_onnx_model
+
+    root = SPath(str(pkg_resources.files(package_name))) / "models" / "shaders"
+
+    try:
+        return root / model._model_dir / f"{model._model}.onnx"
+    except FileNotExistsError:
+        raise FileWasNotFoundError(
+            f"The model {model.__class__.__name__.lower()} was not found  in the {model._model_dir} directory!", func
         )
-        self._fp16 = False
-
-
-class Base1xModelWithStrength(Base1xModel):
-    """Base class for 1x models to reconstruct high-frequency information with strength control."""
-
-    def _initialize_strength(self, clip: vs.VideoNode, strength: SupportsFloat | vs.VideoNode = 10.0) -> vs.VideoNode:
-        if isinstance(strength, (float, int)):
-            self._set_strength_clip(clip, strength)
-        elif isinstance(strength, vs.VideoNode):
-            self._norm_str_clip(clip)
-
-        return self._strength_clip
-
-    def _set_strength_clip(self, clip: vs.VideoNode, strength: float) -> None:
-        norm_strength = strength / 100.0 * get_peak_value(16 if self._fp16 else 32)
-
-        self._strength_clip = expr_func(
-            [clip.std.BlankClip(format=vs.GRAYH if self._fp16 else vs.GRAYS, keep=True)],
-            f"x {norm_strength} +",
-        )
-
-    def _norm_str_clip(self, clip: vs.VideoNode) -> None:
-        str_clip = self._strength_clip
-
-        try:
-            check_variable_format(str_clip, self._norm_str_clip)
-        except VariableFormatError as e:
-            raise CustomValueError("Strength clip must be a constant format", self._norm_str_clip) from e
-
-        assert str_clip.format
-
-        if str_clip.format.color_family != vs.GRAY:
-            raise CustomValueError("Strength clip must be GRAY", self._norm_str_clip)
-
-        if str_clip.format.id == vs.GRAY8:
-            str_clip = expr_func(str_clip, "x 255 /", vs.GRAYH if self._fp16 else vs.GRAYS)
-        elif self._fp16 and get_video_format(str_clip) == vs.FLOAT:
-            str_clip = depth(str_clip, 16, vs.FLOAT)
-
-        if not isinstance(str_clip, vs.VideoNode):
-            raise CustomTypeError("str_clip must be a VideoNode to scale", self._norm_str_clip)
-
-        if str_clip.width != clip.width or str_clip.height != clip.height:
-            str_clip = Catrom().scale(str_clip, clip.width, clip.height)
-
-        if not isinstance(str_clip, vs.VideoNode):
-            raise CustomTypeError("str_clip must be a VideoNode to check num_frames", self._norm_str_clip)
-        if str_clip.num_frames != clip.num_frames:
-            raise CustomValueError(
-                "Strength clip must have the same number of frames as the input clip",
-                self._norm_str_clip,
-            )
-
-        self._strength_clip = str_clip
-
-    def _should_process(self, strength: SupportsFloat | vs.VideoNode | None | Literal[False] = False) -> bool:
-        if hasattr(self, "_strength_clip"):
-            return True
-
-        return (strength is None) or not (isinstance(strength, (int, float)) and strength <= 0.0)
-
-
-def get_models_path() -> SPath:
-    """Get the path of the models."""
-
-    import lvsfunc
-
-    return SPath(str(pkg_resources.files(lvsfunc))) / "models" / "shaders"
