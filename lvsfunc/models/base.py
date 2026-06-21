@@ -3,7 +3,7 @@ import warnings
 from logging import getLogger
 from typing import Any
 
-from jetpytools import CustomNotImplementedError, FileNotExistsError, FileWasNotFoundError, FuncExcept, SPath, SPathLike
+from jetpytools import CustomNotImplementedError, FileWasNotFoundError, FuncExcept, SPath, SPathLike
 from vskernels import Catrom, KernelLike, ScalerLike
 from vsscale.onnx import BackendLike, BaseOnnxScalerRGB
 from vstools import depth, get_y, join, vs
@@ -18,24 +18,15 @@ logger = getLogger(__name__)
 
 
 def _model_variants(cls: type) -> tuple[str, ...]:
-    variants = []
-
-    for member in cls.__subclasses__():
-        if member.__name__ == cls.__name__:
-            break
-
-        if not isinstance(member, type) or not issubclass(member, _LvsfuncRgbModel):
-            continue
-
-        if "Base" in member.__name__:
-            continue
-
-        if member.__name__.startswith("_"):
-            continue
-
-        variants.append(member.__name__)
-
-    return sorted(variants)
+    return tuple(
+        name
+        for name, member in cls.__dict__.items()
+        if isinstance(member, type)
+        and issubclass(member, _LvsfuncRgbModel)
+        and "_model" in member.__dict__
+        and not name.startswith("_")
+        and not name.lower().startswith("base")
+    )
 
 
 def _shader_path(subdir: str, filename: str) -> SPath:
@@ -118,18 +109,19 @@ class _LvsfuncRgbModel(BaseOnnxScalerRGB):
         return depth(self.scale(clip, **kwargs), clip)
 
     def _check_is_base_model(self) -> None:
-        if hasattr(self, "_model"):
+        if "_model" in self.__class__.__dict__:
             return
 
-        variants = _model_variants(self.__class__.__base__)
+        variants = _model_variants(self.__class__)
 
         if variants:
-            print(variants)
             example = f"{self.__class__.__name__}.{variants[0]}().scale(depth(clip, 32))"
+            variant_list = "\n".join(f"  - {name}" for name in variants)
 
             hint = (
                 f"{self.__class__.__name__} is a namespace, not a model. "
-                f"Pick a variant, instantiate it, and call .scale(), e.g. {example}. "
+                f"Pick a variant, instantiate it, and call .scale(), e.g. {example}.\n"
+                f"Available variants:\n{variant_list}"
             )
         else:
             hint = f"{self.__class__.__name__} has no model variants defined."
@@ -169,13 +161,23 @@ def _get_onnx_model(
     package_name: str = "lvsfunc",
     func_except: FuncExcept | None = None,
 ) -> SPath:
-    func = func_except or _get_onnx_model
+    model_cls = type(model)
+    func = func_except or f"{model_cls.__name__}._get_onnx_model"
+
+    if (model_name := model_cls.__dict__.get("_model")) is None:
+        raise FileWasNotFoundError(
+            f"The model {model_cls.__name__} does not define a _model filename.",
+            func,
+        )
 
     root = SPath(str(pkg_resources.files(package_name))) / "models" / "shaders"
+    path = root / model._model_dir / f"{model_name}.onnx"
 
-    try:
-        return root / model._model_dir / f"{model._model}.onnx"
-    except FileNotExistsError:
+    if not path.exists() or not path.is_file():
         raise FileWasNotFoundError(
-            f"The model {model.__class__.__name__.lower()} was not found  in the {model._model_dir} directory!", func
+            f"The model {model_name}.onnx was not found in the {root / model._model_dir} directory! "
+            "You may need to reinstall this package or install the missing model.",
+            func,
         )
+
+    return path
