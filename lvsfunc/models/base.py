@@ -11,7 +11,6 @@ from vstools import depth, get_y, join, vs
 __all__: list[str] = [
     "_LvsfuncRgbModel",
     "_model_variants",
-    "_shader_path",
 ]
 
 logger = getLogger(__name__)
@@ -27,12 +26,6 @@ def _model_variants(cls: type) -> tuple[str, ...]:
         and not name.startswith("_")
         and not name.lower().startswith("base")
     )
-
-
-def _shader_path(subdir: str, filename: str) -> SPath:
-    root = SPath(str(pkg_resources.files("lvsfunc"))) / "models" / "shaders"
-
-    return root / subdir / filename
 
 
 class _LvsfuncRgbModel(BaseOnnxScalerRGB):
