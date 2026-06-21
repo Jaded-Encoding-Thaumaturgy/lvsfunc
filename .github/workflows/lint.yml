@@ -5,11 +5,11 @@ on:
     branches:
       - master
     paths:
-      - "**.py"
+      - "**.py*"
       - "pyproject.toml"
   pull_request:
     paths:
-      - "**.py"
+      - "**.py*"
       - "pyproject.toml"
   workflow_dispatch:
 

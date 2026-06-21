@@ -7,13 +7,13 @@ on:
     paths:
       - ".github/actions/**"
       - ".github/workflows/test.yml"
-      - "**.py"
+      - "**.py*"
       - "pyproject.toml"
   pull_request:
     paths:
       - ".github/actions/**"
       - ".github/workflows/test.yml"
-      - "**.py"
+      - "**.py*"
       - "pyproject.toml"
   workflow_dispatch:
 
