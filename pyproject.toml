@@ -126,6 +126,10 @@ ignore_errors = true
 module = ["vsmlrt.*"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = ["vsscale.*"]
+follow_imports = "skip"
+
 [tool.ruff]
 line-length = 120
 

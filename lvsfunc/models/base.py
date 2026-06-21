@@ -35,7 +35,7 @@ def _shader_path(subdir: str, filename: str) -> SPath:
     return root / subdir / filename
 
 
-class _LvsfuncRgbModel(BaseOnnxScalerRGB):
+class _LvsfuncRgbModel(BaseOnnxScalerRGB):  # type: ignore
     """Base class for all RGB models."""
 
     _static_kernel_radius = 1
