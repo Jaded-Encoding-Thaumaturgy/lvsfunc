@@ -106,7 +106,7 @@ class _LvsfuncRgbModel(BaseOnnxScalerRGB):  # type: ignore
             DeprecationWarning,
         )
 
-        return depth(self.scale(clip, **kwargs), clip)
+        return depth(self.scale(depth(clip, 32), **kwargs), clip)
 
     def _check_is_base_model(self) -> None:
         if "_model" in self.__class__.__dict__:
