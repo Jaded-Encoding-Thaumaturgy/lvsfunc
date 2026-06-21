@@ -17,12 +17,12 @@ __all__ = ["autodb_dpir"]
 def autodb_dpir(
     clip: vs.VideoNode,
     edgevalue: int = 24,
-    strs: Sequence[float] = [10, 50, 75],
-    thrs: Sequence[tuple[float, float, float]] = [
+    strs: Sequence[float] = (10, 50, 75),
+    thrs: Sequence[tuple[float, float, float]] = (
         (1.5, 2.0, 2.0),
         (3.0, 4.5, 4.5),
         (5.5, 7.0, 7.0),
-    ],
+    ),
     matrix: Matrix | int | None = None,
     edgemasker: Callable[[vs.VideoNode], vs.VideoNode] | None = None,
     kernel: KernelLike = Catrom,

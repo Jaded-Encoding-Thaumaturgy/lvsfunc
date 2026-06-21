@@ -83,7 +83,7 @@ class FindDiff:
 
     def __init__(
         self,
-        strategies: DiffStrategy | Sequence[DiffStrategy] = [PlaneStatsDiff()],
+        strategies: DiffStrategy | Sequence[DiffStrategy] | None = None,
         mode: DiffMode = DiffMode.ANY,
         pre_process: VSFunctionNoArgs | Literal[False] | None = (lambda clip: box_blur(clip).std.Crop(8, 8, 8, 8)),
         exclusion_ranges: FrameRangesN | None = None,
@@ -136,7 +136,12 @@ class FindDiff:
         self._func_except = func_except or self.__class__.__name__
         self.mode = DiffMode(mode)
 
-        self.strategies = [strategies] if not isinstance(strategies, Sequence) else list(strategies)
+        if strategies is None:
+            self.strategies = [PlaneStatsDiff()]
+        elif not isinstance(strategies, Sequence):
+            self.strategies = [strategies]
+        else:
+            self.strategies = list(strategies)
 
         if not self.strategies:
             raise CustomValueError("You must pass at least one strategy!", self._func_except)

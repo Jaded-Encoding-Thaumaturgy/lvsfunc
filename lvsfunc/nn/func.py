@@ -138,7 +138,7 @@ def clip_to_npy(
 
 
 def npy_to_clip(
-    file_paths: list[SPathLike] | SPathLike = [],
+    file_paths: list[SPathLike] | SPathLike | None = None,
     ref: vs.VideoNode | None = None,
     kernel: KernelLike = Point,
     func_except: FuncExceptT | None = None,
@@ -167,7 +167,12 @@ def npy_to_clip(
 
     kernel = Kernel.ensure_obj(kernel, func)
 
-    paths = [SPath(file_paths)] if not isinstance(file_paths, list) else [SPath(x) for x in file_paths]
+    if file_paths is None:
+        paths: list[SPath] = []
+    elif not isinstance(file_paths, list):
+        paths = [SPath(file_paths)]
+    else:
+        paths = [SPath(x) for x in file_paths]
     is_npz = False
 
     if not paths:
