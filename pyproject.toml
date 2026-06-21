@@ -58,7 +58,11 @@ dev = [
     "ruff~=0.15.0",
     "vsstubs>=2.1.1",
 ]
-test = ["pytest>=9.0.0, <10.0.0", "pytest-cov>=6.2.1, <8.0.0"]
+test = [
+    "pytest>=9.0.0, <10.0.0",
+    "pytest-cov>=6.2.1, <8.0.0",
+    "vsjetpack[cl]>=2.0.0rc2",   # Inference required for model tests
+]
 
 [[tool.uv.index]]
 name = "vs-wheels"
@@ -91,6 +95,11 @@ source = "vcs"
 [tool.pytest.ini_options]
 pythonpath = ["."]
 addopts = "--cov=lvsfunc"
+
+# This should be removed once all the relevant deprecation warnings are fixed
+filterwarnings = [
+    "ignore:The _ColorRange frame property has been deprecated:DeprecationWarning",
+]
 
 [tool.mypy]
 mypy_path = "$MYPY_CONFIG_FILE_DIR/stubs"

@@ -502,11 +502,13 @@ dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
+    { name = "vsjetpack", extra = ["cl"] },
     { name = "vsstubs" },
 ]
 test = [
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "vsjetpack", extra = ["cl"] },
 ]
 
 [package.metadata]
@@ -530,11 +532,13 @@ dev = [
     { name = "pytest", specifier = ">=9.0.0,<10.0.0" },
     { name = "pytest-cov", specifier = ">=6.2.1,<8.0.0" },
     { name = "ruff", specifier = "~=0.15.0" },
+    { name = "vsjetpack", extras = ["cl"], specifier = ">=2.0.0rc2" },
     { name = "vsstubs", specifier = ">=2.1.1" },
 ]
 test = [
     { name = "pytest", specifier = ">=9.0.0,<10.0.0" },
     { name = "pytest-cov", specifier = ">=6.2.1,<8.0.0" },
+    { name = "vsjetpack", extras = ["cl"], specifier = ">=2.0.0rc2" },
 ]
 
 [[package]]
@@ -1490,6 +1494,22 @@ wheels = [
 ]
 
 [[package]]
+name = "vapoursynth-knlmeanscl"
+version = "1.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "vapoursynth" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f0/80/42bd4bd74ae141350a5d3ad7f3085396cb78a668d8fc611620d78fe27627/vapoursynth_knlmeanscl-1.3.tar.gz", hash = "sha256:174b60b1e748bc7dcf291fc6147ab1664d7f4fa5357c5433fd302779292c658f", size = 76010, upload-time = "2026-05-10T00:20:58.906Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/df/86/231c25b7f8d1a89c756e2fe33487687fe072916367a07dda79ea11f5512e/vapoursynth_knlmeanscl-1.3-py3-none-macosx_15_0_arm64.whl", hash = "sha256:78a044c24f9a185159990f3127040d3db2d354dce2235f7362a811211c8fa96b", size = 39461, upload-time = "2026-05-10T00:20:51.627Z" },
+    { url = "https://files.pythonhosted.org/packages/93/07/9654dbe2d8785b1bb30f23e0041c13758acf256623135ba02670396b29ec/vapoursynth_knlmeanscl-1.3-py3-none-macosx_15_0_x86_64.whl", hash = "sha256:1bbf61c762392ab5c22f4cbfbf900e4dd4d9db8de17fcbeb0e738b68780af198", size = 39683, upload-time = "2026-05-10T00:20:53.05Z" },
+    { url = "https://files.pythonhosted.org/packages/c7/9f/352518601296a2c6055bc305e6630d1ecb24e1093be8d15fba6e2640e675/vapoursynth_knlmeanscl-1.3-py3-none-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:adb528054ae57aec3710362975453a204bee07438d910cd43b4240d95e8e574d", size = 619281, upload-time = "2026-05-10T00:20:54.423Z" },
+    { url = "https://files.pythonhosted.org/packages/a8/07/c177a809cc93508e4cebdf41e664a7e59a17690fe1265caf6df3ddd539f6/vapoursynth_knlmeanscl-1.3-py3-none-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:87c7b34bb86518a430b8d8b2ea6c6f5878a94cf6af75a34df2b65b97a2cb03be", size = 637561, upload-time = "2026-05-10T00:20:55.997Z" },
+    { url = "https://files.pythonhosted.org/packages/af/bd/1ca191f9f998a3adc1ade6c6642e722a16f0cd3dfba62cd3365cb485b470/vapoursynth_knlmeanscl-1.3-py3-none-win_amd64.whl", hash = "sha256:6ba28e0c24240479f1c398a7a01b1dbc9b89a34aeb340399389f4d73df2b278b", size = 187293, upload-time = "2026-05-10T00:20:57.521Z" },
+]
+
+[[package]]
 name = "vapoursynth-lsmas"
 version = "1282.0.0"
 source = { registry = "https://jaded-encoding-thaumaturgy.github.io/vs-wheels/simple" }
@@ -1522,6 +1542,38 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/40/a0/a745fee3f88c992c5d1b3c8996271538ed03c668401eaee3a9fe7d2170f8/vapoursynth_manipmv-1.5.0-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:8c19247ea8a8cda6689410503e4cd9c5c112ce5451b409a2061ba15b8c4df48a", size = 19495, upload-time = "2026-06-02T00:18:46.746Z" },
     { url = "https://files.pythonhosted.org/packages/83/cb/17ef56da38433f7b2b7a5df7f77b37bf24b35547e990516c13fc0ff3a5c8/vapoursynth_manipmv-1.5.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:8ead0685e86d297ad5dda9adaa5188491b250a767e302e544d2cf92e7d0b3da6", size = 30239, upload-time = "2026-06-02T00:18:47.65Z" },
     { url = "https://files.pythonhosted.org/packages/d7/ea/1e7bb8d2b8d89d2380a418a0f21dc681d9199266cb5d9daf872cd40b004f/vapoursynth_manipmv-1.5.0-py3-none-win_amd64.whl", hash = "sha256:4fb3113a3877390ae5cc54915dc37ccb26b6dbf911cc3b8b3a50ce3acacbe875", size = 134600, upload-time = "2026-06-02T00:18:48.662Z" },
+]
+
+[[package]]
+name = "vapoursynth-mlrt-ncnn"
+version = "15.16"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "vapoursynth" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e5/6b/48782c3a512953f68a812fb460f932af198fc3cef8c1124275e7db8efdf6/vapoursynth_mlrt_ncnn-15.16.tar.gz", hash = "sha256:c532c9ffd9c9ed38da84fbaab50d8afa7d996026f5732d96c2c53f69e31d879c", size = 674257, upload-time = "2026-06-05T14:59:50.482Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/86/42/9f09ccf41eb50f4d9fc42aa1c5ade79974ef0e16e13d23077216aae9061d/vapoursynth_mlrt_ncnn-15.16-py3-none-macosx_15_0_arm64.whl", hash = "sha256:2db799843a6f4e93801174e4bc1bac9ef3c7cc7d2954c1ccaa9f068977e12c6b", size = 4526032, upload-time = "2026-06-05T14:59:41.15Z" },
+    { url = "https://files.pythonhosted.org/packages/93/a6/b43af4570a119ca2315cbdbea4036c2aae8f6f03700b6bc5a630adf32b22/vapoursynth_mlrt_ncnn-15.16-py3-none-macosx_15_0_x86_64.whl", hash = "sha256:122faff39051526d101106d4ac6b7f4db233803113735c39c8390c81bc193277", size = 8960704, upload-time = "2026-06-05T14:59:43.008Z" },
+    { url = "https://files.pythonhosted.org/packages/92/24/1fcd864638782751b97c0f8baf68e47558d34fc39fbb0977f98efa8e9c8b/vapoursynth_mlrt_ncnn-15.16-py3-none-manylinux_2_34_aarch64.whl", hash = "sha256:c720b20cd27239e27f7e7f27ca21a2c7ec6c449f82070229ff965f2b2572721d", size = 5871167, upload-time = "2026-06-05T14:59:45.124Z" },
+    { url = "https://files.pythonhosted.org/packages/7a/dc/9a16e246574492a522e83279a1e41cbf54dd0b16597813c07def50810b0d/vapoursynth_mlrt_ncnn-15.16-py3-none-manylinux_2_35_x86_64.whl", hash = "sha256:79abfee2efeb0a2997bbd9eaaa9b7170172981c8e38cb85ece7afd7499abcfe6", size = 9103750, upload-time = "2026-06-05T14:59:47.008Z" },
+    { url = "https://files.pythonhosted.org/packages/92/9f/3abe943e419710279d8e0fd40d76a3efef5d840ea2f7c6f6bf9a663b49fc/vapoursynth_mlrt_ncnn-15.16-py3-none-win_amd64.whl", hash = "sha256:2f60caa63bbe376d326b5468d9702ecdde6d78284b7125d852dc334d77c84fc5", size = 5753657, upload-time = "2026-06-05T14:59:48.906Z" },
+]
+
+[[package]]
+name = "vapoursynth-mlrt-ort"
+version = "15.16"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "vapoursynth" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/68/17/11ce373b623327dac0538894378c904fd67b256f9cbd4900faa4380d4676/vapoursynth_mlrt_ort-15.16.tar.gz", hash = "sha256:dcad8b87818a46f64e3d86a599bb586356a3eede5ae8645c8cb4b7b0a4ef6d75", size = 676009, upload-time = "2026-06-05T14:59:07.014Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/97/c8/022205fd01566ed733ac22fddbc4a3a843b5b86b6d8ebabc5acfb0626121/vapoursynth_mlrt_ort-15.16-py3-none-macosx_15_0_arm64.whl", hash = "sha256:4f022cb4b84f9cb79d7eeacc386cc394c0fae349b06a5a824a54e07a9010aec1", size = 8994452, upload-time = "2026-06-05T14:58:55.33Z" },
+    { url = "https://files.pythonhosted.org/packages/d1/ea/f675c68cf5c6ce5ac6ef72e7557c974bc230bc85f106223d253e1789c388/vapoursynth_mlrt_ort-15.16-py3-none-macosx_15_0_x86_64.whl", hash = "sha256:cee780ea0d391a9d7922e35d929179f13e53b419f49f5c35f48a9d70a8fa9467", size = 10902045, upload-time = "2026-06-05T14:58:57.619Z" },
+    { url = "https://files.pythonhosted.org/packages/9f/c7/6fa3dbdb968c3970d461057433ac63ca84fffa5eb87ebc26685f33f50028/vapoursynth_mlrt_ort-15.16-py3-none-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:479c8651fa1da0ad4eb601bcd45c5e9446329ff6f3dc768443d51ac56166a134", size = 8347556, upload-time = "2026-06-05T14:59:00.099Z" },
+    { url = "https://files.pythonhosted.org/packages/4b/81/7e72fd4c7275cfae736554302222bc9fb7823c93ae6521a51d92df0c77d6/vapoursynth_mlrt_ort-15.16-py3-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:0d431a1b7658d6b61af3cbffd126de60dcb3dde6dde9888788ba8753d8329fde", size = 9764071, upload-time = "2026-06-05T14:59:02.225Z" },
+    { url = "https://files.pythonhosted.org/packages/29/5c/9c3f020660b454d7607e9843711523cff71fa99ccbce621eff295f656fd0/vapoursynth_mlrt_ort-15.16-py3-none-win_amd64.whl", hash = "sha256:33768fb81eb8b9d64711b33590272fed00ef2e49968d26f5311e1eca46224161", size = 17240332, upload-time = "2026-06-05T14:59:04.784Z" },
 ]
 
 [[package]]
@@ -1765,6 +1817,11 @@ wheels = [
 ]
 
 [package.optional-dependencies]
+cl = [
+    { name = "vapoursynth-knlmeanscl" },
+    { name = "vapoursynth-mlrt-ncnn" },
+    { name = "vapoursynth-mlrt-ort" },
+]
 denoise = [
     { name = "anyio" },
     { name = "cyclopts" },
