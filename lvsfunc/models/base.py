@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import importlib.resources as pkg_resources
 import warnings
 from logging import getLogger
 from typing import Any
 
 from jetpytools import CustomNotImplementedError, FileWasNotFoundError, FuncExcept, SPath, SPathLike
+from typing_extensions import deprecated
 from vskernels import Catrom, KernelLike, ScalerLike
 from vsscale.onnx import BackendLike, BaseOnnxScalerRGB
 from vstools import depth, get_y, join, vs
@@ -16,7 +19,7 @@ __all__: list[str] = [
 logger = getLogger(__name__)
 
 
-def _model_variants(cls: type) -> tuple[str, ...]:
+def _model_variants(cls: type[_LvsfuncRgbModel]) -> tuple[str, ...]:
     return tuple(
         name
         for name, member in cls.__dict__.items()
@@ -61,13 +64,22 @@ class _LvsfuncRgbModel(BaseOnnxScalerRGB):
             overlap: The size of overlap between tiles.
             multiple: Multiple of the tiles.
             max_instances: Maximum instances to spawn when scaling a variable resolution clip.
-            kernel: Base kernel to be used for certain scaling/shifting operations. Defaults to Point.
+            kernel: Base kernel to be used for certain scaling/shifting operations. Defaults to Catrom.
             scaler: Scaler used for scaling operations. Defaults to kernel.
             shifter: Kernel used for shifting operations. Defaults to kernel.
             **kwargs: Additional arguments.
         """
 
         self._check_is_base_model()
+
+        if model is not None:
+            warnings.warn(
+                f"{self.__class__.__name__} ships with bundled ONNX weights installed alongside lvsfunc; "
+                "the `model` argument is ignored. Instantiate a specific model variant instead, "
+                "as with vsscale's ArtCNN or Waifu2x classes.",
+                UserWarning,
+                stacklevel=2,
+            )
 
         super().__init__(
             _get_onnx_model(self),
@@ -83,6 +95,11 @@ class _LvsfuncRgbModel(BaseOnnxScalerRGB):
             **kwargs,
         )
 
+    @deprecated(
+        "Use .scale(depth(clip, 32)) instead of .apply().",
+        category=DeprecationWarning,
+        stacklevel=2,
+    )
     def apply(self, clip: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
         """
         Apply the model to the clip.
@@ -93,13 +110,11 @@ class _LvsfuncRgbModel(BaseOnnxScalerRGB):
         :return:            The processed clip.
         """
 
-        warnings.warn(
-            f"{self.__class__.__qualname__}.apply() is deprecated; "
-            f"use {self.__class__.__qualname__}().scale(depth(clip, 32)) instead.",
-            DeprecationWarning,
-        )
+        clip32 = depth(clip, 32)
 
-        return depth(self.scale(depth(clip, 32), **kwargs), clip)
+        scaled = self.scale(clip32, **kwargs)
+
+        return depth(scaled, clip)
 
     def _check_is_base_model(self) -> None:
         if "_model" in self.__class__.__dict__:
@@ -143,7 +158,7 @@ class _BaseLvsfuncLuma(_LvsfuncRgbModel):
             scaled_chroma = self.scaler.scale(input_clip, clip.width, clip.height)
             clip = join(clip, scaled_chroma, prop_src=scaled_chroma)
 
-            logger.debug("%s: Chroma planes has been scaled accordingly", self)
+            logger.debug("%s: Chroma planes have been scaled accordingly", self)
 
         return super()._finish_scale(clip, input_clip, width, height, shift, copy_props)
 

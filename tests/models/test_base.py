@@ -41,3 +41,8 @@ def test_onnx_shader_exists(model_cls: type[_LvsfuncRgbModel]) -> None:
 )
 def test_model_dir(model_cls: type, expected_dir: str) -> None:
     assert model_cls(backend=None)._model_dir == expected_dir
+
+
+def test_model_path_argument_is_ignored() -> None:
+    with pytest.warns(UserWarning, match="bundled ONNX weights"):
+        LDempeg2(model="/tmp/custom.onnx", backend=None)
