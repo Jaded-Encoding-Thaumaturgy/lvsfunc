@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import pytest
+from vsscale.onnx import Backend
 from vstools import core, vs
 
 from lvsfunc.models.base import _LvsfuncRgbModel
 from lvsfunc.models.delowpass import LHzDelowpass
 from lvsfunc.models.dempeg2 import LDempeg2
+
+CPU_BACKEND = Backend.ORT_CPU
 
 CONCRETE_MODELS: tuple[type[_LvsfuncRgbModel], ...] = (
     LDempeg2,
