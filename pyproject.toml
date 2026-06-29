@@ -58,7 +58,8 @@ index-strategy = "unsafe-best-match"
 [dependency-groups]
 dev = [
     { include-group = "test" },
-    "isort",
+    "codespell>=2.4.2",
+    "isort~=8.0.1",
     "mypy~=2.1.0",
     "poethepoet>=0.32.0",
     "prek>=0.3.12",
@@ -173,9 +174,14 @@ extend-select = [
 [tool.ruff.lint.per-file-ignores]
 "lvsfunc/**/__init__.py" = ["F401", "F403"]
 "lvsfunc/models/delowpass.py" = [
-    "N801",
-] # Makes the class names too obtuse to read
+    "N801", # Makes the class names too obtuse to read
+]
 "tests/**/__init__.py" = ["F401", "F403"]
+
+[tool.codespell]
+skip = "*.pyc,*.onnx,uv.lock,*.lock,./stubs,./.venv,./.git"
+check-filenames = true
 
 [tool.poe.tasks]
 lint = { shell = "uv run vsstubs && isort . && ruff check . --fix && ruff format . && mypy . && pytest ." }
+spell = { shell = "uv run codespell ." }
