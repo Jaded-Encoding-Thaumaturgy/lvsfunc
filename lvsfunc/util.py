@@ -5,6 +5,7 @@ import random
 from typing import TYPE_CHECKING, Any
 
 from jetpytools import CustomIndexError, CustomValueError
+from psutil import cpu_count, virtual_memory
 from vsdenoise import DFTTest
 from vstools import core, vs
 
@@ -13,8 +14,45 @@ if TYPE_CHECKING:
 
 __all__ = [
     "colored_clips",
+    "set_vs_affinity",
     "sloc_curve_to_graph",
 ]
+
+
+def set_vs_affinity(*, threads: int = -1, cache_limit_mb: int = -1) -> None:
+    """
+    Configure VapourSynth worker threads and framebuffer cache.
+
+    If the CPU enables SMT, pins the process to every second logical CPU (0, 2, 4, ...)
+    so each worker gets its own physical core. Otherwise, pins to every logical CPU.
+
+    Args:
+        threads: Number of VS worker threads.
+            Default: ``-1`` uses all physical cores if SMT is enabled, otherwise all logical cores, capped at 8.
+        cache_limit_mb: Upper framebuffer cache limit in MB.
+            VS may use less; cached frames are freed once this limit is exceeded.
+            Default: ``-1`` uses three quarters of installed RAM,
+            but reserves at least 2 GB for the OS and encoder.
+    """
+
+    logical = cpu_count(logical=True) or 16
+    physical = cpu_count(logical=False) or logical // 2
+
+    smt = logical > physical
+
+    if threads <= 0:
+        threads = min(physical if smt else logical, 8)
+
+    threads = max(threads, 1)
+
+    if cache_limit_mb <= 0:
+        total_mb = virtual_memory().total // 1024**2
+        cache_limit_mb = min(total_mb * 3 // 4, max(total_mb - 2048, 1024))
+
+    if smt:
+        core.set_affinity(range(0, min(threads * 2, logical), 2), cache_limit_mb)
+    else:
+        core.set_affinity(range(0, min(threads, logical)), cache_limit_mb)
 
 
 def colored_clips(

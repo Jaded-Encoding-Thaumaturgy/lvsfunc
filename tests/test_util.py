@@ -1,10 +1,32 @@
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+
 import pytest
 from jetpytools import CustomIndexError, CustomValueError
 from vstools import vs
 
-from lvsfunc.util import colored_clips, sloc_curve_to_graph
+from lvsfunc.util import colored_clips, set_vs_affinity, sloc_curve_to_graph
+
+
+def _mock_cpu_count(monkeypatch: pytest.MonkeyPatch, logical_count: int, physical_count: int) -> None:
+    def fake_cpu_count(*, logical: bool = True) -> int:
+        return logical_count if logical else physical_count
+
+    monkeypatch.setattr("lvsfunc.util.cpu_count", fake_cpu_count)
+
+
+def _mock_virtual_memory(monkeypatch: pytest.MonkeyPatch, total_bytes: int) -> None:
+    monkeypatch.setattr("lvsfunc.util.virtual_memory", lambda: MagicMock(total=total_bytes))
+
+
+@pytest.fixture
+def set_affinity_calls(monkeypatch: pytest.MonkeyPatch) -> list[tuple[list[int], int]]:
+    calls: list[tuple[list[int], int]] = []
+    mock_core = MagicMock()
+    mock_core.set_affinity = lambda threads, cache_limit_mb: calls.append((list(threads), cache_limit_mb))
+    monkeypatch.setattr("lvsfunc.util.core", mock_core)
+    return calls
 
 
 @pytest.mark.parametrize("amount", [0, 1, -1])
@@ -55,3 +77,98 @@ def test_sloc_curve_to_graph_returns_matplotlib_figure() -> None:
     assert ax.get_title() == "test"
     assert len(ax.lines) == 1
     assert len(ax.collections) == 1
+
+
+@pytest.mark.parametrize("threads", [-1, 0])
+def test_set_vs_affinity_auto_detects_smt_affinity(
+    monkeypatch: pytest.MonkeyPatch,
+    set_affinity_calls: list[tuple[list[int], int]],
+    threads: int,
+) -> None:
+    _mock_cpu_count(monkeypatch, logical_count=16, physical_count=8)
+    _mock_virtual_memory(monkeypatch, 64 * 1024**3)
+
+    set_vs_affinity(threads=threads)
+
+    assert set_affinity_calls == [([0, 2, 4, 6, 8, 10, 12, 14], 48 * 1024)]
+
+
+def test_set_vs_affinity_uses_contiguous_cores_without_smt(
+    monkeypatch: pytest.MonkeyPatch,
+    set_affinity_calls: list[tuple[list[int], int]],
+) -> None:
+    _mock_cpu_count(monkeypatch, logical_count=8, physical_count=8)
+    _mock_virtual_memory(monkeypatch, 64 * 1024**3)
+
+    set_vs_affinity()
+
+    assert set_affinity_calls == [(list(range(8)), 48 * 1024)]
+
+
+def test_set_vs_affinity_caps_auto_threads_at_eight(
+    monkeypatch: pytest.MonkeyPatch,
+    set_affinity_calls: list[tuple[list[int], int]],
+) -> None:
+    _mock_cpu_count(monkeypatch, logical_count=32, physical_count=16)
+    _mock_virtual_memory(monkeypatch, 64 * 1024**3)
+
+    set_vs_affinity()
+
+    assert set_affinity_calls == [([0, 2, 4, 6, 8, 10, 12, 14], 48 * 1024)]
+
+
+@pytest.mark.parametrize(
+    ("logical_count", "physical_count", "threads", "expected_affinity"),
+    [
+        (16, 8, 4, [0, 2, 4, 6]),
+        (8, 8, 4, [0, 1, 2, 3]),
+    ],
+)
+def test_set_vs_affinity_honours_explicit_thread_count(
+    monkeypatch: pytest.MonkeyPatch,
+    set_affinity_calls: list[tuple[list[int], int]],
+    logical_count: int,
+    physical_count: int,
+    threads: int,
+    expected_affinity: list[int],
+) -> None:
+    _mock_cpu_count(monkeypatch, logical_count, physical_count)
+    _mock_virtual_memory(monkeypatch, 64 * 1024**3)
+
+    set_vs_affinity(threads=threads)
+
+    assert set_affinity_calls == [(expected_affinity, 48 * 1024)]
+
+
+@pytest.mark.parametrize(
+    ("total_bytes", "expected_cache_mb"),
+    [
+        (8 * 1024**3, 6 * 1024),
+        (16 * 1024**3, 12 * 1024),
+        (64 * 1024**3, 48 * 1024),
+    ],
+)
+def test_set_vs_affinity_auto_detects_cache_limit(
+    monkeypatch: pytest.MonkeyPatch,
+    set_affinity_calls: list[tuple[list[int], int]],
+    total_bytes: int,
+    expected_cache_mb: int,
+) -> None:
+    _mock_cpu_count(monkeypatch, logical_count=8, physical_count=4)
+    _mock_virtual_memory(monkeypatch, total_bytes)
+
+    set_vs_affinity(cache_limit_mb=-1)
+
+    assert set_affinity_calls[0][1] == expected_cache_mb
+
+
+def test_set_vs_affinity_uses_explicit_cache_limit(
+    monkeypatch: pytest.MonkeyPatch,
+    set_affinity_calls: list[tuple[list[int], int]],
+) -> None:
+    _mock_cpu_count(monkeypatch, logical_count=8, physical_count=4)
+    _mock_virtual_memory(monkeypatch, 64 * 1024**3)
+
+    set_vs_affinity(cache_limit_mb=4096)
+
+    assert set_affinity_calls[0][1] == 4096

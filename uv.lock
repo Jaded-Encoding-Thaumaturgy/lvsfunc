@@ -332,7 +332,7 @@ wheels = [
 
 [[package]]
 name = "cyclopts"
-version = "4.19.0"
+version = "4.20.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -340,9 +340,9 @@ dependencies = [
     { name = "rich" },
     { name = "rich-rst" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/65/e7/4b3048094559b86a800e0f0de7faf8e6d8213727cf31553ec58453f25abc/cyclopts-4.19.0.tar.gz", hash = "sha256:c7532803ab8560d4de8600769793c3de4b2dc8c3b23ec707b989d84d9bae6ff4", size = 189274, upload-time = "2026-06-22T23:58:54.176Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/74/89/f4c775c651d91f9cd8149f70baec94c902a34e5f17a7a67881881bcfb244/cyclopts-4.20.0.tar.gz", hash = "sha256:1d819de2b12dc6b1c9f17ce0f4937d82922c0b83ac846eb4b3289c9c9f321c9f", size = 190236, upload-time = "2026-06-29T15:04:42.253Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/eb/e8/b84c32f35a19107b55b8ceed260de9469206464da26bd0b979db470782c3/cyclopts-4.19.0-py3-none-any.whl", hash = "sha256:a8c11adb45afae25db310122950c7639c70b56e2ce341e5b29848bf3a8ecc1d4", size = 228005, upload-time = "2026-06-22T23:58:52.495Z" },
+    { url = "https://files.pythonhosted.org/packages/dd/d4/7243bc65d33c5ff5150569c42c8c1154aadae20b25638afe35f7f568489c/cyclopts-4.20.0-py3-none-any.whl", hash = "sha256:0b4337e9c11303d86b33d3f37c629dc01638f84591681e0e5611286bdd507646", size = 229383, upload-time = "2026-06-29T15:04:40.621Z" },
 ]
 
 [[package]]
@@ -736,6 +736,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
+    { name = "types-psutil" },
     { name = "vsjetpack", extra = ["cl"] },
     { name = "vsstubs" },
 ]
@@ -768,6 +769,7 @@ dev = [
     { name = "pytest", specifier = ">=9.0.0,<10.0.0" },
     { name = "pytest-cov", specifier = ">=6.2.1,<8.0.0" },
     { name = "ruff", specifier = "~=0.15.0" },
+    { name = "types-psutil", specifier = ">=7.2.2" },
     { name = "vsjetpack", extras = ["cl"], specifier = ">=2.0.0" },
     { name = "vsstubs", specifier = ">=2.1.1" },
 ]
@@ -1008,25 +1010,25 @@ wheels = [
 
 [[package]]
 name = "nvidia-cublas"
-version = "13.5.1.27"
+version = "13.6.0.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "nvidia-cuda-nvrtc" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9c/da/45f78bb61f93a467ccaccf2eafbf23483bdcb29d3c5d16f8cb918be1aea0/nvidia_cublas-13.5.1.27-py3-none-manylinux_2_27_aarch64.whl", hash = "sha256:bc355b10e35b01cf88e8dcc0fbe0fd1ef86a05fddae78a44dc133d7e63eaf973", size = 515580892, upload-time = "2026-05-26T16:43:17.967Z" },
-    { url = "https://files.pythonhosted.org/packages/ce/0d/cc77458e8fb0634597e3994650c2853ee785f2fc61bf370bbb304021cca1/nvidia_cublas-13.5.1.27-py3-none-manylinux_2_27_x86_64.whl", hash = "sha256:db3a1f0c8bc24945a4d195ba199d83f27e650ffdfc0c32e6b8362c314f14d553", size = 407748877, upload-time = "2026-05-26T16:44:19.938Z" },
-    { url = "https://files.pythonhosted.org/packages/99/73/2c08fc3802d72931af348e8f1cf3a0b013e5dd91a6dcc235af8f52cfcb87/nvidia_cublas-13.5.1.27-py3-none-win_amd64.whl", hash = "sha256:234a2e89682080421431d2f2ea422fc2ad7d0b462336ccdfde76c559c906c670", size = 391875500, upload-time = "2026-05-26T17:06:29.178Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/22/7c08d8e93f6a2e4879ac83c12696aecaf17a0fc2c9e8d204caceaa3b8426/nvidia_cublas-13.6.0.2-py3-none-manylinux_2_27_aarch64.whl", hash = "sha256:946f6a252b1cc72d8de912c75975fd6d8ba44f67d4e5044fe764ddb909f4a688", size = 518599300, upload-time = "2026-06-29T16:54:56.859Z" },
+    { url = "https://files.pythonhosted.org/packages/fd/6c/173c7a3db77a6592210f73f194f0f8ed5e51b6ec61cfed7b1eee06ac5fd3/nvidia_cublas-13.6.0.2-py3-none-manylinux_2_27_x86_64.whl", hash = "sha256:b82c80c886cea6da6e149a5c3bdba274f12b7e4ec4b00a050b916b0446fb4153", size = 410473152, upload-time = "2026-06-29T16:55:54.297Z" },
+    { url = "https://files.pythonhosted.org/packages/08/8f/890a96ea1ff615100296977cce23296052dcb8c114d4e451201ec39df9bf/nvidia_cublas-13.6.0.2-py3-none-win_amd64.whl", hash = "sha256:3b5bcd6bfb6f65010ebf195851bcb9b2aa34b9fe08479432002991c1fe84b67d", size = 394568225, upload-time = "2026-06-29T17:15:46.911Z" },
 ]
 
 [[package]]
 name = "nvidia-cuda-cupti"
-version = "13.3.35"
+version = "13.3.75"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0d/e9/ae7406999b5bb1dc8dc5fd618ae1c55e6b6e0151358a3c80091c2e677e23/nvidia_cuda_cupti-13.3.35-py3-none-manylinux_2_25_aarch64.whl", hash = "sha256:99a61919e4917a81cd083bb7082291ebb58c8f9dd42da036c78cefdb3acc7323", size = 11822734, upload-time = "2026-05-26T16:32:30.677Z" },
-    { url = "https://files.pythonhosted.org/packages/7f/86/99ac757b96255b1446bf307e1396567fd355b5ebe89ca04d01fa0a6bb704/nvidia_cuda_cupti-13.3.35-py3-none-manylinux_2_25_x86_64.whl", hash = "sha256:50eaf329ee2b5830a51d078c24375cba791570779b953580b259ec0cf0cdbdc0", size = 12043152, upload-time = "2026-05-26T16:33:03.563Z" },
-    { url = "https://files.pythonhosted.org/packages/c6/6d/24bed209821e93b4e566c0f98803362f0441628c642aed5e18cc1052df74/nvidia_cuda_cupti-13.3.35-py3-none-win_amd64.whl", hash = "sha256:1363b54afb034cb571fcc7a1e5ace039f7ec6ad62032b3944e5e8c019c5cd9dc", size = 8218981, upload-time = "2026-05-26T17:00:37.229Z" },
+    { url = "https://files.pythonhosted.org/packages/d1/7b/d332e362c2c48929f913a5930a596c707c30632ae3248dd16be35f18fc11/nvidia_cuda_cupti-13.3.75-py3-none-manylinux_2_25_aarch64.whl", hash = "sha256:79f5a8c55378a998427d6974b1d85ec91ef684035d016b3fb3b85006914f94f0", size = 11824795, upload-time = "2026-06-29T16:46:00.894Z" },
+    { url = "https://files.pythonhosted.org/packages/d1/68/ee003f64d79bd3cb95e243cfdc906bb0f1ae73b1aa2857baf1d7834dd1ee/nvidia_cuda_cupti-13.3.75-py3-none-manylinux_2_25_x86_64.whl", hash = "sha256:a969cc446c44db612e417bd0af722cfad9009c027dabd4ed255262c0e9a9a3d2", size = 12044533, upload-time = "2026-06-29T16:46:20.662Z" },
+    { url = "https://files.pythonhosted.org/packages/62/7a/f59bde6a7c211d6a13a4510d626374d07143840b520285382913aa021145/nvidia_cuda_cupti-13.3.75-py3-none-win_amd64.whl", hash = "sha256:596be3cd265e811bdd021aee11c91be020b045d4034b704ca20f9cc7ea0c0405", size = 8220066, upload-time = "2026-06-29T17:10:33.427Z" },
 ]
 
 [[package]]
@@ -1719,6 +1721,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/7c/f7/68adc395201b20b872d68e975386832e8005ffeacedd43a1d837a32815be/typer-0.26.8.tar.gz", hash = "sha256:c244a6bd558886fe3f8780efb6bdd28bb9aff005a94eedebaa5cb32926fe2f7e", size = 202097, upload-time = "2026-06-26T09:22:45.705Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/80/87/b9fd69c92c6102a066e1b86a35243f53e70bd4c709f2a26d9f4fee4f4dc0/typer-0.26.8-py3-none-any.whl", hash = "sha256:3512ca79ac5c11113414b36e80281b872884477722440691c89d1112e321a49c", size = 122564, upload-time = "2026-06-26T09:22:44.72Z" },
+]
+
+[[package]]
+name = "types-psutil"
+version = "7.2.2.20260518"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cb/f1/6901857281d4e8d792492e1495eef6f4f01318a3b6a066486d81000a4511/types_psutil-7.2.2.20260518.tar.gz", hash = "sha256:9f825f631463a5b4d26f19f63aebc9ec25f01140d655026f3ad8a67841f9b331", size = 26660, upload-time = "2026-05-18T06:05:09.389Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cd/eb/f726339668879819599c74c2e1f0cab760912a4159046942bdae2ad37bd6/types_psutil-7.2.2.20260518-py3-none-any.whl", hash = "sha256:6a3d697665754a60d7b5a41d5a2cff12b53f5e0676d77810cd28ba5e14cb4049", size = 32820, upload-time = "2026-05-18T06:05:08.321Z" },
 ]
 
 [[package]]
@@ -2752,9 +2763,9 @@ wheels = [
 
 [[package]]
 name = "wcwidth"
-version = "0.8.1"
+version = "0.8.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/49/b4/51fe890511f0f242d07cb1ebe6a5b6db417262b9d2568b460347c57d95cc/wcwidth-0.8.1.tar.gz", hash = "sha256:faf5b4a5366a72dc49cad48cdf21f52bdf63bdda995178e483ba247ff79089b9", size = 1466072, upload-time = "2026-06-08T05:57:23.146Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/34/74/c6428f875774288bec1396f5bfcbc2d925700a4dad61727fd5f2b12f249d/wcwidth-0.8.2.tar.gz", hash = "sha256:91fbef97204b96a3d4d421609b80340b760cf33e26da123ff243d76b1fda8dda", size = 1466253, upload-time = "2026-06-29T18:11:11.601Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bd/6e/95b0e537de1f4d4301f76f944642c6da50d1511cc7b3d64dc418a66c7509/wcwidth-0.8.1-py3-none-any.whl", hash = "sha256:f453740b1e4a4f3291faa37944c555d71056c4da08d59809b307ef4feba695c8", size = 323092, upload-time = "2026-06-08T05:57:21.413Z" },
+    { url = "https://files.pythonhosted.org/packages/96/42/3e5985a0a7e57de470b320c6d6a1a67c844f6737a587f3d44dd13d1819e7/wcwidth-0.8.2-py3-none-any.whl", hash = "sha256:d63947694a0539a1d51e01eda7caf800c291020e6cdd7e28ad7b14dd33ad4f85", size = 323166, upload-time = "2026-06-29T18:11:09.888Z" },
 ]
