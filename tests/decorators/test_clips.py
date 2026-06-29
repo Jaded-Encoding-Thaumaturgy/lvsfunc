@@ -137,3 +137,24 @@ def test_finalize_clips_leaves_non_clip_return_values_untouched(
         return 42
 
     assert process(core.std.BlankClip()) == 42
+
+
+def test_finalize_clips_supports_partial_decorator_syntax(
+    monkeypatch: pytest.MonkeyPatch,
+    blank_clip: vs.VideoNode,
+) -> None:
+    seen_bits: list[Any] = []
+
+    def track_finalize(clip: vs.VideoNode, *, bits: Any = 10, **kwargs: Any) -> vs.VideoNode:
+        seen_bits.append(bits)
+        return clip
+
+    monkeypatch.setattr("lvsfunc.decorators.clips.finalize_clip", track_finalize)
+
+    @finalize_clips(bits=16)
+    def process(clip: vs.VideoNode) -> vs.VideoNode:
+        return clip
+
+    process(blank_clip)
+
+    assert seen_bits == [16]

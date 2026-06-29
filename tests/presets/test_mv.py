@@ -4,10 +4,10 @@ from uuid import uuid4
 
 import numpy as np
 import pytest
-from vsdenoise import DFTTest
+from vsdenoise import DFTTest, MVToolsPreset
 from vstools import core
 
-from lvsfunc.presets.mv import SlocCurves, autoselect_pel
+from lvsfunc.presets.mv import LightMVPresets, SlocCurves, autoselect_pel
 from lvsfunc.util import sloc_curve_to_graph
 
 
@@ -60,3 +60,31 @@ def test_autoselect_pel_selects_correct_pel(width: int, height: int, expected: i
     clip = core.std.BlankClip(width=width, height=height)
 
     assert autoselect_pel(clip) == expected
+
+
+@pytest.mark.parametrize(
+    ("preset", "pel"),
+    [
+        (LightMVPresets.fast, 1),
+        (LightMVPresets.hq, 4),
+        (LightMVPresets.heavy_grain, 2),
+    ],
+)
+def test_light_mv_presets_expose_expected_pel(preset: MVToolsPreset, pel: int) -> None:
+    assert preset.pel == pel
+    assert preset.analyze_args is not None
+    assert preset.recalculate_args is not None
+
+
+@pytest.mark.parametrize(
+    "sloc",
+    [
+        SlocCurves.Prefilter.Light,
+        SlocCurves.Prefilter.Grainy,
+        SlocCurves.MFilter.Heavy,
+    ],
+)
+def test_remaining_sloc_presets_are_expanded(sloc: DFTTest.SLocation) -> None:
+    assert len(sloc) > 4
+    assert sloc[0.0] >= 0.0
+    assert sloc[1.0] > 0.0
