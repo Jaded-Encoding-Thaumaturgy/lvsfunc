@@ -159,19 +159,7 @@ docstring-code-format = true
 [tool.ruff.lint]
 exclude = ["stubs/**"]
 extend-ignore = ["C408", "D100", "D107", "D301", "E226", "RUF002"]
-extend-select = [
-    "E",
-    "C4",
-    "I",
-    "PYI",
-    "Q",
-    "SIM",
-    "N",
-    "W",
-    "UP",
-    "FURB",
-    "RUF",
-]
+extend-select = ["E", "C4", "PYI", "Q", "SIM", "N", "W", "UP", "FURB", "RUF"]
 
 [tool.ruff.lint.per-file-ignores]
 "lvsfunc/**/__init__.py" = ["F401", "F403"]
@@ -180,10 +168,58 @@ extend-select = [
 ]
 "tests/**/__init__.py" = ["F401", "F403"]
 
+[tool.isort]
+profile = "black"
+line_length = 120
+known_first_party = ["lvsfunc"]
+
 [tool.codespell]
 skip = "*.pyc,*.onnx,uv.lock,*.lock,./stubs,./.venv,./.git"
 check-filenames = true
 
 [tool.poe.tasks]
-lint = { shell = "uv run vsstubs && isort . && ruff check . --fix && ruff format . && mypy . && pytest ." }
-spell = { shell = "uv run codespell ." }
+lint.sequence = [
+    "vsstubs",
+    "isort",
+    "ruff-check",
+    "ruff-format",
+    "isort",
+    "mypy",
+    "pytest",
+]
+lint-ci.sequence = [
+    "vsstubs",
+    "isort-ci",
+    "ruff-check-ci",
+    "ruff-format-ci",
+    "isort-ci",
+    "mypy",
+]
+spell = "uv run codespell ."
+
+[tool.poe.tasks.vsstubs]
+cmd = "uv run vsstubs"
+
+[tool.poe.tasks.isort]
+cmd = "uv run isort ."
+
+[tool.poe.tasks.isort-ci]
+cmd = "uv run isort . --check --diff"
+
+[tool.poe.tasks.ruff-check]
+cmd = "uv run ruff check . --fix"
+
+[tool.poe.tasks.ruff-check-ci]
+cmd = "uv run ruff check ."
+
+[tool.poe.tasks.ruff-format]
+cmd = "uv run ruff format ."
+
+[tool.poe.tasks.ruff-format-ci]
+cmd = "uv run ruff format --check --diff ."
+
+[tool.poe.tasks.mypy]
+cmd = "uv run mypy --install-types --non-interactive"
+
+[tool.poe.tasks.pytest]
+cmd = "uv run pytest ."

@@ -1,14 +1,16 @@
-name: Lint Python code with Ruff & mypy
+name: Lint Python code
 
 on:
   push:
     branches:
       - master
     paths:
+      - ".github/workflows/lint.yml"
       - "**.py*"
       - "pyproject.toml"
   pull_request:
     paths:
+      - ".github/workflows/lint.yml"
       - "**.py*"
       - "pyproject.toml"
   workflow_dispatch:
@@ -18,6 +20,7 @@ permissions:
 
 env:
   LVSFUNC_PYTHON_VERSION: 3.14
+  UV_NO_SYNC: "1"
 
 jobs:
   lint:
@@ -36,21 +39,8 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
 
-      - name: Generate VapourSynth stubs
-        run: uv run vsstubs
-
-      - name: Run Ruff check
-        id: ruff_check
-        run: uv run --no-sync ruff check .
-
-      - name: Run Ruff format
-        id: ruff_format
-        if: success() || (failure() && steps.ruff_check.conclusion == 'failure')
-        run: uv run --no-sync ruff format --check --diff
-
-      - name: Running mypy
-        if: success() || (failure() && (steps.ruff_check.conclusion == 'failure' || steps.ruff_format.conclusion == 'failure'))
-        run: uv run --no-sync mypy .
+      - name: Lint
+        run: uv run poe lint-ci
 
       - name: Post webhook for failure
         if: failure()
