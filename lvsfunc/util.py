@@ -1,12 +1,19 @@
+from __future__ import annotations
+
 import colorsys
 import random
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from jetpytools import CustomIndexError, CustomValueError
+from vsdenoise import DFTTest
 from vstools import core, vs
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
 
 __all__ = [
     "colored_clips",
+    "sloc_curve_to_graph",
 ]
 
 
@@ -63,3 +70,57 @@ def colored_clips(
         shuffle(rgb_color_list)
 
     return [core.std.BlankClip(color=color, **blank_clip_args) for color in rgb_color_list]
+
+
+def sloc_curve_to_graph(
+    slocation: DFTTest.SLocation,
+    *,
+    res: int = 100,
+    digits: int = 3,
+    figsize: tuple[float, float] = (8.0, 4.0),
+    title: str | None = None,
+) -> Figure:
+    """
+    Plot a DFTTest ``SLocation`` curve.
+
+    Plots the ``frequencies`` and ``sigmas`` stored on ``slocation``. Locations passed
+    with an ``interpolate`` mode to :py:meth:`~vsdenoise.DFTTest.SLocation.__init__` are
+    already expanded. Otherwise :py:meth:`~vsdenoise.DFTTest.SLocation.interpolate` is
+    called to upsample for display. Unexpanded locations are also drawn as markers.
+
+    :param slocation: The ``SLocation`` to plot.
+    :param res:       Resolution passed to :py:meth:`~vsdenoise.DFTTest.SLocation.interpolate`.
+    :param digits:    Precision of frequency values passed to
+                      :py:meth:`~vsdenoise.DFTTest.SLocation.interpolate`.
+    :param figsize:   Figure size in inches, ``(width, height)``.
+    :param title:     Optional plot title.
+
+    :return: A matplotlib figure.
+    """
+
+    import matplotlib
+    import matplotlib.pyplot as plt
+
+    matplotlib.use("Agg")
+
+    interpolated = slocation.interpolate(res=res, digits=digits) if len(slocation) < res else slocation
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    ax.plot(list(interpolated.frequencies), list(interpolated.sigmas), label="slocation")
+
+    if len(slocation) <= 8:
+        ax.scatter(list(slocation.frequencies), list(slocation.sigmas), zorder=5, label="locations")
+
+    ax.set(xlabel="frequency", ylabel="sigma", xlim=(0.0, 1.0))
+    ax.set_ylim(bottom=0.0)
+    ax.grid(True, alpha=0.3)
+
+    ax.legend()
+
+    if title is not None:
+        ax.set_title(title)
+
+    fig.tight_layout()
+
+    return fig

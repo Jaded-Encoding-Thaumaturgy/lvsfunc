@@ -18,6 +18,7 @@ from .grain import *
 from .misc import *
 from .models import *
 from .nn import *
+from .presets import *
 from .random import *
 from .scaler import *
 from .util import *

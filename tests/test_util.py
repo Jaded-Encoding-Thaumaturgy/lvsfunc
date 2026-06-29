@@ -4,7 +4,7 @@ import pytest
 from jetpytools import CustomIndexError, CustomValueError
 from vstools import vs
 
-from lvsfunc.util import colored_clips
+from lvsfunc.util import colored_clips, sloc_curve_to_graph
 
 
 @pytest.mark.parametrize("amount", [0, 1, -1])
@@ -43,3 +43,15 @@ def test_colored_clips_without_randomisation_starts_with_red() -> None:
     frame = clip.get_frame(0)
 
     assert tuple(int(frame[plane][0, 0]) for plane in range(3)) == (255, 0, 0)
+
+
+def test_sloc_curve_to_graph_returns_matplotlib_figure() -> None:
+    from vsdenoise import DFTTest
+
+    fig = sloc_curve_to_graph(DFTTest.SLocation([(0.0, 4.0), (0.5, 16.0), (1.0, 32.0)]), title="test")
+
+    ax = fig.axes[0]
+
+    assert ax.get_title() == "test"
+    assert len(ax.lines) == 1
+    assert len(ax.collections) == 1
