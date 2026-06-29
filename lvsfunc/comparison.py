@@ -683,7 +683,8 @@ def comparison_shots(
     if height is None:
         return Stack(clips or namedclips, direction=Direction.HORIZONTAL).clip
     elif height <= 10:
-        height = mod2(clips[0].height * height)
+        source = clips[0] if clips else next(iter(namedclips.values()))
+        height = mod2(source.height * height)
 
     if clips:
         clips = tuple([kernel.scale(c, get_w(height), height) for c in clips])
