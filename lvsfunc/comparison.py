@@ -555,11 +555,13 @@ def stack_compare(*clips: vs.VideoNode, height: int | None = None) -> vs.VideoNo
 
     if not height:
         height = 288
-    elif height > clipa.height / 2:
+
+    if height > clipa.height / 2:
         warnings.warn(
             f"stack_compare: 'Given 'height' ({height}) is bigger than clipa's height {clipa.height}!' "
             "Will be using clipa's height instead."
         )
+
         height = int(clipa.height / 2)
 
     scaled_width = get_w(height, mod=1)
