@@ -33,20 +33,27 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "dfttest2>=10",
     "kagefunc>=1.0.1",
     "vapoursynth>=74",
-    "vapoursynth-bestsource>=17.0",
-    "vapoursynth-resize2>=0.4.3",
-    "vapoursynth-vszip>=13.0.0",
     "vsfpng>=1.2",
-    "vsjetpack[denoise,scale]>=2.0.0rc2",
+    "vsjetpack[denoise,scale]>=2.0.0",
 ]
 
 [project.urls]
 Tracker = "https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/issues"
 Contact = "https://discord.gg/XTpc6Fa9eB"
 Changelog = "https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/blob/master/CHANGELOG.md"
+
+[project.optional-dependencies]
+basic = []
+
+# GPU-specific dependencies
+cl = ["vsjetpack[cl]>=2.0.0"]
+nvidia = ["vsjetpack[nvidia]>=2.0.0"]
+amd = ["vsjetpack[amd]>=2.0.0"]
+
+[tool.uv]
+index-strategy = "unsafe-best-match"
 
 [dependency-groups]
 dev = [
@@ -61,7 +68,7 @@ dev = [
 test = [
     "pytest>=9.0.0, <10.0.0",
     "pytest-cov>=6.2.1, <8.0.0",
-    "vsjetpack[cl]>=2.0.0rc2",   # Inference required for model tests
+    "vsjetpack[cl]>=2.0.0",      # Inference required for model tests
 ]
 
 [[tool.uv.index]]
