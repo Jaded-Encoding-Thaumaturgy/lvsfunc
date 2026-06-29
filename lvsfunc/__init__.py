@@ -10,6 +10,7 @@ For further support, drop by `#dev` in the `JET Discord server <https://discord.
 from .color import *
 from .comparison import *
 from .deblock import *
+from .decorators import *
 from .diff import *
 from .exceptions import *
 from .export import *
