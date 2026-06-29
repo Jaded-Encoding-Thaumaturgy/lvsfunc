@@ -18,8 +18,10 @@ def test_model_scale_preserves_geometry(
     small_yuv_clip: vs.VideoNode,
 ) -> None:
     model = model_cls(backend=CPU_BACKEND)
-    out = model.scale(depth(small_yuv_clip, 32))
+    ref = depth(small_yuv_clip, 32)
+    out = model.scale(ref)
 
     assert out.width == small_yuv_clip.width
     assert out.height == small_yuv_clip.height
     assert out.num_frames == small_yuv_clip.num_frames
+    assert out.format.id == ref.format.id

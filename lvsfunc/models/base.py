@@ -3,13 +3,13 @@ from __future__ import annotations
 import importlib.resources as pkg_resources
 import warnings
 from logging import getLogger
-from typing import Any
+from typing import Any, cast
 
 from jetpytools import CustomNotImplementedError, FileWasNotFoundError, FuncExcept, SPath, SPathLike
 from typing_extensions import deprecated
-from vskernels import Catrom, KernelLike, ScalerLike
+from vskernels import Catrom, Kernel, KernelLike, ScalerLike
 from vsscale.onnx import BackendLike, BaseOnnxScalerRGB
-from vstools import depth, get_y, join, vs
+from vstools import core, depth, get_y, join, vs
 
 __all__: list[str] = [
     "_LvsfuncRgbModel",
@@ -114,7 +114,32 @@ class _LvsfuncRgbModel(BaseOnnxScalerRGB):
 
         scaled = self.scale(clip32, **kwargs)
 
-        return depth(scaled, clip)
+        if scaled.format != clip.format:
+            return self._resample_to_format(scaled, clip)
+
+        return scaled
+
+    def _resample_to_format(self, clip: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
+        return cast(Kernel, self.scaler).resample(clip, ref.format.id, ref, range=ref)
+
+    def _finish_scale(
+        self,
+        clip: vs.VideoNode,
+        input_clip: vs.VideoNode,
+        width: int,
+        height: int,
+        shift: tuple[float, float] = (0, 0),
+        copy_props: bool = False,
+    ) -> vs.VideoNode:
+        clip = super()._finish_scale(clip, input_clip, width, height, shift, copy_props=False)
+
+        if clip.format != input_clip.format:
+            clip = self._resample_to_format(clip, input_clip)
+
+        if copy_props:
+            return core.std.CopyFrameProps(clip, input_clip)
+
+        return clip
 
     def _check_is_base_model(self) -> None:
         if "_model" in self.__class__.__dict__:

@@ -76,6 +76,49 @@ def test_rgb_model_without_variants_reports_generic_message() -> None:
         _EmptyModelNamespace()
 
 
+def test_finish_scale_resamples_to_input_format(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from vsscale.generic import BaseGenericScaler
+
+    model = LHzDelowpass.DoubleTaps_4_4_15_15(backend=CPU_BACKEND)
+    input_fmt = vs.YUV420P16
+    clip = core.std.BlankClip(width=64, height=64, format=input_fmt, length=1)
+    scaled = core.std.BlankClip(width=64, height=64, format=vs.YUV444PS, length=1)
+    resampled = core.std.BlankClip(width=64, height=64, format=input_fmt, length=1)
+    calls: list[tuple[vs.VideoNode, int]] = []
+
+    def fake_super_finish_scale(
+        self: Any,
+        clip: vs.VideoNode,
+        input_clip: vs.VideoNode,
+        width: int,
+        height: int,
+        shift: tuple[float, float] = (0, 0),
+        copy_props: bool = False,
+    ) -> vs.VideoNode:
+        return scaled
+
+    def fake_resample(
+        self: Any,
+        node: vs.VideoNode,
+        fmt: int,
+        matrix: Any,
+        *,
+        range: Any = None,
+    ) -> vs.VideoNode:
+        calls.append((node, fmt))
+        return resampled
+
+    monkeypatch.setattr(BaseGenericScaler, "_finish_scale", fake_super_finish_scale)
+    monkeypatch.setattr(type(model.scaler), "resample", fake_resample)
+
+    result = model._finish_scale(scaled, clip, 64, 64)
+
+    assert calls == [(scaled, input_fmt)]
+    assert result is resampled
+
+
 def test_apply_is_deprecated_and_wraps_scale(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
