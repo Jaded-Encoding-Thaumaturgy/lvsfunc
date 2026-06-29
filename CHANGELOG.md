@@ -9,12 +9,22 @@ but makes no promises.
 
 ### Features
 
-- `presets.mv`: add `autoselect_blksize` and `mv_refine_kwargs` for resolution-aware MVTools block size handling ([90e1ab4]).
+- `presets.mv`: add `autoselect_blksize` and `mv_refine_kwargs` for resolution-aware MVTools block size calculation ([90e1ab4]).
+- `util.set_vs_affinity`: configure VapourSynth worker threads, CPU affinity, and framebuffer cache limits ([bd296a2]).
+- `models`: resample scaled output back to the input format using the configured scaler ([9464cb8]).
+
+### Documentation
+
+- Convert public docstrings to Google style ([ad64b47]).
+- Standardize on American English in user-facing text ([ad64b47]).
 
 ### Packaging and tooling
 
 - Model tests: pin mlrt to `Backend.ORT_CPU` instead of autoselect ([8bb4e7b]).
 - Mypy stubs: add `Backend.ORT_CPU` to `vsscale.mlrt` ([8bb4e7b]).
+- Lint: split `poe lint` into discrete tasks ([42dafa0]).
+- Lint: Add `poe lint-ci`, and run it from CI ([42dafa0]).
+- Expand model tests for post-scale format restoration ([9464cb8]).
 
 ## 0.10.3
 
@@ -23,7 +33,7 @@ but makes no promises.
 ### Breaking changes
 
 - `comparison.stack_compare`: Reworked ([efa7995], [6e187ab]).
-- `comparison.diff_between_clips_stack`: deprecated in favour of `stack_compare` ([efa7995]).
+- `comparison.diff_between_clips_stack`: deprecated in favor of `stack_compare` ([efa7995]).
 
 ### Features
 
@@ -156,6 +166,7 @@ Please check [Releases][releases] for old changelogs.
 [3ac9eb0]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/3ac9eb0
 [3ea759f]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/3ea759f
 [3fdfcc7]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/3fdfcc7
+[42dafa0]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/42dafa0
 [5489ae9]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/5489ae9
 [555ccc2]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/555ccc2
 [5767088]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/5767088
@@ -172,15 +183,18 @@ Please check [Releases][releases] for old changelogs.
 [8f77ebe]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/8f77ebe
 [90e1ab4]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/90e1ab4
 [913cb34]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/913cb34
+[9464cb8]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/9464cb8
 [96e4fdc]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/96e4fdc
 [9bb8544]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/9bb8544
 [a5a787f]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/a5a787f
 [a63038e]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/a63038e
 [a9c8738]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/a9c8738
+[ad64b47]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/ad64b47
 [b4eee33]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/b4eee33
 [b55d635]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/b55d635
 [b9b9fb6]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/b9b9fb6
 [bcd7f34]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/bcd7f34
+[bd296a2]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/bd296a2
 [c821a1b]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/c821a1b
 [ddf2bd7]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/ddf2bd7
 [dfb6efc]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/dfb6efc
