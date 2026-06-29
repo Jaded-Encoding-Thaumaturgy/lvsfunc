@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 from jetpytools import CustomTypeError, CustomValueError
-from vstools import FormatsMismatchError, core, get_w, vs
+from vstools import FormatsMismatchError, MismatchRefError, core, get_w, vs
 
 from lvsfunc.comparison import (
     Direction,
@@ -83,22 +83,33 @@ def test_stack_skips_whitespace_only_labels() -> None:
 
 
 @pytest.mark.parametrize("height", [288, 540])
-def test_diff_between_clips_stack_output_dimensions(height: int) -> None:
+def test_stack_compare_output_dimensions(height: int) -> None:
     clip = core.std.BlankClip(width=1920, height=1080)
 
-    result = diff_between_clips_stack(clip, clip, height=height)
+    result = stack_compare(clip, clip, height=height)
     scaled_width = get_w(height, mod=1)
 
     assert (result.width, result.height) == (scaled_width * 2, height * 3)
 
 
-def test_diff_between_clips_stack_default_height() -> None:
+def test_stack_compare_default_height() -> None:
     clip = core.std.BlankClip(width=1920, height=1080)
 
-    default = diff_between_clips_stack(clip, clip)
-    explicit = diff_between_clips_stack(clip, clip, height=288)
+    default = stack_compare(clip, clip)
+    explicit = stack_compare(clip, clip, height=288)
 
     assert (default.width, default.height) == (explicit.width, explicit.height)
+
+
+def test_stack_compare_uncapped_height_matches_legacy_diff_between(height: int = 540) -> None:
+    clip = core.std.BlankClip(width=1920, height=1080)
+
+    with pytest.deprecated_call():
+        legacy = diff_between_clips_stack(clip, clip, height=height)
+
+    current = stack_compare(clip, clip, height=height)
+
+    assert (legacy.width, legacy.height) == (current.width, current.height)
 
 
 def test_stack_horizontal_dimensions() -> None:
@@ -338,53 +349,49 @@ def test_compare_uses_auto_rand_total_for_short_clips(monkeypatch: pytest.Monkey
     assert result.num_frames == 4
 
 
-def test_diff_between_clips_stack_truncates_to_shorter_clip() -> None:
-    shorter = core.std.BlankClip(width=640, height=360, length=5)
-    longer = core.std.BlankClip(width=640, height=360, length=8)
-
-    with pytest.warns(UserWarning, match="not of the same length"):
-        result = diff_between_clips_stack(shorter, longer, height=180)
-
-    assert result.num_frames == 5
-
-
-def test_diff_between_clips_stack_truncates_when_first_clip_is_longer() -> None:
-    shorter = core.std.BlankClip(width=640, height=360, length=5)
-    longer = core.std.BlankClip(width=640, height=360, length=8)
-
-    with pytest.warns(UserWarning, match="not of the same length"):
-        result = diff_between_clips_stack(longer, shorter, height=180)
-
-    assert result.num_frames == 5
-
-
-def test_diff_between_clips_stack_rejects_wrong_positional_clip_count() -> None:
+def test_stack_compare_rejects_wrong_positional_clip_count() -> None:
     clip = core.std.BlankClip(width=640, height=360)
 
     with pytest.raises(CustomValueError, match="exactly 2"):
-        diff_between_clips_stack(clip)
+        stack_compare(clip)
 
 
-def test_diff_between_clips_stack_rejects_wrong_named_clip_count() -> None:
+def test_stack_compare_rejects_wrong_named_clip_count() -> None:
     clip = core.std.BlankClip(width=640, height=360)
 
     with pytest.raises(CustomValueError, match="exactly 2"):
-        diff_between_clips_stack(a=clip)
+        stack_compare(a=clip)
 
 
-def test_diff_between_clips_stack_rejects_mixed_call_styles() -> None:
+def test_stack_compare_rejects_mixed_call_styles() -> None:
     clip = core.std.BlankClip(width=640, height=360)
 
     with pytest.raises(ClipsAndNamedClipsError):
-        diff_between_clips_stack(clip, clip, first=clip, second=clip)
+        stack_compare(clip, clip, first=clip, second=clip)
 
 
-def test_diff_between_clips_stack_rejects_format_mismatch() -> None:
+def test_stack_compare_rejects_format_mismatch() -> None:
     yuv = core.std.BlankClip(width=640, height=360, format=vs.YUV420P8)
     rgb = core.std.BlankClip(width=640, height=360, format=vs.RGB24)
 
-    with pytest.raises(CustomValueError, match="same format"):
-        diff_between_clips_stack(yuv, rgb)
+    with pytest.raises(MismatchRefError, match="All items must be equal"):
+        stack_compare(yuv, rgb)
+
+
+def test_stack_compare_accepts_named_clips() -> None:
+    clip = core.std.BlankClip(width=1920, height=1080)
+
+    result = stack_compare(source=clip, filtered=clip, height=180)
+
+    assert result.num_frames == clip.num_frames
+    assert result.height == 180 * 3
+
+
+def test_diff_between_clips_stack_emits_deprecation_warning() -> None:
+    clip = core.std.BlankClip(width=640, height=360)
+
+    with pytest.deprecated_call():
+        diff_between_clips_stack(clip, clip, height=180)
 
 
 def test_comparison_shots_applies_crop_before_stacking() -> None:
@@ -441,7 +448,9 @@ def test_stack_compare_uses_default_height_when_not_given() -> None:
 def test_stack_compare_caps_default_height_on_short_clips() -> None:
     clip = core.std.BlankClip(width=640, height=360)
 
-    default = stack_compare(clip, clip)
+    with pytest.warns(UserWarning, match="half the clip height"):
+        default = stack_compare(clip, clip)
+
     capped = stack_compare(clip, clip, height=180)
 
     assert (default.width, default.height) == (capped.width, capped.height)
@@ -450,7 +459,7 @@ def test_stack_compare_caps_default_height_on_short_clips() -> None:
 def test_stack_compare_caps_requested_height() -> None:
     clip = core.std.BlankClip(width=640, height=360)
 
-    with pytest.warns(UserWarning, match="bigger than clipa's height"):
+    with pytest.warns(UserWarning, match="half the clip height"):
         result = stack_compare(clip, clip, height=300)
 
     assert result.height == 540

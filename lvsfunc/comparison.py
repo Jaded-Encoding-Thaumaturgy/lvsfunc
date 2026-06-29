@@ -9,11 +9,13 @@ from itertools import zip_longest
 from typing import Any
 
 from jetpytools import CustomIntEnum, CustomNotImplementedError, CustomTypeError, CustomValueError, mod2
-from vskernels import Catrom, Kernel, KernelLike, Point, Spline36
+from typing_extensions import deprecated
+from vskernels import Catrom, Kernel, KernelLike, Point
 from vstools import (
     FormatsMismatchError,
     LengthMismatchError,
     Matrix,
+    MismatchRefError,
     check_variable_format,
     check_variable_resolution,
     core,
@@ -530,107 +532,101 @@ def compare(
     return core.std.Interleave([frames_a, frames_b], mismatch=mismatch)
 
 
-def stack_compare(*clips: vs.VideoNode, height: int | None = None) -> vs.VideoNode:
+def stack_compare(
+    *clips: vs.VideoNode,
+    height: int | None = None,
+    kernel: KernelLike = Catrom,
+    **namedclips: vs.VideoNode,
+) -> vs.VideoNode:
     """
-    Compare two clips by stacking them.
+    Compare two clips by stacking them with a diff clip underneath.
+
+    ┌─────────────┬─────────────┐
+    │  clip A     │  clip B     │  <- scaled to `scaled_width x height`
+    ├─────────────┴─────────────┤
+    │       Difference clip     │  <- scaled to `scaled_width x 2 x height x 2`
+    │                           │
+    └───────────────────────────┘
 
     Best to use when trying to match two sources frame-accurately.
-    Alias for this function is ``lvsfunc.scomp``.
 
+    :param clips:           Two clips to compare, passed positionally.
+    :param height:          Height in px to scale the source clips to.
+                            The difference clip is scaled to twice this resolution.
+                            Default: 288.
+    :param kernel:          Kernel used to scale the source clips. The diff always uses Catrom.
+    :param namedclips:      Two clips passed as keyword arguments. Their names are used as labels.
+                            Only used if `clips` is not given.
 
-    :param clips:           Clips to compare.
-    :param height:          Height in px to rescale clips to.
-                            (MakeDiff clip will be twice this resolution).
-                            This function will not scale above the first clip's height (Default: 288).
+    :return:                Clip with the sources stacked above a difference clip.
 
-    :return:                Clip with `clips` stacked.
-
-    :raises ValueError:     More or less than 2 clips are given.
+    :raises ClipsAndNamedClipsError:    Both positional and named clips are given.
+    :raises ValueError:                 Fewer or more than two clips are given.
+    :raises MismatchRefError:           The clips do not share the same format.
     """
 
-    if len(clips) != 2:
-        raise CustomValueError("You must pass at least two clips", stack_compare, f"{len(clips)} < 2")
+    if clips and namedclips:
+        raise ClipsAndNamedClipsError(stack_compare)
 
-    clipa, clipb = clips
+    if clips:
+        if len(clips) != 2:
+            raise CustomValueError("Must pass exactly 2 clips!", stack_compare)
+
+        clip_a, clip_b = clips
+        name_a, name_b = "Clip A", "Clip B"
+    elif namedclips:
+        if len(namedclips) != 2:
+            raise CustomValueError("Must pass exactly 2 named clips!", stack_compare)
+
+        name_a, name_b = tuple(namedclips.keys())
+        clip_a, clip_b = tuple(namedclips.values())
+    else:
+        raise CustomValueError("Must pass exactly 2 clips!", stack_compare)
+
+    MismatchRefError.check(stack_compare, clip_a, clip_b)
 
     if not height:
         height = 288
 
-    if height > clipa.height / 2:
+    if height > clip_a.height / 2:
         warnings.warn(
-            f"stack_compare: 'Given 'height' ({height}) is bigger than clipa's height {clipa.height}!' "
-            "Will be using clipa's height instead."
+            f"stack_compare: Given 'height' ({height}) is bigger than the first clip's height ({clip_a.height})! "
+            "Will be using half the clip height instead.",
+            UserWarning,
+            stacklevel=2,
         )
 
-        height = int(clipa.height / 2)
+        height = int(clip_a.height / 2)
 
+    scaler = Kernel.ensure_obj(kernel, stack_compare)
     scaled_width = get_w(height, mod=1)
 
-    diff = Catrom().scale(clipa.std.MakeDiff(clipb), scaled_width * 2, height * 2).text.FrameNum(8)
+    diff_clip = Catrom().scale(clip_a.std.MakeDiff(clip_b), scaled_width * 2, height * 2).text.FrameNum(9)
+    diff_clip = diff_clip.text.Text(text="Difference", alignment=8)
 
-    resized = [
-        Catrom().scale(clipa, scaled_width, height).text.Text("Clip A", 3),
-        Catrom().scale(clipb, scaled_width, height).text.Text("Clip B", 1),
-    ]
+    scaled = [scaler.scale(clip, scaled_width, height).text.FrameNum(9) for clip in (clip_a, clip_b)]
 
-    return Stack([Stack(resized).clip, diff], direction=Direction.VERTICAL).clip
+    return Stack(
+        (
+            Stack({name_a: scaled[0], name_b: scaled[1]}).clip,
+            diff_clip,
+        ),
+        direction=Direction.VERTICAL,
+    ).clip
 
 
+@deprecated("Use stack_compare instead.", category=DeprecationWarning, stacklevel=2)
 def diff_between_clips_stack(*clips: vs.VideoNode, height: int = 288, **namedclips: vs.VideoNode) -> vs.VideoNode:
     """
     Make a stacked diff between two clips.
 
-    :param clip_a:          The first clip to compare.
-    :param clip_b:          The second clip to compare.
-    :param height:          The height to downscale the clips to.
-    :param namedclips:      Keyword arguments of `name=clip` for all clips in the comparison.
-
-    :return:                Stacked clip with a diff and the original clips.
-
-    :raises ClipsAndNamedClipsError:    Both positional and named clips are given.
+    .. deprecated:: Use :py:func:`stack_compare` instead.
     """
 
-    if clips and namedclips:
-        raise ClipsAndNamedClipsError(diff_between_clips_stack)
+    if clips:
+        return stack_compare(*clips, height=height)
 
-    if clips and not len(clips) == 2:
-        raise CustomValueError("Must pass exactly 2 `clips`!", diff_between_clips_stack)
-    elif namedclips and not len(namedclips) == 2:
-        raise CustomValueError("Must pass exactly 2 `namedclips`!", diff_between_clips_stack)
-
-    clip_a, clip_b = clips or namedclips.values()
-
-    if clip_a.format != clip_b.format:
-        raise CustomValueError(
-            f"Clips are not of the same format! {clip_a.format.name} != {clip_b.format.name}",
-            diff_between_clips_stack,
-        )
-
-    if clip_a.num_frames != clip_b.num_frames:
-        warnings.warn(
-            'diff_between_clips_stack: "Clips are not of the same length! '
-            'This function will only compare the frames that are present in both clips."',
-            UserWarning,
-        )
-
-        if clip_a.num_frames > clip_b.num_frames:
-            clip_a = clip_a[: clip_b.num_frames]
-        else:
-            clip_b = clip_b[: clip_a.num_frames]
-
-    scaled_width = get_w(height, mod=1)
-
-    diff_clip = core.std.MakeDiff(clip_a, clip_b)
-    diff_clip = Catrom().scale(diff_clip, scaled_width * 2, height * 2).text.FrameNum(9)
-
-    a, b = (Spline36().scale(c, scaled_width, height).text.FrameNum(9) for c in (clip_a, clip_b))
-
-    name_a, name_b = ("Clip A", "Clip B") if clips else namedclips.keys()
-
-    diff_stack = Stack({name_a: a, name_b: b}).clip
-    diff_clip = diff_clip.text.Text(text="diff", alignment=8)
-
-    return Stack((diff_stack, diff_clip), direction=Direction.VERTICAL).clip
+    return stack_compare(height=height, **namedclips)  # type: ignore[arg-type]
 
 
 def comparison_shots(
