@@ -96,9 +96,10 @@ source = "vcs"
 pythonpath = ["."]
 addopts = "--cov=lvsfunc"
 
-# This should be removed once all the relevant deprecation warnings are fixed
+# These should be removed once all the relevant deprecation warnings are fixed
 filterwarnings = [
     "ignore:The _ColorRange frame property has been deprecated:DeprecationWarning",
+    "ignore:Plugin .* is using API3 which is deprecated.*",
 ]
 
 [tool.mypy]
