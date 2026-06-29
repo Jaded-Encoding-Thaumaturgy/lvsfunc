@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from jetpytools import classproperty
+from math import isqrt, log2
+from typing import Final, overload
+
+from jetpytools import CustomValueError, KwargsT, classproperty
 from vsdenoise import (
     AnalyzeArgs,
     DegrainArgs,
@@ -12,13 +15,19 @@ from vsdenoise import (
     SearchMode,
     prefilter_to_full_range,
 )
-from vstools import vs
+from vstools import get_h, get_w, vs
 
 __all__: list[str] = [
     "LightMVPresets",
     "SlocCurves",
+    "autoselect_blksize",
     "autoselect_pel",
+    "mv_refine_kwargs",
 ]
+
+
+VALID_BLKSIZES: Final[frozenset[int]] = frozenset(2**i for i in range(2, 8))
+_MAX_REFINE: Final[int] = max(bs.bit_length() - 3 for bs in VALID_BLKSIZES)
 
 
 # TODO: Update all these once mvutensils is fully supported in vsjetpack.
@@ -222,3 +231,98 @@ def autoselect_pel(clip: vs.VideoNode) -> int:
         return 2
 
     return 1
+
+
+@overload
+def autoselect_blksize(width_or_clip: vs.VideoNode) -> int: ...
+
+
+@overload
+def autoselect_blksize(width_or_clip: int, height: int) -> int: ...
+
+
+@overload
+def autoselect_blksize(width_or_clip: int) -> int: ...
+
+
+@overload
+def autoselect_blksize(width_or_clip: None, height: int) -> int: ...
+
+
+def autoselect_blksize(width_or_clip: int | vs.VideoNode | None = None, height: int | None = None) -> int:
+    """
+    Automatically select MVTools block size from clip dimensions or a VideoNode.
+
+    If either width or height is passed, the other will be automatically determined (assuming 16:9 aspect ratio).
+    If a VideoNode is passed, its dimensions will be used.
+
+    :param width_or_clip: Clip width or a VideoNode.
+    :param height:        Clip height. If `width_or_clip` is a VideoNode, this should be None.
+
+    :return:              A valid MVTools block size.
+    """
+
+    width: int | None = None
+
+    if isinstance(width_or_clip, vs.VideoNode):
+        width = width_or_clip.width
+        height = width_or_clip.height
+
+    if isinstance(width_or_clip, int):
+        width = width_or_clip
+
+    if width is not None and height is None:
+        height = get_h(width, 16 / 9, mod=2)
+
+    if width is None and isinstance(height, int):
+        width = get_w(height, 16 / 9, mod=2)
+
+    if width is None or height is None:
+        raise CustomValueError(
+            f"You must pass either a VideoNode, width, or height! Not {type(width_or_clip)}!",
+            autoselect_blksize,
+        )
+
+    diag = isqrt(int(width) * int(height))
+    ref_diag = isqrt(1920 * 1080)
+
+    exponent = round(log2(diag / ref_diag * 64))
+
+    exponent = max(
+        int(log2(min(VALID_BLKSIZES))),
+        min(int(log2(max(VALID_BLKSIZES))), exponent),
+    )
+
+    return 2**exponent
+
+
+def mv_refine_kwargs(
+    blksize: int | None = None,
+    max_refine: int = _MAX_REFINE,
+    *,
+    ref: vs.VideoNode | None = None,
+) -> KwargsT:
+    """
+    Generate kwargs for MVTools blksize refining.
+
+    :param blksize:     The block size to use. If None, automatically determine based on
+                        the reference clip's dimensions.
+    :param max_refine:  Cap on refinement steps (halving blksize down to 4).
+    :param ref:         The reference clip to use. Must be set if `blksize` is None.
+
+    :return:            Kwargs containing `blksize` and `refine` keywords for MVTools.
+    """
+
+    if blksize is None:
+        if not ref:
+            raise CustomValueError("`ref` must be set if `blksize` is None!", mv_refine_kwargs)
+
+        blksize = autoselect_blksize(ref)
+
+    if blksize not in VALID_BLKSIZES:
+        raise CustomValueError(
+            f"Invalid blksize: {blksize}! Valid values are {sorted(VALID_BLKSIZES)}.",
+            mv_refine_kwargs,
+        )
+
+    return {"blksize": blksize, "refine": min(max(0, blksize.bit_length() - 3), max_refine)}

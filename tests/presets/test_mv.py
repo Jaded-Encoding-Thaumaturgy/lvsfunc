@@ -4,10 +4,11 @@ from uuid import uuid4
 
 import numpy as np
 import pytest
+from jetpytools import CustomValueError
 from vsdenoise import DFTTest, MVToolsPreset
 from vstools import core
 
-from lvsfunc.presets.mv import LightMVPresets, SlocCurves, autoselect_pel
+from lvsfunc.presets.mv import LightMVPresets, SlocCurves, autoselect_blksize, autoselect_pel, mv_refine_kwargs
 from lvsfunc.util import sloc_curve_to_graph
 
 
@@ -60,6 +61,46 @@ def test_autoselect_pel_selects_correct_pel(width: int, height: int, expected: i
     clip = core.std.BlankClip(width=width, height=height)
 
     assert autoselect_pel(clip) == expected
+
+
+@pytest.mark.parametrize(
+    "width, height, expected",
+    [
+        (640, 480, 32),
+        (720, 576, 32),
+        (1280, 720, 32),
+        (1920, 1080, 64),
+        (3840, 2160, 128),
+    ],
+)
+def test_autoselect_blksize_selects_correct_blksize(width: int, height: int, expected: int) -> None:
+    assert autoselect_blksize(width, height) == expected
+
+
+def test_mv_refine_kwargs_autoselects_from_ref() -> None:
+    clip = core.std.BlankClip(width=1920, height=1080)
+
+    assert mv_refine_kwargs(ref=clip) == {"blksize": 64, "refine": 4}
+
+
+def test_mv_refine_kwargs_caps_refine() -> None:
+    clip = core.std.BlankClip(width=1920, height=1080)
+
+    assert mv_refine_kwargs(max_refine=2, ref=clip) == {"blksize": 64, "refine": 2}
+
+
+def test_mv_refine_kwargs_accepts_explicit_blksize() -> None:
+    assert mv_refine_kwargs(blksize=32, max_refine=1) == {"blksize": 32, "refine": 1}
+
+
+def test_mv_refine_kwargs_requires_ref_when_blksize_omitted() -> None:
+    with pytest.raises(CustomValueError, match="`ref` must be set"):
+        mv_refine_kwargs()
+
+
+def test_mv_refine_kwargs_rejects_invalid_blksize() -> None:
+    with pytest.raises(CustomValueError, match="Invalid blksize"):
+        mv_refine_kwargs(blksize=12)
 
 
 @pytest.mark.parametrize(
