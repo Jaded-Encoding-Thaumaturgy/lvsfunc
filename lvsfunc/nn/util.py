@@ -15,19 +15,16 @@ def get_format_from_npy(frame_data: np.ndarray[Any, Any], func_except: FuncExcep
     """
     Guess the format based on heuristics from the numpy array data.
 
-    Input is assumed to be a numpy array with the following structure:
-    [Y, U, V] where U and V can be None.
+    Input is assumed to be ``[Y, U, V]`` where ``U`` and ``V`` may be absent.
 
-    If every array has the same shape, it's assumed to be YUV 4:4:4.
-    If you output RGB data, you may have to convert it back.
+    Equal plane shapes imply YUV 4:4:4. RGB data may need conversion afterward.
+    A single plane implies GRAY.
 
-    If the array has only one plane, it's assumed to be GRAY.
+    Args:
+        frame_data: Numpy array to inspect.
 
-    :param frame_data:      The numpy array data to guess the format from.
-    :param func_except:     Function returned for custom error handling.
-                            This should only be set by VS package developers.
-
-    :return:                The guessed format.
+    Returns:
+        The guessed format.
     """
 
     func = func_except or get_format_from_npy

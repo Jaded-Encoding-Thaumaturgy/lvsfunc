@@ -46,10 +46,12 @@ def remove_isolated_frames(frames: Iterable[int], thr: int = 1) -> Iterable[int]
     """
     Remove isolated frames (frames with no adjacent frames) from the list of frames.
 
-    :param frames:  The list of frames to remove isolated frames from.
-    :param thr:     The number of frames to consider adjacent. Default: 1.
+    Args:
+        frames: The list of frames to remove isolated frames from.
+        thr: The number of frames to consider adjacent. Default: 1.
 
-    :return:        The list of frames with isolated frames removed.
+    Returns:
+        The list of frames with isolated frames removed.
     """
 
     frames_set = set(frames)
@@ -102,11 +104,11 @@ class FindDiff:
 
         .. code-block:: python
 
-            from lvsfunc import DiffMode, FindDiff, PlaneAvgDiff
+            from lvsfunc import DiffMode, FindDiff, PlaneAvgFloatDiff
 
             # Assume clip_a and clip_b are your input clips
             diff_finder = FindDiff(
-                strategies=PlaneAvgDiff(0.005, planes=0),
+                strategies=PlaneAvgFloatDiff(0.005, planes=0),
             ).get_diff(clip_a, clip_b)
 
         Custom preprocessing example:
@@ -114,23 +116,24 @@ class FindDiff:
         .. code-block:: python
 
             # Crop the borders of the clips before processing.
-            diff_finder = FindDiff(pre_process=lambda c: c.std.Crop(top=10, bottom=10, left=10, right=10)).get_diff(
-                clip_a, clip_b
-            )
+            diff_finder = FindDiff(
+                pre_process=lambda c: c.std.Crop(top=10, bottom=10, left=10, right=10),
+            ).get_diff(clip_a, clip_b)
 
-        :param strategies:          The strategy or strategies to use for comparison.
-                                    See each strategy's class documentation for more information.
-                                    Default: PlaneAvgDiff.
-        :param mode:                The mode to use for combining results from multiple strategies.
-                                    Default: DiffMode.ANY.
-        :param pre_process:         The pre-processing function to use for the comparison.
-                                    If True, use box_blur. If False, skip pre-processing.
-                                    Default: True.
-        :param exclusion_ranges:    Ranges to exclude from the comparison.
-                                    These frames will still be processed, but not outputted.
-        :param func_except:         The function exception to use for the comparison.
 
-        :raise CustomValueError:    If you don't pass any strategies.
+        Args:
+            strategies: The strategy or strategies to use for comparison.
+                See each strategy's class documentation for more information.
+                Default: ``PlaneStatsDiff``.
+            mode: The mode to use for combining results from multiple strategies.
+                Default: ``DiffMode.ANY``.
+            pre_process: The pre-processing function to use for the comparison.
+                A callable, ``False`` to skip, or the default box blur with an 8px crop.
+            exclusion_ranges: Ranges to exclude from the comparison.
+                These frames will still be processed, but not outputted.
+
+        Raises:
+            ValueError: No strategies were passed.
         """
 
         self._func_except = func_except or self.__class__.__name__
@@ -172,24 +175,24 @@ class FindDiff:
         """
         Find the differences between two clips and store the results.
 
-        The ranges will be accessible through the `diff_ranges` attribute.
+        The ranges will be accessible through the ``diff_ranges`` attribute.
         If you have already found the differences, the method will return the current instance,
-        unless `force=True`, in which case the current results will be cleared
-        and the differences will be re-calculated.
+        unless ``force=True``, in which case the current results will be cleared and the
+        differences will be recalculated.
 
-        :param src:                     The source clip to compare.
-        :param ref:                     The reference clip to compare.
-        :param force:                   If True, force the method to find differences
-                                        even if they have already been found.
-                                        This will clear the current results.
-        :param error_on_no_diff:        If True, raise a CustomStopIteration error if no differences are found.
-                                        Default: True.
-        :param frames_post_process:     The post-processing function to use on the list of frames that are different.
-                                        Default: remove_isolated_frames (removes frames with no adjacent frames).
+        Args:
+            src: Source clip.
+            ref: Reference clip.
+            force: Recompute even when results already exist.
+            error_on_no_diff: Raise when no differences are found. Default: ``True``.
+            frames_post_process: Post-filter for differing frame numbers.
+                Default: :func:`remove_isolated_frames`.
 
-        :return:                        The current instance of FindDiff.
+        Returns:
+            This ``FindDiff`` instance.
 
-        :raise CustomStopIteration:     If no differences are found and `error_on_no_diff` is True.
+        Raises:
+            NoDifferencesFoundError: No differences were found and ``error_on_no_diff`` is ``True``.
         """
 
         if not force and self._diff_frames:
@@ -220,20 +223,22 @@ class FindDiff:
         """
         Get a processed clip highlighting the differences between two clips.
 
-        If you haven't run `find_diff` yet, the method will do so automatically.
+        If ``find_diff`` has not been run yet, this method runs it first.
 
-        :param src:                     The source clip to compare.
-        :param ref:                     The reference clip to compare.
-        :param names:                   The names of the clips. If None, try to get the Name property
-                                        from the clip for the name. Falls back to "src" and "ref" respectively.
-                                        Default: (None, None).
-        :param frames_post_process:     The post-processing function to use on the list of frames that are different.
-                                        Default: remove_isolated_frames (removes frames with no adjacent frames).
+        Args:
+            src: Source clip.
+            ref: Reference clip.
+            names: Labels for the stacked comparison. ``None`` uses each clip's ``Name`` prop,
+                then ``"Src"`` / ``"Ref"``. Default: ``(None, None)``.
+            frames_post_process: Post-filter for differing frame numbers.
+                Default: :func:`remove_isolated_frames`.
 
-        :return:                        A clip highlighting the differences between the source and reference clips.
+        Returns:
+            A clip highlighting differences between ``src`` and ``ref``.
 
-        :raise CustomStopIteration:     If no differences are found.
-        :raise CustomValueError:        If `names` is not a tuple of two strings.
+        Raises:
+            NoDifferencesFoundError: No differences were found.
+            ValueError: ``names`` is not a length-2 tuple of strings.
         """
 
         self.find_diff(src, ref, frames_post_process=frames_post_process)
@@ -292,18 +297,21 @@ class FindDiff:
         frames_post_process: Callable[[Iterable[int]], Iterable[int]] | None = remove_isolated_frames,
     ) -> tuple[vs.VideoNode, vs.VideoNode, vs.VideoNode]:
         """
-        Get a processed clips of the src, ref and a diff of the two.
+        Get processed clips of the source, reference, and their difference.
 
-        If you haven't run `find_diff` yet, the method will do so automatically.
+        If ``find_diff`` has not been run yet, this method runs it first.
 
-        :param src:                     The source clip to compare.
-        :param ref:                     The reference clip to compare.
-        :param frames_post_process:     The post-processing function to use on the list of frames that are different.
-                                        Default: remove_isolated_frames (removes frames with no adjacent frames).
+        Args:
+            src: Source clip.
+            ref: Reference clip.
+            frames_post_process: Post-filter for differing frame numbers.
+                Default: :func:`remove_isolated_frames`.
 
-        :return:                        A tuple containing the src, ref and diff of the two limited to the differences.
+        Returns:
+            ``(src, ref, diff)`` limited to differing frames.
 
-        :raise CustomStopIteration:     If no differences are found.
+        Raises:
+            NoDifferencesFoundError: No differences were found.
         """
 
         self.find_diff(src, ref, frames_post_process=frames_post_process)
@@ -326,11 +334,14 @@ class FindDiff:
         """
         Get a clip of the frames that are different between the two clips.
 
-        :param clip:                    The clip to get the frames from.
+        Args:
+            clip: The clip to get the frames from.
 
-        :return:                        A clip of the frames that are different between the two clips.
+        Returns:
+            A clip of the frames that are different between the two clips.
 
-        :raises CustomRuntimeError:     If you haven't run `find_diff` yet.
+        Raises:
+            NoDifferencesFoundError: ``find_diff`` has not been run, or no differences were found.
         """
 
         if not self._diff_frames:
@@ -359,16 +370,19 @@ class FindDiff:
             21-30
             etc.
 
-        :param output_path:             The path to save the differences to.
+        Args:
+            output_path: File path to write.
 
-        :return:                        The path to the file.
+        Returns:
+            The written file path.
 
-        :raise CustomStopIteration:     If you haven't run `find_diff` yet.
-        :raise FileIsADirectoryError:   If the output path is a directory.
-        :raise FilePermissionError:     If you don't have permission to write to the file.
-        :raise CustomOSError:           If there's an OS error (disk full, invalid path, etc.).
-        :raise CustomRuntimeError:      If there's an unexpected error.
-        :raise FileWasNotFoundError:    If the file was not found after it was supposed to be written.
+        Raises:
+            NoDifferencesFoundError: ``find_diff`` has not been run yet.
+            FileIsADirectoryError: ``output_path`` is a directory.
+            FilePermissionError: The file cannot be written.
+            CustomOSError: An OS error occurred while writing.
+            CustomRuntimeError: An unexpected error occurred while writing.
+            FileWasNotFoundError: The file was not created.
         """
 
         if not self.diff_ranges:
@@ -431,15 +445,17 @@ class FindDiff:
             21-30
             etc.
 
-        :param input_path:              The path to load the frame ranges from.
+        Args:
+            input_path: File path to read.
 
-        :return:                        The frame ranges.
+        Returns:
+            Parsed frame ranges.
 
-        :raise FileWasNotFoundError:    If the file was not found.
-        :raise FilePermissionError:     If you don't have permission to read the file.
-        :raise CustomOSError:           If there's an OS error (disk full, invalid path, etc.)
-                                        or an unexpected error occurs.
-        :raise CustomValueError:        If the file is empty or the format is invalid.
+        Raises:
+            FileWasNotFoundError: The file does not exist.
+            FilePermissionError: The file cannot be read.
+            CustomOSError: An OS error occurred while reading.
+            CustomValueError: The file is empty or malformed.
         """
 
         sfile = SPath(input_path)

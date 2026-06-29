@@ -218,8 +218,11 @@ def autoselect_pel(clip: vs.VideoNode) -> int:
 
     Uses pel=4 for SD, pel=2 for HD, and pel=1 for UHD/4K and above.
 
-    :param clip:    The clip to select the pel for.
-    :return:        pel for MVTools.
+    Args:
+        clip: The clip to select the pel for.
+
+    Returns:
+        pel for MVTools.
     """
 
     w, h = clip.width, clip.height
@@ -253,13 +256,18 @@ def autoselect_blksize(width_or_clip: int | vs.VideoNode | None = None, height: 
     """
     Automatically select MVTools block size from clip dimensions or a VideoNode.
 
-    If either width or height is passed, the other will be automatically determined (assuming 16:9 aspect ratio).
-    If a VideoNode is passed, its dimensions will be used.
+    If only width or height is passed, the other is inferred assuming a 16:9 aspect ratio.
+    If a VideoNode is passed, its dimensions are used.
 
-    :param width_or_clip: Clip width or a VideoNode.
-    :param height:        Clip height. If `width_or_clip` is a VideoNode, this should be None.
+    Args:
+        width_or_clip: Clip width or a VideoNode.
+        height: Clip height. Must be ``None`` when ``width_or_clip`` is a VideoNode.
 
-    :return:              A valid MVTools block size.
+    Returns:
+        A valid MVTools block size.
+
+    Raises:
+        ValueError: No clip dimensions could be determined from the arguments.
     """
 
     width: int | None = None
@@ -305,12 +313,16 @@ def mv_refine_kwargs(
     """
     Generate kwargs for MVTools blksize refining.
 
-    :param blksize:     The block size to use. If None, automatically determine based on
-                        the reference clip's dimensions.
-    :param max_refine:  Cap on refinement steps (halving blksize down to 4).
-    :param ref:         The reference clip to use. Must be set if `blksize` is None.
+    Args:
+        blksize: Block size. Autoselected from ``ref`` when ``None``.
+        max_refine: Cap on refinement steps (halving blksize down to 4).
+        ref: Reference clip. Required when ``blksize`` is ``None``.
 
-    :return:            Kwargs containing `blksize` and `refine` keywords for MVTools.
+    Returns:
+        Kwargs containing ``blksize`` and ``refine`` keywords for MVTools.
+
+    Raises:
+        ValueError: ``ref`` is missing when ``blksize`` is ``None``, or ``blksize`` is invalid.
     """
 
     if blksize is None:

@@ -31,9 +31,11 @@ class DiffMode(CustomIntEnum):
         """
         Check if the results match the mode requirements.
 
-        :param results:     List of boolean results from different diff methods
+        Args:
+            results: Boolean results from each diff strategy.
 
-        :return:            True if results match the mode requirements, False otherwise
+        Returns:
+            ``True`` if the results satisfy this mode.
         """
 
         if not results:
@@ -79,8 +81,11 @@ class VMAFFeature(CustomIntEnum):
         """
         Handle string inputs by mapping them to enum members.
 
-        :param value:   String or integer value to convert
-        :return:        Matching enum member or None
+        Args:
+            value: String or integer value to convert
+
+        Returns:
+            Matching enum member or None
         """
 
         if isinstance(value, str):

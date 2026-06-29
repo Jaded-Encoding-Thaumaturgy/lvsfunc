@@ -67,28 +67,29 @@ def colored_clips(
 
     The colors will be evenly spaced by hue in the HSL colorspace.
 
-    Useful maybe for comparison functions or just for getting multiple uniquely colored BlankClips for testing purposes.
-
+    Useful for comparison functions or just for getting multiple uniquely colored BlankClips for testing purposes.
     Will always return a pure red clip in the list as this is the RGB equivalent of the lowest HSL hue possible (0).
 
     Written by `Dave <https://github.com/OrangeChannel>`_.
 
-    :param amount:          Number of VideoNodes to return.
-    :param max_hue:         Maximum hue (0 < hue <= 360) in degrees to generate colors from (uses the HSL color model).
-                            Setting this higher than 315 may result in the clip colors looping back towards red
-                            and is not recommended for visually distinct colors.
-                            If the `amount` of clips is higher than `max_hue`, expect there to be identical
-                            or visually similar colored clips returned.
-                            Default: 300.
-    :param rand:            Randomizes order of the returned list. Default: True.
-    :param seed:            Seed for random number generator. Allows for consistent randomized order
-                            of the resulting clips if specified. Default: None.
-    :param kwargs:          Additional keyword arguments passed to :py:func:`vapoursynth.core.std.BlankClip`.
+    Args:
+        amount: Number of VideoNodes to return.
+        max_hue: Maximum hue (``0 < hue <= 360``) in degrees to generate colors from (uses the HSL color model).
+            Values above 315 may loop back toward red and are not recommended for visually distinct colors.
+            If ``amount`` exceeds ``max_hue``, duplicate hues may appear.
+            Default: 300.
+        rand: Randomizes order of the returned list. Default: ``True``.
+        seed: Seed for the random number generator.
+            Allows for consistent randomized order of the resulting clips if specified.
+            Default: ``None``.
+        kwargs: Additional keyword arguments passed to :py:func:`vapoursynth.core.std.BlankClip`.
 
-    :return:                List of uniquely colored clips in sequential or random order.
+    Returns:
+        List of uniquely colored clips in sequential or random order.
 
-    :raises CustomIndexError:   If `amount` is less than 2.
-    :raises CustomValueError:   If `max_hue` is not between 0 and 360.
+    Raises:
+        CustomIndexError: ``amount`` is less than 2.
+        CustomValueError: ``max_hue`` is not in ``(0, 360]``.
     """
 
     if amount < 2:
@@ -121,19 +122,21 @@ def sloc_curve_to_graph(
     """
     Plot a DFTTest ``SLocation`` curve.
 
-    Plots the ``frequencies`` and ``sigmas`` stored on ``slocation``. Locations passed
-    with an ``interpolate`` mode to :py:meth:`~vsdenoise.DFTTest.SLocation.__init__` are
-    already expanded. Otherwise :py:meth:`~vsdenoise.DFTTest.SLocation.interpolate` is
-    called to upsample for display. Unexpanded locations are also drawn as markers.
+    Plots the ``frequencies`` and ``sigmas`` stored on ``slocation``.
+    Locations passed with an ``interpolate`` mode
+    to :py:meth:`~vsdenoise.DFTTest.SLocation.__init__` are already expanded.
+    Otherwise :py:meth:`~vsdenoise.DFTTest.SLocation.interpolate` upsamples for display.
+    Unexpanded locations are also drawn as markers.
 
-    :param slocation: The ``SLocation`` to plot.
-    :param res:       Resolution passed to :py:meth:`~vsdenoise.DFTTest.SLocation.interpolate`.
-    :param digits:    Precision of frequency values passed to
-                      :py:meth:`~vsdenoise.DFTTest.SLocation.interpolate`.
-    :param figsize:   Figure size in inches, ``(width, height)``.
-    :param title:     Optional plot title.
+    Args:
+        slocation: The ``SLocation`` to plot.
+        res: Resolution passed to :py:meth:`~vsdenoise.DFTTest.SLocation.interpolate`.
+        digits: Precision of frequency values passed to :py:meth:`~vsdenoise.DFTTest.SLocation.interpolate`.
+        figsize: Figure size in inches, ``(width, height)``.
+        title: Optional plot title.
 
-    :return: A matplotlib figure.
+    Returns:
+        A matplotlib figure.
     """
 
     import matplotlib

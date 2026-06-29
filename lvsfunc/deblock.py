@@ -32,56 +32,58 @@ def autodb_dpir(
     **vsdpir_args: Any,
 ) -> vs.VideoNode:
     """
-    Rewrite of fvsfunc.AutoDeblock that uses vspdir instead of dfttest to deblock.
+    Rewrite of fvsfunc.AutoDeblock that uses vsdpir instead of dfttest to deblock.
 
-    This function checks for differences between a frame and an edgemask with some processing done on it,
+    This function checks for differences between a frame
+    and an edgemask with some processing done on it,
     and for differences between the current frame and the next frame.
-    For frames where both thresholds are exceeded, it will perform deblocking at a specified strength.
+    For frames where both thresholds are exceeded,
+    it will perform deblocking at a specified strength.
     This will ideally be frames that show big temporal *and* spatial inconsistencies.
 
-    Thresholds and calculations are added to the frameprops to use as reference when setting the thresholds.
+    Thresholds and calculations are added to the frameprops to use
+    as reference when setting the thresholds.
 
-    Keep in mind that dpir is not perfect; it may cause weird, black dots to appear sometimes.
-    If that happens, you can perform a denoise on the original clip (maybe even using dpir's denoising mode)
-    and grab the brightest pixels from your two clips. That should return a perfectly fine clip.
-
-    Thanks `Vardë <https://github.com/Ichunjo>`_, `louis <https://github.com/tomato39>`_,
-    `Setsugen no ao <https://github.com/Setsugennoao>`_!
+    Special thanks:
+        - `Vardë <https://github.com/Ichunjo>`_
+        - `louis <https://github.com/tomato39>`_
+        - `Setsugen no ao <https://github.com/Setsugennoao>`_
 
     Dependencies:
+        - `vs-mlrt <https://github.com/AmusementClub/vs-mlrt>`_
 
-    * `vs-mlrt <https://github.com/AmusementClub/vs-mlrt>`_
+    Args:
+        clip: Clip to process.
+        edgevalue: Remove edges from the edgemask that exceed this threshold (higher means more edges removed).
+        strs: A list of DPIR strength values (higher means stronger deblocking).
+            You can pass any arbitrary number of values here.
+            Sane deblocking strengths lie between 1–20 for most regular deblocking.
+            Going higher than 50 is not recommended outside of very extreme cases.
+            The amount of values in ``strs`` and ``thrs`` need to be equal.
+        thrs: A list of thresholds, written as ``[(EdgeValRef, NextFrameDiff, PrevFrameDiff)]``.
+            You can pass any arbitrary number of values here.
+            The amount of values in ``strs`` and ``thrs`` need to be equal.
+        matrix: Enum for the matrix of the clip to process.
+            See :py:attr:`lvsfunc.types.Matrix` for more info.
+            If ``None``, gets matrix from the ``_Matrix`` prop of the clip unless it's an RGB clip,
+            in which case it stays as ``None``.
+        edgemasker: Edgemasking function to use for calculating the edgevalues.
+            Default: Prewitt.
+        kernel: :py:class:`vskernels.Kernel` object used for conversions between YUV and RGB.
+            This can also be the string name of the kernel.
+            Default: :py:class:`vskernels.Catrom`.
+        cuda: Used to select backend.
+            Use CUDA if ``True``, CUDA TensorRT if ``'trt'``, else CPU OpenVINO if ``False``.
+            If ``None``, it will detect your system's capabilities and select the fastest backend.
+        return_mask: Return the mask used for calculating the edgevalues.
+        write_props: Whether to write verbose props.
+        vsdpir_args: Additional args to pass to :py:func:`vsdenoise.dpir.DEBLOCK`.
 
-    :param clip:            Clip to process.
-    :param edgevalue:       Remove edges from the edgemask that exceed this threshold (higher means more edges removed).
-    :param strs:            A list of DPIR strength values (higher means stronger deblocking).
-                            You can pass any arbitrary number of values here.
-                            Sane deblocking strengths lie between 1–20 for most regular deblocking.
-                            Going higher than 50 is not recommended outside of very extreme cases.
-                            The amount of values in strs and thrs need to be equal.
-    :param thrs:            A list of thresholds, written as [(EdgeValRef, NextFrameDiff, PrevFrameDiff)].
-                            You can pass any arbitrary number of values here.
-                            The amount of values in strs and thrs need to be equal.
-    :param matrix:          Enum for the matrix of the Clip to process.
-                            See :py:attr:`lvsfunc.types.Matrix` for more info.
-                            If `None`, gets matrix from the "_Matrix" prop of the clip unless it's an RGB clip,
-                            in which case it stays as `None`.
-    :param edgemasker:      Edgemasking function to use for calculating the edgevalues.
-                            Default: Prewitt.
-    :param kernel:          py:class:`vskernels.Kernel` object used for conversions between YUV <-> RGB.
-                            This can also be the string name of the kernel
-                            (Default: py:class:`vskernels.Bicubic(0, 0.5)`).
-    :param cuda:            Used to select backend.
-                            Use CUDA if True, CUDA TensorRT if 'trt', else CPU OpenVINO if False.
-                            If ``None``, it will detect your system's capabilities
-                            and select the fastest backend.
-    :param return_mask:     Return the mask used for calculating the edgevalues.
-    :param write_props:     whether to write verbose props.
-    :param vsdpir_args:     Additional args to pass to :py:func:`lvsfunc.deblock.vsdpir`.
+    Returns:
+        Deblocked clip with different strengths applied based on the given parameters.
 
-    :return:                Deblocked clip with different strengths applied based on the given parameters.
-
-    :raises ValueError:     Unequal number of ``strength``s and ``thr``s passed.
+    Raises:
+        ValueError: Unequal number of ``strs`` and ``thrs`` passed.
     """
 
     assert check_variable(clip, "autodb_dpir")

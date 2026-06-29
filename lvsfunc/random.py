@@ -15,18 +15,19 @@ __all__: list[str] = [
 
 def get_random_frame_nums(clip: vs.VideoNode, interval: int = 120, seed: int | None = None) -> list[int]:
     """
-    Get a list of random frames numbers from a clip.
+    Get a list of random frame numbers from a clip.
 
-    It will grab a random frame from every `interval` frames.
+    It will grab a random frame from every ``interval`` frames.
 
-    :param clip:        Clip to get the random frames from.
-    :param interval:    The amount of frames for each chunk.
-                        It will grab a random frame from every `interval` frames.
-                        Default: 120 frames.
-    :param seed:        Seed for the random number generator.
-                        Default: None.
+    Args:
+        clip: Clip to get the random frames from.
+        interval: The amount of frames for each chunk.
+            It will grab a random frame from every ``interval`` frames.
+            Default: 120 frames.
+        seed: Seed for the random number generator. Default: ``None``.
 
-    :return:            A list of random frame numbers.
+    Returns:
+        A list of random frame numbers.
     """
 
     if seed is not None:
@@ -42,16 +43,17 @@ def get_random_frames(clip: vs.VideoNode, interval: int = 120, seed: int | None 
     """
     Get random frames from a clip spliced together into a new clip.
 
-    It will grab a random frame from every `interval` frames.
+    It will grab a random frame from every ``interval`` frames.
 
-    :param clip:        Clip to get the random frames from.
-    :param interval:    The amount of frames for each chunk.
-                        It will grab a random frame from every `interval` frames.
-                        Default: 120 frames.
-    :param seed:        Seed for the random number generator.
-                        Default: None.
+    Args:
+        clip: Clip to get the random frames from.
+        interval: The amount of frames for each chunk.
+            It will grab a random frame from every ``interval`` frames.
+            Default: 120 frames.
+        seed: Seed for the random number generator. Default: ``None``.
 
-    :return:            A clip with random frames from the input clip.
+    Returns:
+        A clip with random frames from the input clip.
     """
 
     return core.std.Splice([clip[num] for num in get_random_frame_nums(clip, interval, seed)])
@@ -69,34 +71,40 @@ def get_smart_random_frame_nums(
     """
     Get smart random frame numbers from a clip.
 
-    This function selects random frame numbers from a clip, avoiding solid colors and similar consecutive frames.
-    It divides the clip into intervals and attempts to select a suitable frame number from each interval.
+    This function selects random frame numbers from a clip,
+    avoiding solid colors and similar consecutive frames.
+    It divides the clip into ``interval``-sized chunks
+    and attempts to select a suitable frame number from each chunk.
 
     The function uses the following criteria to select frames:
 
-        1. Avoids frames that are solid colors (determined by `solid_threshold`).
-        2. Avoids frames too similar to the previous frame (determined by `similarity_threshold`).
-        3. Attempts to select a frame from each interval.
-        4. If a suitable frame isn't found in an interval after `max_retries`, moves to the next.
+        1. Avoids frames that are solid colors (determined by ``solid_threshold``).
+        2. Avoids frames too similar to the previous frame (determined by ``similarity_threshold``).
+        3. Attempts to select a frame from each chunk.
+        4. If a suitable frame isn't found in a chunk after ``max_retries``, moves to the next.
 
     All values provided are assumed to be 8-bit values.
 
-    If `strict` is True, raises an error if no suitable frame is found in any interval
-    after max retries. If False (default), falls back to a random frame from the interval.
+    If ``strict`` is ``True``, raises an error if no suitable frame is found in any chunk after ``max_retries``.
+    If ``False`` (default), falls back to a random frame from the chunk.
 
-    :param clip:                    Clip to get the random frame numbers from.
-    :param interval:                The amount of frames for each chunk. Default: 120 frames.
-    :param max_retries:             Maximum number of retries before picking a random frame. Default: 10.
-    :param solid_threshold:         Threshold for determining if a frame is a solid color. Default: 2.
-    :param similarity_threshold:    Threshold for determining if frames are too similar. Default: 0.95.
-    :param strict:                  Whether to raise an error if a suitable frame cannot be found. Default: False.
-    :param seed:                    Seed for the random number generator. Default: None.
+    Args:
+        clip: Clip to get the random frame numbers from.
+        interval: The amount of frames for each chunk.
+            It will grab a random frame from every ``interval`` frames.
+            Default: 120 frames.
+        max_retries: Maximum number of retries before picking a random frame. Default: 10.
+        solid_threshold: Threshold for determining if a frame is a solid color. Default: 2.
+        similarity_threshold: Maximum allowed frame similarity. Default: ``0.02``.
+        strict: Whether to raise an error if a suitable frame cannot be found. Default: ``False``.
+        seed: Seed for the random number generator. Default: ``None``.
 
-    :return:                        A list of intelligently selected random frame numbers from the input clip.
+    Returns:
+        A list of intelligently selected random frame numbers from the input clip.
 
-    :raises CustomValueError:       If `interval` is less than or equal to 0.
-    :raises CustomValueError:       If `max_retries` is less than 0.
-    :raises CustomRuntimeError:     If `strict` is True and a suitable frame cannot be found after max_retries.
+    Raises:
+        CustomValueError: ``interval`` is not positive, or ``max_retries`` is negative.
+        CustomRuntimeError: ``strict`` is ``True`` and no suitable frame was found.
     """
 
     if interval <= 0:
@@ -111,7 +119,6 @@ def get_smart_random_frame_nums(
     solid_threshold = max(0, min(solid_threshold, 255))
     similarity_threshold = max(0, min(similarity_threshold, 1))
 
-    # Set the random seed if provided
     if seed is not None:
         random.seed(seed)
 
@@ -243,21 +250,23 @@ def get_smart_random_frames(
     Get smart random frames from a clip spliced together into a new clip.
 
     This function selects random frames from a clip, avoiding solid colors and similar consecutive frames.
-    It uses the same criteria as get_smart_random_frame_nums to select frames.
+    It uses the same criteria as :func:`get_smart_random_frame_nums` to select frames.
 
-    :param clip:                    Clip to get the random frames from.
-    :param interval:                The amount of frames for each chunk. Default: 120 frames.
-    :param max_retries:             Maximum number of retries before picking a random frame. Default: 10.
-    :param solid_threshold:         Threshold for determining if a frame is a solid color. Default: 2.
-    :param similarity_threshold:    Threshold for determining if frames are too similar. Default: 0.02.
-    :param strict:                  Whether to raise an error if a suitable frame cannot be found. Default: False.
-    :param seed:                    Seed for the random number generator. Default: None.
+    Args:
+        clip: Clip to get the random frames from.
+        interval: The amount of frames for each chunk. Default: 120 frames.
+        max_retries: Maximum number of retries before picking a random frame. Default: 10.
+        solid_threshold: Threshold for determining if a frame is a solid color. Default: 2.
+        similarity_threshold: Threshold for determining if frames are too similar. Default: ``0.02``.
+        strict: Whether to raise an error if a suitable frame cannot be found. Default: ``False``.
+        seed: Seed for the random number generator. Default: ``None``.
 
-    :return:                        A clip with intelligently selected random frames from the input clip.
+    Returns:
+        A clip with intelligently selected random frames from the input clip.
 
-    :raises CustomValueError:       If `interval` is less than or equal to 0.
-    :raises CustomValueError:       If `max_retries` is less than 0.
-    :raises CustomRuntimeError:     If `strict` is True and a suitable frame cannot be found after max_retries.
+    Raises:
+        CustomValueError: ``interval`` is not positive, or ``max_retries`` is negative.
+        CustomRuntimeError: ``strict`` is ``True`` and no suitable frame was found.
     """
 
     frame_nums = get_smart_random_frame_nums(

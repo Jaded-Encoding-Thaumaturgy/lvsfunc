@@ -48,10 +48,10 @@ class DiffStrategy(ABC):
         """
         Initialize the diff strategy.
 
-        :param threshold:       The threshold to use for the comparison.
-        :param planes:          The planes to compare.
-        :param func_except:     The function exception to use for the comparison.
-        :param kwargs:          Additional keyword arguments to pass on to the process method.
+        Args:
+            threshold: Comparison threshold.
+            planes: Planes to compare.
+            kwargs: Additional keyword arguments forwarded to :meth:`process`.
         """
 
         self.threshold = threshold
@@ -64,10 +64,12 @@ class DiffStrategy(ABC):
         """
         Process the difference between two clips.
 
-        :param src:             The source clip to compare.
-        :param ref:             The reference clip to compare.
+        Args:
+            src: The source clip to compare.
+            ref: The reference clip to compare.
 
-        :return:                A tuple containing the processed clip and callbacks.
+        Returns:
+            A tuple containing the processed clip and callbacks.
         """
 
         ...
@@ -107,11 +109,10 @@ class PlaneStatsDiff(DiffStrategy, _VszipStrategy):
 
             - vapoursynth-zip (https://github.com/dnjulek/vapoursynth-zip)
 
-        :param threshold:       The threshold to use for the comparison.
-                                Must be between -128 and 128.
-                                Higher values will catch more differences.
-        :param planes:          The planes to compare.
-        :param func_except:     The function exception to use for the comparison.
+        Args:
+            threshold: The threshold to use for the comparison.
+                Must be between -128 and 128. Higher values will catch more differences.
+            planes: The planes to compare.
         """
 
         if not -128 <= threshold <= 128:
@@ -160,11 +161,13 @@ class PlaneAvgFloatDiff(DiffStrategy, _VszipStrategy):
 
             - vapoursynth-zip (https://github.com/dnjulek/vapoursynth-zip)
 
-        :param threshold:       The threshold to use for the comparison.
-                                Must be between 0 and 1.
-                                Lower values will catch more differences.
-        :param planes:          The planes to compare.
-        :param func_except:     The function exception to use for the comparison.
+        Args:
+            threshold: Comparison threshold in ``[0, 1]``. Lower values detect more differences.
+            planes: Planes to compare.
+
+        Raises:
+            ValueError: ``threshold`` is outside ``[0, 1]``.
+            DependencyNotFoundError: vapoursynth-zip is not installed.
         """
 
         if not 0 <= threshold <= 1:
@@ -210,9 +213,10 @@ class VMAFDiff(DiffStrategy):
 
     def __post_init__(self) -> None:
         """
-        Check if VMAF is installed.
+        Check whether the VMAF plugin is available.
 
-        :raise DependencyNotFoundError: If VMAF is not installed.
+        Raises:
+            DependencyNotFoundError: VMAF is not installed.
         """
 
         if hasattr(core, "vmaf"):
@@ -237,12 +241,11 @@ class VMAFDiff(DiffStrategy):
 
             - VapourSynth-VMAF (https://github.com/HomeOfVapourSynthEvolution/VapourSynth-VMAF)
 
-        :param threshold:       The threshold to use for the comparison.
-                                Lower will catch more differences.
-        :param feature:         The VMAF feature(s) to use for comparison.
-                                See :py:class:`lvsfunc.diff.enum.VMAFFeature` for more information.
-        :param planes:          The planes to compare.
-        :param func_except:     The function exception to use for the comparison.
+        Args:
+            threshold: Comparison threshold. Lower values detect more differences.
+            feature: VMAF feature(s) for comparison.
+                See :py:class:`lvsfunc.diff.enum.VMAFFeature` for details.
+            planes: Planes to compare.
         """
 
         super().__init__(threshold, planes, func_except)
@@ -294,14 +297,12 @@ class ButteraugliDiff(DiffStrategy):
             - vship (https://github.com/Line-fr/Vship) (GPU)
             - vapoursynth-julek-plugin (https://github.com/dnjulek/vapoursynth-julek-plugin) (CPU)
 
-        :param threshold:               The threshold to use for the comparison.
-                                        Lower will catch more differences.
-        :param intensity_multiplier:    Controls sensitivity of the Butteraugli metric.
-                                        Higher values make it more sensitive to differences.
-        :param norm_mode:               Which norm to use for the comparison.
-                                        See :py:class:`lvsfunc.diff.enum.ButteraugliNorm` for more information.
-        :param planes:                  The planes to compare.
-        :param func_except:             The function exception to use for the comparison.
+        Args:
+            threshold: Comparison threshold. Lower values detect more differences.
+            intensity_multiplier: Butteraugli sensitivity. Higher values detect more differences.
+            norm_mode: Norm used for comparison.
+                See :py:class:`lvsfunc.diff.enum.ButteraugliNorm` for details.
+            planes: Planes to compare.
         """
 
         super().__init__(threshold, planes, func_except)
@@ -315,8 +316,9 @@ class ButteraugliDiff(DiffStrategy):
         """
         Process the difference between two clips using Butteraugli.
 
-        :raise NoGpuError:              If no GPU is detected.
-        :raise VMAFError:               If there's an issue with VMAF.
+        Raises:
+            NoGpuError: No compatible GPU was detected.
+            DependencyNotFoundError: Neither vship nor julek is installed.
         """
 
         plugin, intensity_param = self._get_plugin()
@@ -376,20 +378,18 @@ class LowpassFilterDiff(PlaneAvgFloatDiff):
         func_except: FuncExceptT | None = None,
     ) -> None:
         """
-        Strategy for comparing a lowpassed filtered clip with a non-lowpassed filtered clip using PlaneAvg.
+        Compare a lowpassed clip against an unfiltered reference using PlaneAvg.
 
-        This strategy is mostly useful for comparing two BDs where one has been lowpassed.
+        Mostly useful for comparing BDs where one source has been lowpassed.
 
         Dependencies:
 
             - vapoursynth-zip (https://github.com/dnjulek/vapoursynth-zip)
             - fftspectrum_rs (https://github.com/sgt0/vapoursynth-fftspectrum-rs)
 
-        :param threshold:       The threshold to use for the comparison.
-                                Must be between 0 and 1.
-                                Lower values will catch more differences.
-        :param planes:          The planes to compare.
-        :param func_except:     The function exception to use for the comparison.
+        Args:
+            threshold: Comparison threshold in ``[0, 1]``. Lower values detect more differences.
+            planes: Planes to compare.
         """
 
         super().__init__(threshold, planes, func_except)

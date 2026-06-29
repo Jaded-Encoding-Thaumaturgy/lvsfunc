@@ -8,7 +8,7 @@ from lvsfunc.color import RGBColor
 
 
 @pytest.mark.parametrize(
-    ("colour", "expected"),
+    ("color", "expected"),
     [
         (RGBColor.RED, (1.0, 0.0, 0.0)),
         (RGBColor.GREEN, (0.0, 1.0, 0.0)),
@@ -17,8 +17,8 @@ from lvsfunc.color import RGBColor
         (RGBColor.WHITE, (1.0, 1.0, 1.0)),
     ],
 )
-def test_rgb_color_values(colour: RGBColor, expected: tuple[float, float, float]) -> None:
-    assert colour == expected
+def test_rgb_color_values(color: RGBColor, expected: tuple[float, float, float]) -> None:
+    assert color == expected
 
 
 @pytest.mark.parametrize(
@@ -36,11 +36,11 @@ def test_rgb_color_from_name(name: str, expected: RGBColor) -> None:
 
 def test_rgb_color_from_name_rejects_unknown_name() -> None:
     with pytest.raises(NotFoundEnumValue):
-        RGBColor.from_name("not-a-colour")
+        RGBColor.from_name("not-a-color")
 
 
 @pytest.mark.parametrize(
-    ("colour", "bitdepth", "expected"),
+    ("color", "bitdepth", "expected"),
     [
         (RGBColor.BLACK, 8, [16, 16, 16]),
         (RGBColor.WHITE, 8, [235, 235, 235]),
@@ -49,8 +49,8 @@ def test_rgb_color_from_name_rejects_unknown_name() -> None:
         (RGBColor.BLUE, 16, [4096, 4096, 60160]),
     ],
 )
-def test_rgb_color_scale_value(colour: RGBColor, bitdepth: int, expected: list[int]) -> None:
-    assert colour.scale_value(bitdepth) == expected  # type: ignore[arg-type]
+def test_rgb_color_scale_value(color: RGBColor, bitdepth: int, expected: list[int]) -> None:
+    assert color.scale_value(bitdepth) == expected  # type: ignore[arg-type]
 
 
 def test_rgb_color_to_clip_without_ref() -> None:

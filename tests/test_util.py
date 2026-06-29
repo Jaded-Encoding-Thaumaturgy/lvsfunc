@@ -60,7 +60,7 @@ def test_colored_clips_seed_reproduces_the_same_sequence() -> None:
     assert [bytes(frame[0]) for frame in first_frames] == [bytes(frame[0]) for frame in second_frames]
 
 
-def test_colored_clips_without_randomisation_starts_with_red() -> None:
+def test_colored_clips_without_randomization_starts_with_red() -> None:
     clip = colored_clips(3, rand=False, format=vs.RGB24)[0]
     frame = clip.get_frame(0)
 
@@ -124,7 +124,7 @@ def test_set_vs_affinity_caps_auto_threads_at_eight(
         (8, 8, 4, [0, 1, 2, 3]),
     ],
 )
-def test_set_vs_affinity_honours_explicit_thread_count(
+def test_set_vs_affinity_honors_explicit_thread_count(
     monkeypatch: pytest.MonkeyPatch,
     set_affinity_calls: list[tuple[list[int], int]],
     logical_count: int,

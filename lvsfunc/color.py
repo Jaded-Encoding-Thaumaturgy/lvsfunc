@@ -8,7 +8,7 @@ __all__: list[str] = ["RGBColor"]
 
 
 class RGBColor(tuple[float, float, float], CustomEnum):
-    """An enum representing RGB colours."""
+    """An enum representing RGB colors."""
 
     RED = (1.0, 0.0, 0.0)
     GREEN = (0.0, 1.0, 0.0)
@@ -106,5 +106,5 @@ class RGBColor(tuple[float, float, float], CustomEnum):
     ) -> list[int]:
         """Scale the value of the color to the given bitdepth."""
 
-        # TODO: idk what to do with the colour range
+        # TODO: idk what to do with the color range
         return [int(scale_value(value, 32, bitdepth, range_in=ColorRange.FULL)) for value in self]

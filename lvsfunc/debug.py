@@ -15,9 +15,11 @@ def _remove_caller_formatting(stack: list[str]) -> list[str]:
     """
     Remove caller formatting functions from the stack.
 
-    :param stack:   The original stack trace.
+    Args:
+        stack: The original stack trace.
 
-    :return:        A new stack trace with caller formatting functions removed.
+    Returns:
+        A new stack trace with caller formatting functions removed.
     """
 
     current_module = inspect.getmodule(inspect.currentframe())
@@ -37,8 +39,9 @@ def get_full_caller_stack() -> list[str]:
     """
     Get a full stack of callers, excluding the current function.
 
-    :return:    A list of strings representing the call stack, with each entry
-                containing the function name, filename, and line number.
+    Returns:
+        A list of strings for the call stack. Each entry contains the function name, filename,
+        and line number.
     """
 
     stack = []
@@ -59,8 +62,8 @@ def get_caller_chain() -> str:
     """
     Get a chain of caller function names.
 
-    :return:    A string representing the call chain with function names
-                connected by arrows.
+    Returns:
+        A string representing the call chain with function names connected by arrows.
     """
 
     stack = get_full_caller_stack()
@@ -73,10 +76,12 @@ def format_caller_stack(max_depth: int | None = None, include_line_numbers: bool
     """
     Format the caller stack into a readable string.
 
-    :param max_depth:               Maximum depth of the stack to display. If None, shows full stack.
-    :param include_line_numbers:    Whether to include line numbers in the output.
+    Args:
+        max_depth: Maximum depth of the stack to display. If None, shows full stack.
+        include_line_numbers: Whether to include line numbers in the output.
 
-    :return:                        A formatted string representing the call stack.
+    Returns:
+        A formatted string representing the call stack.
     """
 
     stack = _remove_caller_formatting(get_full_caller_stack())
@@ -103,11 +108,14 @@ def get_caller_info(depth: int = 1) -> str:
     """
     Get information about a specific caller in the stack.
 
-    :param depth:       The depth of the caller in the stack (1 is the immediate caller).
+    Args:
+        depth: The depth of the caller in the stack (1 is the immediate caller).
 
-    :return:            A string with information about the specified caller.
+    Returns:
+        A string with information about the specified caller.
 
-    :raises CustomKeyError:     Invalid depth provided.
+    Raises:
+        CustomKeyError: Invalid depth provided.
     """
 
     stack = _remove_caller_formatting(get_full_caller_stack())
@@ -125,9 +133,11 @@ def summarize_stack(include_line_numbers: bool = False) -> str:
     """
     Provide a summary of the call stack.
 
-    :param include_line_numbers:    Whether to include line numbers in the output.
+    Args:
+        include_line_numbers: Whether to include line numbers in the output.
 
-    :return:                        A string summarizing the call stack.
+    Returns:
+        A string summarizing the call stack.
     """
 
     stack = _remove_caller_formatting(get_full_caller_stack())

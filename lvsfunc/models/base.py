@@ -52,21 +52,21 @@ class _LvsfuncRgbModel(BaseOnnxScalerRGB):
         **kwargs: Any,
     ) -> None:
         """
-        Initializes the scaler with the specified parameters.
+        Initialize the scaler with the specified parameters.
 
         Args:
             model: Path to the ONNX model file.
-            backend: The backend to be used with the vs-mlrt framework. If set to None, the most suitable backend will
-                be automatically selected, prioritizing fp16 support.
-            tiles: Whether to split the image into multiple tiles. This can help reduce VRAM usage, but note that the
-                model's behavior may vary when they are used.
-            tilesize: The size of each tile when splitting the image (if tiles are enabled).
-            overlap: The size of overlap between tiles.
-            multiple: Multiple of the tiles.
-            max_instances: Maximum instances to spawn when scaling a variable resolution clip.
-            kernel: Base kernel to be used for certain scaling/shifting operations. Defaults to Catrom.
-            scaler: Scaler used for scaling operations. Defaults to kernel.
-            shifter: Kernel used for shifting operations. Defaults to kernel.
+            backend: vs-mlrt backend. ``None`` autoselects the best available backend, preferring
+                fp16 support.
+            tiles: Split the image into tiles to reduce VRAM usage. Model behavior may change
+                when tiling is enabled.
+            tilesize: Tile size when tiling is enabled.
+            overlap: Overlap between tiles.
+            multiple: Tile multiple.
+            max_instances: Maximum instances for variable-resolution scaling.
+            kernel: Base kernel for scaling/shifting operations. Default: Catrom.
+            scaler: Scaler for scaling operations. Defaults to ``kernel``.
+            shifter: Kernel for shifting operations. Defaults to ``kernel``.
             **kwargs: Additional arguments.
         """
 
@@ -104,10 +104,12 @@ class _LvsfuncRgbModel(BaseOnnxScalerRGB):
         """
         Apply the model to the clip.
 
-        :param clip:        The clip to process.
-        :param kwargs:      Additional keyword arguments.
+        Args:
+            clip: The clip to process.
+            kwargs: Additional keyword arguments.
 
-        :return:            The processed clip.
+        Returns:
+            The processed clip.
         """
 
         clip32 = depth(clip, 32)

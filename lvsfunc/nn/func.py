@@ -26,26 +26,23 @@ def clip_to_npy(
     """
     Export frames from a VideoNode to numpy array files.
 
-    This function is intended to be used to help with preparing training data for neural networks.
+    Intended for preparing neural-network training data.
 
-    This works by upsampling the given clip to YUV444PS (unless GRAY is given) using the given kernel.
+    Upsamples the clip to YUV444PS (or keeps GRAY) using the given kernel.
+    Existing files are not overwritten; the next filename is incremented instead.
 
-    The function will not overwrite existing files,
-    and instead increments the next filename by 1.
+    Args:
+        src: The input video clip.
+        out_dir: Directory for numpy arrays. Default: ``"bin/"``.
+        export_npz: Export as a single ``.npz`` file. Default: ``False``.
+        kernel: Resampling kernel when not YUV 4:4:4 or GRAY. Default: Point, which is
+            lossless for integer up/downscaling.
 
-    :param src:                         The input video clip.
-    :param out_dir:                     The directory to save the numpy arrays.
-                                        Default: "bin/".
-    :param export_npz:                  If True, export the numpy arrays as a single .npz file.
-                                        Default: False.
-    :param kernel:                      Kernel used for resampling if not YUV 444 or GRAY.
-                                        Defaults to Point, as that can be up-and-downscaled without loss.
-    :param func_except:                 Function returned for custom error handling.
-                                        This should only be set by VS package developers.
+    Returns:
+        A list of paths to the exported numpy arrays, or a single path when ``export_npz`` is ``True``.
 
-    :return:                            A list of paths to the exported numpy arrays or the path to the .npz file.
-
-    :raises RuntimeWarning:             If any frames failed to process.
+    Note:
+        Emits :class:`RuntimeWarning` when one or more frames fail to process.
     """
 
     func = FunctionUtil(src, func_except or clip_to_npy, None, (vs.GRAY, vs.YUV), 32)
@@ -144,23 +141,20 @@ def npy_to_clip(
     func_except: FuncExceptT | None = None,
 ) -> vs.VideoNode:
     """
-    Load frames from numpy files (.npy or .npz) into a VapourSynth clip.
+    Load frames from numpy files (``.npy`` or ``.npz``) into a VapourSynth clip.
 
-    This function assumes it's used in tandem with `clip_to_npy`.
+    Assumes pairing with :func:`clip_to_npy`.
 
-    We use modifyframe to assign the numpy array to frames.
-    This helps with memory usage as we don't need to keep all the frames in memory at once
-    (which can make loading many frames impractical).
+    Uses ``ModifyFrame`` so frames are read on demand rather than kept entirely in memory.
 
-    :param file_paths:      Path to a directory containing .npy files, a single .npz file,
-                            or a list of .npy file paths.
-    :param ref:             Optional reference clip for format.
-    :param kernel:          Kernel used for resampling if ref is passed.
-                            Defaults to Point, as that can be up-and-downscaled without loss.
-    :param func_except:     Function returned for custom error handling.
-                            This should only be set by VS package developers.
+    Args:
+        file_paths: Directory of ``.npy`` files, a single ``.npz`` file, or a list of ``.npy`` paths.
+        ref: Optional reference clip for output format.
+        kernel: Resampling kernel when ``ref`` is passed. Default: Point, which is lossless for
+            integer up/downscaling.
 
-    :return:                VapourSynth clip created from the numpy files.
+    Returns:
+        VapourSynth clip created from the numpy files.
     """
 
     func = func_except or npy_to_clip

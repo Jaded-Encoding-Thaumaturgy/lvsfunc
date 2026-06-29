@@ -35,40 +35,38 @@ def overlay_sign(
 
     This wrapper also allows you to set fades to fade a logo in and out.
 
-    Dependencies:
+    Args:
+        clip: Clip to process.
+        overlay: Sign or logo to overlay.
+            Must be the png loaded in through :py:func:`core.vapoursynth.imwri.Read`
+            or a path string to the image file, and **MUST** be the same dimensions
+            as the ``clip`` to process.
+        frame_ranges: Frame ranges or starting frame to apply the overlay to.
+            See :py:attr:`vstools.FrameRange` for more info.
+            If ``None``, overlays the entire clip.
+            If a FrameRange is passed, the overlaid clip will only show up inside that range.
+            If only a single integer is given, it will start on that frame and stay until the end
+            of the clip.
+            Note that this function only accepts a single FrameRange!
+            You can't pass a list of them!
+        fade_length: Length to fade the clips into each other.
+            The fade will start and end on the frames given in ``frame_ranges``.
+            If set to ``0``, it won't fade and the sign will simply pop in.
+        matrix: Enum for the matrix of the clip to process.
+            See :py:attr:`lvsfunc.types.Matrix` for more info.
+            If not specified, gets matrix from the ``_Matrix`` prop of the clip unless it's an RGB
+            clip, in which case it stays as ``None``.
 
-    * `vs-imwri <https://github.com/vapoursynth/vs-imwri>`_
-    * `kagefunc <https://github.com/Irrational-Encoding-Wizardry/kagefunc>`_ (optional: ``fade_length``)
+    Returns:
+        Clip with a logo or sign overlaid on top for the given frame ranges,
+        either with or without a fade.
 
-    :param clip:                    Clip to process.
-    :param overlay:                 Sign or logo to overlay. Must be the png loaded in
-                                    through :py:func:`core.vapoursynth.imwri.Read` or a path string to the image file,
-                                    and **MUST** be the same dimensions as the ``clip`` to process.
-    :param frame_ranges:            Frame ranges or starting frame to apply the overlay to.
-                                    See :py:attr:`vstools.FrameRange` for more info.
-                                    If None, overlays the entire clip.
-                                    If a FrameRange is passed, the overlaid clip will only show up inside that range.
-                                    If only a single integer is given, it will start on that frame and
-                                    stay until the end of the clip.
-                                    Note that this function only accepts a single FrameRange!
-                                    You can't pass a list of them!
-    :param fade_length:             Length to fade the clips into each other.
-                                    The fade will start and end on the frames given in frame_ranges.
-                                    If set to 0, it won't fade and the sign will simply pop in.
-    :param matrix:                  Enum for the matrix of the Clip to process.
-                                    See :py:attr:`lvsfunc.types.Matrix` for more info.
-                                    If not specified, gets matrix from the "_Matrix" prop of the clip
-                                    unless it's an RGB clip, in which case it stays as `None`.
-
-    :return:                        Clip with a logo or sign overlaid on top for the given frame ranges,
-                                    either with or without a fade.
-
-    :raises DependencyNotFoundError:        `fade_length` > 0 and dependencies are missing.
-    :raises ValueError:                     ``overlay`` is not a VideoNode or a path.
-    :raises ResolutionsMismatchError:       The overlay clip is not of the same dimensions as the input clip.
-    :raises InvalidMatrixError:             ``Matrix`` is an invalid value.
-    :raises FramePropError:                 Overlay does not have an alpha channel.
-    :raises FramePropError:                 Overlay clip was not loaded in using :py:func:`vapoursynth.core.imwri.Read`.
+    Raises:
+        ValueError: ``overlay`` is not a VideoNode or a path.
+        ResolutionsMismatchError: The overlay clip is not the same dimensions as the input clip.
+        InvalidMatrixError: ``matrix`` is an invalid value.
+        FramePropError: Overlay does not have an alpha channel.
+        FramePropError: Overlay clip was not loaded using :py:func:`vapoursynth.core.imwri.Read`.
     """
 
     if fade_length > 0:

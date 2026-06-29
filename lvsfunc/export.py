@@ -45,21 +45,21 @@ class ExportFrames(CustomStrEnum):
         Export all frames from a VideoNode as images.
 
         If exporting the same frames from multiple clips (e.g., for lq vs. hq training),
-        it's recommended to use `get_random_frames` first to get a clip of random frames,
+        it's recommended to use :func:`get_random_frames` first to get a clip of random frames,
         and pass that here instead.
 
-        If you're exporting to PNG, this function will use the `vsfpng` plugin if installed,
-        otherwise falling back to `imwri.Write`.
+        If you're exporting to PNG, this function will use the ``vsfpng`` plugin if installed,
+        otherwise falling back to ``imwri.Write``.
 
-        :param clip:            The input clip to process.
-        :param filename:        Output filename pattern. Must include "%d" for frame number substitution.
-        :param kernel:          Kernel for resampling, if necessary. Default: Bilinear.
-        :param matrix:          Color matrix of the input clip. Attempts to detect if None.
-        :param func_except:     Function returned for custom error handling.
-                                This should only be set by VS package developers.
-        :param kwargs:          Additional arguments to pass to the underlying writer.
+        Args:
+            clip: The input clip to process.
+            filename: Output filename pattern. Must include ``%d`` for frame number substitution.
+            kernel: Kernel for resampling, if necessary. Default: Bilinear.
+            matrix: Color matrix of the input clip. Attempts to detect if ``None``.
+            kwargs: Additional arguments to pass to the underlying writer.
 
-        :return:                List of SPath objects pointing to exported images.
+        Returns:
+            List of SPath objects pointing to exported images.
         """
 
         func = func_except or self.__class__
