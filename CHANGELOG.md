@@ -3,6 +3,19 @@
 The dev will try to keep this as up-to-date as he can,
 but makes no promises.
 
+## 0.10.4
+
+[Full diff since v0.10.3][diff-0.10.4]
+
+### Features
+
+- `presets.mv`: add `autoselect_blksize` and `mv_refine_kwargs` for resolution-aware MVTools block size handling ([90e1ab4]).
+
+### Packaging and tooling
+
+- Model tests: pin mlrt to `Backend.ORT_CPU` instead of autoselect ([8bb4e7b]).
+- Mypy stubs: add `Backend.ORT_CPU` to `vsscale.mlrt` ([8bb4e7b]).
+
 ## 0.10.3
 
 [Full diff since v0.10.2][diff-0.10.3]
@@ -154,8 +167,10 @@ Please check [Releases][releases] for old changelogs.
 [71679b2]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/71679b2
 [7d35868]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/7d35868
 [8768cb6]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/8768cb6
+[8bb4e7b]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/8bb4e7b
 [8c7a152]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/8c7a152
 [8f77ebe]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/8f77ebe
+[90e1ab4]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/90e1ab4
 [913cb34]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/913cb34
 [96e4fdc]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/96e4fdc
 [9bb8544]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/9bb8544
@@ -184,4 +199,5 @@ Please check [Releases][releases] for old changelogs.
 [diff-0.10.0]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/compare/v0.9.1...v0.10.0
 [diff-0.10.1]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/compare/v0.10.0...v0.10.1
 [diff-0.10.2]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/compare/v0.10.1...v0.10.2
-[diff-0.10.3]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/compare/v0.10.2...master
+[diff-0.10.3]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/compare/v0.10.2...v0.10.3
+[diff-0.10.4]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/compare/v0.10.3...master
