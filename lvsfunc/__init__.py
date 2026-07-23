@@ -11,6 +11,7 @@ from .color import *
 from .comparison import *
 from .deblock import *
 from .decorators import *
+from .dedither import *
 from .diff import *
 from .exceptions import *
 from .export import *
