@@ -7,8 +7,13 @@ but makes no promises.
 
 [Full diff since v0.10.3][diff-0.10.4]
 
+### Breaking changes
+
+- `presets.mv.LightMVPresets`: migrate to the MVUtensils API required by vsjetpack 2.2 ([bee8177]).
+
 ### Features
 
+- `dedither`, `post_dedither`: new dither removal helpers ([e37808c]).
 - `presets.mv`: add `autoselect_blksize` and `mv_refine_kwargs` for resolution-aware MVTools block size calculation ([90e1ab4]).
 - `util.set_vs_affinity`: configure VapourSynth worker threads, CPU affinity, and framebuffer cache limits ([bd296a2]).
 - `models`: resample scaled output back to the input format using the configured scaler ([9464cb8]).
@@ -20,6 +25,7 @@ but makes no promises.
 
 ### Packaging and tooling
 
+- Bump `vsjetpack` to `>=2.2.0` ([bee8177]).
 - Model tests: pin mlrt to `Backend.ORT_CPU` instead of autoselect ([8bb4e7b]).
 - Mypy stubs: add `Backend.ORT_CPU` to `vsscale.mlrt` ([8bb4e7b]).
 - Lint: split `poe lint` into discrete tasks ([42dafa0]).
@@ -195,10 +201,12 @@ Please check [Releases][releases] for old changelogs.
 [b9b9fb6]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/b9b9fb6
 [bcd7f34]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/bcd7f34
 [bd296a2]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/bd296a2
+[bee8177]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/bee8177
 [c821a1b]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/c821a1b
 [ddf2bd7]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/ddf2bd7
 [dfb6efc]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/dfb6efc
 [e312106]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/e312106
+[e37808c]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/e37808c
 [e8a2d08]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/e8a2d08
 [ea21c18]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/ea21c18
 [ec9e7eb]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/ec9e7eb
