@@ -115,6 +115,12 @@ def test_light_mv_presets_expose_expected_pel(preset: MVToolsPreset, pel: int) -
     assert preset.pel == pel
     assert preset.analyze_args is not None
     assert preset.recalculate_args is not None
+    assert "blksize" in preset.analyze_args
+    assert "overlap_div" in preset.analyze_args
+    assert "blksize" in preset.recalculate_args
+    assert "overlap_div" in preset.recalculate_args
+    assert "truemotion" not in preset.analyze_args
+    assert "dct" not in preset.analyze_args
 
 
 @pytest.mark.parametrize(

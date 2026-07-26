@@ -8,10 +8,8 @@ from vsdenoise import (
     AnalyzeArgs,
     DegrainArgs,
     DFTTest,
-    MotionMode,
     MVToolsPreset,
     RecalculateArgs,
-    SADMode,
     SearchMode,
     prefilter_to_full_range,
 )
@@ -30,7 +28,6 @@ VALID_BLKSIZES: Final[frozenset[int]] = frozenset(2**i for i in range(2, 8))
 _MAX_REFINE: Final[int] = max(bs.bit_length() - 3 for bs in VALID_BLKSIZES)
 
 
-# TODO: Update all these once mvutensils is fully supported in vsjetpack.
 class LightMVPresets:
     """MVTools motion-estimation presets."""
 
@@ -51,12 +48,16 @@ class LightMVPresets:
             ),
             pel=1,
             analyze_args=AnalyzeArgs(
-                truemotion=MotionMode.SAD,
+                blksize=16,
+                overlap_div=2,
+                mvlambda=0,
                 search=SearchMode.DIAMOND,
                 pelsearch=2,
             ),
             recalculate_args=RecalculateArgs(
-                truemotion=MotionMode.SAD,
+                blksize=8,
+                overlap_div=2,
+                mvlambda=0,
                 search=SearchMode.DIAMOND,
                 searchparam=1,
             ),
@@ -75,14 +76,17 @@ class LightMVPresets:
             ),
             pel=4,
             analyze_args=AnalyzeArgs(
-                truemotion=MotionMode.COHERENCE,
+                blksize=16,
+                overlap_div=2,
                 search=SearchMode.HEXAGON,
                 pelsearch=2,
             ),
             recalculate_args=RecalculateArgs(
-                truemotion=MotionMode.COHERENCE,
+                blksize=8,
+                overlap_div=2,
                 search=SearchMode.HEXAGON,
                 searchparam=1,
+                satd=True,
             ),
             degrain_args=DegrainArgs(thsad=75),
         )
@@ -103,15 +107,18 @@ class LightMVPresets:
             pel=2,
             analyze_args=AnalyzeArgs(
                 blksize=64,
-                truemotion=MotionMode.SAD,
+                overlap_div=2,
+                mvlambda=0,
                 search=SearchMode.HEXAGON,
-                dct=SADMode.ADAPTIVE_SPATIAL_MIXED,
+                satd=True,
             ),
             recalculate_args=RecalculateArgs(
-                truemotion=MotionMode.SAD,
+                blksize=32,
+                overlap_div=2,
+                mvlambda=0,
                 search=SearchMode.HEXAGON,
                 searchparam=1,
-                dct=SADMode.ADAPTIVE_SATD_MIXED,
+                satd=True,
             ),
             degrain_args=DegrainArgs(thsad=150),
         )

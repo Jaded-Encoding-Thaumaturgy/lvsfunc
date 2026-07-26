@@ -36,7 +36,7 @@ dependencies = [
     "kagefunc>=1.0.1",
     "vapoursynth>=74",
     "vsfpng>=1.2",
-    "vsjetpack[denoise,scale]>=2.0.0",
+    "vsjetpack[denoise,scale]>=2.2.0rc1",
     "matplotlib>=3.11.0",
 ]
 
@@ -49,9 +49,9 @@ Changelog = "https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/blob/master/C
 basic = []
 
 # GPU-specific dependencies
-cl = ["vsjetpack[cl]>=2.0.0"]
-nvidia = ["vsjetpack[nvidia]>=2.0.0"]
-amd = ["vsjetpack[amd]>=2.0.0"]
+cl = ["vsjetpack[cl]>=2.2.0rc1"]
+nvidia = ["vsjetpack[nvidia]>=2.2.0rc1"]
+amd = ["vsjetpack[amd]>=2.2.0rc1"]
 
 [tool.uv]
 index-strategy = "unsafe-best-match"
@@ -71,7 +71,7 @@ dev = [
 test = [
     "pytest>=9.0.0, <10.0.0",
     "pytest-cov>=6.2.1, <8.0.0",
-    "vsjetpack[cl]>=2.0.0",      # Inference required for model tests
+    "vsjetpack[cl]>=2.2.0rc1",      # Inference required for model tests
 ]
 
 [[tool.uv.index]]
