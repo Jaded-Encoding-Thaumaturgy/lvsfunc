@@ -13,6 +13,7 @@ but makes no promises.
 
 ### Features
 
+- `get_lvsfunc_storage`: new helper for package cache storage under `.vsjet/lvsfunc` ([598658b]).
 - `dedither`, `post_dedither`: new dither removal helpers ([e37808c]).
 - `presets.mv`: add `autoselect_blksize` and `mv_refine_kwargs` for resolution-aware MVTools block size calculation ([90e1ab4]).
 - `util.set_vs_affinity`: configure VapourSynth worker threads, CPU affinity, and framebuffer cache limits ([bd296a2]).
@@ -26,11 +27,13 @@ but makes no promises.
 ### Packaging and tooling
 
 - Bump `vsjetpack` to `>=2.2.0` ([bee8177]).
+- `_get_onnx_model`: hardcode the package name to `lvsfunc` and drop the `package_name` argument ([ab9ff14]).
 - Model tests: pin mlrt to `Backend.ORT_CPU` instead of autoselect ([8bb4e7b]).
 - Mypy stubs: add `Backend.ORT_CPU` to `vsscale.mlrt` ([8bb4e7b]).
 - Lint: split `poe lint` into discrete tasks ([42dafa0]).
 - Lint: Add `poe lint-ci`, and run it from CI ([42dafa0]).
 - Expand model tests for post-scale format restoration ([9464cb8]).
+- Add tests for `get_lvsfunc_storage` ([598658b]).
 
 ## 0.10.3
 
@@ -177,6 +180,7 @@ Please check [Releases][releases] for old changelogs.
 [555ccc2]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/555ccc2
 [5767088]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/5767088
 [57c4643]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/57c4643
+[598658b]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/598658b
 [60a08c4]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/60a08c4
 [66d684a]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/66d684a
 [6e187ab]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/6e187ab
@@ -195,6 +199,7 @@ Please check [Releases][releases] for old changelogs.
 [a5a787f]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/a5a787f
 [a63038e]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/a63038e
 [a9c8738]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/a9c8738
+[ab9ff14]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/ab9ff14
 [ad64b47]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/ad64b47
 [b4eee33]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/b4eee33
 [b55d635]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/b55d635
