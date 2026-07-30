@@ -193,7 +193,6 @@ class _BaseLvsfuncLuma(_LvsfuncRgbModel):
 def _get_onnx_model(
     model: _LvsfuncRgbModel,
     *,
-    package_name: str = "lvsfunc",
     func_except: FuncExcept | None = None,
 ) -> SPath:
     model_cls = type(model)
@@ -205,7 +204,7 @@ def _get_onnx_model(
             func,
         )
 
-    root = SPath(str(pkg_resources.files(package_name))) / "models" / "shaders"
+    root = SPath(str(pkg_resources.files("lvsfunc"))) / "models" / "shaders"
     path = root / model._model_dir / f"{model_name}.onnx"
 
     if not path.exists() or not path.is_file():
