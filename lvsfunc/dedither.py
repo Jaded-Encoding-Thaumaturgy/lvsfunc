@@ -117,7 +117,7 @@ def dedither(
             Recommended values are between 1.0 and 2.0. Defaults to 1.5.
         limit: Maximum permitted change, optionally per plane.
             Higher values will allow more changes, but may also oversmooth textures.
-            If you find that this function is too strong, try increasing this value.
+            If you find that this function is too strong, try decreasing this value.
             Defaults to 1.0.
         limit_mode: How changes exceeding `limit` are handled:
 
@@ -192,7 +192,7 @@ def post_dedither(
         limit_mode: How to apply the limiting:
 
             - CLAMP: Restricts every candidate change to the range [-limit, limit].
-            - REJECT: Keeps the source pixel if the filtered change exceeds the limit.
+            - REVERT: Keeps the source pixel if the filtered change exceeds the limit.
 
             See `LimitMode` for more information. Defaults to `LimitMode.CLAMP`.
         planes: Planes to process. Defaults to luma only.
