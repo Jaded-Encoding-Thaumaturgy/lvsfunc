@@ -9,12 +9,14 @@ on:
       - ".github/workflows/test.yml"
       - "**.py*"
       - "pyproject.toml"
+      - "uv.lock"
   pull_request:
     paths:
       - ".github/actions/**"
       - ".github/workflows/test.yml"
       - "**.py*"
       - "pyproject.toml"
+      - "uv.lock"
   workflow_dispatch:
 
 permissions:
@@ -26,6 +28,13 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.14"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -60,10 +69,41 @@ jobs:
         with:
           webhook-url: ${{ secrets.WEBHOOK_URL }}
 
+  gpu-resolution:
+    name: Resolve ${{ matrix.extra }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+        extra:
+          - gpu
+          - cl
+          - vulkan
+          - nvidia
+          - amd
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          python-version: "3.14"
+          enable-cache: true
+
+      - name: Check extra resolution
+        run: uv sync --locked --dry-run --no-dev --extra ${{ matrix.extra }}
+
   post-test:
     needs: [test]
     if: always()
     runs-on: ubuntu-latest
+
     steps:
       - name: Mark Coveralls as finished
         uses: coverallsapp/github-action@v2.3.7

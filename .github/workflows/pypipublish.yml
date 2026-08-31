@@ -1,8 +1,7 @@
 name: Publish releases to PyPI
 on:
   release:
-    types: published
-  workflow_dispatch:
+    types: [published]
 
 env:
   LVSFUNC_PYTHON_VERSION: "3.14"
