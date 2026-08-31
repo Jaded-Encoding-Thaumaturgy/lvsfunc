@@ -4,9 +4,9 @@ import importlib.resources as pkg_resources
 import warnings
 from logging import getLogger
 from typing import Any, cast
+from warnings import deprecated
 
 from jetpytools import CustomNotImplementedError, FileWasNotFoundError, FuncExcept, SPath, SPathLike
-from typing_extensions import deprecated
 from vskernels import Catrom, Kernel, KernelLike, ScalerLike
 from vsscale.onnx import BackendLike, BaseOnnxScalerRGB
 from vstools import core, depth, get_y, join, vs

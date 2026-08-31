@@ -7,9 +7,9 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator, Sequence
 from itertools import zip_longest
 from typing import Any
+from warnings import deprecated
 
 from jetpytools import CustomIntEnum, CustomNotImplementedError, CustomTypeError, CustomValueError, mod2
-from typing_extensions import deprecated
 from vskernels import Catrom, Kernel, KernelLike, Point
 from vstools import (
     FormatsMismatchError,
