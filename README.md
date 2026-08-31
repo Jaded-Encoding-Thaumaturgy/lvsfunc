@@ -61,6 +61,19 @@ You can install the git latest version with the following command:
 pip install git+https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc.git
 ```
 
+### Optional acceleration backends
+
+By default, all functions use CPU unless an acceleration backend extra is installed:
+
+- `gpu`: generic MLRT/ONNX Runtime support.
+- `cl`: OpenCL plugins.
+- `vulkan`: Vulkan plugins.
+- `nvidia`: NVIDIA CUDA/TensorRT stack.
+- `amd`: AMD-oriented ORT/HIP/OpenCL/Vulkan stack.
+
+These backends can be installed using `lvsfunc --extra name`.
+See the [vsjetpack documentation][vsjet-install] for more information.
+
 ## Usage
 
 After installation, functions can be loaded and used as follows:
@@ -72,3 +85,5 @@ aa = lvf.deblock.autodb_dpir(...)
 comp = lvf.comparison.compare(...)
 ...
 ```
+
+[vsjetpack-install]: https://jaded-encoding-thaumaturgy.github.io/vs-jetpack/#installation

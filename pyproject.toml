@@ -7,7 +7,7 @@ name = "lvsfunc"
 dynamic = ["version"]
 description = "A collection of LightArrowsEXE's VapourSynth experimental functions and wrappers"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 license = "MIT"
 authors = [{ name = "LightArrowsEXE", email = "LightArrowsReboot@gmail.com" }]
 maintainers = [
@@ -34,9 +34,9 @@ classifiers = [
 ]
 dependencies = [
     "kagefunc>=1.0.1",
-    "vapoursynth>=74",
+    "vapoursynth>=78",
     "vsfpng>=1.2",
-    "vsjetpack[denoise,scale]>=2.2.0rc1",
+    "vsjetpack[denoise]>=2.2.4",
     "matplotlib>=3.11.0",
 ]
 
@@ -48,13 +48,28 @@ Changelog = "https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/blob/master/C
 [project.optional-dependencies]
 basic = []
 
-# GPU-specific dependencies
-cl = ["vsjetpack[cl]>=2.2.0rc1"]
-nvidia = ["vsjetpack[nvidia]>=2.2.0rc1"]
-amd = ["vsjetpack[amd]>=2.2.0rc1"]
+# Acceleration backends
+gpu = ["vsjetpack[gpu]>=2.2.4"]
+cl = ["vsjetpack[cl]>=2.2.4"]
+vulkan = ["vsjetpack[vulkan]>=2.2.4"]
+
+# Vendor-specific GPU stacks
+nvidia = ["vsjetpack[nvidia]>=2.2.4"]
+amd = ["vsjetpack[amd]>=2.2.4"]
+
 
 [tool.uv]
 index-strategy = "unsafe-best-match"
+
+constraint-dependencies = [
+    "nvidia-cublas != 13.6.1.10; sys_platform == 'win32'",
+]
+
+required-environments = [
+    "sys_platform == 'win32' and platform_machine == 'AMD64'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+
 
 [dependency-groups]
 dev = [
@@ -68,10 +83,11 @@ dev = [
     "types-psutil>=7.2.2",
     "vsstubs>=2.1.1",
 ]
+
 test = [
     "pytest>=9.0.0, <10.0.0",
     "pytest-cov>=6.2.1, <8.0.0",
-    "vsjetpack[cl]>=2.2.0rc1",      # Inference required for model tests
+    "vsjetpack[gpu]>=2.2.4",
 ]
 
 [[tool.uv.index]]
