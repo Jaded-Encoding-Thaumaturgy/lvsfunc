@@ -3,18 +3,39 @@
 The dev will try to keep this as up-to-date as he can,
 but makes no promises.
 
+## 0.11.0
+
+[Full diff since v0.10.4][diff-0.11.0]
+
+### Breaking changes
+
+- Drop Python 3.12 and 3.13 support ([b2fc491]).
+- `presets.mv.LightMVPresets`: migrate to the MVUtensils API ([bee8177]).
+
+### Features
+
+- `dedither`, `post_dedither`: add new ordered-dither removal and residual frequency-denoising helpers ([e37808c]).
+- `get_lvsfunc_storage`: add a helper for package cache storage under `.vsjet/lvsfunc` ([598658b]).
+
+### Packaging and tooling
+
+- Bump the minimum VapourSynth requirement to `>=78` and vsjetpack to `>=2.2.4` ([b2fc491]).
+- Add generic `gpu` and `vulkan` acceleration extras alongside the existing `cl`, `nvidia`, and `amd` extras ([b2fc491]).
+- Add Windows x64 and Linux x86-64 as required uv environments and exclude the incompatible `nvidia-cublas==13.6.1.10` release on Windows ([b2fc491]).
+- Model tests: use the generic MLRT/ORT `gpu` extra so ONNX inference tests execute instead of being skipped ([b2fc491]).
+- `_get_onnx_model`: hardcode the package name to `lvsfunc` and remove the `package_name` argument ([ab9ff14]).
+- Add tests for `get_lvsfunc_storage` ([598658b]).
+- Use the standard-library `warnings.deprecated` now that Python 3.14 is required ([c61bb29]).
+- Add generated VapourSynth typings for development and type checking ([9e0f9fa]).
+- CI: trigger lint and test workflows on lockfile and shared-action changes, and add Windows/Linux resolution checks for acceleration extras ([189638f]).
+- Publishing: only publish to PyPI from a published GitHub Release ([189638f]).
+
 ## 0.10.4
 
 [Full diff since v0.10.3][diff-0.10.4]
 
-### Breaking changes
-
-- `presets.mv.LightMVPresets`: migrate to the MVUtensils API required by vsjetpack 2.2 ([bee8177]).
-
 ### Features
 
-- `get_lvsfunc_storage`: new helper for package cache storage under `.vsjet/lvsfunc` ([598658b]).
-- `dedither`, `post_dedither`: new dither removal helpers ([e37808c]).
 - `presets.mv`: add `autoselect_blksize` and `mv_refine_kwargs` for resolution-aware MVTools block size calculation ([90e1ab4]).
 - `util.set_vs_affinity`: configure VapourSynth worker threads, CPU affinity, and framebuffer cache limits ([bd296a2]).
 - `models`: resample scaled output back to the input format using the configured scaler ([9464cb8]).
@@ -26,14 +47,11 @@ but makes no promises.
 
 ### Packaging and tooling
 
-- Bump `vsjetpack` to `>=2.2.0` ([bee8177]).
-- `_get_onnx_model`: hardcode the package name to `lvsfunc` and drop the `package_name` argument ([ab9ff14]).
 - Model tests: pin mlrt to `Backend.ORT_CPU` instead of autoselect ([8bb4e7b]).
 - Mypy stubs: add `Backend.ORT_CPU` to `vsscale.mlrt` ([8bb4e7b]).
 - Lint: split `poe lint` into discrete tasks ([42dafa0]).
 - Lint: Add `poe lint-ci`, and run it from CI ([42dafa0]).
 - Expand model tests for post-scale format restoration ([9464cb8]).
-- Add tests for `get_lvsfunc_storage` ([598658b]).
 
 ## 0.10.3
 
@@ -167,9 +185,11 @@ Please check [Releases][releases] for old changelogs.
 [0290416]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/0290416
 [0bcbfbe]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/0bcbfbe
 [11b2dfc]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/11b2dfc
+[189638f]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/189638f
 [21cd940]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/21cd940
 [25bf2c7]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/25bf2c7
 [285d932]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/285d932
+[2a5062a]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/2a5062a
 [2ba4371]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/2ba4371
 [3644340]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/3644340
 [3ac9eb0]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/3ac9eb0
@@ -196,17 +216,20 @@ Please check [Releases][releases] for old changelogs.
 [9464cb8]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/9464cb8
 [96e4fdc]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/96e4fdc
 [9bb8544]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/9bb8544
+[9e0f9fa]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/9e0f9fa
 [a5a787f]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/a5a787f
 [a63038e]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/a63038e
 [a9c8738]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/a9c8738
 [ab9ff14]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/ab9ff14
 [ad64b47]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/ad64b47
+[b2fc491]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/b2fc491
 [b4eee33]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/b4eee33
 [b55d635]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/b55d635
 [b9b9fb6]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/b9b9fb6
 [bcd7f34]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/bcd7f34
 [bd296a2]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/bd296a2
 [bee8177]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/bee8177
+[c61bb29]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/c61bb29
 [c821a1b]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/c821a1b
 [ddf2bd7]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/ddf2bd7
 [dfb6efc]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/commit/dfb6efc
@@ -227,4 +250,5 @@ Please check [Releases][releases] for old changelogs.
 [diff-0.10.1]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/compare/v0.10.0...v0.10.1
 [diff-0.10.2]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/compare/v0.10.1...v0.10.2
 [diff-0.10.3]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/compare/v0.10.2...v0.10.3
-[diff-0.10.4]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/compare/v0.10.3...master
+[diff-0.10.4]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/compare/v0.10.3...v0.10.4
+[diff-0.11.0]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/compare/v0.10.4...master
