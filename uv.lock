@@ -4,10 +4,10 @@ requires-python = ">=3.14"
 resolution-markers = [
     "(python_full_version >= '3.15' and platform_machine == 'AMD64' and sys_platform == 'win32') or (python_full_version >= '3.15' and platform_machine == 'x86_64' and sys_platform == 'win32')",
     "(python_full_version >= '3.15' and platform_machine == 'AMD64' and sys_platform != 'win32') or (python_full_version >= '3.15' and platform_machine == 'x86_64' and sys_platform != 'win32')",
-    "(python_full_version < '3.15' and platform_machine == 'AMD64' and sys_platform == 'win32') or (python_full_version < '3.15' and platform_machine == 'x86_64' and sys_platform == 'win32')",
-    "(python_full_version < '3.15' and platform_machine == 'AMD64' and sys_platform != 'win32') or (python_full_version < '3.15' and platform_machine == 'x86_64' and sys_platform != 'win32')",
     "python_full_version >= '3.15' and platform_machine != 'AMD64' and platform_machine != 'x86_64' and sys_platform == 'win32'",
     "python_full_version >= '3.15' and platform_machine != 'AMD64' and platform_machine != 'x86_64' and sys_platform != 'win32'",
+    "(python_full_version < '3.15' and platform_machine == 'AMD64' and sys_platform == 'win32') or (python_full_version < '3.15' and platform_machine == 'x86_64' and sys_platform == 'win32')",
+    "(python_full_version < '3.15' and platform_machine == 'AMD64' and sys_platform != 'win32') or (python_full_version < '3.15' and platform_machine == 'x86_64' and sys_platform != 'win32')",
     "python_full_version < '3.15' and platform_machine != 'AMD64' and platform_machine != 'x86_64' and sys_platform == 'win32'",
     "python_full_version < '3.15' and platform_machine != 'AMD64' and platform_machine != 'x86_64' and sys_platform != 'win32'",
 ]
@@ -38,6 +38,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/61/cc/a381afa6efea9f496eff839d4a6a1aed3bfafc7b3ab4b0d1b243a12573dd/anyio-4.14.2.tar.gz", hash = "sha256:cfa139f3ed1a23ee8f88a145ddb5ac7605b8bbfd8592baacd7ce3d8bb4313c7f", size = 260176, upload-time = "2026-07-12T20:29:07.082Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/da/35/f2287558c17e29fafc8ef3daf819bb9834061cfa43bff8014f7df7f63bdc/anyio-4.14.2-py3-none-any.whl", hash = "sha256:9f505dda5ac9f0c8309b5e8bd445a8c2bf7246f3ce950121e45ea15bc41d1494", size = 125813, upload-time = "2026-07-12T20:29:05.763Z" },
+]
+
+[[package]]
+name = "ass"
+version = "1.0.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e5/07/5c6a42e66414502df0aae1d8f752c4412f3845d953c45dbd705f7932de59/ass-1.0.3.tar.gz", hash = "sha256:1e48e181c8a6516d5a7a98de1e1be18ac6661526c3c37d92b6d16680650ef673", size = 12419, upload-time = "2025-10-22T21:11:04.82Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7a/3d/c51af75f531131d4f575cd8a8ffc8b101d21d80804626c25613f352ec85b/ass-1.0.3-py3-none-any.whl", hash = "sha256:8b46e481c5f866eec8be831d62697a0a580395e9ecc93239025cdd667cbe91b2", size = 15315, upload-time = "2025-10-22T21:11:03.996Z" },
 ]
 
 [[package]]
@@ -557,6 +566,7 @@ wheels = [
 name = "lvsfunc"
 source = { editable = "." }
 dependencies = [
+    { name = "ass" },
     { name = "kagefunc" },
     { name = "matplotlib" },
     { name = "vapoursynth" },
@@ -603,6 +613,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
+    { name = "ass", specifier = ">=1.0.3" },
     { name = "kagefunc", specifier = ">=1.0.1" },
     { name = "matplotlib", specifier = ">=3.11.0" },
     { name = "vapoursynth", specifier = ">=78" },
