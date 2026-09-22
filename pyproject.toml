@@ -38,6 +38,7 @@ dependencies = [
     "vsfpng>=1.2",
     "vsjetpack[denoise]>=2.2.4",
     "matplotlib>=3.11.0",
+    "ass>=1.0.3",
 ]
 
 [project.urls]

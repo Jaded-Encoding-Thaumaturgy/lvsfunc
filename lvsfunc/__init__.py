@@ -22,4 +22,5 @@ from .nn import *
 from .presets import *
 from .random import *
 from .scaler import *
+from .subs import *
 from .util import *
