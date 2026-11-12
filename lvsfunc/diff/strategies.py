@@ -8,7 +8,7 @@ from vskernels import Catrom
 from vstools import (
     LengthRefClipMismatchError,
     Matrix,
-    PlanesT,
+    Planes,
     VSFunction,
     core,
     depth,
@@ -41,7 +41,7 @@ class DiffStrategy(ABC):
     def __init__(
         self,
         threshold: float,
-        planes: PlanesT = None,
+        planes: Planes = None,
         func_except: FuncExceptT | None = None,
         **kwargs: Any,
     ) -> None:
@@ -99,7 +99,7 @@ class PlaneStatsDiff(DiffStrategy, _VszipStrategy):
     def __init__(
         self,
         threshold: int = 96,
-        planes: PlanesT = None,
+        planes: Planes = None,
         func_except: FuncExceptT | None = None,
     ) -> None:
         """
@@ -151,7 +151,7 @@ class PlaneAvgFloatDiff(DiffStrategy, _VszipStrategy):
     def __init__(
         self,
         threshold: float = 0.003,
-        planes: PlanesT = None,
+        planes: Planes = None,
         func_except: FuncExceptT | None = None,
     ) -> None:
         """
@@ -231,7 +231,7 @@ class VMAFDiff(DiffStrategy):
         self,
         threshold: float = 0.999,
         feature: VMAFFeature | list[VMAFFeature] = VMAFFeature.SSIM,
-        planes: PlanesT = None,
+        planes: Planes = None,
         func_except: FuncExceptT | None = None,
     ) -> None:
         """
@@ -287,7 +287,7 @@ class ButteraugliDiff(DiffStrategy):
         threshold: float = 2.0,
         intensity_multiplier: float = 80.0,
         norm_mode: ButteraugliNorm | list[ButteraugliNorm] = ButteraugliNorm.TWO_NORM,
-        planes: PlanesT = None,
+        planes: Planes = None,
         func_except: FuncExceptT | None = None,
     ) -> None:
         """
@@ -374,7 +374,7 @@ class LowpassFilterDiff(PlaneAvgFloatDiff):
     def __init__(
         self,
         threshold: float = 0.05,
-        planes: PlanesT = 0,
+        planes: Planes = 0,
         func_except: FuncExceptT | None = None,
     ) -> None:
         """
