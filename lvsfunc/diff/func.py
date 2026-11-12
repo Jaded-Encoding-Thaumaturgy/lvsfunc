@@ -20,7 +20,7 @@ from vskernels import Catrom
 from vsrgtools import box_blur
 from vstools import (
     FrameRangesN,
-    PlanesT,
+    Planes,
     VSFunctionNoArgs,
     check_ref_clip,
     clip_async_render,
@@ -71,7 +71,7 @@ class FindDiff:
     exclusion_ranges: FrameRangesN
     """Ranges of frames to exclude from the comparison."""
 
-    planes: PlanesT
+    planes: Planes
     """Planes to consider in the comparison."""
 
     diff_clips: list[vs.VideoNode]
