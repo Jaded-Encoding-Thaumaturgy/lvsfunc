@@ -86,4 +86,30 @@ comp = lvf.comparison.compare(...)
 ...
 ```
 
+
+## Credits
+
+Special thanks to all the fellow JET maintainers
+who regularly help improve upon
+the code quality and concepts explored
+in this project. 
+
+A special thanks also goes out
+to anyone who has helped contribute to this project.
+A full list of contributors can be found [here][contributor-list].
+
+The [AGENTS.md](AGENTS.md) document
+were in part inspired by the AGENTS.md document
+of the [CPython project][agents-cpython] repository
+and Django's [submitting patches][agents-django] documentation.
+The Django documentation was also used as a reference
+when writing the [CONTRIBUTIONS.md](CONTRIBUTIONS.md) document.
+
+AI disclosure: see [AI_DISCLOSURE.md](AI_DISCLOSURE.md).
+
+
+[//]: <>
 [vsjetpack-install]: https://jaded-encoding-thaumaturgy.github.io/vs-jetpack/#installation
+[contributor-list]: https://github.com/Jaded-Encoding-Thaumaturgy/lvsfunc/graphs/contributors
+[agents-cpython]: https://github.com/python/cpython/blob/main/AGENTS.md
+[agents-django]: https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/submitting-patches/
